@@ -3,6 +3,7 @@ import { I18nProvider } from './i18n/I18nContext.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 import LoginModal from './components/LoginModal.jsx'
 import PageFade from './components/PageFade.jsx'
+import RequireAuth from './components/RequireAuth.jsx'
 import HomePage from './pages/HomePage.jsx'
 import UseCaseLibraryPage from './pages/UseCaseLibraryPage.jsx'
 import QuestionsPage from './pages/QuestionsPage.jsx'
@@ -16,12 +17,12 @@ export default function App() {
         <BrowserRouter>
           <PageFade>
             <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/use-cases" element={<UseCaseLibraryPage />} />
-              <Route path="/use-cases/:id" element={<UseCaseLibraryPage />} />
-              <Route path="/questions" element={<QuestionsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              {/* hidden — no nav link, direct URL only, matching the source design */}
+              <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
+              <Route path="/use-cases" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
+              <Route path="/use-cases/:id" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
+              <Route path="/questions" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
+              <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+              {/* hidden — no nav link, direct URL only; has its own login + admin-role gate */}
               <Route path="/admin" element={<AdminConsolePage />} />
             </Routes>
           </PageFade>
