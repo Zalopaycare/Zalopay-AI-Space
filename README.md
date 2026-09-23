@@ -1,56 +1,25 @@
-# Zalopay AI Community
+# CODING AGENTS: READ THIS FIRST
 
-React + Vite implementation of the "Zalopay AI Community" design handoff bundle
-(see `../README.md`, `../chats/`, `../project/*.dc.html` for the original Claude
-Design source and the conversation history it came from).
+This is a **handoff bundle** from Claude Design (claude.ai/design).
 
-## Pages
+A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
 
-| Route | Source file | Notes |
-| --- | --- | --- |
-| `/` | `Zalopay AI Space v2.dc.html` | Home — hero with particle-sphere canvas + orbiting AI-tool logos, featured use cases, Questions Waiting for Answers |
-| `/use-cases`, `/use-cases/:id` | `Zalopay Use Case Library v2.dc.html` | Library grid/list + detail pages for the 5 real use cases, Share a Use Case modal |
-| `/questions` | `Zalopay Questions v2.dc.html` | Threads-style Q&A feed with inline replies, Ask a Question modal |
-| `/profile` | `Zalopay Profile v2.dc.html` | Overview / My Posts / Saved |
-| `/admin` | `Zalopay Admin Console v2.dc.html` | Hidden — no nav link, direct URL only (matches source) |
+## What you should do — IMPORTANT
 
-## Approach
+**Read the chat transcripts first.** There are 11 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
 
-The `.dc.html` sources are Claude Design prototypes: a custom `<x-dc>` template
-DSL (`sc-if`/`sc-for`/`{{ }}` interpolation, compiled by `dc-runtime` in
-`project/support.js`) plus a `DCLogic` class per page holding state and a
-`renderVals()` that computes everything the template reads. This app ports
-each page's real (reachable) behavior and content directly into React:
+**Read `project/Zalopay Use Case Library v2.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
 
-- `src/lib/style.js` — `css()` parses a CSS-declaration string into a React
-  style object, so the source's `style="a:b; c:d;"` strings could be carried
-  over close to verbatim instead of hand-converting every declaration into an
-  object literal. `hoverClass()` mirrors the source's `style-hover="..."`
-  pseudo-class strings by injecting a generated `:hover` rule.
-- `src/i18n/` — the VI/EN string table ported from `project/i18n.js`, behind a
-  React context (`t()`/`ta()`) instead of the source's DOM-text-walking
-  translator.
-- `src/components/ImageSlot.jsx` — a simplified stand-in for the source's
-  `<image-slot>` (design-tool-only authoring aid with a sidecar file): here
-  it's a real click/drag-to-upload placeholder backed by `localStorage`.
-- `src/components/TopNav.jsx`, `PageFade.jsx` — the shared header/notifications
-  and the cross-page transition fade (the source's `page-transition.js` faded
-  a veil over full page reloads; this is a client-side router, so the fade
-  runs on route change instead).
-- `src/data/*.js` — content ported from each page's `DCLogic` static data
-  (the 5 real use cases' text comes from the PDFs in `project/uploads`, as
-  written during the design session).
+**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
 
-Dead/unreachable template branches in the sources (e.g. the Use Case Library
-file's leftover `isHome`/`isSpotlight` views from an earlier "copy starter
-component" step, never reachable once `view` defaults to `'library'` and no
-button sets it to `'home'`/`'spotlight'`) were identified by tracing state
-transitions and intentionally not ported.
+## About the design files
 
-## Development
+The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
 
-```bash
-npm install
-npm run dev      # http://localhost:5173
-npm run build
-```
+**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+
+## Bundle contents
+
+- `README.md` — this file
+- `chats/` — conversation transcripts (read these!)
+- `project/` — the `Dựng lại website` project files (HTML prototypes, assets, components)
