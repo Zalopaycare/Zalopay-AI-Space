@@ -7,7 +7,7 @@ const router = express.Router()
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
 
 // Reactions + comments for ANY use case id (the 5 seed cases c1..c5, or a submitted+approved one).
-router.get('/:id/meta', (req, res) => {
+router.get('/:id/meta', requireAuth, (req, res) => {
   const { id } = req.params
   const helpful = db.prepare('SELECT COUNT(*) n FROM use_case_reactions WHERE use_case_id = ?').get(id).n
   const iHelped = req.user ? !!db.prepare('SELECT 1 FROM use_case_reactions WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
@@ -51,7 +51,7 @@ router.post('/:id/comments', requireAuth, (req, res) => {
 })
 
 // Share-a-use-case submissions (pending admin review).
-router.get('/submissions', (req, res) => {
+router.get('/submissions', requireAuth, (req, res) => {
   const onlyMine = req.query.mine === '1' && req.user
   const onlyApproved = req.query.status === 'approved'
   let rows

@@ -41,7 +41,7 @@ function loadQuestion(id, userId) {
   }
 }
 
-router.get('/', (req, res) => {
+router.get('/', requireAuth, (req, res) => {
   const ids = db.prepare('SELECT id FROM questions ORDER BY created_at DESC').all().map((r) => r.id)
   res.json({ questions: ids.map((id) => loadQuestion(id, req.user?.id)) })
 })
