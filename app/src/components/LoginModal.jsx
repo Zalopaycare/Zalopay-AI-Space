@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { api } from '../lib/api.js'
 
 export default function LoginModal() {
-  const { loginOpen, closeLogin, onLoggedIn } = useAuth()
+  const { loginOpen, closeLogin, onLoggedIn, ssoEnabled } = useAuth()
   const [stage, setStage] = useState('email') // 'email' | 'code'
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -48,6 +48,23 @@ export default function LoginModal() {
         <div style={css('margin-top:6px; font:400 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>
           Dùng email công ty để đăng nhập và tham gia thảo luận.
         </div>
+
+        {stage === 'email' && ssoEnabled && (
+          <>
+            <a
+              href="/api/auth/sso/login"
+              style={css('margin-top:18px; display:flex; align-items:center; justify-content:center; gap:10px; height:46px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; color:#1F2937; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; text-decoration:none;')}
+            >
+              <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+              Đăng nhập bằng tài khoản công ty (Microsoft)
+            </a>
+            <div style={css('display:flex; align-items:center; gap:10px; margin-top:16px;')}>
+              <div style={css('flex:1; height:1px; background:#E6EBF3;')}></div>
+              <span style={css('font:600 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>hoặc</span>
+              <div style={css('flex:1; height:1px; background:#E6EBF3;')}></div>
+            </div>
+          </>
+        )}
 
         {stage === 'email' && (
           <form onSubmit={submitEmail} style={css('margin-top:18px; display:flex; flex-direction:column; gap:12px;')}>

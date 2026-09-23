@@ -30,11 +30,17 @@ SMTP configured → the code is logged to the server console instead (and,
 only if `ALLOW_DEV_LOGIN_CODE=true`, echoed back in the API response) — fine
 for local testing, never enable that flag in production.
 
-SSO (Microsoft/company identity provider) was asked for but needs IT to
-issue OAuth credentials first — this email-code flow is the interim, and a
-real SSO provider can be swapped in later without touching the data model
-(`getOrCreateUser` in `src/auth.js` is the one place a new identity gets
-turned into a `users` row).
+**Microsoft Entra ID (Azure AD) SSO** is implemented (`src/sso.js`,
+`/api/auth/sso/login` + `/api/auth/sso/callback`, Authorization Code + PKCE
+via `openid-client`) but stays dark until all four `AZURE_*` vars in
+`.env.example` are set — `GET /api/auth/config` reports `ssoEnabled` and the
+frontend only shows the "Đăng nhập bằng Microsoft" button when it's true, so
+there's nothing to toggle once IT hands back the App Registration's Client
+ID / Tenant ID / Client Secret: just set the env vars and redeploy. Until
+then, the email-code flow above is what everyone uses. Both flows write into
+the same `users` table (`getOrCreateUser` in `src/auth.js`), so no migration
+is needed when SSO comes online — existing accounts just start signing in a
+different way.
 
 ## Environment variables
 

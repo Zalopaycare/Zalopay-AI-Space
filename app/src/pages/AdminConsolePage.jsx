@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
+import { allCases, prdMeta } from '../data/useCases.js'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const CATEGORIES = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
@@ -12,12 +13,6 @@ const UC_STATUS = {
   rejected: { label: 'Rejected', bg: '#FFECEC', fg: '#D8232A' },
 }
 
-const INITIAL_QUESTIONS = [
-  { id: 'q1', title: 'Làm sao để dùng Claude tóm tắt file PDF dài hơn 50 trang?', author: 'NgocTA', dept: 'Product Ops', category: 'Research & Knowledge', answers: 2, resolved: false, created: '08/09/2026', resolvedAt: '' },
-  { id: 'q2', title: 'Prompt nào hiệu quả để sinh mô tả sản phẩm bằng tiếng Việt?', author: 'QuyenNT', dept: 'Marketing', category: 'Content & Communication', answers: 2, resolved: true, created: '07/09/2026', resolvedAt: '07/09/2026' },
-  { id: 'q3', title: 'Có cách nào tự động phân loại ticket CSKH theo chủ đề?', author: 'TrucVN', dept: 'Customer Support', category: 'Automation & Workflow', answers: 0, resolved: false, created: '06/09/2026', resolvedAt: '' },
-  { id: 'q4', title: 'Dùng AI review code có an toàn với repo nội bộ không?', author: 'DucMH', dept: 'Engineering', category: 'Coding & Technical', answers: 0, resolved: false, created: '04/09/2026', resolvedAt: '' },
-]
 const INITIAL_TOPICS = [
   { id: 't1', name: 'Prompting', uc: 18, q: 12, active: true },
   { id: 't2', name: 'Tóm tắt', uc: 14, q: 9, active: true },
@@ -43,14 +38,8 @@ const INITIAL_NOTIFICATIONS = [
   { id: 'n2', text: 'QuyenNT gửi use case mới chờ duyệt: "Sinh mô tả sản phẩm & nội dung SEO"', time: 'Hôm qua', iconText: '⏳', iconBg: '#FFF1E0', iconFg: '#B45300' },
   { id: 'n3', text: '2 câu hỏi quá 48 giờ chưa có câu trả lời', time: '2 ngày trước', iconText: '?', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
 ]
-const UC_CAT = [
-  ['Automation & Workflow', 34], ['Data & Analysis', 29], ['Content & Communication', 26], ['Coding & Technical', 22],
-  ['Productivity & Personal Work', 19], ['Research & Knowledge', 15], ['Meeting & Collaboration', 11], ['Design & Creative', 7], ['Other', 4],
-]
-const Q_CAT = [
-  ['Coding & Technical', 27], ['Content & Communication', 24], ['Research & Knowledge', 21], ['Automation & Workflow', 18],
-  ['Data & Analysis', 16], ['Productivity & Personal Work', 12], ['Meeting & Collaboration', 8], ['Design & Creative', 5], ['Other', 3],
-]
+// Illustrative placeholder trend — real monthly history needs more data than this
+// young a system has; swap for a real /api/stats/monthly endpoint once there's enough of it.
 const MONTHS = ['T10', 'T11', 'T12', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9']
 const UC_SERIES = [4, 6, 5, 9, 8, 12, 11, 15, 14, 18, 17, 21]
 const Q_SERIES = [8, 11, 9, 14, 16, 15, 19, 22, 20, 26, 24, 29]
@@ -82,17 +71,24 @@ export default function AdminConsolePage() {
   const [topicDraft, setTopicDraft] = useState('')
   const [settingsState, setSettingsState] = useState({ teams: true, attachments: true, digest: false })
   const [submissions, setSubmissions] = useState([])
-  const [questions, setQuestions] = useState(INITIAL_QUESTIONS)
+  const [rawQuestions, setRawQuestions] = useState([])
   const [topics, setTopics] = useState(INITIAL_TOPICS)
   const [users, setUsers] = useState(INITIAL_USERS)
   const notifRef = useRef(null)
 
   const reloadSubmissions = () => api.listSubmissions().then((d) => setSubmissions(d.submissions)).catch(() => {})
-  useEffect(() => { if (user?.isAdmin) reloadSubmissions() }, [user])
+  const reloadQuestions = () => api.listQuestions().then((d) => setRawQuestions(d.questions)).catch(() => {})
+  useEffect(() => { if (user?.isAdmin) { reloadSubmissions(); reloadQuestions() } }, [user])
 
   const useCases = submissions.map((s) => ({
     id: s.id, title: s.title, author: s.author, dept: s.team, category: [].concat(s.category)[0] || '—',
     status: s.reviewStatus, date: relativeTime(s.time), reason: s.adminNote,
+  }))
+
+  const questions = rawQuestions.map((q) => ({
+    id: q.id, title: q.title, author: q.author, dept: q.team,
+    category: [].concat(q.category)[0] || '—', topics: q.topics,
+    answers: q.answers.length, resolved: q.resolved, created: relativeTime(q.time), resolvedAt: '',
   }))
 
   const pending = useCases.filter((u) => u.status === 'pending').length
@@ -119,10 +115,25 @@ export default function AdminConsolePage() {
   const dots = (arr) => arr.map((v, i) => ({ x: px(i).toFixed(1), y: py(v).toFixed(1) }))
   const gridLines = [0, 1, 2, 3, 4].map((i) => ({ y: (16 + i * ((H - 34) / 4)).toFixed(0) }))
   const bars = (rows) => { const max = rows.reduce((m, r) => Math.max(m, r[1]), 1); return rows.map((r) => ({ label: r[0], value: r[1], width: Math.round((r[1] / max) * 100) + '%' })) }
-  const ucByCat = bars(UC_CAT), qByCat = bars(Q_CAT)
+
+  // real category/topic tallies: the 5 built-in use cases + admin-approved submissions, and all real questions
+  const approvedUseCases = submissions.filter((s) => s.reviewStatus === 'approved')
+  const ucCatTally = {}
+  allCases.forEach((c) => { ucCatTally[c.category] = (ucCatTally[c.category] || 0) + 1 })
+  approvedUseCases.forEach((s) => { const c = [].concat(s.category)[0]; if (c) ucCatTally[c] = (ucCatTally[c] || 0) + 1 })
+  const qCatTally = {}
+  questions.forEach((q) => { if (q.category && q.category !== '—') qCatTally[q.category] = (qCatTally[q.category] || 0) + 1 })
+  const ucByCat = bars(Object.entries(ucCatTally).sort((a, b) => b[1] - a[1]))
+  const qByCat = bars(Object.entries(qCatTally).sort((a, b) => b[1] - a[1]))
+
+  const topicTally = {}
+  const bump = (name, key) => { if (!name) return; topicTally[name] = topicTally[name] || { uc: 0, q: 0 }; topicTally[name][key]++ }
+  allCases.forEach((c) => (prdMeta[c.id]?.topics || []).forEach((tp) => bump(tp, 'uc')))
+  approvedUseCases.forEach((s) => (s.topics || []).forEach((tp) => bump(tp, 'uc')))
+  questions.forEach((q) => (q.topics || []).forEach((tp) => bump(tp, 'q')))
 
   const topicVal = (t) => (topicScope === 'uc' ? t.uc : topicScope === 'q' ? t.q : t.uc + t.q)
-  const topSorted = topics.slice().sort((a, b) => topicVal(b) - topicVal(a)).slice(0, 10)
+  const topSorted = Object.entries(topicTally).map(([name, v]) => ({ name, ...v })).sort((a, b) => topicVal(b) - topicVal(a)).slice(0, 10)
   const topMax = topicVal(topSorted[0] || { uc: 1, q: 0 }) || 1
   const topTopics = topSorted.map((t, i) => ({ rank: '#' + (i + 1), label: t.name, value: topicVal(t), width: Math.round((topicVal(t) / topMax) * 100) + '%' }))
   const topicScopes = [['all', 'All'], ['uc', 'Use Cases'], ['q', 'Questions']].map(([k, label]) => ({ label, ...tabStyle(topicScope === k), onPick: () => setTopicScope(k) }))
@@ -153,7 +164,7 @@ export default function AdminConsolePage() {
     statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
     statusFg: q.resolved ? '#00893F' : '#B45300',
     meta: q.dept + ' · created ' + q.created + (q.resolvedAt ? ' · resolved ' + q.resolvedAt : ''),
-    actions: [act('View', 'plain', () => {}), act('Edit', 'plain', () => {}), act('Delete', 'reject', () => setQuestions((list) => list.filter((x) => x.id !== q.id)))],
+    actions: [act('View', 'plain', () => navigate(`/questions#q=${q.id}`)), act('Delete', 'reject', () => api.deleteQuestion(q.id).then(reloadQuestions).catch(() => {}))],
   }))
   const qStatusTabs = [['all', 'All'], ['waiting', 'Waiting'], ['resolved', 'Resolved']]
     .map(([k, label]) => ({ key: k, label, ...tabStyle(qStatus === k), onPick: () => setQStatus(k) }))
@@ -161,9 +172,9 @@ export default function AdminConsolePage() {
   // taxonomy
   const catCount = {}
   CATEGORIES.forEach((c) => { catCount[c] = 0 })
-  UC_CAT.forEach((r) => { catCount[r[0]] += r[1] })
-  Q_CAT.forEach((r) => { catCount[r[0]] += r[1] })
-  const categoryRows = CATEGORIES.map((c, i) => ({ num: i + 1, label: c, count: catCount[c] + ' bài' }))
+  Object.entries(ucCatTally).forEach(([c, n]) => { catCount[c] = (catCount[c] || 0) + n })
+  Object.entries(qCatTally).forEach(([c, n]) => { catCount[c] = (catCount[c] || 0) + n })
+  const categoryRows = Object.keys(catCount).sort().map((c, i) => ({ num: i + 1, label: c, count: catCount[c] + ' bài' }))
   const topicRows = topics.map((t) => {
     const editing = editingTopic === t.id
     const actions = []
@@ -208,8 +219,8 @@ export default function AdminConsolePage() {
 
   const rejectTarget = useCases.find((u) => u.id === rejectId)
   const kpis = [
-    { label: 'Total Use Cases', value: 167, hint: 'Đã publish', icon: 'UC', iconBg: '#E7ECFB', iconFg: '#2c5fff', valueColor: '#0F172A' },
-    { label: 'Total Questions', value: 134, hint: 'Toàn bộ thread', icon: '?', iconBg: '#E7F9F0', iconFg: '#00893F', valueColor: '#0F172A' },
+    { label: 'Total Use Cases', value: allCases.length + approvedUseCases.length, hint: 'Đã publish', icon: 'UC', iconBg: '#E7ECFB', iconFg: '#2c5fff', valueColor: '#0F172A' },
+    { label: 'Total Questions', value: questions.length, hint: 'Toàn bộ thread', icon: '?', iconBg: '#E7F9F0', iconFg: '#00893F', valueColor: '#0F172A' },
     { label: 'Pending Use Cases', value: pending, hint: 'Chờ Admin duyệt', icon: '⏳', iconBg: '#FFF1E0', iconFg: '#B45300', valueColor: '#B45300' },
     { label: 'Unanswered Questions', value: unanswered, hint: 'Chưa có câu trả lời', icon: '!', iconBg: '#FFECEC', iconFg: '#D8232A', valueColor: '#D8232A' },
   ]

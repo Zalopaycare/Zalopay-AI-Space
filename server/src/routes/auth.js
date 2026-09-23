@@ -1,9 +1,12 @@
 import express from 'express'
+import * as client from 'openid-client'
 import { db } from '../db.js'
 import { isCompanyEmail, getOrCreateUser, issueSession, clearSession, publicUser } from '../auth.js'
 import { sendMail, devLoginCodeAllowed } from '../mailer.js'
+import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_REDIRECT_URI } from '../sso.js'
 
 const router = express.Router()
+const SSO_COOKIE = 'sso_pending'
 
 function genCode() {
   return String(Math.floor(100000 + Math.random() * 900000))
@@ -46,6 +49,67 @@ router.post('/verify-code', (req, res) => {
   const user = getOrCreateUser(email)
   issueSession(res, user)
   res.json({ ok: true, user: publicUser(user) })
+})
+
+router.get('/config', (req, res) => {
+  res.json({ ssoEnabled: ssoConfigured })
+})
+
+router.get('/sso/login', async (req, res) => {
+  if (!ssoConfigured) return res.status(404).send('SSO chưa được cấu hình.')
+  try {
+    const config = await getOidcConfig()
+    const codeVerifier = client.randomPKCECodeVerifier()
+    const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier)
+    const state = client.randomState()
+
+    res.cookie(SSO_COOKIE, JSON.stringify({ state, codeVerifier }), {
+      httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 5 * 60 * 1000,
+    })
+
+    const authUrl = client.buildAuthorizationUrl(config, {
+      redirect_uri: SSO_REDIRECT_URI,
+      scope: SSO_SCOPE,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
+      state,
+    })
+    res.redirect(authUrl.href)
+  } catch (err) {
+    console.error('[sso] login init failed', err)
+    res.status(500).send('Không khởi tạo được đăng nhập SSO.')
+  }
+})
+
+router.get('/sso/callback', async (req, res) => {
+  if (!ssoConfigured) return res.status(404).send('SSO chưa được cấu hình.')
+  const pendingRaw = req.cookies?.[SSO_COOKIE]
+  res.clearCookie(SSO_COOKIE)
+  if (!pendingRaw) return res.status(400).send('Phiên đăng nhập đã hết hạn, vui lòng thử lại.')
+
+  try {
+    const { state, codeVerifier } = JSON.parse(pendingRaw)
+    const config = await getOidcConfig()
+    const currentUrl = new URL(req.originalUrl, SSO_REDIRECT_URI)
+    const tokens = await client.authorizationCodeGrant(config, currentUrl, {
+      pkceCodeVerifier: codeVerifier,
+      expectedState: state,
+    })
+    const claims = tokens.claims()
+    const email = String(claims.email || claims.preferred_username || '').trim().toLowerCase()
+    if (!isCompanyEmail(email)) {
+      return res.status(403).send('Tài khoản Microsoft này không thuộc domain công ty được phép.')
+    }
+    const user = getOrCreateUser(email)
+    if (claims.name && user.name !== claims.name) {
+      db.prepare('UPDATE users SET name = ? WHERE id = ?').run(claims.name, user.id)
+    }
+    issueSession(res, db.prepare('SELECT * FROM users WHERE id = ?').get(user.id))
+    res.redirect('/')
+  } catch (err) {
+    console.error('[sso] callback failed', err)
+    res.status(500).send('Đăng nhập SSO thất bại, vui lòng thử lại hoặc dùng đăng nhập bằng mã email.')
+  }
 })
 
 router.post('/logout', (req, res) => {

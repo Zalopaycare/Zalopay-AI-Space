@@ -8,9 +8,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [loginOpen, setLoginOpen] = useState(false)
   const [afterLogin, setAfterLogin] = useState(null)
+  const [ssoEnabled, setSsoEnabled] = useState(false)
 
   useEffect(() => {
     api.me().then((d) => setUser(d.user)).catch(() => setUser(null)).finally(() => setLoading(false))
+    api.config().then((d) => setSsoEnabled(!!d.ssoEnabled)).catch(() => {})
   }, [])
 
   const openLogin = useCallback((onDone) => {
@@ -38,7 +40,7 @@ export function AuthProvider({ children }) {
   }, [user, openLogin])
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, loginOpen, openLogin, closeLogin, onLoggedIn, logout, requireLogin }}>
+    <AuthContext.Provider value={{ user, setUser, loading, loginOpen, openLogin, closeLogin, onLoggedIn, logout, requireLogin, ssoEnabled }}>
       {children}
     </AuthContext.Provider>
   )

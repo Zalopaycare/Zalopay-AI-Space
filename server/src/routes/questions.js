@@ -46,6 +46,24 @@ router.get('/', (req, res) => {
   res.json({ questions: ids.map((id) => loadQuestion(id, req.user?.id)) })
 })
 
+const deleteQuestionTx = db.transaction((id) => {
+  const answerIds = db.prepare('SELECT id FROM question_answers WHERE question_id = ?').all(id).map((r) => r.id)
+  for (const aid of answerIds) {
+    db.prepare('DELETE FROM answer_comments WHERE answer_id = ?').run(aid)
+    db.prepare('DELETE FROM answer_reactions WHERE answer_id = ?').run(aid)
+  }
+  db.prepare('DELETE FROM question_answers WHERE question_id = ?').run(id)
+  db.prepare('DELETE FROM question_reactions WHERE question_id = ?').run(id)
+  db.prepare('DELETE FROM saved_questions WHERE question_id = ?').run(id)
+  db.prepare('DELETE FROM questions WHERE id = ?').run(id)
+})
+
+router.delete('/:id', requireAuth, (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'admin_only' })
+  deleteQuestionTx(req.params.id)
+  res.json({ ok: true })
+})
+
 router.post('/', requireAuth, (req, res) => {
   const { title, body, category = [], topics = [], tools = [] } = req.body || {}
   if (!String(title || '').trim() || !String(body || '').trim() || !category.length) {

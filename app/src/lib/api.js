@@ -16,6 +16,7 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  config: () => request('/auth/config'),
   requestCode: (email) => request('/auth/request-code', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyCode: (email, code) => request('/auth/verify-code', { method: 'POST', body: JSON.stringify({ email, code }) }),
   me: () => request('/auth/me'),
@@ -23,6 +24,7 @@ export const api = {
   logout: () => request('/auth/logout', { method: 'POST' }),
 
   listQuestions: () => request('/questions'),
+  deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
   postQuestion: (payload) => request('/questions', { method: 'POST', body: JSON.stringify(payload) }),
   reactQuestion: (id) => request(`/questions/${id}/react`, { method: 'POST' }),
   saveQuestion: (id) => request(`/questions/${id}/save`, { method: 'POST' }),
