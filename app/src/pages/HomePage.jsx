@@ -10,7 +10,7 @@ import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
-const FEATURED_IDS = ['c1', 'c2']
+const FEATURED_IDS = ['c1', 'c2', 'c3']
 
 const HOME_NOTIFICATIONS = [
   { text: 'HaiPD đã trả lời câu hỏi của bạn về tóm tắt PDF dài', href: '/questions', time: '2 giờ trước', unread: true, iconText: 'A', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
@@ -266,10 +266,10 @@ export default function HomePage() {
 
         {/* ============ FEATURED USE CASES ============ */}
         <section id="featured" style={css('position:relative; padding:24px 40px 110px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
-          <div style={css('max-width:900px; margin:0 auto;')}>
+          <div style={css('max-width:1200px; margin:0 auto;')}>
             <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
 
-            <div style={css('display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:24px; margin-top:24px;')}>
+            <div style={css('display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:24px; margin-top:24px;')}>
               {featured.map((item) => (
                 <div key={item.id} onClick={item.onOpen} className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36); border-color:#CFE0FF;')} style={css('position:relative; display:flex; flex-direction:column; background:#ffffff; border:1px solid #E6EBF3; border-radius:22px; padding:14px 14px 18px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;')}>
                   <div onClick={(e) => e.stopPropagation()} style={css('position:relative; aspect-ratio:16 / 10; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
@@ -331,16 +331,6 @@ export default function HomePage() {
             <div style={css('flex:1 1 360px; min-width:280px; position:relative; z-index:2;')}>
               <h2 style={css(`margin:0; font:900 27px/1.15 ${FONT}; letter-spacing:-.01em; color:#fff;`)}>Share your AI use case with Us</h2>
               <p style={css(`margin:14px 0 0; font:400 15px/1.6 ${FONT}; color:rgba(255,255,255,.82);`)}>{t('Bạn đang dùng AI để giải quyết công việc hiệu quả hơn?')} {t('Hãy chia sẻ để cùng nhau học hỏi và tạo ra giá trị lớn hơn cho Zalopay.')}</p>
-              <div style={css('display:flex; align-items:center; gap:18px; margin-top:26px; flex-wrap:wrap;')}>
-                <button onClick={() => navigate('/use-cases?share=1')} style={css(`display:inline-flex; align-items:center; gap:9px; height:50px; padding:0 24px; background:#00CF6A; color:#04180F; border:none; border-radius:999px; font:700 15px ${FONT}; cursor:pointer; box-shadow:0 10px 28px rgba(0,207,106,.5);`)}>
-                  {t('Chia sẻ Use Case')}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#04180F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
-                </button>
-                <button onClick={() => navigate('/questions')} style={css(`display:inline-flex; align-items:center; gap:9px; height:50px; padding:0 24px; background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.42); border-radius:999px; font:700 15px ${FONT}; cursor:pointer;`)}>
-                  {t('Đặt câu hỏi')}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                </button>
-              </div>
             </div>
             <div style={css('flex:1 1 320px; min-width:260px; display:flex; align-items:flex-start; justify-content:center; gap:6px; position:relative; z-index:2;')}>
               {steps.map((item, i) => (

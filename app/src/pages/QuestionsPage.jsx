@@ -304,7 +304,7 @@ export default function QuestionsPage() {
       <div style={css('position:absolute; top:-160px; right:-10%; width:820px; height:820px; border-radius:50%; background:radial-gradient(circle,rgba(0,140,255,.22),rgba(0,140,255,0) 66%); filter:blur(60px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
-      <div style={css('position:relative; z-index:1;')}>
+      <div style={css('position:relative;')}>
 
         <div>
           <div style={css('position:relative; background:transparent; padding:44px 40px 50px;')}>
