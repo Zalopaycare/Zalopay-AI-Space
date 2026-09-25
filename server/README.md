@@ -48,6 +48,31 @@ See `.env.example`. Required for a real deployment: `JWT_SECRET` (random),
 `ADMIN_EMAILS`, and the `SMTP_*` vars (without them, no email — including
 login codes and review notifications — actually sends).
 
+## Requesting from IT
+
+Two things to ask IT for when standing this up for real. Copy/paste and fill
+in the blanks.
+
+**1. Outbound mail (required)** — pick whichever they offer:
+
+- *IP-allowlisted relay* (e.g. Exchange Online's "from your organization's
+  mail server" connector): ask them to allowlist this server's outbound IP
+  to relay mail as `SMTP_FROM` (e.g. `noreply@zalopay.vn`), then set
+  `SMTP_HOST` / `SMTP_PORT=25` and leave `SMTP_USER` / `SMTP_PASS` blank.
+- *Mailbox login*: ask for a service-account mailbox with SMTP AUTH enabled,
+  then set `SMTP_HOST`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`.
+
+**2. Microsoft Entra ID (Azure AD) App Registration (optional, for SSO)** —
+ask IT to create an App Registration with:
+
+- Redirect URI: `https://YOUR-DOMAIN/api/auth/sso/callback` (Web platform)
+- API permissions: `openid`, `profile`, `email` (delegated, Microsoft Graph)
+- A client secret
+
+Then set `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`,
+`AZURE_REDIRECT_URI` from what they hand back and redeploy — see the SSO
+note above for how it turns on automatically.
+
 ## Development
 
 ```bash
