@@ -78,7 +78,7 @@ export default function HomePage() {
     .map((q) => ({
       ...q,
       timeLabel: relativeTime(q.time),
-      avatarBg: AV[q.author.charCodeAt(0) % AV.length],
+      avatarBg: q.avatarColor || AV[q.author.charCodeAt(0) % AV.length],
       cat: [].concat(q.category).filter(Boolean)[0] || '',
       helpfulTotal: helpfulTotal(q),
       replyLabel: replyLabel((q.answers || []).length),
@@ -94,7 +94,7 @@ export default function HomePage() {
   const modalAnswers = modalSrc ? (modalSrc.answers || []).map((a) => ({
     ...a,
     timeLabel: relativeTime(a.time),
-    avatarBg: AV[a.author.charCodeAt(0) % AV.length],
+    avatarBg: a.avatarColor || AV[a.author.charCodeAt(0) % AV.length],
     helpColor: a.iHelped ? '#2c5fff' : '#64748b',
     helpFill: a.iHelped ? '#2c5fff' : 'none',
     onHelpful: () => requireLogin(() => api.reactAnswer(modalSrc.id, a.id).then((d) => patch(modalSrc.id, d.question)).catch(() => {})),
@@ -219,7 +219,7 @@ export default function HomePage() {
             <div onClick={closeModal} style={css('position:fixed; inset:0; z-index:3000; background:rgba(4,10,26,.62); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:40px 24px;')}>
               <div onClick={(e) => e.stopPropagation()} style={css('width:720px; max-width:100%; max-height:100%; overflow-y:auto; background:#ffffff; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
                 <div style={css('display:flex; gap:14px; padding:24px 26px 0;')}>
-                  <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};`)}>{modalSrc.initials}</span>
+                  <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${modalSrc.avatarColor || AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};`)}>{modalSrc.initials}</span>
                   <div style={css('flex:1; min-width:0;')}>
                     <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
                       <span style={css(`font:800 14.5px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span>

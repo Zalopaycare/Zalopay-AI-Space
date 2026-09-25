@@ -14,7 +14,7 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const saved = req.user ? !!db.prepare('SELECT 1 FROM use_case_saves WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
   const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at DESC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
-    return { id: c.id, author: u ? u.name : 'Người dùng đã xoá', initials: u ? u.initials : '??', time: c.created_at, body: c.body }
+    return { id: c.id, author: u ? u.name : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body }
   })
   res.json({ helpful, iHelped, saved, comments })
 })

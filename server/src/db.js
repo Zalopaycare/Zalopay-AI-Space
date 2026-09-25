@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   initials TEXT NOT NULL,
   team TEXT NOT NULL DEFAULT '',
   is_admin INTEGER NOT NULL DEFAULT 0,
+  avatar_color TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -121,6 +122,13 @@ CREATE TABLE IF NOT EXISTS use_case_comments (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 `)
+
+// Migration: existing DBs from before avatar_color existed need the column added —
+// CREATE TABLE IF NOT EXISTS above only helps brand-new databases.
+const userColumns = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name)
+if (!userColumns.includes('avatar_color')) {
+  db.exec('ALTER TABLE users ADD COLUMN avatar_color TEXT')
+}
 
 export function nextId(prefix) {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)

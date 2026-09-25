@@ -3,6 +3,9 @@ import { Link, useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
+import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
+import NotificationsPanel from './NotificationsPanel.jsx'
+import Avatar from './Avatar.jsx'
 
 const NAV_ITEMS = [
   { label: 'Trang chủ', to: '/', match: (p) => p === '/' },
@@ -40,11 +43,12 @@ function LangPill() {
   )
 }
 
-/** The thin top bar (offset by the 260px sidebar): page nav, language switch, profile chip. */
-export default function TopNav() {
+/** The thin top bar, offset by the (collapsible) sidebar: page nav, language switch, notifications + profile chip. */
+export default function TopNav({ notifications }) {
   const location = useLocation()
   const { t } = useI18n()
   const { user, openLogin, logout } = useAuth()
+  const [collapsed] = useSidebarCollapsed()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   useEffect(() => {
@@ -55,7 +59,7 @@ export default function TopNav() {
   }, [menuOpen])
 
   return (
-    <div style={css('position:fixed; top:0; left:260px; right:0; height:72px; z-index:1900; display:flex; align-items:center; padding:0 32px; background:rgba(4,6,13,.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.08); font-family:inherit;')}>
+    <div style={css(`position:fixed; top:0; left:${collapsed ? 76 : 260}px; right:0; height:72px; z-index:1900; display:flex; align-items:center; padding:0 32px; background:rgba(4,6,13,.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.08); font-family:inherit; transition:left .16s ease;`)}>
       <div style={{ flex: 1 }}></div>
       <nav style={css('display:flex; align-items:center; gap:34px;')}>
         {NAV_ITEMS.map((item) => {
@@ -73,6 +77,12 @@ export default function TopNav() {
       </nav>
       <div style={css('flex:1; display:flex; align-items:center; justify-content:flex-end; gap:12px;')}>
         <LangPill />
+        {user && (
+          <NotificationsPanel
+            notifications={notifications}
+            buttonStyle={css('width:40px; height:40px; border:1px solid rgba(255,255,255,.18); border-radius:50%; background:rgba(255,255,255,.05); color:#dbe6ff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}
+          />
+        )}
         {user ? (
           <div style={{ position: 'relative' }} ref={menuRef}>
             <div
@@ -80,7 +90,7 @@ export default function TopNav() {
               className={hoverClass('background:rgba(255,255,255,.1);')}
               style={css('display:flex; align-items:center; gap:10px; padding:4px 14px 4px 4px; border-radius:999px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.18); cursor:pointer;')}
             >
-              <div style={css('width:34px; height:34px; border-radius:50%; background:#fff; color:#0e2f8a; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12.5px;')}>{user.initials}</div>
+              <Avatar user={user} size={34} fontSize={12.5} />
               <span style={css('font-family:inherit; font-size:14.5px; font-weight:600; color:#fff; white-space:nowrap;')}>{user.name}</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3d0f5" strokeWidth="2.2"><path d="m6 9 6 6 6-6"></path></svg>
             </div>

@@ -73,5 +73,5 @@ export function requireAuth(req, res, next) {
 
 export function publicUser(u) {
   if (!u) return null
-  return { id: u.id, name: u.name, initials: u.initials, team: u.team, email: u.email, isAdmin: !!u.is_admin }
+  return { id: u.id, name: u.name, initials: u.initials, team: u.team, email: u.email, isAdmin: !!u.is_admin, avatarColor: u.avatar_color || null }
 }

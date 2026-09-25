@@ -6,7 +6,7 @@ import { sendMail } from '../mailer.js'
 const router = express.Router()
 
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
-const userBrief = (u) => (u ? { author: u.name, initials: u.initials, team: u.team, authorId: u.id } : { author: 'Người dùng đã xoá', initials: '??', team: '', authorId: null })
+const userBrief = (u) => (u ? { author: u.name, initials: u.initials, team: u.team, authorId: u.id, avatarColor: u.avatar_color || null } : { author: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
 
 function notifyMentions(body, actingUserName, context) {
   const names = Array.from(new Set((body.match(/@([\p{L}\w]+)/gu) || []).map((m) => m.slice(1).toLowerCase())))

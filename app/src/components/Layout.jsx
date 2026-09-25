@@ -1,13 +1,15 @@
 import Sidebar from './Sidebar.jsx'
 import TopNav from './TopNav.jsx'
+import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
 
-/** Shared chrome for every logged-area page: fixed Sidebar (260px) + fixed TopNav (72px), content offset to clear both. */
+/** Shared chrome for every logged-area page: fixed (collapsible) Sidebar + fixed TopNav, content offset to clear both. */
 export default function Layout({ active, notifications, children }) {
+  const [collapsed] = useSidebarCollapsed()
   return (
     <>
-      <Sidebar active={active} notifications={notifications} />
-      <div style={{ marginLeft: 260, paddingTop: 72, minHeight: '100vh', background: '#04060d' }}>
-        <TopNav />
+      <Sidebar active={active} />
+      <div style={{ marginLeft: collapsed ? 76 : 260, paddingTop: 72, minHeight: '100vh', background: '#04060d', transition: 'margin-left .16s ease' }}>
+        <TopNav notifications={notifications} />
         {children}
       </div>
     </>

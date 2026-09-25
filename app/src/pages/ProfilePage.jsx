@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
@@ -6,7 +6,50 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
+import Avatar, { AVATAR_COLORS } from '../components/Avatar.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
+
+/** Your own big profile avatar — click it to pick a color, persisted via PATCH /auth/me. */
+function AvatarPicker({ user, onChange }) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [open])
+  return (
+    <div style={css('position:relative; flex:none;')} ref={ref}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
+        title={t('Đổi màu avatar')}
+        style={css('position:relative; border:none; background:none; padding:0; cursor:pointer; border-radius:50%; display:block;')}
+      >
+        <Avatar user={user} size={84} fontSize={28} />
+        <span style={css('position:absolute; right:-2px; bottom:-2px; width:28px; height:28px; border-radius:50%; background:#fff; border:2px solid #04060d; display:flex; align-items:center; justify-content:center; color:#2c5fff;')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+        </span>
+      </button>
+      {open && (
+        <div style={css('position:absolute; left:0; top:96px; z-index:200; background:#fff; border:1px solid #E6EBF3; border-radius:16px; box-shadow:0 26px 60px rgba(6,14,40,.34); padding:14px; width:220px;')}>
+          <div style={css(`font:700 12.5px ${FONT}; color:#64748b; margin-bottom:10px;`)}>{t('Chọn màu avatar')}</div>
+          <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:8px;')}>
+            {AVATAR_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => { onChange(c); setOpen(false) }}
+                title={c}
+                style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: user.avatarColor === c ? '3px solid #0F172A' : '2px solid transparent', cursor: 'pointer', padding: 0 }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 
@@ -142,7 +185,7 @@ function UseCaseCard({ c }) {
 
 export default function ProfilePage() {
   const { t } = useI18n()
-  const { user } = useAuth()
+  const { user, setUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -298,7 +341,7 @@ export default function ProfilePage() {
         {!section && (
           <section style={css('position:relative; padding:48px 40px 0;')}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; align-items:center; gap:26px; flex-wrap:wrap;')}>
-              <div style={css(`width:84px; height:84px; flex:none; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 28px ${FONT};`)}>{user.initials}</div>
+              <AvatarPicker user={user} onChange={(color) => api.updateMe({ avatarColor: color }).then((d) => setUser(d.user)).catch(() => {})} />
               <div style={{ flex: 1, minWidth: 220 }}>
                 <h1 style={css(`margin:0; font:900 26px ${FONT}; color:#ffffff;`)}>{user.name}</h1>
                 <p style={css(`margin:6px 0 0; font:400 15px ${FONT}; color:#c3d0f5;`)}>{user.team ? user.team + ' · ' : ''}{user.email}</p>

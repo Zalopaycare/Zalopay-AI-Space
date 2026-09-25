@@ -4,6 +4,7 @@ import { db } from '../db.js'
 import { isCompanyEmail, getOrCreateUser, issueSession, clearSession, publicUser } from '../auth.js'
 import { sendMail, devLoginCodeAllowed } from '../mailer.js'
 import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_REDIRECT_URI } from '../sso.js'
+import { AVATAR_COLORS } from '../avatarColors.js'
 
 const router = express.Router()
 const SSO_COOKIE = 'sso_pending'
@@ -130,8 +131,16 @@ router.patch('/me', (req, res) => {
     db.prepare('UPDATE users SET name = ?, initials = ? WHERE id = ?').run(name, initials, req.user.id)
   }
   if (team) db.prepare('UPDATE users SET team = ? WHERE id = ?').run(team, req.user.id)
+  if (req.body?.avatarColor !== undefined) {
+    const color = AVATAR_COLORS.includes(req.body.avatarColor) ? req.body.avatarColor : null
+    db.prepare('UPDATE users SET avatar_color = ? WHERE id = ?').run(color, req.user.id)
+  }
   const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
   res.json({ user: publicUser(updated) })
+})
+
+router.get('/avatar-colors', (req, res) => {
+  res.json({ colors: AVATAR_COLORS })
 })
 
 export default router
