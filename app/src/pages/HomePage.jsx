@@ -11,6 +11,15 @@ import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const FEATURED_IDS = ['c1', 'c2', 'c3']
+const UFO_STARS = [
+  { left: '4%', top: '6px', size: '2px', dur: '2.6s', delay: '-.4s' },
+  { left: '14%', top: '38px', size: '3px', dur: '3.1s', delay: '-1.8s' },
+  { left: '24%', top: '4px', size: '2px', dur: '2.2s', delay: '-.9s' },
+  { left: '90%', top: '14px', size: '3px', dur: '2.8s', delay: '-2.2s' },
+  { left: '80%', top: '44px', size: '2px', dur: '2.4s', delay: '-1.1s' },
+  { left: '96%', top: '2px', size: '2px', dur: '3.4s', delay: '-.2s' },
+  { left: '70%', top: '0px', size: '2px', dur: '2.9s', delay: '-1.6s' },
+]
 
 const HOME_NOTIFICATIONS = [
   { text: 'HaiPD đã trả lời câu hỏi của bạn về tóm tắt PDF dài', href: '/questions', time: '2 giờ trước', unread: true, iconText: 'A', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
@@ -127,13 +136,31 @@ export default function HomePage() {
       <div style={css('width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
 
         {/* ============ WORDMARK ============ */}
-        <section style={css('position:relative; padding:56px 40px 0; background:#04060d; text-align:center;')}>
-          <h1 style={css(`margin:0; font-family:${FONT}; font-size:104px; line-height:1.05; font-weight:700; letter-spacing:-3px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6)); text-wrap:balance;`)}>Zalopay AI Space</h1>
+        <section style={css('position:relative; padding:56px 40px 0; background:#04060d; text-align:center; overflow:hidden;')}>
+          <div style={css('position:relative; max-width:900px; margin:0 auto; height:64px;')}>
+            {UFO_STARS.map((s, i) => (
+              <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
+            ))}
+            <div style={css('position:absolute; left:58%; top:0; animation:ufobob 3.6s ease-in-out infinite; pointer-events:none;')}>
+              <div style={css('position:relative; width:0; height:0; left:50%; transform:translateX(-50%);')}>
+                <div style={css('position:absolute; left:50%; top:34px; width:130px; height:210px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%); animation:beamflicker 2.2s ease-in-out infinite;')}></div>
+                <svg width="76" height="40" viewBox="0 0 76 40" style={css('position:relative; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
+                  <ellipse cx="38" cy="26" rx="36" ry="8" fill="#B7C6E0" />
+                  <ellipse cx="38" cy="24" rx="27" ry="6.5" fill="#8CA0C7" />
+                  <path d="M20 22 Q38 2 56 22 Z" fill="#CFE6FF" opacity="0.9" />
+                  <circle cx="22" cy="27" r="2.2" fill="#5EE7FF" />
+                  <circle cx="38" cy="29" r="2.2" fill="#FFE45E" />
+                  <circle cx="54" cy="27" r="2.2" fill="#5EE7FF" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <h1 style={css(`position:relative; margin:0; font-family:${FONT}; font-size:104px; line-height:1.05; font-weight:700; letter-spacing:-3px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6)); text-wrap:balance;`)}>Zalopay AI Space</h1>
         </section>
 
         {/* ============ TRENDING QUESTIONS ============ */}
         <section id="waiting" style={css('position:relative; padding:28px 40px 40px; background:#04060d;')}>
-          <div style={css('max-width:900px; margin:0 auto;')}>
+          <div style={css('max-width:1200px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
               <h2 style={css(`margin:0; font:900 30px ${FONT}; letter-spacing:-.01em; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
               <button
@@ -269,7 +296,7 @@ export default function HomePage() {
           <div style={css('max-width:1200px; margin:0 auto;')}>
             <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
 
-            <div style={css('display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:24px; margin-top:24px;')}>
+            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; margin-top:24px;')}>
               {featured.map((item) => (
                 <div key={item.id} onClick={item.onOpen} className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36); border-color:#CFE0FF;')} style={css('position:relative; display:flex; flex-direction:column; background:#ffffff; border:1px solid #E6EBF3; border-radius:22px; padding:14px 14px 18px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;')}>
                   <div onClick={(e) => e.stopPropagation()} style={css('position:relative; aspect-ratio:16 / 10; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>

@@ -705,11 +705,11 @@ export default function UseCaseLibraryPage() {
   function renderLibrary() {
     return (
       <div style={css('background:#07070c; color:#fff;')}>
-        <section style={css('position:relative; overflow:hidden;')}>
+        <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
           <div style={css('position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size:52px 52px; -webkit-mask-image:radial-gradient(82% 62% at 50% 16%, #000 26%, transparent 76%); mask-image:radial-gradient(82% 62% at 50% 16%, #000 26%, transparent 76%); pointer-events:none;')}></div>
           <div style={css('position:absolute; left:50%; top:-10px; transform:translateX(-50%); width:1180px; height:600px; background:radial-gradient(50% 56% at 50% 40%, rgba(150,190,255,.62) 0%, rgba(26,95,255,.6) 22%, rgba(16,60,210,.3) 48%, rgba(16,60,210,0) 72%); pointer-events:none;')}></div>
           <div style={css('position:absolute; left:50%; top:70px; transform:translateX(-50%); width:560px; height:320px; background:radial-gradient(50% 50% at 50% 50%, rgba(120,170,255,.55) 0%, rgba(60,120,255,0) 70%); filter:blur(6px); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:50%; top:260px; transform:translateX(-50%); width:2600px; height:2600px; border-radius:50%; background:#07070c; border-top:1.5px solid rgba(165,200,255,.95); box-shadow:0 -2px 92px 10px rgba(26,95,255,.68), inset 0 8px 82px rgba(46,120,255,.3); pointer-events:none;')}></div>
+          <div style={css('position:absolute; left:50%; top:260px; transform:translateX(-50%); width:2600px; height:2600px; border-radius:50%; background:#07070c; box-shadow:0 -2px 92px 10px rgba(26,95,255,.68), inset 0 8px 82px rgba(46,120,255,.3); pointer-events:none;')}></div>
           <StarField />
           <div style={css('position:relative; z-index:4; height:360px;')}>
             <h1 style={css('position:absolute; top:110px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:74px; line-height:1; font-weight:800; letter-spacing:-2px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
