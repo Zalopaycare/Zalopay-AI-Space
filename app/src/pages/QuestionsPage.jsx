@@ -3,7 +3,7 @@ import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
-import TopNav from '../components/TopNav.jsx'
+import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -76,6 +76,11 @@ export default function QuestionsPage() {
 
   const reload = () => api.listQuestions().then((d) => { setQuestions(d.questions); setLoaded(true) }).catch(() => setLoaded(true))
   useEffect(() => { reload() }, [])
+
+  // deep-link: #ask opens the ask-question composer directly (from Sidebar's "Đặt câu hỏi" quick action)
+  useEffect(() => {
+    if ((window.location.hash || '') === '#ask') setView('ask')
+  }, [])
 
   const mentionList = (mq, apply) => PEOPLE.filter((p) => p.name !== (user?.name || '') && (!mq || p.name.toLowerCase().includes(mq)))
     .slice(0, 4).map((p, i) => ({ ...p, bg: AV[i % AV.length], onPick: () => apply(p.name) }))
@@ -205,10 +210,9 @@ export default function QuestionsPage() {
       ...q,
       time: relativeTime(q.time),
       avatarBg: AV[q.author.charCodeAt(0) % AV.length],
-      cats: [].concat(q.category).filter(Boolean),
       statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
       statusFg: q.resolved ? '#00893F' : '#B45300',
-      statusLabel: q.resolved ? 'Resolved' : t('Đang chờ trả lời'),
+      statusLabel: q.resolved ? t('Đã trả lời') : t('Đang chờ trả lời'),
       bodyShown: full || !long ? q.body : q.body.slice(0, CLAMP).trimEnd() + '…',
       truncated: long && !full,
       saveBg: q.saved ? '#E7F9F0' : '#fff',
@@ -267,7 +271,7 @@ export default function QuestionsPage() {
   const sorts = [['latest', 'Gần nhất'], ['active', 'Trending'], ['all', 'Tất cả']].map(([k, label]) => ({
     label, bg: sort === k ? '#fff' : 'transparent', color: sort === k ? '#2c5fff' : '#3A4757', onPick: () => setSort(k),
   }))
-  const quickFilters = [['all', 'Tất cả'], ['waiting', 'Chờ trả lời'], ['resolved', 'Resolved'], ['mine', 'Đã đăng'], ['saved', 'Đã lưu']].map(([k, label]) => ({
+  const quickFilters = [['all', 'Tất cả'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời'], ['mine', 'Đã đăng'], ['saved', 'Đã lưu']].map(([k, label]) => ({
     label: t(label), ...chip(quick === k), onPick: () => setQuick(k),
   }))
   const isEmpty = feed.length === 0
@@ -294,14 +298,13 @@ export default function QuestionsPage() {
   const askOpacity = askTitle.trim() && askBody.trim() && askCategory.length ? 1 : 0.5
 
   return (
-    <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
+    <Layout active="question" notifications={notifications}>
+    <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc;')}>
       <div style={css('position:absolute; top:-260px; left:-8%; width:900px; height:900px; border-radius:50%; background:radial-gradient(circle,rgba(58,120,255,.34),rgba(58,120,255,0) 66%); filter:blur(60px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:-160px; right:-10%; width:820px; height:820px; border-radius:50%; background:radial-gradient(circle,rgba(0,140,255,.22),rgba(0,140,255,0) 66%); filter:blur(60px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:relative; z-index:1;')}>
-
-        <TopNav notifications={notifications} />
 
         <div>
           <div style={css('position:relative; background:transparent; padding:44px 40px 50px;')}>
@@ -342,13 +345,14 @@ export default function QuestionsPage() {
                 {feed.map((q) => (
                   <div key={q.id} data-qid={q.id} style={css('background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 20px 46px rgba(0,0,0,.34); overflow:hidden;')}>
                     <div style={css('display:flex; align-items:center; gap:7px; padding:20px 22px 0; flex-wrap:wrap;')}>
-                      <span style={css(`display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
-                      {q.cats.map((c) => (
-                        <span key={c} style={css('display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#E7ECFB; color:#2c5fff; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{c}</span>
-                      ))}
+                      <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
+                        {t('Câu hỏi')}
+                      </span>
                       {q.topics.map((tp) => (
-                        <span key={tp} style={css('display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{tp}</span>
+                        <span key={tp} style={css('display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#E7ECFB; color:#2c5fff; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{tp}</span>
                       ))}
+                      <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
                     </div>
 
                     <div style={css('display:flex; gap:14px; padding:14px 22px 0;')}>
@@ -652,5 +656,6 @@ export default function QuestionsPage() {
         </div>
       </div>
     </div>
+    </Layout>
   )
 }
