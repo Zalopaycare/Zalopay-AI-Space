@@ -16,6 +16,8 @@ a { color: #1a5fff; text-decoration: none; }
 @keyframes ufobob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-16px); } }
 @keyframes beamflicker { 0%, 100% { opacity: .78; } 50% { opacity: 1; } }
 @keyframes twinkle { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.25); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-3px); } 40% { transform: translateX(3px); } 60% { transform: translateX(-2px); } 80% { transform: translateX(2px); } }
+@keyframes wiggleCall { 0%, 84%, 100% { transform: rotate(0deg); } 88% { transform: rotate(-8deg); } 92% { transform: rotate(8deg); } 96% { transform: rotate(-4deg); } }
 
 image-slot-placeholder { --is-empty-bg: rgba(255, 255, 255, .06); }
 
