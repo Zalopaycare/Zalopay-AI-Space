@@ -77,7 +77,6 @@ export default function Sidebar({ active, notifications }) {
         <NotificationsPanel
           notifications={notifications}
           buttonStyle={css(itemBase + 'background:transparent; color:#c3d0f5;')}
-          panelStyle="left:100%; top:0; margin-left:12px;"
         />
         <NavLink to="/profile" active={profileActive} icon={
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4.5"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
