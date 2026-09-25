@@ -18,6 +18,18 @@ function writeStore(store) {
   }
 }
 
+/** Programmatically set a slot's image (e.g. from a composer that reads a File before an id exists). */
+export function writeImageSlot(id, dataUrl) {
+  const store = readStore()
+  store[id] = dataUrl
+  writeStore(store)
+}
+
+/** Whether a slot has a stored image, without subscribing/rendering anything. */
+export function hasImageSlot(id) {
+  return !!readStore()[id]
+}
+
 const shapeRadius = { rect: 0, rounded: 12, circle: '50%', pill: 999 }
 
 /**
