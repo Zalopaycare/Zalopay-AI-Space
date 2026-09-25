@@ -4,12 +4,13 @@ import { css, cx, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
-import TopNav from '../components/TopNav.jsx'
+import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
 } from '../data/useCases.js'
+import { defaultNotifications } from '../data/notifications.js'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
 const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
@@ -119,6 +120,15 @@ export default function UseCaseLibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Sidebar's "Tìm kiếm" link (/use-cases#search) should land focused in the search box
+  const searchInputRef = useRef(null)
+  useEffect(() => {
+    if (location.hash === '#search' && searchInputRef.current) {
+      searchInputRef.current.focus()
+      searchInputRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }
+  }, [location.hash])
+
   // real helpful-vote counts + comments for each use case, backed by the API
   const refreshMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   useEffect(() => { allCases.forEach((c) => refreshMeta(c.id)) }, [])
@@ -203,11 +213,14 @@ export default function UseCaseLibraryPage() {
   // ---- card mapper shared by grid + list views ----
   const mapCard = (c) => {
     const cd = caseDetail[c.id] || {}
-    const saved = ucMeta[c.id] ? ucMeta[c.id].saved : false
+    const live = ucMeta[c.id]
+    const saved = live ? live.saved : false
+    const voted = live ? live.iHelped : false
     return {
       ...c,
       avInitial: c.author.slice(0, 1).toUpperCase(),
       avStyle: `width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex:none;background:${avatarColor(c.author)}`,
+      avStyleL: `width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex:none;background:${avatarColor(c.author)}`,
       toolsR: c.tools.map((name) => ({ name })),
       kindLabel: c.kind === 'tech' ? 'By tech' : 'By non-tech',
       levelLabel: levelMeta(cd.level).label,
@@ -221,6 +234,11 @@ export default function UseCaseLibraryPage() {
       saveColor: saved ? '#2c5fff' : '#59667A',
       saveColorD: saved ? '#9fd0ff' : '#c3c3d4',
       onSave: (e) => { e.stopPropagation(); requireLogin(() => api.saveUseCase(c.id).then(() => refreshMeta(c.id)).catch(() => {})) },
+      helpBg: voted ? '#EAF1FF' : '#fff',
+      helpBorder: voted ? '#B9CCF8' : '#DDE3EC',
+      helpColor: voted ? '#2c5fff' : '#3A4757',
+      helpFill: voted ? '#2c5fff' : 'none',
+      onHelpful: (e) => { e.stopPropagation(); requireLogin(() => api.reactUseCase(c.id).then(() => refreshMeta(c.id)).catch(() => {})) },
     }
   }
 
@@ -365,7 +383,6 @@ export default function UseCaseLibraryPage() {
           <div style={css('position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size:52px 52px; -webkit-mask-image:radial-gradient(78% 74% at 28% 22%, #000 18%, transparent 72%); mask-image:radial-gradient(78% 74% at 28% 22%, #000 18%, transparent 72%); pointer-events:none;')}></div>
           <div style={css('position:absolute; left:6%; top:-60px; width:820px; height:560px; background:radial-gradient(50% 60% at 42% 42%, rgba(46,144,255,.5) 0%, rgba(30,120,240,.2) 44%, rgba(30,120,240,0) 70%); pointer-events:none;')}></div>
           <StarField />
-          <TopNav />
           <div style={css('position:relative; z-index:3; max-width:1200px; margin:0 auto; padding:8px 40px 76px;')}>
             <button
               onClick={() => navigate('/use-cases')}
@@ -690,13 +707,12 @@ export default function UseCaseLibraryPage() {
       <div style={css('background:#07070c; color:#fff;')}>
         <section style={css('position:relative; overflow:hidden;')}>
           <div style={css('position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size:52px 52px; -webkit-mask-image:radial-gradient(82% 62% at 50% 16%, #000 26%, transparent 76%); mask-image:radial-gradient(82% 62% at 50% 16%, #000 26%, transparent 76%); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:50%; top:70px; transform:translateX(-50%); width:1180px; height:600px; background:radial-gradient(50% 56% at 50% 40%, rgba(150,190,255,.62) 0%, rgba(26,95,255,.6) 22%, rgba(16,60,210,.3) 48%, rgba(16,60,210,0) 72%); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:50%; top:150px; transform:translateX(-50%); width:560px; height:320px; background:radial-gradient(50% 50% at 50% 50%, rgba(120,170,255,.55) 0%, rgba(60,120,255,0) 70%); filter:blur(6px); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:50%; top:348px; transform:translateX(-50%); width:2600px; height:2600px; border-radius:50%; background:#07070c; border-top:1.5px solid rgba(165,200,255,.95); box-shadow:0 -2px 92px 10px rgba(26,95,255,.68), inset 0 8px 82px rgba(46,120,255,.3); pointer-events:none;')}></div>
+          <div style={css('position:absolute; left:50%; top:-10px; transform:translateX(-50%); width:1180px; height:600px; background:radial-gradient(50% 56% at 50% 40%, rgba(150,190,255,.62) 0%, rgba(26,95,255,.6) 22%, rgba(16,60,210,.3) 48%, rgba(16,60,210,0) 72%); pointer-events:none;')}></div>
+          <div style={css('position:absolute; left:50%; top:70px; transform:translateX(-50%); width:560px; height:320px; background:radial-gradient(50% 50% at 50% 50%, rgba(120,170,255,.55) 0%, rgba(60,120,255,0) 70%); filter:blur(6px); pointer-events:none;')}></div>
+          <div style={css('position:absolute; left:50%; top:260px; transform:translateX(-50%); width:2600px; height:2600px; border-radius:50%; background:#07070c; border-top:1.5px solid rgba(165,200,255,.95); box-shadow:0 -2px 92px 10px rgba(26,95,255,.68), inset 0 8px 82px rgba(46,120,255,.3); pointer-events:none;')}></div>
           <StarField />
-          <TopNav />
-          <div style={css('position:relative; z-index:4; height:600px;')}>
-            <h1 style={css('position:absolute; top:190px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:104px; line-height:1; font-weight:700; letter-spacing:-3px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
+          <div style={css('position:relative; z-index:4; height:360px;')}>
+            <h1 style={css('position:absolute; top:110px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:74px; line-height:1; font-weight:800; letter-spacing:-2px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
           </div>
         </section>
 
@@ -714,6 +730,7 @@ export default function UseCaseLibraryPage() {
               <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px 15px;')}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" strokeWidth="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3-3"></path></svg>
                 <input
+                  ref={searchInputRef}
                   placeholder={t('Tìm use case: PRD, báo cáo, phân tích dữ liệu, ...')}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -767,52 +784,56 @@ export default function UseCaseLibraryPage() {
               )}
 
               {libView === 'grid' && libCards.length > 0 && (
-                <div style={css('display:grid; grid-template-columns:repeat(3,1fr); gap:20px;')}>
+                <div style={css('display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr)); gap:24px;')}>
                   {libCards.map((c) => (
                     <div
                       key={c.id}
                       onClick={c.onOpen}
-                      className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(30,50,90,.18); border-color:#CFE0FF;')}
-                      style={css('position:relative; display:flex; flex-direction:column; height:100%; border:1px solid #E6EBF3; border-radius:16px; background:#ffffff; cursor:pointer; padding:16px; box-shadow:0 14px 36px rgba(30,50,90,.1); transition:transform .16s, box-shadow .16s, border-color .16s;')}
+                      className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36); border-color:#CFE0FF;')}
+                      style={css('position:relative; display:flex; flex-direction:column; border:1px solid #E6EBF3; border-radius:22px; background:#ffffff; cursor:pointer; padding:14px 14px 18px; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
-                      <div style={css('position:relative; aspect-ratio:16/9; border-radius:12px; overflow:hidden; margin-bottom:14px; background:#eef2f9;')}>
-                        <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh use case 16:9" />
-                        <span style={css('position:absolute; bottom:10px; left:10px; z-index:3; display:inline-flex; align-items:center; padding:5px 11px; border-radius:20px; background:#59667A; font-size:10.5px; font-weight:700; color:#fff; box-shadow:0 2px 10px rgba(0,0,0,.18); pointer-events:none;')}>{c.kindLabel}</span>
-                      </div>
-                      <button onClick={c.onSave} title="Lưu use case" className={hoverClass('background:#F2F6FF;')} style={css(`position:absolute; top:26px; right:26px; z-index:6; width:28px; height:28px; border-radius:8px; background:rgba(255,255,255,.94); border:1px solid #E6EBF3; box-shadow:0 4px 14px rgba(20,30,60,.16); cursor:pointer; color:${c.saveColor}; display:flex; align-items:center; justify-content:center;`)}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                      </button>
-                      <div style={css('display:flex; margin-bottom:9px;')}><span style={css(c.levelChipLight)}>{c.levelLabel}</span></div>
-                      <h3 style={css('margin:0 0 8px; font-size:15px; font-weight:700; line-height:1.3; color:#0F172A;')}>{c.title}</h3>
-                      <p style={css('margin:0 0 14px; font-size:12.5px; line-height:1.55; color:#5B6675; text-wrap:pretty; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:12px; min-width:0;')}>
-                        <span style={css(c.avStyle)}>{c.avInitial}</span>
-                        <span style={css('font-size:12.5px; font-weight:700; color:#0F172A;')}>{c.author}</span>
-                        <span style={css('color:#CDD5DD;')}>·</span>
-                        <span style={css('font-size:12.5px; color:#64748b; white-space:nowrap;')}>{c.category}</span>
-                      </div>
-                      <div style={css('display:flex; align-items:center; gap:7px; flex-wrap:wrap;')}>
-                        {c.toolsR.map((tool) => (
-                          <span key={tool.name} style={css('display:inline-flex; align-items:center; padding:4px 10px; border-radius:8px; border:1px solid #DDE3EC; background:#fff; font-size:11.5px; font-weight:600; color:#3A4757;')}>{tool.name}</span>
-                        ))}
-                        {(c.topics || []).map((tp) => (
-                          <span key={tp} style={css('display:inline-flex; align-items:center; padding:4px 10px; border-radius:8px; background:#E7ECFB; font-size:11.5px; font-weight:600; color:#2c5fff;')}>{tp}</span>
-                        ))}
-                      </div>
-                      <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:16px; margin-top:auto; padding-top:12px; border-top:1px solid #EEF1F7;')}>
-                        <span style={css('display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#3A4757;')}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00A65A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.4L13.5 9H19a2 2 0 0 1 2 2.4l-1.7 8A2 2 0 0 1 17.3 22z"></path></svg>
-                          {c.helpful} {t('hữu ích')}
+                      <div onClick={(e) => e.stopPropagation()} style={css('position:relative; aspect-ratio:16/10; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
+                        <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh use case" />
+                        <span style={css('position:absolute; top:12px; left:12px; z-index:2; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px 0 10px; border-radius:999px; background:#ffffff; color:#00893F; font-size:12px; font-weight:800; box-shadow:0 2px 10px rgba(0,0,0,.14); pointer-events:none;')}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                          {t('Use case')}
                         </span>
-                        <span style={css('display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#94a3b8;')}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                          {c.comments}
-                        </span>
+                        <button onClick={c.onSave} title="Lưu use case" className={hoverClass('background:#F2F6FF;')} style={css(`position:absolute; top:10px; right:10px; z-index:3; width:38px; height:38px; border-radius:12px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 4px 14px rgba(20,30,60,.16); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:${c.saveColor};`)}>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        </button>
                       </div>
-                      <button onClick={c.onOpen} className={hoverClass('box-shadow:0 12px 26px rgba(44,95,255,.46); transform:translateY(-1px);')} style={css('margin-top:16px; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 16px; border-radius:11px; border:1px solid rgba(255,255,255,.35); background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 8px 18px rgba(44,95,255,.34); transition:filter .16s, box-shadow .16s, transform .16s;')}>
-                        {t('Xem Use Case')}
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
-                      </button>
+                      <div style={css('display:flex; flex-direction:column; flex:1; padding:16px 6px 0;')}>
+                        <h3 style={css('margin:0; font-size:17px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;')}>{c.title}</h3>
+                        <div style={css('margin-top:12px; font-size:11px; font-weight:800; letter-spacing:.08em; color:#C2410C;')}>{t('VẤN ĐỀ')}</div>
+                        <p style={css('margin:4px 0 0; font-size:14px; line-height:1.55; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.problem}</p>
+                        <div style={css('margin-top:10px; font-size:11px; font-weight:800; letter-spacing:.08em; color:#2c5fff;')}>{t('GIẢI PHÁP')}</div>
+                        <p style={css('margin:4px 0 0; font-size:14px; line-height:1.55; color:#5B6675; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;')}>{c.desc}</p>
+                        <div style={css('flex:1; min-height:14px;')}></div>
+                        <div style={css('display:flex; align-items:center; gap:10px;')}>
+                          <span style={css(c.avStyleL)}>{c.avInitial}</span>
+                          <span style={css('font-size:14.5px; font-weight:800; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
+                          <button onClick={c.onHelpful} style={css(`margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid ${c.helpBorder}; background:${c.helpBg}; color:${c.helpColor}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill={c.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
+                            {c.helpful} {t('hữu ích')}
+                          </button>
+                          <span style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid #DDE3EC; background:#fff; color:#94a3b8; font-size:12.5px; font-weight:700; white-space:nowrap;')}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            {c.comments}
+                          </span>
+                        </div>
+                        <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;')}>
+                          {c.toolsR.map((tool) => (
+                            <span key={tool.name} style={css('display:inline-flex; align-items:center; height:36px; padding:0 15px; border:1px solid #DDE3EC; border-radius:11px; background:#fff; font-size:13.5px; font-weight:700; color:#3A4757;')}>{tool.name}</span>
+                          ))}
+                          {!c.toolsR.length && (
+                            <span style={css('display:inline-flex; align-items:center; height:36px; font-size:13px; color:#94a3b8;')}>{t('Không dùng AI tool trực tiếp')}</span>
+                          )}
+                        </div>
+                        <button onClick={c.onOpen} className={hoverClass('filter:brightness(1.06); box-shadow:0 14px 30px rgba(44,95,255,.5);')} style={css('margin-top:16px; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:12px; height:52px; border-radius:14px; border:1px solid rgba(255,255,255,.35); background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 10px 24px rgba(44,95,255,.34), inset 0 1px 0 rgba(255,255,255,.35); transition:filter .16s, box-shadow .16s;')}>
+                          {t('Xem Use Case')}
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1125,10 +1146,10 @@ export default function UseCaseLibraryPage() {
   }
 
   return (
-    <>
+    <Layout active="usecase" notifications={defaultNotifications}>
       {isDetail ? renderDetail() : renderLibrary()}
       {shareOpen && renderShareModal()}
-    </>
+    </Layout>
   )
 }
 
