@@ -2,6 +2,7 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
+import { notifyMentions } from '../mentions.js'
 
 const router = express.Router()
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
@@ -60,6 +61,10 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   if (!body) return res.status(400).json({ error: 'empty_body' })
   const cid = nextId('ucc')
   db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body, parent_id) VALUES (?,?,?,?,?)').run(cid, id, req.user.id, body, parentId)
+  // Built-in use cases live in the frontend bundle, so the client passes the title along for the email.
+  const sub = db.prepare('SELECT title FROM use_case_submissions WHERE id = ?').get(id)
+  const ucTitle = sub?.title || String(req.body?.title || '').trim().slice(0, 200)
+  notifyMentions(req, { text: body, where: ucTitle ? `use case "${ucTitle}"` : 'một use case', path: `/use-cases/${encodeURIComponent(id)}#comments` })
   res.status(201).json({ id: cid, author: req.user.name, initials: req.user.initials, avatarColor: req.user.avatar_color || null, time: new Date().toISOString(), body, parentId })
 })
 

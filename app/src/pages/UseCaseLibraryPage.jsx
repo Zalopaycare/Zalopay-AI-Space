@@ -159,7 +159,7 @@ export default function UseCaseLibraryPage() {
   const submitReply = (ucId) => {
     const text = replyDraft.trim()
     if (!text || !replyTarget) return
-    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
+    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
   }
 
   // ---- draft restore + autosave ----
@@ -655,7 +655,7 @@ export default function UseCaseLibraryPage() {
                       onClick={() => {
                         const text = dDraft.trim()
                         if (!text) return
-                        requireLogin(() => api.commentUseCase(dsel.id, text).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
+                        requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
                       }}
                       style={css(`height:38px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
                     >

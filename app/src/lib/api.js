@@ -22,6 +22,7 @@ export const api = {
   me: () => request('/auth/me'),
   updateMe: (patch) => request('/auth/me', { method: 'PATCH', body: JSON.stringify(patch) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
+  listUsers: () => request('/auth/users'),
 
   listQuestions: () => request('/questions'),
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
@@ -38,7 +39,7 @@ export const api = {
   saveUseCase: (id) => request(`/use-cases/${id}/save`, { method: 'POST' }),
   deleteUseCase: (id) => request(`/use-cases/${id}`, { method: 'DELETE' }),
   mySavedUseCaseIds: () => request('/use-cases/saved/mine'),
-  commentUseCase: (id, body, parentId) => request(`/use-cases/${id}/comments`, { method: 'POST', body: JSON.stringify({ body, parentId: parentId || null }) }),
+  commentUseCase: (id, body, parentId, title) => request(`/use-cases/${id}/comments`, { method: 'POST', body: JSON.stringify({ body, parentId: parentId || null, title: title || '' }) }),
   submitUseCase: (payload) => request('/use-cases/submissions', { method: 'POST', body: JSON.stringify(payload) }),
   listSubmissions: (params = '') => request(`/use-cases/submissions${params}`),
   reviewSubmission: (id, status, note) => request(`/use-cases/submissions/${id}/review`, { method: 'POST', body: JSON.stringify({ status, note }) }),

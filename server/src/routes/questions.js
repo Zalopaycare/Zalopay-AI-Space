@@ -2,21 +2,13 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
+import { notifyMentions, appUrl } from '../mentions.js'
 
 const router = express.Router()
 
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
 const userBrief = (u) => (u ? { author: u.name, initials: u.initials, team: u.team, authorId: u.id, avatarColor: u.avatar_color || null } : { author: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
 
-function notifyMentions(body, actingUserName, context) {
-  const names = Array.from(new Set((body.match(/@([\p{L}\w]+)/gu) || []).map((m) => m.slice(1).toLowerCase())))
-  if (!names.length) return
-  const users = db.prepare('SELECT * FROM users').all()
-  for (const n of names) {
-    const u = users.find((x) => x.name.toLowerCase().replace(/\s+/g, '') === n || x.email.split('@')[0].toLowerCase() === n)
-    if (u) sendMail({ to: u.email, subject: 'Bạn được nhắc đến trên Zalopay AI Community', text: `${actingUserName} đã nhắc đến bạn: "${context}"` }).catch(() => {})
-  }
-}
 
 function loadQuestion(id, userId) {
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
@@ -91,6 +83,7 @@ router.post('/', requireAuth, (req, res) => {
       .run(id, title.trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id)
     decoded.forEach((img, i) => db.prepare('INSERT INTO question_images (question_id, idx, mime, data) VALUES (?,?,?,?)').run(id, i, img.mime, img.data))
   })()
+  notifyMentions(req, { text: title.trim() + '\n' + body.trim(), where: `câu hỏi "${title.trim()}"`, path: `/questions#q=${id}` })
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
 })
 
@@ -130,9 +123,9 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
-    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${req.user.name} đã trả lời: "${q.title}"\n\n${body}` }).catch(() => {})
+    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${req.user.name} đã trả lời: "${q.title}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
-  notifyMentions(body, req.user.name, q.title)
+  notifyMentions(req, { text: body, where: `câu hỏi "${q.title}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email] })
 
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
 })
@@ -167,9 +160,10 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const answer = db.prepare('SELECT * FROM question_answers WHERE id = ?').get(answerId)
   const aAuthor = answer ? db.prepare('SELECT * FROM users WHERE id = ?').get(answer.author_id) : null
   if (aAuthor && aAuthor.id !== req.user.id) {
-    sendMail({ to: aAuthor.email, subject: 'Có bình luận mới cho câu trả lời của bạn', text: `${req.user.name} đã bình luận: "${body}"` }).catch(() => {})
+    sendMail({ to: aAuthor.email, subject: 'Có bình luận mới cho câu trả lời của bạn', text: `${req.user.name} đã bình luận: "${body}"\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
-  notifyMentions(body, req.user.name, body)
+  const qRow = db.prepare('SELECT title FROM questions WHERE id = ?').get(id)
+  notifyMentions(req, { text: body, where: qRow ? `câu hỏi "${qRow.title}"` : 'một câu hỏi', path: `/questions#q=${id}`, skip: [aAuthor?.email] })
 
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
 })

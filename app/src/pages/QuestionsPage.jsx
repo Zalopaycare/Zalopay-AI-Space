@@ -22,14 +22,6 @@ export const QUESTION_DRAFT_KEY = 'zp-question-draft-v1'
 const DEFAULT_CATEGORY = ['Khác']
 const MAX_ASK_IMAGES = 4
 const EMOJI = ['😀', '😅', '😍', '🤔', '👍', '🙏', '🔥', '🎉', '😢', '😮', '🚀', '💡', '✅', '❌', '⚠️', '❤️']
-const PEOPLE = [
-  { name: 'HaiPD', initials: 'HP', team: 'Data' },
-  { name: 'QuyenNT', initials: 'QN', team: 'Marketing' },
-  { name: 'LinhVT', initials: 'LV', team: 'Brand' },
-  { name: 'TrucVN', initials: 'TV', team: 'Customer Support' },
-  { name: 'DucMH', initials: 'DM', team: 'Engineering' },
-  { name: 'NgocTA', initials: 'NT', team: 'Product Ops' },
-]
 const CLAMP = 200
 
 const INITIAL_NOTIFICATIONS = [
@@ -48,9 +40,11 @@ const NK = {
 }
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#ffffff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
-const mentionScan = (v) => { const m = /@([\p{L}\w]*)$/u.exec(v); return m ? m[1].toLowerCase() : null }
-const insertMention = (v, name) => v.replace(/@([\p{L}\w]*)$/u, '@' + name + ' ')
-const renderBody = (text) => String(text).split(/(@[A-Za-z][A-Za-z0-9]*)/g).map((p, i) => (p.charAt(0) === '@' ? <span key={i} style={{ color: '#2c5fff', fontWeight: 700 }}>{p}</span> : p))
+// Accent/case-insensitive so "@nguyen" finds "Nguyễn".
+const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase()
+const mentionScan = (v) => { const m = /(?:^|\s)@([\p{L}\w.-]*)$/u.exec(v); return m ? m[1].toLowerCase() : null }
+const insertMention = (v, handle) => v.replace(/@([\p{L}\w.-]*)$/u, '@' + handle + ' ')
+const renderBody = (text) => String(text).split(/(@[A-Za-z0-9._-]+(?:@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)?)/g).map((p, i) => (p.charAt(0) === '@' ? <span key={i} style={{ color: '#2c5fff', fontWeight: 700 }}>{p}</span> : p))
 
 export default function QuestionsPage() {
   const { t } = useI18n()
@@ -111,8 +105,11 @@ export default function QuestionsPage() {
     if (q0) setQuery(q0)
   }, [])
 
-  const mentionList = (mq, apply) => PEOPLE.filter((p) => p.name !== (user?.name || '') && (!mq || p.name.toLowerCase().includes(mq)))
-    .slice(0, 4).map((p, i) => ({ ...p, bg: AV[i % AV.length], onPick: () => apply(p.name) }))
+  // Everyone who has signed in at least once; picking inserts their email handle (@thyndm), which the server resolves.
+  const [people, setPeople] = useState([])
+  useEffect(() => { if (user) api.listUsers().then((d) => setPeople(d.users || [])).catch(() => {}) }, [user])
+  const mentionList = (mq, apply) => people.filter((p) => !mq || fold(p.name).replace(/\s+/g, '').includes(fold(mq)) || p.handle.includes(mq))
+    .slice(0, 6).map((p, i) => ({ ...p, bg: p.avatarColor || AV[i % AV.length], onPick: () => apply(p.handle) }))
 
   // deep-link: #q=<id> expands and scrolls to that question
   useEffect(() => {
@@ -288,7 +285,7 @@ export default function QuestionsPage() {
         showComments: !!openComments[a.id] || a.comments.length > 0,
         comments: a.comments.map((c, j) => ({ ...c, time: relativeTime(c.time), bodyEl: renderBody(c.body), avatarBg: c.avatarColor || AV[(c.author.charCodeAt(0) + j) % AV.length] })),
         commentDraft: cd,
-        mentionOpen: cm !== null,
+        mentionOpen: cm !== null && mentionList(cm, () => {}).length > 0,
         mentions: mentionList(cm, (name) => { setCommentDrafts((s) => ({ ...s, [a.id]: insertMention(s[a.id] || '', name) })); setCommentMention(null) }),
         onCommentChange: (e) => { const v = e.target.value, mq = mentionScan(v); setCommentDrafts((s) => ({ ...s, [a.id]: v })); setCommentMention(mq === null ? null : { id: a.id, query: mq }) },
         onPostComment: () => {
@@ -331,7 +328,7 @@ export default function QuestionsPage() {
       onSave: (e) => { if (e) e.stopPropagation(); requireLogin(() => api.saveQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
       replyDraft: draft,
       onReplyChange: (e) => { const v = e.target.value, mq = mentionScan(v); setReplyDrafts((s) => ({ ...s, [q.id]: v })); setReplyMention(mq === null ? null : { id: q.id, query: mq }) },
-      replyMentionOpen: rm !== null,
+      replyMentionOpen: rm !== null && mentionList(rm, () => {}).length > 0,
       replyMentions: mentionList(rm, (name) => { setReplyDrafts((s) => ({ ...s, [q.id]: insertMention(s[q.id] || '', name) })); setReplyMention(null) }),
       replyOpacity: draft.trim() ? 1 : 0.5,
       onPostReply: () => {
@@ -577,10 +574,10 @@ export default function QuestionsPage() {
                                         {a.mentionOpen && (
                                           <div style={css('position:absolute; left:0; bottom:42px; width:280px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                             {a.mentions.map((m) => (
-                                              <div key={m.name} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer;')}>
+                                              <div key={m.id} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer;')}>
                                                 <span style={css(`width:26px; height:26px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
                                                 <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{m.name}</span>
-                                                <span style={css('font:400 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{m.team}</span>
+                                                <span style={css('font:400 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>@{m.handle}</span>
                                               </div>
                                             ))}
                                           </div>
@@ -606,16 +603,16 @@ export default function QuestionsPage() {
                             {q.replyMentionOpen && (
                               <div style={css('position:absolute; left:0; bottom:58px; width:300px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                 {q.replyMentions.map((m) => (
-                                  <div key={m.name} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;')}>
+                                  <div key={m.id} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;')}>
                                     <span style={css(`width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
                                     <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{m.name}</span>
-                                    <span style={css('font:400 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{m.team}</span>
+                                    <span style={css('font:400 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>@{m.handle}</span>
                                   </div>
                                 ))}
                               </div>
                             )}
                             <div style={css('display:flex; align-items:center; margin-top:10px;')}>
-                              <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Mention gửi thông báo trong sản phẩm và qua Microsoft Teams.')}</span>
+                              <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
                               <button onClick={q.onPostReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Đăng comment')}</button>
                             </div>
                           </div>

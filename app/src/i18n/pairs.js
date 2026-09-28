@@ -103,7 +103,7 @@ export const PAIRS = [
   ['Xem trong My Posts', 'View in My Posts'],
   ['Đăng dưới tên thật:', 'Posted under your real name:'],
   ['Gõ @ để mention đồng nghiệp', 'Type @ to mention a colleague'],
-  ['Mention gửi thông báo trong sản phẩm và qua Microsoft Teams.', 'Mentions notify in-product and via Microsoft Teams.'],
+  ['Người được mention sẽ nhận email thông báo qua Outlook.', 'Mentioned people get an email in Outlook.'],
   ['Câu hỏi được đăng trực tiếp, không cần Admin duyệt.', 'Questions are published directly, no admin review needed.'],
   ['Use Case cần Admin duyệt trước khi publish.', 'Use Cases need admin review before publishing.'],
   ['Đã gửi để Admin duyệt', 'Submitted for admin review'],

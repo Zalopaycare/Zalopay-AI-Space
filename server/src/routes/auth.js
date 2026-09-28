@@ -5,6 +5,8 @@ import { isCompanyEmail, getOrCreateUser, issueSession, clearSession, publicUser
 import { sendMail, devLoginCodeAllowed } from '../mailer.js'
 import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_REDIRECT_URI } from '../sso.js'
 import { AVATAR_COLORS } from '../avatarColors.js'
+import { requireAuth } from '../auth.js'
+import { handleOf } from '../mentions.js'
 
 const router = express.Router()
 const SSO_COOKIE = 'sso_pending'
@@ -143,6 +145,12 @@ router.patch('/me', (req, res) => {
 
 router.get('/avatar-colors', (req, res) => {
   res.json({ colors: AVATAR_COLORS })
+})
+
+// People who have signed in at least once — the @mention picker's directory.
+router.get('/users', requireAuth, (req, res) => {
+  const rows = db.prepare('SELECT id, email, name, initials, team, avatar_color FROM users ORDER BY name COLLATE NOCASE').all()
+  res.json({ users: rows.filter((u) => u.id !== req.user.id).map((u) => ({ id: u.id, name: u.name, handle: handleOf(u.email), initials: u.initials, team: u.team || '', avatarColor: u.avatar_color || null })) })
 })
 
 export default router
