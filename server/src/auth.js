@@ -7,13 +7,15 @@ const COOKIE_NAME = 'session'
 const ALLOWED_DOMAINS = String(process.env.COMPANY_EMAIL_DOMAINS || 'zalopay.vn,vng.com.vn')
   .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 
+export const companyDomains = () => ALLOWED_DOMAINS
+
 export function isCompanyEmail(email) {
   const e = String(email || '').trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false
   return ALLOWED_DOMAINS.some((d) => e.endsWith('@' + d))
 }
 
-function initialsFor(name) {
+export function initialsFor(name) {
   const parts = String(name).trim().split(/\s+/).filter(Boolean)
   if (!parts.length) return '??'
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()

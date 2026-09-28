@@ -22,7 +22,7 @@ export const api = {
   me: () => request('/auth/me'),
   updateMe: (patch) => request('/auth/me', { method: 'PATCH', body: JSON.stringify(patch) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
-  listUsers: () => request('/auth/users'),
+  listUsers: (q) => request('/auth/users?q=' + encodeURIComponent(q || '')),
 
   listQuestions: () => request('/questions'),
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),

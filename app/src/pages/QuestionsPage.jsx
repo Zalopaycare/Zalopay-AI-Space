@@ -105,11 +105,23 @@ export default function QuestionsPage() {
     if (q0) setQuery(q0)
   }, [])
 
-  // Everyone who has signed in at least once; picking inserts their email handle (@thyndm), which the server resolves.
-  const [people, setPeople] = useState([])
-  useEffect(() => { if (user) api.listUsers().then((d) => setPeople(d.users || [])).catch(() => {}) }, [user])
-  const mentionList = (mq, apply) => people.filter((p) => !mq || fold(p.name).replace(/\s+/g, '').includes(fold(mq)) || p.handle.includes(mq))
-    .slice(0, 6).map((p, i) => ({ ...p, bg: p.avatarColor || AV[i % AV.length], onPick: () => apply(p.handle) }))
+  // People matching what's typed after "@": signed-in users plus the company directory (server side).
+  // Picking inserts their mention token: an email handle (@thyndm) or a full company email.
+  const [people, setPeople] = useState({ q: null, users: [], domains: [] })
+  const activeMentionQ = commentMention ? commentMention.query : replyMention ? replyMention.query : null
+  useEffect(() => {
+    if (!user || activeMentionQ === null) return
+    const h = setTimeout(() => { api.listUsers(activeMentionQ).then((d) => setPeople({ q: activeMentionQ, users: d.users || [], domains: d.domains || [] })).catch(() => {}) }, 180)
+    return () => clearTimeout(h)
+  }, [user, activeMentionQ])
+  const mentionList = (mq, apply) => {
+    const list = people.q === mq ? people.users.slice() : []
+    // Fallback for colleagues not found: offer the typed handle at each company domain.
+    if (mq && mq.length >= 2 && /^[a-z0-9._-]+$/.test(mq) && !list.some((p) => p.mention === mq)) {
+      for (const d of people.domains) if (!list.some((p) => p.key === mq + '@' + d)) list.push({ key: mq + '@' + d, name: mq + '@' + d, mention: mq + '@' + d, sub: t('Gửi email tới địa chỉ này'), initials: '@', avatarColor: '#94a3b8' })
+    }
+    return list.slice(0, 8).map((p, i) => ({ ...p, bg: p.avatarColor || AV[i % AV.length], onPick: () => apply(p.mention) }))
+  }
 
   // deep-link: #q=<id> expands and scrolls to that question
   useEffect(() => {
@@ -572,12 +584,14 @@ export default function QuestionsPage() {
                                       <div style={css('flex:1; position:relative;')}>
                                         <input value={a.commentDraft} onChange={a.onCommentChange} placeholder={`Comment cho ${a.author}, gõ @ để mention...`} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
                                         {a.mentionOpen && (
-                                          <div style={css('position:absolute; left:0; bottom:42px; width:280px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
+                                          <div style={css('position:absolute; left:0; bottom:42px; width:320px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                             {a.mentions.map((m) => (
-                                              <div key={m.id} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer;')}>
-                                                <span style={css(`width:26px; height:26px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
-                                                <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{m.name}</span>
-                                                <span style={css('font:400 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>@{m.handle}</span>
+                                              <div key={m.key} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer;')}>
+                                                <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
+                                                <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
+                                                  <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
+                                                  <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
+                                                </span>
                                               </div>
                                             ))}
                                           </div>
@@ -601,12 +615,14 @@ export default function QuestionsPage() {
                           <div style={{ flex: 1, position: 'relative' }}>
                             <textarea value={q.replyDraft} onChange={q.onReplyChange} rows={3} placeholder={t('Viết comment của bạn. Gõ @ để mention đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:16px; padding:12px 15px; font-size:14.5px; line-height:1.7; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
                             {q.replyMentionOpen && (
-                              <div style={css('position:absolute; left:0; bottom:58px; width:300px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
+                              <div style={css('position:absolute; left:0; bottom:58px; width:340px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                 {q.replyMentions.map((m) => (
-                                  <div key={m.id} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;')}>
-                                    <span style={css(`width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
-                                    <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{m.name}</span>
-                                    <span style={css('font:400 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>@{m.handle}</span>
+                                  <div key={m.key} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;')}>
+                                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
+                                    <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
+                                      <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
+                                      <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
+                                    </span>
                                   </div>
                                 ))}
                               </div>

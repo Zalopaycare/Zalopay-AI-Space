@@ -7,6 +7,8 @@ import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_REDIRECT_URI } from '../ss
 import { AVATAR_COLORS } from '../avatarColors.js'
 import { requireAuth } from '../auth.js'
 import { handleOf } from '../mentions.js'
+import { searchDirectory, directoryEnabled } from '../directory.js'
+import { companyDomains } from '../auth.js'
 
 const router = express.Router()
 const SSO_COOKIE = 'sso_pending'
@@ -147,10 +149,20 @@ router.get('/avatar-colors', (req, res) => {
   res.json({ colors: AVATAR_COLORS })
 })
 
-// People who have signed in at least once — the @mention picker's directory.
-router.get('/users', requireAuth, (req, res) => {
-  const rows = db.prepare('SELECT id, email, name, initials, team, avatar_color FROM users ORDER BY name COLLATE NOCASE').all()
-  res.json({ users: rows.filter((u) => u.id !== req.user.id).map((u) => ({ id: u.id, name: u.name, handle: handleOf(u.email), initials: u.initials, team: u.team || '', avatarColor: u.avatar_color || null })) })
+// Mention picker directory: people who have signed in, plus (when Graph access is granted)
+// anyone in the company directory. `mention` is the token to insert after "@".
+const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase()
+router.get('/users', requireAuth, async (req, res) => {
+  const q = String(req.query.q || '').trim().toLowerCase().slice(0, 64)
+  const me = req.user.email.toLowerCase()
+  const known = db.prepare('SELECT id, email, name, initials, team, avatar_color FROM users ORDER BY name COLLATE NOCASE').all()
+    .filter((u) => u.email.toLowerCase() !== me)
+    .filter((u) => !q || fold(u.name).replace(/\s+/g, '').includes(fold(q).replace(/\s+/g, '')) || u.email.toLowerCase().includes(q))
+    .slice(0, 8)
+    .map((u) => ({ key: u.email.toLowerCase(), name: u.name, mention: handleOf(u.email), sub: '@' + handleOf(u.email) + (u.team ? ' · ' + u.team : ''), initials: u.initials, avatarColor: u.avatar_color || null }))
+  const seen = new Set([me, ...known.map((u) => u.key)])
+  const dir = q ? (await searchDirectory(q)).filter((u) => !seen.has(u.email)).map((u) => ({ key: u.email, name: u.name, mention: u.email, sub: u.email + (u.title ? ' · ' + u.title : ''), initials: u.initials, avatarColor: null })) : []
+  res.json({ users: [...known, ...dir].slice(0, 10), domains: companyDomains(), directory: directoryEnabled() })
 })
 
 export default router
