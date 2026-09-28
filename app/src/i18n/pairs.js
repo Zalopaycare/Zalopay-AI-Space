@@ -180,6 +180,8 @@ export const PAIRS = [
   ['Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc', 'A space for Zalopay Starters to explore and exchange knowledge and ways of using AI at work'],
   ['Bạn cũng đang áp dụng AI vào công việc hàng ngày?', 'Using AI in your day-to-day work too?'],
   ['Kể Toro nghe với', 'Tell Toro about it'],
+  ['Bạn có use case AI muốn chia sẻ?', 'Got an AI use case to share?'],
+  ['Chia sẻ use case', 'Share a use case'],
   ['Trả lời', 'Reply'],
   ['trả lời', 'replies'],
   ['Hữu ích', 'Helpful'],

@@ -6,6 +6,7 @@ import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
+import PageActionBar from '../components/PageActionBar.jsx'
 import ImageSlot, { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -88,6 +89,8 @@ export default function QuestionsPage() {
   // deep-link: #ask opens the ask-question composer directly (from Sidebar's "Đặt câu hỏi" quick action)
   useEffect(() => {
     if ((window.location.hash || '') === '#ask') setView('ask')
+    const q0 = new URLSearchParams(window.location.search).get('q')
+    if (q0) setQuery(q0)
   }, [])
 
   const mentionList = (mq, apply) => PEOPLE.filter((p) => p.name !== (user?.name || '') && (!mq || p.name.toLowerCase().includes(mq)))
@@ -326,13 +329,14 @@ export default function QuestionsPage() {
   return (
     <Layout active="question" notifications={notifications}>
     <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow:clip;')}>
-      <SpaceBackdrop arcTop={250} />
+      <SpaceBackdrop arcTop={390} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:relative; z-index:1;')}>
+        <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => setView('ask')} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
 
         <div>
-          <div style={css('position:relative; background:transparent; padding:44px 40px 50px;')}>
+          <div style={css('position:relative; background:transparent; padding:34px 40px 36px;')}>
             <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
               <h1 style={css('margin:0; text-align:center; font:700 70px/1.04 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('Câu hỏi')}</h1>
               <p style={css('margin:14px auto 0; max-width:620px; text-align:center; font:400 16px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Hỏi nhanh, trả lời thẳng vào việc. Người đặt câu hỏi chọn câu trả lời đã giải quyết được vấn đề.')}</p>
@@ -341,29 +345,15 @@ export default function QuestionsPage() {
 
           <div style={css('padding:24px 40px 90px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-
-              <div onClick={() => setView('ask')} className={hoverClass('background:rgba(255,255,255,.12); border-color:rgba(160,196,255,.5);')} style={css('display:flex; align-items:center; gap:14px; background:rgba(255,255,255,.07); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border:1px solid rgba(255,255,255,.16); border-radius:18px; padding:16px 18px; box-shadow:0 18px 40px rgba(0,0,0,.28); cursor:pointer; transition:background .25s,border-color .25s;')}>
-                <div style={css('flex:none; width:42px; height:42px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
-                <span style={css('flex:1; font:400 15px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(219,230,255,.78);')}>{t('Bạn đang vướng ở đâu với AI?')}</span>
-                <span style={css('flex:none; display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 18px; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; box-shadow:0 10px 22px rgba(44,95,255,.4);')}>{t('Đặt câu hỏi')}</span>
-              </div>
-
-              <div style={css('display:flex; align-items:center; gap:10px; margin-top:18px;')}>
-                <div style={css('flex:1; display:flex; align-items:center; gap:11px; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:11px 18px;')}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Tìm câu hỏi, tác giả, công cụ...')} style={css('flex:1; border:none; outline:none; background:transparent; font-size:14.5px; color:#0F172A;')} />
-                </div>
-                <div style={css('display:inline-flex; align-items:center; gap:5px; height:44px; padding:5px; border-radius:999px; background:#EDF0FA;')}>
-                  {sorts.map((s2) => (
-                    <button key={s2.label} onClick={s2.onPick} style={css(`border:none; cursor:pointer; height:34px; padding:0 15px; border-radius:999px; font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; background:${s2.bg}; color:${s2.color}; white-space:nowrap;`)}>{t(s2.label)}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; overflow:hidden; flex-wrap:wrap;')}>
+              <div style={css('display:flex; align-items:center; gap:8px; margin-top:0; flex-wrap:wrap;')}>
                 {quickFilters.map((f) => (
                   <button key={f.label} onClick={f.onPick} style={css(`height:32px; padding:0 14px; white-space:nowrap; border:1px solid ${f.border}; border-radius:999px; background:${f.bg}; color:${f.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{f.label}</button>
                 ))}
+                  <div style={css('margin-left:auto; display:inline-flex; align-items:center; gap:5px; height:44px; padding:5px; border-radius:999px; background:#EDF0FA;')}>
+                    {sorts.map((s2) => (
+                      <button key={s2.label} onClick={s2.onPick} style={css(`border:none; cursor:pointer; height:34px; padding:0 15px; border-radius:999px; font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; background:${s2.bg}; color:${s2.color}; white-space:nowrap;`)}>{t(s2.label)}</button>
+                    ))}
+                  </div>
               </div>
 
               <div style={css('display:flex; flex-direction:column; gap:16px; margin-top:20px;')}>

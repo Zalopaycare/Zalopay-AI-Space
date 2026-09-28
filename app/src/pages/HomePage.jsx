@@ -15,6 +15,7 @@ import aiOpenai from '../assets/ai-openai.png'
 import aiClaude from '../assets/ai-claude.png'
 import CardActions from '../components/CardActions.jsx'
 import ShareCtaBar from '../components/ShareCtaBar.jsx'
+import PageActionBar from '../components/PageActionBar.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -83,6 +84,7 @@ export default function HomePage() {
   const [openQ, setOpenQ] = useState(null)
   const [modalDraft, setModalDraft] = useState('')
   const [ucMeta, setUcMeta] = useState({})
+  const [homeQuery, setHomeQuery] = useState('')
   const [playIntro] = useState(() => !introPlayed)
   useEffect(() => { introPlayed = true }, [])
   const [openMenuId, setOpenMenuId] = useState(null)
@@ -235,7 +237,8 @@ export default function HomePage() {
   return (
     <Layout active="home" notifications={HOME_NOTIFICATIONS}>
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
-        <SpaceBackdrop arcTop={250} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
+        <SpaceBackdrop arcTop={390} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
+        <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => navigate('/questions#ask')} query={homeQuery} onQuery={setHomeQuery} onSubmit={(v) => navigate('/questions' + (v.trim() ? '?q=' + encodeURIComponent(v.trim()) : ''))} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
 
         {/* ============ WORDMARK ============ */}
         <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:28px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>

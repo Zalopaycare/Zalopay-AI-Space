@@ -9,6 +9,7 @@ import ImageSlot from '../components/ImageSlot.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import ShareCtaBar from '../components/ShareCtaBar.jsx'
+import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
@@ -782,26 +783,28 @@ export default function UseCaseLibraryPage() {
     return (
       <div style={css('background:#07070c; color:#fff;')}>
         <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
-          <SpaceBackdrop arcTop={190} />
-          <div style={css('position:relative; z-index:4; height:230px;')}>
-            <h1 style={css('position:absolute; top:52px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:74px; line-height:1; font-weight:800; letter-spacing:-2px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
+          <SpaceBackdrop arcTop={330} />
+          <PageActionBar ref={searchInputRef} prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, phân tích dữ liệu, ..." />
+          <div style={css('position:relative; z-index:4; height:150px;')}>
+            <h1 style={css('position:absolute; top:38px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:74px; line-height:1; font-weight:800; letter-spacing:-2px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
           </div>
         </section>
 
         <section style={css('position:relative; z-index:5; background:transparent; padding:26px 40px 52px;')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
-            <div style={css('display:flex; align-items:center; gap:12px; margin-bottom:16px;')}>
-              <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:12px 18px; box-shadow:0 10px 26px rgba(0,0,0,.25);')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" strokeWidth="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3-3"></path></svg>
-                <input
-                  ref={searchInputRef}
-                  placeholder={t('Tìm use case: PRD, báo cáo, phân tích dữ liệu, ...')}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  style={css('flex:1; border:none; outline:none; font-size:14px; color:#0F172A; font-family:inherit; background:transparent;')}
-                />
-              </div>
-              <div style={{ position: 'relative' }}>
+
+              <div style={css('display:flex; align-items:center; gap:12px; margin-bottom:18px; padding:16px; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:rgba(255,255,255,.03); flex-wrap:wrap;')}>
+                <FilterDropdown label={t('Chủ đề') === 'Chủ đề' ? (libCat || 'Tất cả category') : libCat || 'Tất cả category'} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
+                <FilterDropdown label={libTool || 'Tất cả công cụ AI'} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={210} />
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => { setLibCat(null); setLibTopic(null); setLibTool(null); setLibGroup(null); setLibKind(null); setOpenDrop(null) }}
+                    style={css('padding:11px 15px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:transparent; color:#9fd0ff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;')}
+                  >
+                    {t('Xoá bộ lọc')}
+                  </button>
+                )}
+              <div style={{ position: 'relative', marginLeft: 'auto' }}>
                 <button onClick={(e) => { e.stopPropagation(); setOpenDrop((s) => (s === 'sort' ? null : 'sort')) }} style={css('display:inline-flex; align-items:center; gap:10px; justify-content:space-between; min-width:130px; padding:12px 15px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:#e6e6f0; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;')}>
                   {(SORT_OPTS.find((o) => o.val === libSort) || SORT_OPTS[0]).label}
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
@@ -818,19 +821,6 @@ export default function UseCaseLibraryPage() {
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
                 </button>
               </div>
-            </div>
-
-              <div style={css('display:flex; align-items:center; gap:12px; margin-bottom:18px; padding:16px; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:rgba(255,255,255,.03); flex-wrap:wrap;')}>
-                <FilterDropdown label={t('Chủ đề') === 'Chủ đề' ? (libCat || 'Tất cả category') : libCat || 'Tất cả category'} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
-                <FilterDropdown label={libTool || 'Tất cả công cụ AI'} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={210} />
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={() => { setLibCat(null); setLibTopic(null); setLibTool(null); setLibGroup(null); setLibKind(null); setOpenDrop(null) }}
-                    style={css('margin-left:auto; padding:11px 15px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:transparent; color:#9fd0ff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;')}
-                  >
-                    {t('Xoá bộ lọc')}
-                  </button>
-                )}
               </div>
 
             <div id="lib-grid">
