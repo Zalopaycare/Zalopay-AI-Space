@@ -286,11 +286,11 @@ export default function HomePage() {
               <h2 style={css(`margin:0; font:900 30px ${FONT}; letter-spacing:-.01em; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
               <button
                 onClick={() => navigate('/questions')}
-                className={hoverClass('animation-play-state:paused;')}
-                style={{ ...css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:10px; height:48px; padding:0 22px; border-radius:999px; background:#00CF6A; color:#04180F; font:800 15px ${FONT}; border:none; cursor:pointer; box-shadow:0 0 0 4px rgba(0,207,106,.22),0 12px 30px rgba(0,207,106,.4);`), animation: 'shake 2.4s ease-in-out infinite' }}
+                className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}
+                style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:8px; padding:6px 2px; border:none; background:transparent; color:#6ea8ff; font:800 15px ${FONT}; cursor:pointer; transition:color .16s;`)}
               >
-                {t('Xem thêm câu hỏi')}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                {t('Xem tất cả')}
+                <svg className="zp-see-all-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
               </button>
             </div>
 
@@ -487,11 +487,11 @@ export default function HomePage() {
               <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
               <button
                 onClick={() => navigate('/use-cases')}
-                className={hoverClass('animation-play-state:paused;')}
-                style={{ ...css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:10px; height:48px; padding:0 22px; border-radius:999px; background:#00CF6A; color:#04180F; font:800 15px ${FONT}; border:none; cursor:pointer; box-shadow:0 0 0 4px rgba(0,207,106,.22),0 12px 30px rgba(0,207,106,.4);`), animation: 'shake 2.4s ease-in-out infinite' }}
+                className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}
+                style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:8px; padding:6px 2px; border:none; background:transparent; color:#6ea8ff; font:800 15px ${FONT}; cursor:pointer; transition:color .16s;`)}
               >
-                {t('Xem thêm use case')}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                {t('Xem tất cả')}
+                <svg className="zp-see-all-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
               </button>
             </div>
 
