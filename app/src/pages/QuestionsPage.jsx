@@ -279,7 +279,7 @@ export default function QuestionsPage() {
         border: a.accepted ? '#BEE9D3' : '#EEF1F7',
         helpColor: a.iHelped ? '#2c5fff' : '#64748b',
         helpFill: a.iHelped ? '#2c5fff' : 'none',
-        replyLabel: a.comments.length ? t('Trả lời') + ' · ' + a.comments.length : t('Trả lời'),
+        replyLabel: a.comments.length ? t('Comment') + ' · ' + a.comments.length : t('Comment'),
         canAccept: q.author === (user?.name || '') && !q.resolved,
         showComments: !!openComments[a.id] || a.comments.length > 0,
         comments: a.comments.map((c, j) => ({ ...c, time: relativeTime(c.time), bodyEl: renderBody(c.body), avatarBg: c.avatarColor || AV[(c.author.charCodeAt(0) + j) % AV.length] })),
@@ -495,7 +495,7 @@ export default function QuestionsPage() {
                                 <div style={css('display:flex; align-items:center; gap:16px; margin:9px 0 0; padding-left:4px; flex-wrap:wrap;')}>
                                   <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:${a.helpColor};`)}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"></path><path d="M7 10l4.6-7a2.2 2.2 0 0 1 3.8 1.9L14.5 9h4.3a2.2 2.2 0 0 1 2.1 2.8l-1.8 7A2.2 2.2 0 0 1 17 20.5H7z"></path></svg>
-                                    {t('Hữu ích')} · {a.helpful}
+                                    {t('Upvote')} · {a.helpful}
                                   </button>
                                   <button onClick={a.onReply} style={css('border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{a.replyLabel}</button>
                                   {a.canAccept && (
@@ -522,14 +522,14 @@ export default function QuestionsPage() {
                                                 <span style={css('margin-left:auto; font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.time}</span>
                                               </div>
                                               <div style={css('margin-top:5px; font:400 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{c.bodyEl}</div>
-                                              <button onClick={() => startCommentReply(a.id, c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                                              <button onClick={() => startCommentReply(a.id, c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Comment')}</button>
                                             </div>
                                           </div>
 
                                           {replies.length > 0 && (
                                             <button onClick={() => toggleCommentThread(c.id)} style={css('margin:8px 0 0 36px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
                                               <span style={css('width:20px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
-                                              {expanded ? t('Ẩn câu trả lời') : t('Xem') + ' ' + replies.length + ' ' + t('câu trả lời')}
+                                              {expanded ? t('Ẩn comment') : t('Xem') + ' ' + replies.length + ' ' + t('comment')}
                                             </button>
                                           )}
 
@@ -542,7 +542,7 @@ export default function QuestionsPage() {
                                                   <span style={css('margin-left:auto; font:400 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{r.time}</span>
                                                 </div>
                                                 <div style={css('margin-top:4px; font:400 13px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{r.bodyEl}</div>
-                                                <button onClick={() => startCommentReply(a.id, c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                                                <button onClick={() => startCommentReply(a.id, c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Comment')}</button>
                                               </div>
                                             </div>
                                           ))}
@@ -555,7 +555,7 @@ export default function QuestionsPage() {
                                                   autoFocus
                                                   value={commentReplyDraft}
                                                   onChange={(e) => setCommentReplyDraft(e.target.value)}
-                                                  placeholder={t('Trả lời') + ' ' + commentReplyTarget.authorName + '...'}
+                                                  placeholder={t('Comment cho') + ' ' + commentReplyTarget.authorName + '...'}
                                                   style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')}
                                                 />
                                               </div>
@@ -569,7 +569,7 @@ export default function QuestionsPage() {
                                     <div style={css('display:flex; gap:10px; align-items:center;')}>
                                       <div style={css('flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
                                       <div style={css('flex:1; position:relative;')}>
-                                        <input value={a.commentDraft} onChange={a.onCommentChange} placeholder={`Trả lời ${a.author}, gõ @ để mention...`} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
+                                        <input value={a.commentDraft} onChange={a.onCommentChange} placeholder={`Comment cho ${a.author}, gõ @ để mention...`} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
                                         {a.mentionOpen && (
                                           <div style={css('position:absolute; left:0; bottom:42px; width:280px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                             {a.mentions.map((m) => (
@@ -591,14 +591,14 @@ export default function QuestionsPage() {
                           ))}
 
                           {q.noAnswers && (
-                            <div style={css('padding:18px 0; text-align:center; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Chưa có câu trả lời. Câu trả lời đầu tiên thường giúp ích nhiều nhất.')}</div>
+                            <div style={css('padding:18px 0; text-align:center; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Chưa có comment nào. Comment đầu tiên thường giúp ích nhất.')}</div>
                           )}
                         </div>
 
                         <div style={css('display:flex; gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid #E6EBF3;')}>
                           <div style={css('flex:none; width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
                           <div style={{ flex: 1, position: 'relative' }}>
-                            <textarea value={q.replyDraft} onChange={q.onReplyChange} rows={3} placeholder={t('Viết câu trả lời của bạn. Gõ @ để mention đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:16px; padding:12px 15px; font-size:14.5px; line-height:1.7; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
+                            <textarea value={q.replyDraft} onChange={q.onReplyChange} rows={3} placeholder={t('Viết comment của bạn. Gõ @ để mention đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:16px; padding:12px 15px; font-size:14.5px; line-height:1.7; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
                             {q.replyMentionOpen && (
                               <div style={css('position:absolute; left:0; bottom:58px; width:300px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                 {q.replyMentions.map((m) => (
@@ -612,7 +612,7 @@ export default function QuestionsPage() {
                             )}
                             <div style={css('display:flex; align-items:center; margin-top:10px;')}>
                               <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Mention gửi thông báo trong sản phẩm và qua Microsoft Teams.')}</span>
-                              <button onClick={q.onPostReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Đăng câu trả lời')}</button>
+                              <button onClick={q.onPostReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Đăng comment')}</button>
                             </div>
                           </div>
                         </div>

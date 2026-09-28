@@ -70,7 +70,7 @@ const steps = [
 ]
 
 function replyLabel(n) {
-  return n === 0 ? 'Chưa có trả lời' : n + ' trả lời'
+  return n === 0 ? 'Chưa có comment' : n + ' comment'
 }
 
 const tsNum = (v) => new Date(String(v).includes('T') ? v : String(v).replace(' ', 'T') + 'Z').getTime()
@@ -195,7 +195,7 @@ export default function HomePage() {
         value={modalReplyDraft}
         onChange={(e) => setModalReplyDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') submitModalReply() }}
-        placeholder={t('Trả lời') + ' ' + modalReply.authorName + '...'}
+        placeholder={t('Comment cho') + ' ' + modalReply.authorName + '...'}
         style={css(`flex:1; min-width:0; border:1px solid #DDE3EC; border-radius:999px; padding:8px 14px; font:400 13px ${FONT}; color:#0F172A; background:#fff; outline:none;`)}
       />
       <button onClick={() => { setModalReply(null); setModalReplyDraft('') }} style={css(`flex:none; height:32px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px ${FONT}; cursor:pointer;`)}>{t('Hủy')}</button>
@@ -389,7 +389,7 @@ export default function HomePage() {
                   <div style={css('display:flex; align-items:center; gap:10px; margin-top:16px; padding:13px 0 0; border-top:1px solid #EEF1F7;')}>
                     <span style={css(`display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px; border:1px solid #E6EBF3; border-radius:999px; background:#F8FAFE; font:700 12.5px ${FONT}; color:#3A4757;`)}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                      <span style={css('color:#2c5fff;')}>{helpfulTotal(modalSrc)}</span> {t('hữu ích')}
+                      <span style={css('color:#2c5fff;')}>{helpfulTotal(modalSrc)}</span> {t('Upvote')}
                     </span>
                     <span style={css(`margin-left:auto; font:700 12.5px ${FONT}; color:#64748b;`)}>{replyLabel(modalAnswers.length)}</span>
                   </div>
@@ -408,11 +408,11 @@ export default function HomePage() {
                         <div style={css('display:flex; align-items:center; gap:16px; margin-top:9px;')}>
                           <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:${a.helpColor};`)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                            Hữu ích · {a.helpful}
+                            {t('Upvote')} · {a.helpful}
                           </button>
                           <button onClick={() => startModalReply(a.id, null, a.author)} style={css(`display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#64748b;`)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            {t('Trả lời')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
+                            {t('Comment')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
                           </button>
                         </div>
                         {(a.comments || []).filter((c) => !c.parentId).map((c) => {
@@ -428,13 +428,13 @@ export default function HomePage() {
                                     <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
                                   </div>
                                   <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{c.body}</div>
-                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
+                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Comment')}</button>
                                 </div>
                               </div>
                               {replies.length > 0 && (
                                 <button onClick={() => toggleModalThread(c.id)} style={css(`margin:8px 0 0 35px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px ${FONT}; color:#2c5fff;`)}>
                                   <span style={css('width:20px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
-                                  {open ? t('Ẩn câu trả lời') : t('Xem') + ' ' + replies.length + ' ' + t('câu trả lời')}
+                                  {open ? t('Ẩn comment') : t('Xem') + ' ' + replies.length + ' ' + t('comment')}
                                 </button>
                               )}
                               {open && replies.map((r) => (
@@ -446,7 +446,7 @@ export default function HomePage() {
                                       <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
                                     </div>
                                     <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{r.body}</div>
-                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
+                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Comment')}</button>
                                   </div>
                                 </div>
                               ))}
@@ -459,17 +459,17 @@ export default function HomePage() {
                     </div>
                   ))}
                   {modalAnswers.length === 0 && (
-                    <div style={css(`padding:16px 0 6px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có câu trả lời. Câu trả lời đầu tiên thường giúp ích nhất.')}</div>
+                    <div style={css(`padding:16px 0 6px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có comment nào. Comment đầu tiên thường giúp ích nhất.')}</div>
                   )}
 
                   <div style={css('display:flex; gap:12px; margin-top:16px;')}>
                     <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{user?.initials || '?'}</span>
                     <div style={{ flex: 1 }}>
-                      <textarea value={modalDraft} onChange={(e) => setModalDraft(e.target.value)} rows={3} placeholder={t('Viết câu trả lời của bạn...')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:12px 14px; font:400 14px/1.6 ${FONT}; color:#0F172A; background:#fff; outline:none; resize:vertical;`)}></textarea>
+                      <textarea value={modalDraft} onChange={(e) => setModalDraft(e.target.value)} rows={3} placeholder={t('Viết comment của bạn...')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:12px 14px; font:400 14px/1.6 ${FONT}; color:#0F172A; background:#fff; outline:none; resize:vertical;`)}></textarea>
                       <div style={css('display:flex; align-items:center; margin-top:10px;')}>
                         <button onClick={() => navigate(`/questions#q=${modalSrc.id}`)} style={css(`font:700 12.5px ${FONT}; color:#3366F0; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;`)}>{t('Mở trong Questions')}</button>
                         <button onClick={postModalReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; opacity:${modalDraft.trim() ? 1 : 0.5};`)}>
-                          {t('Đăng câu trả lời')}
+                          {t('Đăng comment')}
                         </button>
                       </div>
                     </div>

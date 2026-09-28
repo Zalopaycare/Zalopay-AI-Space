@@ -632,7 +632,7 @@ export default function UseCaseLibraryPage() {
                   style={css(`display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 20px; border:1px solid ${voted ? '#B9CCF8' : '#DDE3EC'}; border-radius:999px; background:${voted ? '#EAF1FF' : '#fff'}; color:${voted ? '#2c5fff' : '#3A4757'}; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;`)}
                 >
                   <svg width="17" height="17" viewBox="0 0 24 24" fill={voted ? '#2c5fff' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
-                  {base} người thấy hữu ích
+                  {base} {t('upvote')}
                 </button>
                 <span style={css('display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#94a3b8;')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"></path></svg>
@@ -676,14 +676,14 @@ export default function UseCaseLibraryPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('font-size:13px; font-weight:700; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}</span></div>
                           <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{c.body}</div>
-                          <button onClick={() => startReply(c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                          <button onClick={() => startReply(c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Comment')}</button>
                         </div>
                       </div>
 
                       {replies.length > 0 && (
                         <button onClick={() => toggleThread(c.id)} style={css('margin:10px 0 0 48px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
                           <span style={css('width:22px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
-                          {expanded ? t('Ẩn câu trả lời') : t('Xem') + ' ' + replies.length + ' ' + t('câu trả lời')}
+                          {expanded ? t('Ẩn comment') : t('Xem') + ' ' + replies.length + ' ' + t('comment')}
                         </button>
                       )}
 
@@ -693,7 +693,7 @@ export default function UseCaseLibraryPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={css('font-size:12.5px; font-weight:700; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}</span></div>
                             <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{r.body}</div>
-                            <button onClick={() => startReply(c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                            <button onClick={() => startReply(c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Comment')}</button>
                           </div>
                         </div>
                       ))}
@@ -707,7 +707,7 @@ export default function UseCaseLibraryPage() {
                               value={replyDraft}
                               onChange={(e) => setReplyDraft(e.target.value)}
                               rows={1}
-                              placeholder={t('Trả lời') + ' ' + replyTarget.authorName + '...'}
+                              placeholder={t('Comment cho') + ' ' + replyTarget.authorName + '...'}
                               style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font-family:inherit; font-size:13px; line-height:1.5; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                             />
                             <div style={css('display:flex; justify-content:flex-end; gap:8px; margin-top:8px;')}>
