@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
@@ -9,21 +10,19 @@ import ImageSlot from '../components/ImageSlot.jsx'
 import Avatar, { AVATAR_COLORS } from '../components/Avatar.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 
-/** Your own big profile avatar — click it to pick a color, persisted via PATCH /auth/me. */
+/**
+ * Your own big profile avatar — click it to pick a color, persisted via PATCH /auth/me.
+ * The picker is a full-viewport backdrop overlay (portaled to body) rather than an
+ * in-flow popover, so it never sits flush against neighboring white cards (the stats
+ * grid right below it) and reads unambiguously as a floating panel, on any screen size.
+ */
 function AvatarPicker({ user, onChange }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-  useEffect(() => {
-    if (!open) return
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('click', close)
-    return () => document.removeEventListener('click', close)
-  }, [open])
   return (
-    <div style={css('position:relative; flex:none;')} ref={ref}>
+    <div style={css('position:relative; flex:none;')}>
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
+        onClick={() => setOpen(true)}
         title={t('Đổi màu avatar')}
         style={css('position:relative; border:none; background:none; padding:0; cursor:pointer; border-radius:50%; display:block;')}
       >
@@ -32,20 +31,31 @@ function AvatarPicker({ user, onChange }) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
         </span>
       </button>
-      {open && (
-        <div style={css('position:absolute; left:0; top:96px; z-index:200; background:#fff; border:1px solid #E6EBF3; border-radius:16px; box-shadow:0 26px 60px rgba(6,14,40,.34); padding:14px; width:220px;')}>
-          <div style={css(`font:700 12.5px ${FONT}; color:#64748b; margin-bottom:10px;`)}>{t('Chọn màu avatar')}</div>
-          <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:8px;')}>
-            {AVATAR_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => { onChange(c); setOpen(false) }}
-                title={c}
-                style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: user.avatarColor === c ? '3px solid #0F172A' : '2px solid transparent', cursor: 'pointer', padding: 0 }}
-              />
-            ))}
+      {open && createPortal(
+        <div
+          onClick={() => setOpen(false)}
+          style={css('position:fixed; inset:0; z-index:2200; background:rgba(4,6,13,.6); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:24px;')}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 30px 70px rgba(6,14,40,.45); padding:22px;')}>
+            <div style={css('display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;')}>
+              <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>{t('Chọn màu avatar')}</div>
+              <button onClick={() => setOpen(false)} style={css('width:30px; height:30px; border:none; border-radius:50%; background:#F1F4FA; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+              </button>
+            </div>
+            <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:12px;')}>
+              {AVATAR_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => { onChange(c); setOpen(false) }}
+                  title={c}
+                  style={{ width: 40, height: 40, borderRadius: '50%', background: c, border: user.avatarColor === c ? '3px solid #0F172A' : '2px solid transparent', boxShadow: '0 2px 6px rgba(0,0,0,.15)', cursor: 'pointer', padding: 0 }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

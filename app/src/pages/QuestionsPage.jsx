@@ -29,10 +29,10 @@ const INITIAL_NOTIFICATIONS = [
 ]
 
 const NK = {
-  answer: { iconText: 'A', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
-  mention: { iconText: '@', iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
-  approved: { iconText: '✓', iconBg: '#E7F9F0', iconFg: '#00893F' },
-  rejected: { iconText: '!', iconBg: '#FFECEC', iconFg: '#D8232A' },
+  answer: { iconBg: '#E7ECFB', iconFg: '#2c5fff' },
+  mention: { iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
+  approved: { iconBg: '#E7F9F0', iconFg: '#00893F' },
+  rejected: { iconBg: '#FFECEC', iconFg: '#D8232A' },
 }
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#ffffff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
@@ -258,6 +258,7 @@ export default function QuestionsPage() {
     const unread = n.unread && !readAll
     return {
       ...n, ...(NK[n.kind] || NK.answer),
+      icon: n.kind,
       hasTeams: !!n.teams,
       teamsLabel: n.teams === 'failed' ? 'Teams: gửi thất bại' : 'Đã gửi qua Teams',
       teamsBg: n.teams === 'failed' ? '#FFECEC' : '#E7F9F0',

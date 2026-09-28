@@ -9,8 +9,7 @@ import Avatar from './Avatar.jsx'
 const itemBase = 'display:flex; align-items:center; gap:14px; height:46px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:15.5px; cursor:pointer; border:none; text-align:left; font-family:inherit; width:100%;'
 const subItemBase = 'display:flex; align-items:center; gap:14px; height:42px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14.5px;'
 
-function NavLink({ to, active, icon, children, collapsed, hideIconExpanded, title }) {
-  const showIcon = collapsed || !hideIconExpanded
+function NavLink({ to, active, icon, children, collapsed, title }) {
   return (
     <Link
       to={to}
@@ -18,7 +17,7 @@ function NavLink({ to, active, icon, children, collapsed, hideIconExpanded, titl
       className={hoverClass('background:rgba(255,255,255,.07); color:#fff;')}
       style={css(itemBase + `background:${active ? 'rgba(255,255,255,.09)' : 'transparent'}; color:${active ? '#ffffff' : '#c3d0f5'}; font-weight:${active ? 700 : 500}; ${collapsed ? 'justify-content:center; padding:0;' : ''}`)}
     >
-      {showIcon && icon}{!collapsed && children}
+      {icon}{!collapsed && children}
     </Link>
   )
 }
@@ -80,10 +79,10 @@ export default function Sidebar({ active }) {
       </nav>
 
       <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
-        <NavLink to="/use-cases?share=1" collapsed={collapsed} hideIconExpanded title={t('Chia sẻ use case')} icon={
+        <NavLink to="/use-cases?share=1" collapsed={collapsed} title={t('Chia sẻ use case')} icon={
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
         }>{t('Chia sẻ use case')}</NavLink>
-        <NavLink to="/questions#ask" collapsed={collapsed} hideIconExpanded title={t('Đặt câu hỏi')} icon={
+        <NavLink to="/questions#ask" collapsed={collapsed} title={t('Đặt câu hỏi')} icon={
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
         }>{t('Đặt câu hỏi')}</NavLink>
       </div>

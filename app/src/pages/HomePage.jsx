@@ -22,10 +22,10 @@ const UFO_STARS = [
 ]
 
 const HOME_NOTIFICATIONS = [
-  { text: 'HaiPD đã trả lời câu hỏi của bạn về tóm tắt PDF dài', href: '/questions', time: '2 giờ trước', unread: true, iconText: 'A', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
-  { text: 'QuyenNT đã mention bạn trong một bình luận', href: '/questions', time: '1 giờ trước', unread: true, iconText: '@', iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
-  { text: 'Use case "Tóm tắt phản hồi khách hàng theo tuần" đã được duyệt', href: '/use-cases', time: 'Hôm qua', unread: true, iconText: '✓', iconBg: '#E7F9F0', iconFg: '#00893F' },
-  { text: 'Use case "Auto QA script" bị từ chối — xem lý do trong My Posts', href: '/profile#posts', time: '2 ngày trước', unread: false, iconText: '!', iconBg: '#FFECEC', iconFg: '#D8232A' },
+  { text: 'HaiPD đã trả lời câu hỏi của bạn về tóm tắt PDF dài', href: '/questions', time: '2 giờ trước', unread: true, icon: 'answer', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
+  { text: 'QuyenNT đã mention bạn trong một bình luận', href: '/questions', time: '1 giờ trước', unread: true, icon: 'mention', iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
+  { text: 'Use case "Tóm tắt phản hồi khách hàng theo tuần" đã được duyệt', href: '/use-cases', time: 'Hôm qua', unread: true, icon: 'approved', iconBg: '#E7F9F0', iconFg: '#00893F' },
+  { text: 'Use case "Auto QA script" bị từ chối — xem lý do trong My Posts', href: '/profile#posts', time: '2 ngày trước', unread: false, icon: 'rejected', iconBg: '#FFECEC', iconFg: '#D8232A' },
 ]
 
 const steps = [

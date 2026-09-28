@@ -7,6 +7,15 @@ import { defaultNotifications } from '../data/notifications.js'
 
 const NARROW_QUERY = '(max-width: 640px)'
 
+// One consistent line-icon set for every notification kind, instead of mixing plain
+// letters/emoji ('A', '@', '✓', '!') with real icons.
+const NOTIF_ICONS = {
+  answer: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>,
+  mention: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.6 7.2"></path></svg>,
+  approved: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>,
+  rejected: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg>,
+}
+
 /**
  * The bell button + popup, shared between the Sidebar (where it now lives per the v2
  * design) and anywhere else that wants it. On a normal-width screen the popup opens
@@ -72,10 +81,10 @@ export default function NotificationsPanel({ notifications = defaultNotification
           >
             <span
               style={css(
-                `flex:none; width:34px; height:34px; border-radius:11px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;`,
+                `flex:none; width:34px; height:34px; border-radius:11px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`,
               )}
             >
-              {n.iconText}
+              {NOTIF_ICONS[n.icon] || NOTIF_ICONS.answer}
             </span>
             <div style={css('flex:1; min-width:0;')}>
               <div style={css('font-size:13.5px; font-weight:600; line-height:1.5; color:#0F172A;')}>{n.text}</div>
