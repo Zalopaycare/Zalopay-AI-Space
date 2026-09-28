@@ -8,6 +8,19 @@ const MAX_MENTIONS = 10
 
 export const handleOf = (email) => String(email || '').split('@')[0].toLowerCase()
 
+const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase()
+/**
+ * Short "domain account" style name, like the use case cards: "Thy. Nguyễn Đoàn Mai" +
+ * thyndm@… → "ThyNDM"; falls back to the bare email handle when the name doesn't line up.
+ */
+export function domainName(email, name) {
+  const handle = handleOf(email)
+  if (!handle) return name || ''
+  const nick = fold((/^\s*([^.\s]+)\.\s/.exec(String(name || '')) || [])[1] || String(name || '').trim().split(/\s+/)[0])
+  if (nick && handle.startsWith(nick)) return nick[0].toUpperCase() + nick.slice(1) + handle.slice(nick.length).toUpperCase()
+  return handle
+}
+
 /** Company emails mentioned in `text`, resolved against known users; unknown handles are ignored. */
 export function mentionedEmails(text) {
   const tokens = new Set()

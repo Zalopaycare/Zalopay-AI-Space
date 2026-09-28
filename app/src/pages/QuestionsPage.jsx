@@ -98,7 +98,7 @@ export default function QuestionsPage() {
       setView('ask')
       try {
         const d = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null')
-        if (d) { setAskTitle(d.title || ''); setAskBody(d.body || ''); setAskToolsSel((d.tools || []).map(normTool)); setAskTopicsSel(d.topics || []); setAskToolOtherText(d.toolOther || ''); setAskTopicOtherText(d.topicOther || '') }
+        if (d) { setAskTitle(''); setAskBody([d.title, d.body].filter(Boolean).join('\n')); setAskToolsSel((d.tools || []).map(normTool)); setAskTopicsSel(d.topics || []); setAskToolOtherText(d.toolOther || ''); setAskTopicOtherText(d.topicOther || '') }
       } catch { /* ignore */ }
     }
     const q0 = new URLSearchParams(window.location.search).get('q')
@@ -233,7 +233,7 @@ export default function QuestionsPage() {
 
   const postQuestion = () => {
     const tt = askTitle.trim(), bb = askBody.trim()
-    if (!tt || !bb) { setAskError('Cần có tiêu đề và nội dung trước khi đăng.'); return }
+    if (!bb) { setAskError('Cần có nội dung câu hỏi trước khi đăng.'); return }
     requireLogin(() => {
       const docNote = askFiles.length ? '\n\n📎 ' + askFiles.join(', ') : ''
       const payload = {
@@ -260,7 +260,7 @@ export default function QuestionsPage() {
   const match = (q) => {
     if (quick === 'waiting' && q.resolved) return false
     if (quick === 'resolved' && !q.resolved) return false
-    if (quick === 'mine' && q.author !== (user?.name || '')) return false
+    if (quick === 'mine' && !(user && q.authorId === user.id)) return false
     if (quick === 'saved' && !q.saved) return false
     if (quick === 'unanswered' && q.answers.length) return false
     if (!qs) return true
@@ -293,7 +293,7 @@ export default function QuestionsPage() {
         helpColor: a.iHelped ? '#2c5fff' : '#64748b',
         helpFill: a.iHelped ? '#2c5fff' : 'none',
         replyLabel: a.comments.length ? t('Comment') + ' · ' + a.comments.length : t('Comment'),
-        canAccept: q.author === (user?.name || '') && !q.resolved,
+        canAccept: !!user && q.authorId === user.id && !q.resolved,
         showComments: !!openComments[a.id] || a.comments.length > 0,
         comments: a.comments.map((c, j) => ({ ...c, time: relativeTime(c.time), bodyEl: renderBody(c.body), avatarBg: c.avatarColor || AV[(c.author.charCodeAt(0) + j) % AV.length] })),
         commentDraft: cd,
@@ -333,8 +333,8 @@ export default function QuestionsPage() {
       onHelpfulQ: (e) => { if (e) e.stopPropagation(); requireLogin(() => api.reactQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
       hasAccepted: q.answers.some((a) => a.accepted),
       expanded: isExpanded, answers, noAnswers: q.answers.length === 0,
-      isOwner: q.author === (user?.name || '') && !q.resolved && q.answers.length > 0,
-      canDelete: q.author === (user?.name || ''),
+      isOwner: !!user && q.authorId === user.id && !q.resolved && q.answers.length > 0,
+      canDelete: !!user && q.authorId === user.id,
       onToggle: () => toggle(q.id),
       onExpandBody: () => setFullBody((s) => ({ ...s, [q.id]: !s[q.id] })),
       onSave: (e) => { if (e) e.stopPropagation(); requireLogin(() => api.saveQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
@@ -378,7 +378,7 @@ export default function QuestionsPage() {
 
   const askTopics = ASK_TOPICS.map((tp) => ({ label: tp, ...chip(askTopicsSel.indexOf(tp) >= 0), onPick: () => setAskTopicsSel((s) => (s.indexOf(tp) >= 0 ? s.filter((x) => x !== tp) : [...s, tp])) }))
   const askTools = TOOLS.map((tl) => ({ label: tl, ...chip(askToolsSel.indexOf(tl) >= 0), onPick: () => setAskToolsSel((s) => (s.indexOf(tl) >= 0 ? s.filter((x) => x !== tl) : [...s, tl])) }))
-  const askOpacity = askTitle.trim() && askBody.trim() ? 1 : 0.5
+  const askOpacity = askBody.trim() ? 1 : 0.5
 
   return (
     <Layout active="question" notifications={notifications}>
@@ -456,8 +456,8 @@ export default function QuestionsPage() {
                     </div>
 
                     <div style={css('padding:8px 18px 0;')}>
-                      <h3 className="zp-card-title" style={css('margin:0; font:800 16px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>
-                      <p style={css('margin:5px 0 0; font:400 13.5px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;')}>
+                      {q.hasTitle !== false && <h3 className="zp-card-title" style={css('margin:0; font:800 16px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>}
+                      <p style={css(q.hasTitle !== false ? 'margin:5px 0 0; font:400 13.5px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;' : 'margin:2px 0 0; font:500 15px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:pre-wrap;')}>
                         {q.bodyShown}
                         {q.truncated && (
                           <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3366F0; vertical-align:baseline;')}>{t('Xem thêm')}</button>
@@ -512,8 +512,8 @@ export default function QuestionsPage() {
                                   </button>
                                   <button onClick={a.onReply} style={css('border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{a.replyLabel}</button>
                                   {a.canAccept && (
-                                    <button onClick={a.onAccept} className={hoverClass('background:#E7F9F0;')} style={css('display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 14px; border:1px solid #00CF6A; border-radius:999px; background:#fff; color:#00893F; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>
-                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00893F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                    <button onClick={a.onAccept} className={hoverClass('background:#F4F7FE; border-color:#B9C6DC;')} style={css('display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                                       {t('Câu trả lời này đã giải quyết vấn đề')}
                                     </button>
                                   )}
@@ -693,9 +693,8 @@ export default function QuestionsPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={css('font:800 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{user ? `${user.name}${user.team ? ' · ' + user.team : ''}` : t('Chưa đăng nhập')}</div>
 
-                      <input value={askTitle} onChange={(e) => { setAskTitle(e.target.value); setAskError('') }} placeholder={t('Tiêu đề ngắn gọn cho câu hỏi...')} style={css('width:100%; margin-top:10px; border:none; outline:none; background:transparent; padding:0; font:700 18px/1.4 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; box-sizing:border-box;')} />
 
-                      <textarea ref={askBodyRef} value={askBody} onChange={(e) => { setAskBody(e.target.value); setAskError('') }} rows={4} placeholder={t('Bối cảnh, cách bạn đã thử, và kết quả mong đợi...')} style={css('width:100%; margin-top:6px; border:none; outline:none; background:transparent; padding:0; font:400 15px/1.65 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
+                      <textarea ref={askBodyRef} value={askBody} onChange={(e) => { setAskBody(e.target.value); setAskError('') }} rows={5} placeholder={t('Bạn đang vướng ở đâu với AI? Mô tả bối cảnh, cách bạn đã thử và kết quả mong đợi...')} style={css('width:100%; margin-top:6px; border:none; outline:none; background:transparent; padding:0; font:400 15px/1.65 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
 
                       {(askImages.length > 0 || askFiles.length > 0) && (
                         <div style={css('display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;')}>
@@ -743,7 +742,6 @@ export default function QuestionsPage() {
                           )}
                         </div>
 
-                        <span style={css('margin-left:8px; font:600 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Gõ @ để mention đồng nghiệp')}</span>
 
                         <div style={css('margin-left:auto; display:flex; align-items:center; gap:10px;')}>
                           <button onClick={saveAskDraft} style={css('height:38px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Lưu nháp')}</button>

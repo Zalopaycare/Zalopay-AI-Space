@@ -172,7 +172,7 @@ export default function HomePage() {
       onLike: (e) => { e.stopPropagation(); requireLogin(() => api.reactQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
       onOpen: () => setOpenQ(q.id),
       onSave: (e) => { e.stopPropagation(); requireLogin(() => api.saveQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
-      canDelete: q.author === (user?.name || ''),
+      canDelete: !!user && q.authorId === user.id,
     }))
 
   // ---- question detail modal ----
@@ -382,8 +382,8 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div style={css('flex:1; padding:8px 18px 0;')}>
-                    <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
-                    <p style={css(`margin:5px 0 0; font:400 13.5px/1.55 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
+                    {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
+                    <p style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 13.5px' : '500 15px'}/1.55 ${FONT}; color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
                     <button onClick={(e) => { e.stopPropagation(); navigate('/questions#q=' + encodeURIComponent(q.id)) }} className={hoverClass('color:#1741c9;')} style={css(`display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#2c5fff;`)}>
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
@@ -423,8 +423,8 @@ export default function HomePage() {
                 </div>
 
                 <div style={css('padding:16px 26px 0;')}>
-                  <h3 style={css(`margin:0; font:800 21px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{modalSrc.title}</h3>
-                  <p style={css(`margin:11px 0 0; font:400 15px/1.65 ${FONT}; color:#3A4757; white-space:pre-wrap;`)}>{modalSrc.body}</p>
+                  {modalSrc.hasTitle !== false && <h3 style={css(`margin:0; font:800 21px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{modalSrc.title}</h3>}
+                  <p style={css(`margin:${modalSrc.hasTitle !== false ? 11 : 0}px 0 0; font:400 15px/1.65 ${FONT}; color:#3A4757; white-space:pre-wrap;`)}>{modalSrc.body}</p>
                   <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px; flex-wrap:wrap;')}>
                     {[].concat(modalSrc.category).filter(Boolean).map((c) => (
                       <span key={c} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:8px; background:#EAF0FF; color:#2c5fff; font:700 12px ${FONT};`)}>{c}</span>

@@ -2,12 +2,18 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
-import { notifyMentions, appUrl } from '../mentions.js'
+import { notifyMentions, appUrl, domainName } from '../mentions.js'
 
 const router = express.Router()
 
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
-const userBrief = (u) => (u ? { author: u.name, initials: u.initials, team: u.team, authorId: u.id, avatarColor: u.avatar_color || null } : { author: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
+// Questions may have no title (the composer is body-only now); this stands in wherever a label is needed.
+const qTitle = (q) => {
+  if (q.title) return q.title
+  const first = String(q.body || '').split('\n').find((l) => l.trim()) || ''
+  return first.length > 90 ? first.slice(0, 90).trimEnd() + '…' : first
+}
+const userBrief = (u) => (u ? { author: domainName(u.email, u.name), fullName: u.name, initials: u.initials, team: u.team, authorId: u.id, avatarColor: u.avatar_color || null } : { author: 'Người dùng đã xoá', fullName: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
 
 
 function loadQuestion(id, userId) {
@@ -27,7 +33,7 @@ function loadQuestion(id, userId) {
   const iHelpedQ = userId ? !!db.prepare('SELECT 1 FROM question_reactions WHERE question_id = ? AND user_id = ?').get(id, userId) : false
   const saved = userId ? !!db.prepare('SELECT 1 FROM saved_questions WHERE question_id = ? AND user_id = ?').get(id, userId) : false
   return {
-    id: q.id, title: q.title, body: q.body, ...userBrief(author), time: q.created_at, ts: q.created_at,
+    id: q.id, title: qTitle(q), hasTitle: !!q.title, body: q.body, ...userBrief(author), time: q.created_at, ts: q.created_at,
     category: asArr(q.category), topics: asArr(q.topics), tools: asArr(q.tools),
     resolved: !!q.resolved, saved, files: [],
     images: db.prepare('SELECT idx FROM question_images WHERE question_id = ? ORDER BY idx').all(id).map((r) => `/api/questions/${id}/images/${r.idx}`), qHelpful, iHelpedQ, answers,
@@ -72,7 +78,7 @@ function decodeImage(dataUrl) {
 
 router.post('/', requireAuth, (req, res) => {
   const { title, body, category = [], topics = [], tools = [], images = [] } = req.body || {}
-  if (!String(title || '').trim() || !String(body || '').trim() || !category.length) {
+  if (!String(body || '').trim() || !category.length) {
     return res.status(400).json({ error: 'missing_fields' })
   }
   const decoded = (Array.isArray(images) ? images : []).slice(0, MAX_IMAGES).map(decodeImage)
@@ -80,10 +86,11 @@ router.post('/', requireAuth, (req, res) => {
   const id = nextId('q')
   db.transaction(() => {
     db.prepare('INSERT INTO questions (id, title, body, category, topics, tools, author_id) VALUES (?,?,?,?,?,?,?)')
-      .run(id, title.trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id)
+      .run(id, String(title || '').trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id)
     decoded.forEach((img, i) => db.prepare('INSERT INTO question_images (question_id, idx, mime, data) VALUES (?,?,?,?)').run(id, i, img.mime, img.data))
   })()
-  notifyMentions(req, { text: title.trim() + '\n' + body.trim(), where: `câu hỏi "${title.trim()}"`, path: `/questions#q=${id}` })
+  const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
+  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}` })
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
 })
 
@@ -123,9 +130,9 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
-    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${req.user.name} đã trả lời: "${q.title}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
+    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `câu hỏi "${q.title}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email] })
+  notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email] })
 
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
 })
@@ -162,8 +169,8 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   if (aAuthor && aAuthor.id !== req.user.id) {
     sendMail({ to: aAuthor.email, subject: 'Có bình luận mới cho câu trả lời của bạn', text: `${req.user.name} đã bình luận: "${body}"\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
-  const qRow = db.prepare('SELECT title FROM questions WHERE id = ?').get(id)
-  notifyMentions(req, { text: body, where: qRow ? `câu hỏi "${qRow.title}"` : 'một câu hỏi', path: `/questions#q=${id}`, skip: [aAuthor?.email] })
+  const qRow = db.prepare('SELECT title, body FROM questions WHERE id = ?').get(id)
+  notifyMentions(req, { text: body, where: qRow ? `câu hỏi "${qTitle(qRow)}"` : 'một câu hỏi', path: `/questions#q=${id}`, skip: [aAuthor?.email] })
 
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
 })

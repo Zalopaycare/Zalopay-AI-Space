@@ -85,7 +85,7 @@ function QuestionCard({ q }) {
         </div>
       </div>
       <div style={css('padding:8px 18px 0;')}>
-        <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
+        {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
         <p style={css(`margin:5px 0 0; font:400 13.5px/1.55 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
       </div>
       <div style={css('display:flex; align-items:center; gap:10px 12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
@@ -174,11 +174,11 @@ export default function ProfilePage() {
       api.listSubmissions('?mine=1'),
       api.mySavedUseCaseIds(),
     ]).then(([qd, sd, savedIds]) => {
-      const mine = qd.questions.filter((q) => q.author === user.name)
+      const mine = qd.questions.filter((q) => q.authorId === user.id)
       setMyQuestions(mine)
       setSavedQuestions(qd.questions.filter((q) => q.saved))
       let answered = 0
-      qd.questions.forEach((q) => q.answers.forEach((a) => { if (a.author === user.name) answered++ }))
+      qd.questions.forEach((q) => q.answers.forEach((a) => { if (a.authorId === user.id) answered++ }))
       setAnswersGiven(answered)
       setMyUseCases(sd.submissions)
       setSavedUseCaseIds(savedIds.ids)
@@ -204,6 +204,7 @@ export default function ProfilePage() {
     team: q.team,
     time: relativeTime(q.time),
     title: q.title,
+    hasTitle: q.hasTitle,
     body: q.body,
     tagLabel: t('Câu hỏi'),
     statusLabel: q.resolved ? 'Đã trả lời' : t('Đang chờ trả lời'),
