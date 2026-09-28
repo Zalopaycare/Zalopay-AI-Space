@@ -22,9 +22,9 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const FEATURED_IDS = ['c1', 'c2', 'c3', 'c4']
 const AI_LOGOS = [
-  { src: aiCloud, alt: 'Cloud terminal', w: 28, pos: { left: -64, top: 58 } },
+  { src: aiCloud, alt: 'Cloud terminal', w: 28, pos: { left: -100, top: 58 } },
   { src: aiCube, alt: 'Cursor', w: 22, pos: { left: -40, bottom: 60 } },
-  { src: aiOpenai, alt: 'ChatGPT', w: 26, pos: { right: -62, top: 60 } },
+  { src: aiOpenai, alt: 'ChatGPT', w: 26, pos: { right: -98, top: 60 } },
   { src: aiClaude, alt: 'Claude', w: 26, pos: { right: -42, bottom: 60 } },
 ]
 
