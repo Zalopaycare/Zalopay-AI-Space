@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer'
 
 const {
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM,
-  SMTP_SECURE, SMTP_TLS_SERVERNAME, SMTP_TLS_INSECURE,
+  SMTP_SECURE, SMTP_AUTH_METHOD, SMTP_TLS_SERVERNAME, SMTP_TLS_INSECURE,
   ALLOW_DEV_LOGIN_CODE,
 } = process.env
 
@@ -17,6 +17,8 @@ if (SMTP_HOST) {
     // IP-allowlisted relays (e.g. Exchange Online's "from your org's mail server" connector)
     // have no SMTP_USER/SMTP_PASS — they authenticate by source IP instead.
     auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+    // Some relays only accept one mechanism (e.g. SMTP_AUTH_METHOD=LOGIN, as `swaks --auth LOGIN`).
+    ...(SMTP_AUTH_METHOD ? { authMethod: String(SMTP_AUTH_METHOD).toUpperCase() } : {}),
     // Without implicit TLS, insist on STARTTLS so credentials and codes never go out in plaintext.
     requireTLS: true,
     // When SMTP_HOST is a bare IP the relay's certificate names a hostname instead:
