@@ -30,6 +30,11 @@ export function hasImageSlot(id) {
   return !!readStore()[id]
 }
 
+/** Read a slot's raw data URL (or null), e.g. to render it at its natural size instead of ImageSlot's fixed-box crop. */
+export function readImageSlot(id) {
+  return readStore()[id] || null
+}
+
 const shapeRadius = { rect: 0, rounded: 12, circle: '50%', pill: 999 }
 
 /**

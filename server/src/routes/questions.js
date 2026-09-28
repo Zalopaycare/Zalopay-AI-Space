@@ -59,7 +59,9 @@ const deleteQuestionTx = db.transaction((id) => {
 })
 
 router.delete('/:id', requireAuth, (req, res) => {
-  if (!req.user.is_admin) return res.status(403).json({ error: 'admin_only' })
+  const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(req.params.id)
+  if (!q) return res.status(404).json({ error: 'not_found' })
+  if (!req.user.is_admin && q.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
   deleteQuestionTx(req.params.id)
   res.json({ ok: true })
 })

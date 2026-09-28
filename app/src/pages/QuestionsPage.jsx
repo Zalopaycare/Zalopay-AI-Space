@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
-import ImageSlot, { writeImageSlot, hasImageSlot } from '../components/ImageSlot.jsx'
+import ImageSlot, { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Other']
@@ -58,6 +58,9 @@ export default function QuestionsPage() {
   const [openComments, setOpenComments] = useState({})
   const [commentDrafts, setCommentDrafts] = useState({})
   const [commentMention, setCommentMention] = useState(null)
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [copiedId, setCopiedId] = useState(null)
 
   const [askTitle, setAskTitle] = useState('')
   const [askBody, setAskBody] = useState('')
@@ -108,6 +111,28 @@ export default function QuestionsPage() {
 
   const toggle = (id) => { setExpanded((s) => ({ ...s, [id]: !s[id] })); setFullBody((s) => ({ ...s, [id]: true })) }
   const accept = (qid, aid) => requireLogin(() => api.acceptAnswer(qid, aid).then((d) => patch(qid, d.question)).catch(() => {}))
+
+  const copyLink = (id) => {
+    const url = window.location.origin + '/questions#q=' + encodeURIComponent(id)
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiedId(id)
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500)
+    }).catch(() => {})
+    setOpenMenuId(null)
+  }
+  const deleteQuestion = (id) => {
+    api.deleteQuestion(id).then(() => {
+      setQuestions((qs) => qs.filter((q) => q.id !== id))
+      setConfirmDeleteId(null)
+    }).catch(() => setConfirmDeleteId(null))
+  }
+
+  useEffect(() => {
+    if (!openMenuId) return
+    const close = () => setOpenMenuId(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [openMenuId])
 
   const insertAtCursor = (text) => {
     const el = askBodyRef.current
@@ -237,6 +262,7 @@ export default function QuestionsPage() {
       replyColor: isExpanded ? '#2c5fff' : '#3A4757',
       expanded: isExpanded, answers, noAnswers: q.answers.length === 0,
       isOwner: q.author === (user?.name || '') && !q.resolved && q.answers.length > 0,
+      canDelete: q.author === (user?.name || ''),
       onToggle: () => toggle(q.id),
       onExpandBody: () => setFullBody((s) => ({ ...s, [q.id]: !s[q.id] })),
       onSave: (e) => { if (e) e.stopPropagation(); requireLogin(() => api.saveQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
@@ -352,9 +378,33 @@ export default function QuestionsPage() {
                           <span style={css('font:400 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.time}</span>
                         </div>
                       </div>
-                      <button onClick={q.onSave} title={q.saveLabel} style={css(`flex:none; width:38px; height:38px; border:1px solid ${q.saveBorder}; border-radius:12px; background:${q.saveBg}; color:${q.saveColor}; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;`)}>
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill={q.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                      </button>
+                      <div style={{ position: 'relative', flex: 'none' }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenMenuId((id) => (id === q.id ? null : q.id)) }}
+                          title={t('Thêm')}
+                          style={css('width:38px; height:38px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
+                        </button>
+                        {openMenuId === q.id && (
+                          <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:44px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
+                            <button onClick={() => copyLink(q.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
+                              {copiedId === q.id ? t('Đã copy!') : t('Copy link')}
+                            </button>
+                            <button onClick={() => { q.onSave(); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                              {q.saveLabel}
+                            </button>
+                            {q.canDelete && (
+                              <button onClick={() => { setConfirmDeleteId(q.id); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
+                                {t('Xoá bài viết')}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div style={css('padding:14px 22px 0;')}>
@@ -366,11 +416,17 @@ export default function QuestionsPage() {
                         )}
                       </p>
                       {q.hasImages && (
-                        <div style={css(`display:grid; grid-template-columns:${q.imageCols}; gap:6px; margin-top:14px; border-radius:14px; overflow:hidden; border:1px solid #E6EBF3;`)}>
-                          {q.images.map((imgId) => (
-                            <ImageSlot key={imgId} id={imgId} placeholder="Hình ảnh" shape="rect" style={{ width: '100%', height: 230, background: '#EEF2F9' }} />
-                          ))}
-                        </div>
+                        q.images.length === 1 ? (
+                          <div style={css('margin-top:14px; border-radius:14px; overflow:hidden; border:1px solid #E6EBF3; background:#EEF2F9;')}>
+                            <img src={readImageSlot(q.images[0])} alt="" style={{ display: 'block', width: '100%', height: 'auto' }} />
+                          </div>
+                        ) : (
+                          <div style={css(`display:grid; grid-template-columns:${q.imageCols}; gap:6px; margin-top:14px; border-radius:14px; overflow:hidden; border:1px solid #E6EBF3;`)}>
+                            {q.images.map((imgId) => (
+                              <ImageSlot key={imgId} id={imgId} placeholder="Hình ảnh" shape="rect" style={{ width: '100%', height: 230, background: '#EEF2F9' }} />
+                            ))}
+                          </div>
+                        )
                       )}
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; flex-wrap:wrap;')}>
                         {q.tools.map((tool) => (
@@ -519,6 +575,22 @@ export default function QuestionsPage() {
             </div>
           </div>
         </div>
+
+        {confirmDeleteId && (
+          <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
+            <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
+              <div style={css('width:52px; height:52px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
+              </div>
+              <div style={css('margin-top:16px; font:800 16px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{t('Bạn muốn xóa vĩnh viễn bài viết này?')}</div>
+              <div style={css('margin-top:8px; font:400 13.5px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Hành động này không thể hoàn tác.')}</div>
+              <div style={css('display:flex; gap:10px; margin-top:22px;')}>
+                <button onClick={() => setConfirmDeleteId(null)} style={css('flex:1; height:44px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Quay lại')}</button>
+                <button onClick={() => deleteQuestion(confirmDeleteId)} style={css('flex:1; height:44px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Đồng ý')}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {view === 'ask' && (
           <div onClick={() => setView('feed')} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:44px 24px; overflow-y:auto;')}>
