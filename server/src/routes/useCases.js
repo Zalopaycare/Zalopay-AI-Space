@@ -2,7 +2,7 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
-import { notifyMentions } from '../mentions.js'
+import { notifyMentions, appUrl } from '../mentions.js'
 
 const router = express.Router()
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
@@ -105,6 +105,18 @@ router.post('/submissions', requireAuth, (req, res) => {
     .run(id, f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
       f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(),
       f.kind, f.status, f.level, JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), req.user.id)
+
+  // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
+  const envAdmins = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
+  const admins = [...new Set([...envAdmins, ...dbAdmins])].filter((e) => e !== req.user.email.toLowerCase())
+  for (const to of admins) {
+    sendMail({
+      to,
+      subject: `Use case mới chờ duyệt: ${f.title.trim()}`,
+      text: `${req.user.name} (${req.user.email}) vừa gửi một use case mới và đang chờ duyệt:\n\n"${f.title.trim()}"\n\nVấn đề: ${f.problem.trim().slice(0, 300)}\n\nDuyệt tại: ${appUrl(req)}/admin`,
+    }).catch((e) => console.error('[use-cases] admin notify failed:', e.message))
+  }
   res.status(201).json({ id })
 })
 
@@ -126,8 +138,8 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
   if (author) {
     const subject = status === 'approved' ? 'Use case của bạn đã được duyệt' : 'Use case của bạn bị từ chối'
     const text = status === 'approved'
-      ? `Use case "${row.title}" đã được duyệt và hiển thị công khai.`
-      : `Use case "${row.title}" bị từ chối.${note ? ' Lý do: ' + note : ''}`
+      ? `Use case "${row.title}" đã được duyệt và hiển thị công khai.\n\nXem tại: ${appUrl(req)}/profile#usecase`
+      : `Use case "${row.title}" bị từ chối.${note ? ' Lý do: ' + note : ''}\n\nXem tại: ${appUrl(req)}/profile#usecase`
     sendMail({ to: author.email, subject, text }).catch(() => {})
   }
   res.json({ ok: true })
