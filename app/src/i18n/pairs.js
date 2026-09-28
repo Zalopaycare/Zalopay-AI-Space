@@ -177,6 +177,7 @@ export const PAIRS = [
   ['Use case của bạn được publish để mọi người cùng sử dụng', 'Your use case gets published for everyone to use'],
   ['Use case của bạn được publish để mọi người cùng khám phá', 'Your use case gets published for everyone to explore'],
   ['Preview — đây là cách use case hiển thị sau khi được duyệt.', 'Preview — this is how the use case looks once approved.'],
+  ['Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc', 'A space for Zalopay Starters to explore and exchange knowledge and ways of using AI at work'],
   ['Trả lời', 'Reply'],
   ['trả lời', 'replies'],
   ['Hữu ích', 'Helpful'],

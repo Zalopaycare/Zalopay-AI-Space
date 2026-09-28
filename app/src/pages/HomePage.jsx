@@ -9,11 +9,22 @@ import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
+import aiCloud from '../assets/ai-cloud.png'
+import aiCube from '../assets/ai-cube.png'
+import aiOpenai from '../assets/ai-openai.png'
+import aiClaude from '../assets/ai-claude.png'
 import CardActions from '../components/CardActions.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const FEATURED_IDS = ['c1', 'c2', 'c3']
+const AI_LOGOS = [
+  { src: aiCloud, alt: 'Cloud terminal', w: 40, pos: { left: -118, top: 6 } },
+  { src: aiCube, alt: 'Cursor', w: 32, pos: { left: -70, bottom: -30 } },
+  { src: aiOpenai, alt: 'ChatGPT', w: 36, pos: { right: -118, top: -2 } },
+  { src: aiClaude, alt: 'Claude', w: 38, pos: { right: -72, bottom: -34 } },
+]
+
 // The Pixar-style wordmark intro plays once per page load, not on every in-app visit to Home.
 let introPlayed = false
 
@@ -245,13 +256,21 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className="zp-logo-ting" style={css('position:relative; margin:0 auto; width:min(100%,640px);')}>
-            <div className="zp-flash"></div>
-            <div className="zp-logo-reveal">
-              <img src={logo} alt="Zalopay AI Space" style={css('position:relative; display:block; width:100%; height:auto;')} />
+          <div style={css('position:relative; margin:0 auto; width:min(100%,640px);')}>
+            <div className="zp-logo-ting" style={css('position:relative;')}>
+              <div className="zp-flash"></div>
+              <div className="zp-logo-reveal">
+                <img src={logo} alt="Zalopay AI Space" style={css('position:relative; display:block; width:100%; height:auto;')} />
+              </div>
+              <svg className="zp-glint" width="72" height="72" viewBox="0 0 24 24"><path d="M12 0 C12.8 7.5 16.5 11.2 24 12 C16.5 12.8 12.8 16.5 12 24 C11.2 16.5 7.5 12.8 0 12 C7.5 11.2 11.2 7.5 12 0 Z" fill="#fff" /></svg>
             </div>
-            <svg className="zp-glint" width="72" height="72" viewBox="0 0 24 24"><path d="M12 0 C12.8 7.5 16.5 11.2 24 12 C16.5 12.8 12.8 16.5 12 24 C11.2 16.5 7.5 12.8 0 12 C7.5 11.2 11.2 7.5 12 0 Z" fill="#fff" /></svg>
+            {AI_LOGOS.map((l, i) => (
+              <div key={l.alt} className="zp-ailogo-pos" style={{ ...l.pos, '--i': i }}>
+                <div className="zp-ailogo"><img src={l.src} alt={l.alt} style={{ width: l.w, height: 'auto', display: 'block' }} /></div>
+              </div>
+            ))}
           </div>
+          <p className="zp-tagline" style={css(`position:relative; margin:18px auto 0; max-width:640px; font:500 17px/1.6 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc')}</p>
         </section>
 
         {/* ============ TRENDING QUESTIONS ============ */}
