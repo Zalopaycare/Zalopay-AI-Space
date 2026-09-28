@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer'
 
 const {
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM,
-  SMTP_TLS_SERVERNAME, SMTP_TLS_INSECURE,
+  SMTP_SECURE, SMTP_TLS_SERVERNAME, SMTP_TLS_INSECURE,
   ALLOW_DEV_LOGIN_CODE,
 } = process.env
 
@@ -11,11 +11,14 @@ if (SMTP_HOST) {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: Number(SMTP_PORT || 587),
-    secure: Number(SMTP_PORT) === 465,
+    // Implicit TLS is assumed on 465, but some relays speak plaintext + STARTTLS there:
+    // SMTP_SECURE=false overrides the guess (SMTP_SECURE=true forces implicit TLS on any port).
+    secure: SMTP_SECURE ? String(SMTP_SECURE).toLowerCase() === 'true' : Number(SMTP_PORT) === 465,
     // IP-allowlisted relays (e.g. Exchange Online's "from your org's mail server" connector)
-    // have no SMTP_USER/SMTP_PASS — they authenticate by source IP instead, over STARTTLS.
+    // have no SMTP_USER/SMTP_PASS — they authenticate by source IP instead.
     auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-    requireTLS: !SMTP_USER,
+    // Without implicit TLS, insist on STARTTLS so credentials and codes never go out in plaintext.
+    requireTLS: true,
     // When SMTP_HOST is a bare IP the relay's certificate names a hostname instead:
     // SMTP_TLS_SERVERNAME checks the cert against that name; SMTP_TLS_INSECURE=true skips the check.
     tls: {
