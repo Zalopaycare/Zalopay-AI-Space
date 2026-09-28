@@ -313,7 +313,7 @@ export default function ProfilePage() {
         {/* Profile header — only on the main view, hidden once a specific section is selected. */}
         {/* Section heading — gradient/glow style, no item-count label (removed per latest design revision). */}
         {section && (
-          <section style={css('position:relative; padding:48px 40px 0;')}>
+          <section style={css('position:relative; padding:28px 40px 0;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h1 style={heroHeading}>{sectionTitle}</h1>
             </div>
@@ -348,7 +348,7 @@ export default function ProfilePage() {
               {loaded && recentItems.length === 0 && (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đặt câu hỏi hoặc chia sẻ use case đầu tiên của bạn.')}</div>
               )}
-              <div style={css('display:flex; flex-direction:column; gap:12px; padding-bottom:90px;')}>
+              <div style={css('display:flex; flex-direction:column; gap:12px; padding-bottom:40px;')}>
                 {recentItems.map((r, i) => (
                   <div key={i} onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF; box-shadow:0 14px 30px rgba(30,50,90,.14);')} style={css('cursor:pointer; transition:transform .16s, box-shadow .16s, border-color .16s; background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px; box-shadow:0 8px 22px rgba(30,50,90,.06);')}>
                     <span style={css(`flex:none; display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:999px; background:${r.tagBg}; color:${r.tagColor}; font:700 12px ${FONT};`)}>{r.tagLabel}</span>
@@ -370,18 +370,18 @@ export default function ProfilePage() {
 
 
         {section === 'usecase' && (
-          <section style={css('position:relative; padding:22px 40px 90px;')}>
-            <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:16px;')}>
+          <section style={css('position:relative; padding:18px 40px 40px;')}>
+            <div style={css('max-width:760px; margin:0 auto; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;')}>
               {ucColumns.map((col) => (
-                <div key={col.key} style={css('display:flex; flex-direction:column; gap:12px; min-width:0; padding:14px; border-radius:18px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);')}>
+                <div key={col.key} style={css('display:flex; flex-direction:column; gap:12px; min-width:0; padding:14px; border-radius:16px; background:#ffffff; border:1px solid #E6EBF3; box-shadow:0 10px 26px rgba(0,0,0,.18);')}>
                   <div style={css('display:flex; align-items:center; gap:10px; padding:2px 4px;')}>
                     <span style={css(`flex:none; width:9px; height:9px; border-radius:50%; background:${col.accent};`)}></span>
-                    <span style={css(`font:800 15px ${FONT}; color:#ffffff;`)}>{col.label}</span>
-                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:24px; padding:0 8px; border-radius:999px; background:rgba(255,255,255,.1); color:#dbe6ff; font:700 12px ${FONT};`)}>{col.count}</span>
+                    <span style={css(`font:800 14.5px ${FONT}; color:#0F172A;`)}>{col.label}</span>
+                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:24px; padding:0 8px; border-radius:999px; background:#F1F4FA; color:#3A4757; font:700 12px ${FONT};`)}>{col.count}</span>
                   </div>
                   {col.items.map((p) => <BoardCard key={p.id} p={p} />)}
                   {col.empty && (
-                    <div style={css(`padding:22px 12px; text-align:center; border:1px dashed rgba(255,255,255,.18); border-radius:14px; font:500 13px ${FONT}; color:#8b98b8;`)}>{t('Chưa có use case')}</div>
+                    <div style={css(`padding:14px 12px; text-align:center; border:1px dashed #DDE3EC; border-radius:12px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có use case')}</div>
                   )}
                 </div>
               ))}
@@ -390,7 +390,7 @@ export default function ProfilePage() {
         )}
 
         {section === 'question' && (
-          <section style={css('position:relative; padding:22px 40px 90px;')}>
+          <section style={css('position:relative; padding:18px 40px 40px;')}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
               {draftItem.map((r) => (
                 <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
@@ -411,13 +411,13 @@ export default function ProfilePage() {
         )}
 
         {section === 'saved' && (
-          <section style={css('position:relative; padding:22px 40px 90px;')}>
+          <section style={css('position:relative; padding:14px 40px 28px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h3 style={subHeading}>{t('Use case đã lưu')}</h3>
               {savedUseCaseCards.length === 0 ? (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; margin-bottom:40px; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu use case nào.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; margin-bottom:24px; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu use case nào.')}</div>
               ) : (
-                <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:40px;')}>
+                <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:24px;')}>
                   {savedUseCaseCards.map((c) => <UseCaseCard key={c.id} c={c} />)}
                 </div>
               )}

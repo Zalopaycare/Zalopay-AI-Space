@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
 import { useNotifRead } from '../lib/notifRead.js'
+import { useAuth } from '../auth/AuthContext.jsx'
+import Avatar from './Avatar.jsx'
 import { defaultNotifications } from '../data/notifications.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 
@@ -47,6 +49,15 @@ export default function Sidebar({ active }) {
   const location = useLocation()
   const [hash, setHash] = useState(location.hash)
   const [collapsed, setCollapsed] = useSidebarCollapsed()
+  const { user, logout } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false) }
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [menuOpen])
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
   const sub = active === 'profile' ? /#(activity|usecase|question|saved)\b/.exec(hash)?.[1] || 'activity' : null
@@ -119,6 +130,26 @@ export default function Sidebar({ active }) {
         </>
       )}
 
+      <div style={{ flex: 1 }}></div>
+      {user && (
+        <div ref={menuRef} style={css('position:relative; margin-top:16px;')}>
+          {menuOpen && (
+            <div style={css('position:absolute; left:0; right:0; bottom:calc(100% + 8px); background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:5;')}>
+              <button onClick={() => { setMenuOpen(false); logout() }} style={css('display:block; width:100%; text-align:left; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{t('Đăng xuất')}</button>
+            </div>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o) }}
+            title={collapsed ? user.name : undefined}
+            className={hoverClass('background:rgba(255,255,255,.1);')}
+            style={css(`display:flex; align-items:center; gap:10px; width:100%; padding:6px ${collapsed ? '6px' : '12px 6px 6px'}; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); cursor:pointer; font-family:inherit; ${collapsed ? 'justify-content:center;' : ''}`)}
+          >
+            <Avatar user={user} size={34} fontSize={12.5} />
+            {!collapsed && <span style={css('flex:1; min-width:0; text-align:left; font-size:14px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{user.name}</span>}
+            {!collapsed && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3d0f5" strokeWidth="2.2" style={{ flex: 'none' }}><path d="m18 15-6-6-6 6"></path></svg>}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

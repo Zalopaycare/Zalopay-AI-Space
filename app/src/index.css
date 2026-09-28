@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-html { background: #07070c; color-scheme: dark; }
+html { background: #04060d; color-scheme: dark; }
 body {
   margin: 0;
   font-family: 'Aeonik Pro', 'Geist', 'Be Vietnam Pro', system-ui, sans-serif;
@@ -98,3 +98,7 @@ input, textarea, button { font-family: inherit; }
 .zp-mascot { animation: mascotfloat 3.2s ease-in-out infinite; transform-origin: 50% 80%; }
 @keyframes mascotfloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .zp-mascot { animation: none; } }
+
+.zp-page-in { animation: pagein .32s cubic-bezier(.22,.61,.36,1) both; }
+@keyframes pagein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .zp-page-in { animation: none; } }

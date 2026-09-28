@@ -745,7 +745,7 @@ export default function UseCaseLibraryPage() {
         <section style={css('position:relative; z-index:5; background:transparent; padding:26px 40px 52px;')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
 
-              <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:fit-content; max-width:100%; margin:0 auto 18px; padding:6px; border-radius:14px; background:rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.9); backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); box-shadow:0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.9);')}>
+              <div style={css('position:relative; z-index:20; display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:fit-content; max-width:100%; margin:0 auto 18px; padding:6px; border-radius:14px; background:rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.9); backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); box-shadow:0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.9);')}>
                 <FilterDropdown label={t('Chủ đề') === 'Chủ đề' ? (libCat || 'Tất cả category') : libCat || 'Tất cả category'} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
                 <FilterDropdown label={libTool || 'Tất cả công cụ AI'} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={210} />
                 {activeFilterCount > 0 && (
