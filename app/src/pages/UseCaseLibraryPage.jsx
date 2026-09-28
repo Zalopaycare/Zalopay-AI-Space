@@ -55,7 +55,7 @@ export default function UseCaseLibraryPage() {
   const isDetail = !!id
 
   // ---- shared interaction state (mirrors the .dc.html Logic class' `state`) ----
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('q') || '')
   const [ucMeta, setUcMeta] = useState({}) // id -> { helpful, iHelped, saved, comments: [] }
   const [dDraft, setDDraft] = useState('')
   const [replyTarget, setReplyTarget] = useState(null) // { parentId, authorName } | null

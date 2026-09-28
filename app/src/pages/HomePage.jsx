@@ -69,6 +69,11 @@ const steps = [
   },
 ]
 
+// Accent/case-insensitive match so "tu dong" finds "Tự động".
+const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
+const matches = (needle, ...fields) => fields.flat().some((f) => fold(f).includes(needle))
+const SEARCH_LIMIT = 5
+
 function replyLabel(n) {
   return n === 0 ? 'Chưa có comment' : n + ' comment'
 }
@@ -142,6 +147,13 @@ export default function HomePage() {
   useEffect(() => { FEATURED_IDS.forEach(refreshUcMeta) }, [])
 
   // ---- trending questions (top 3 unresolved by helpfulness, then recency) ----
+  const searchNeedle = fold(homeQuery.trim())
+  const pick = (list) => Object.assign(list.slice(0, SEARCH_LIMIT), { total: list.length })
+  const searchUc = searchNeedle ? pick(allCases.filter((c) => matches(searchNeedle, c.title, c.desc, c.author, c.tools || [], (prdMeta[c.id] || {}).topics || []))
+    .map((c) => ({ id: c.id, title: c.title, sub: [c.author, ...(c.tools || [])].filter(Boolean).join(' · '), href: '/use-cases/' + c.id }))) : []
+  const searchQ = searchNeedle ? pick(questions.filter((q) => matches(searchNeedle, q.title, q.body, q.author, q.topics || [], q.tools || []))
+    .map((q) => ({ id: q.id, title: q.title, sub: [q.author, relativeTime(q.time), ...(q.topics || [])].filter(Boolean).join(' · '), href: '/questions#q=' + encodeURIComponent(q.id) }))) : []
+
   const trending = questions
     .filter((q) => !q.resolved)
     .slice()
@@ -277,7 +289,42 @@ export default function HomePage() {
           <p className="zp-tagline" style={css(`position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc.')}</p>
         </section>
 
-        <PageActionBar searchOnly maxWidth={560} query={homeQuery} onQuery={setHomeQuery} onSubmit={(v) => navigate('/questions' + (v.trim() ? '?q=' + encodeURIComponent(v.trim()) : ''))} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
+        <PageActionBar searchOnly maxWidth={560} query={homeQuery} onQuery={setHomeQuery} onSubmit={() => {}} placeholder="Tìm use case, câu hỏi, tác giả, công cụ..." />
+        {searchNeedle && (
+          <div style={css('position:relative; z-index:5; padding:14px 40px 0;')}>
+            <div style={css('max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 18px 44px rgba(0,0,0,.3); padding:8px 8px 10px;')}>
+              {searchUc.length === 0 && searchQ.length === 0 ? (
+                <div style={css(`padding:26px 16px; text-align:center; font:600 14px ${FONT}; color:#64748b;`)}>
+                  {t('Chưa có kết quả cho')} "<span style={css('color:#0F172A;')}>{homeQuery.trim()}</span>"
+                </div>
+              ) : (
+                [['Use case', searchUc, '/use-cases'], ['Câu hỏi', searchQ, '/questions']].filter(([, list]) => list.length).map(([label, list, base]) => (
+                  <div key={label} style={css('padding:4px 0;')}>
+                    <div style={css('display:flex; align-items:center; justify-content:space-between; padding:8px 12px 4px;')}>
+                      <span style={css(`font:800 11.5px ${FONT}; letter-spacing:.05em; text-transform:uppercase; color:#94a3b8;`)}>{t(label)} · {list.total}</span>
+                      {list.total > list.length && (
+                        <button onClick={() => navigate(base + '?q=' + encodeURIComponent(homeQuery.trim()))} style={css(`border:none; background:none; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#2c5fff;`)}>{t('Xem tất cả')} →</button>
+                      )}
+                    </div>
+                    {list.map((r) => (
+                      <button key={r.id} onClick={() => navigate(r.href)} className={hoverClass('background:#F3F6FC;')} style={css('display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:none; background:transparent; border-radius:12px; cursor:pointer; text-align:left; transition:background .12s;')}>
+                        <span style={css(`flex:none; width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:${label === 'Use case' ? '#EAF0FF' : '#F1E7FF'}; color:${label === 'Use case' ? '#2c5fff' : '#6F0CE2'};`)}>
+                          {label === 'Use case'
+                            ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+                            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>}
+                        </span>
+                        <span style={css('flex:1; min-width:0;')}>
+                          <span style={css(`display:block; font:700 14px/1.35 ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.title}</span>
+                          <span style={css(`display:block; margin-top:2px; font:400 12.5px ${FONT}; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.sub}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ============ TRENDING QUESTIONS ============ */}
         <section id="waiting" style={css('position:relative; z-index:1; padding:28px 40px 40px; background:transparent;')}>
