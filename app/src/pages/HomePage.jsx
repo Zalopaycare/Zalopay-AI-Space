@@ -15,12 +15,12 @@ import aiCube from '../assets/ai-cube.png'
 import aiOpenai from '../assets/ai-openai.png'
 import aiClaude from '../assets/ai-claude.png'
 import CardActions from '../components/CardActions.jsx'
-import ShareCtaBar from '../components/ShareCtaBar.jsx'
+import TagRow from '../components/TagRow.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
-const FEATURED_IDS = ['c1', 'c2', 'c3']
+const FEATURED_IDS = ['c1', 'c2', 'c3', 'c4']
 const AI_LOGOS = [
   { src: aiCloud, alt: 'Cloud terminal', w: 28, pos: { left: -64, top: 58 } },
   { src: aiCube, alt: 'Cursor', w: 22, pos: { left: -40, bottom: 60 } },
@@ -51,7 +51,7 @@ const HOME_NOTIFICATIONS = [
   { text: 'HaiPD đã trả lời câu hỏi của bạn về tóm tắt PDF dài', href: '/questions', time: '2 giờ trước', unread: true, icon: 'answer', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
   { text: 'QuyenNT đã mention bạn trong một bình luận', href: '/questions', time: '1 giờ trước', unread: true, icon: 'mention', iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
   { text: 'Use case "Tóm tắt phản hồi khách hàng theo tuần" đã được duyệt', href: '/use-cases', time: 'Hôm qua', unread: true, icon: 'approved', iconBg: '#E7F9F0', iconFg: '#00893F' },
-  { text: 'Use case "Auto QA script" bị từ chối — xem lý do trong My Posts', href: '/profile#posts', time: '2 ngày trước', unread: false, icon: 'rejected', iconBg: '#FFECEC', iconFg: '#D8232A' },
+  { text: 'Use case "Auto QA script" bị từ chối — xem lý do trong Use case của tôi', href: '/profile#posts', time: '2 ngày trước', unread: false, icon: 'rejected', iconBg: '#FFECEC', iconFg: '#D8232A' },
 ]
 
 const steps = [
@@ -242,7 +242,7 @@ export default function HomePage() {
 
         {/* ============ WORDMARK ============ */}
         <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:14px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
-          <div style={css('position:relative; max-width:440px; width:100%; margin:0 auto; height:38px;')}>
+          <div style={css('position:relative; max-width:320px; width:100%; margin:0 auto; height:32px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
             ))}
@@ -260,7 +260,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div style={css('position:relative; margin:0 auto; width:min(100%,440px);')}>
+          <div style={css('position:relative; margin:0 auto; width:min(100%,320px);')}>
             <div className="zp-logo-ting" style={css('position:relative;')}>
               <div className="zp-flash"></div>
               <div className="zp-logo-reveal">
@@ -274,7 +274,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p className="zp-tagline" style={css(`position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc')}</p>
+          <p className="zp-tagline" style={css(`position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc.')}</p>
         </section>
 
         <PageActionBar searchOnly maxWidth={560} query={homeQuery} onQuery={setHomeQuery} onSubmit={(v) => navigate('/questions' + (v.trim() ? '?q=' + encodeURIComponent(v.trim()) : ''))} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
@@ -302,7 +302,6 @@ export default function HomePage() {
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
                       {t('Câu hỏi')}
                     </span>
-                    {q.cat && <span style={css(`display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#EAF0FF; color:#2c5fff; font:700 11.5px ${FONT};`)}>{q.cat}</span>}
                     <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#FFF1E0; color:#B45300; font:700 11.5px ${FONT};`)}>{t('Đang chờ trả lời')}</span>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px; padding:10px 18px 0;')}>
@@ -338,6 +337,7 @@ export default function HomePage() {
                   <div style={css('padding:8px 18px 0;')}>
                     <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
                     <p style={css(`margin:5px 0 0; font:400 13.5px/1.55 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
+                    <TagRow topics={q.topics || []} tools={q.tools || []} style={{ marginTop: 10 }} />
                   </div>
                   <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
                     <CardActions helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).length} onReply={q.onOpen} />
@@ -479,7 +479,17 @@ export default function HomePage() {
         {/* ============ FEATURED USE CASES ============ */}
         <section id="featured" style={css('position:relative; padding:24px 40px 36px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
-            <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
+            <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
+              <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
+              <button
+                onClick={() => navigate('/use-cases')}
+                className={hoverClass('animation-play-state:paused;')}
+                style={{ ...css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:10px; height:48px; padding:0 22px; border-radius:999px; background:#00CF6A; color:#04180F; font:800 15px ${FONT}; border:none; cursor:pointer; box-shadow:0 0 0 4px rgba(0,207,106,.22),0 12px 30px rgba(0,207,106,.4);`), animation: 'shake 2.4s ease-in-out infinite' }}
+              >
+                {t('Xem thêm use case')}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+              </button>
+            </div>
 
             <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:24px;')}>
               {featured.map((item) => (
@@ -489,7 +499,6 @@ export default function HomePage() {
                       <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
                       <div style={css('display:flex; flex-direction:column; min-width:0;')}>
                         <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
-                        <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{item.team || item.category}</span>
                       </div>
                     </div>
                     <div style={css('position:relative; flex:none;')}>
@@ -521,17 +530,11 @@ export default function HomePage() {
                       <ImageSlot id={'lib-' + item.id} shape="rect" placeholder="ảnh" />
                     </div>
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                      <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.32 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
-                      <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
+                      <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
+                      <p style={css('margin:5px 0 0; font-size:13.5px; line-height:1.55; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
                     </div>
                   </div>
-                  <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;')}>
-                    {item.tools.length > 0 ? item.tools.map((tl) => (
-                      <span key={tl} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 11px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; font:700 12px ${FONT}; color:#3A4757;`)}>{tl}</span>
-                    )) : (
-                      <span style={css(`display:inline-flex; align-items:center; height:28px; font:400 12px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
-                    )}
-                  </div>
+                  <TagRow topics={(prdMeta[item.id] || {}).topics || []} tools={item.tools} style={{ marginTop: 12 }} />
                   <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
                     <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .16s;`)}>
                       {t('Xem Use Case')}
@@ -542,21 +545,10 @@ export default function HomePage() {
                 </div>
               ))}
 
-              <a href="/use-cases" onClick={(e) => { e.preventDefault(); navigate('/use-cases') }} className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36);')} style={css('display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:180px; border-radius:18px; border:1.5px dashed #B6CBF2; background:linear-gradient(160deg,#e8eaee 0%,#c4c9d4 100%); text-decoration:none; transition:transform .18s ease,box-shadow .18s ease;')}>
-                <span style={{ ...css('display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:linear-gradient(120deg,#0033C9,#1266e6); box-shadow:0 12px 28px rgba(10,60,200,.35);'), animation: 'wiggleCall 2.4s ease-in-out infinite' }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-                </span>
-                <span style={css(`font:800 20px ${FONT}; color:#0033C9;`)}>{t('Xem thêm use case')}</span>
-                <span style={css(`font:400 14px ${FONT}; color:#5B6675;`)}>{t('Xem toàn bộ thư viện')}</span>
-              </a>
             </div>
           </div>
         </section>
 
-        {/* ============ SHARE YOUR USE CASE ============ */}
-        <section style={css('position:relative; background:#04060d; padding:0 40px 56px;')}>
-          <ShareCtaBar onClick={() => navigate('/use-cases?share=1')} />
-        </section>
       </div>
 
       {confirmDeleteId && (

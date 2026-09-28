@@ -185,6 +185,7 @@ export const PAIRS = [
   ['Khám phá cách các Zalopay Starter đang ứng dụng AI để làm việc nhanh và tốt hơn.', 'See how Zalopay Starters use AI to work faster and better.'],
   ['Xem chi tiết', 'View details'],
   ['Tiếp tục', 'Continue'],
+  ['Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc.', 'A space for Zalopay Starters to share knowledge and discover how to use AI at work.'],
   ['Trả lời', 'Reply'],
   ['trả lời', 'replies'],
   ['Hữu ích', 'Helpful'],

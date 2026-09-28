@@ -2,7 +2,7 @@
 export const defaultNotifications = [
   {
     text: 'Use case "Tóm tắt phản hồi khách hàng theo tuần" của bạn đã được duyệt',
-    href: '/profile#posts',
+    href: '/profile#usecase',
     time: 'Hôm qua',
     unread: true,
     icon: 'approved',
@@ -28,8 +28,8 @@ export const defaultNotifications = [
     iconFg: '#6F0CE2',
   },
   {
-    text: 'Use case "Auto QA script" bị từ chối — xem lý do trong My Posts',
-    href: '/profile#posts',
+    text: 'Use case "Auto QA script" bị từ chối — xem lý do trong Use case của tôi',
+    href: '/profile#usecase',
     time: '2 ngày trước',
     unread: false,
     icon: 'rejected',

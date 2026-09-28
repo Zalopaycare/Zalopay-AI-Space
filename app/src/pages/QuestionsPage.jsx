@@ -6,11 +6,15 @@ import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
+import TagRow from '../components/TagRow.jsx'
+import { useNavigate } from 'react-router-dom'
 import PageActionBar from '../components/PageActionBar.jsx'
 import ImageSlot, { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Other']
+const ASK_TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Coding & Technical', 'Báo cáo', 'Tự động hoá', 'Khác']
+export const QUESTION_DRAFT_KEY = 'zp-question-draft-v1'
 const DEFAULT_CATEGORY = ['Khác']
 const EMOJI = ['😀', '😅', '😍', '🤔', '👍', '🙏', '🔥', '🎉', '😢', '😮', '🚀', '💡', '✅', '❌', '⚠️', '❤️']
 const PEOPLE = [
@@ -46,12 +50,13 @@ const renderBody = (text) => String(text).split(/(@[A-Za-z][A-Za-z0-9]*)/g).map(
 export default function QuestionsPage() {
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
+  const navigate = useNavigate()
   const [questions, setQuestions] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [notificationsState, setNotificationsState] = useState(INITIAL_NOTIFICATIONS)
   const [view, setView] = useState('feed') // 'feed' | 'ask'
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState('latest')
+  const sort = 'latest'
   const [quick, setQuick] = useState('all')
   const [readAll, setReadAll] = useState(false)
   const [expanded, setExpanded] = useState({})
@@ -71,6 +76,7 @@ export default function QuestionsPage() {
   const [askTitle, setAskTitle] = useState('')
   const [askBody, setAskBody] = useState('')
   const [askToolsSel, setAskToolsSel] = useState([])
+  const [askTopicsSel, setAskTopicsSel] = useState([])
   const [askFiles, setAskFiles] = useState([])
   const [askImages, setAskImages] = useState([]) // [{name, dataUrl}] — max 2, written to the ImageSlot store once the question exists
   const [askEmojiOpen, setAskEmojiOpen] = useState(false)
@@ -88,7 +94,13 @@ export default function QuestionsPage() {
 
   // deep-link: #ask opens the ask-question composer directly (from Sidebar's "Đặt câu hỏi" quick action)
   useEffect(() => {
-    if ((window.location.hash || '') === '#ask') setView('ask')
+    if ((window.location.hash || '') === '#ask') {
+      setView('ask')
+      try {
+        const d = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null')
+        if (d) { setAskTitle(d.title || ''); setAskBody(d.body || ''); setAskToolsSel(d.tools || []); setAskTopicsSel(d.topics || []) }
+      } catch { /* ignore */ }
+    }
     const q0 = new URLSearchParams(window.location.search).get('q')
     if (q0) setQuery(q0)
   }, [])
@@ -176,6 +188,12 @@ export default function QuestionsPage() {
     })
   }
 
+  const saveAskDraft = () => {
+    if (!askTitle.trim() && !askBody.trim()) { setAskError('Chưa có nội dung để lưu nháp.'); return }
+    try { localStorage.setItem(QUESTION_DRAFT_KEY, JSON.stringify({ title: askTitle, body: askBody, tools: askToolsSel, topics: askTopicsSel, savedAt: new Date().toISOString() })) } catch { /* ignore */ }
+    navigate('/profile#question')
+  }
+
   const postQuestion = () => {
     const tt = askTitle.trim(), bb = askBody.trim()
     if (!tt || !bb) { setAskError('Cần có tiêu đề và nội dung trước khi đăng.'); return }
@@ -184,7 +202,7 @@ export default function QuestionsPage() {
       const payload = {
         title: tt, body: bb + docNote,
         category: DEFAULT_CATEGORY,
-        topics: [],
+        topics: askTopicsSel,
         tools: askToolsSel.map((x) => (x === 'Other' ? askToolOtherText.trim() : x)).filter(Boolean),
       }
       api.postQuestion(payload).then((d) => {
@@ -193,7 +211,8 @@ export default function QuestionsPage() {
         setQuestions((qs) => [d.question, ...qs])
         setView('feed')
         setExpanded((s) => ({ ...s, [id]: true }))
-        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
+        try { localStorage.removeItem(QUESTION_DRAFT_KEY) } catch { /* ignore */ }
+        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
         window.scrollTo(0, 0)
       }).catch(() => setAskError('Không đăng được câu hỏi, thử lại.'))
     })
@@ -313,16 +332,14 @@ export default function QuestionsPage() {
     }
   })
 
-  const sorts = [['latest', 'Gần nhất'], ['active', 'Trending'], ['all', 'Tất cả']].map(([k, label]) => ({
-    label, bg: sort === k ? '#fff' : 'transparent', color: sort === k ? '#2c5fff' : '#3A4757', onPick: () => setSort(k),
-  }))
-  const quickFilters = [['all', 'Tất cả'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời'], ['mine', 'Đã đăng'], ['saved', 'Đã lưu']].map(([k, label]) => ({
+  const quickFilters = [['all', 'Mới đăng'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời']].map(([k, label]) => ({
     label: t(label), ...chip(quick === k), onPick: () => setQuick(k),
   }))
   const isEmpty = feed.length === 0
   const emptyTitle = qs || quick !== 'all' ? 'Không có câu hỏi khớp bộ lọc' : 'Chưa có câu hỏi nào'
   const emptyHint = qs || quick !== 'all' ? 'Thử đổi từ khóa hoặc bỏ bộ lọc.' : 'Câu hỏi đầu tiên sẽ mở đầu cho cả thread thảo luận.'
 
+  const askTopics = ASK_TOPICS.map((tp) => ({ label: tp, ...chip(askTopicsSel.indexOf(tp) >= 0), onPick: () => setAskTopicsSel((s) => (s.indexOf(tp) >= 0 ? s.filter((x) => x !== tp) : [...s, tp])) }))
   const askTools = TOOLS.map((tl) => ({ label: tl, ...chip(askToolsSel.indexOf(tl) >= 0), onPick: () => setAskToolsSel((s) => (s.indexOf(tl) >= 0 ? s.filter((x) => x !== tl) : [...s, tl])) }))
   const askOpacity = askTitle.trim() && askBody.trim() ? 1 : 0.5
 
@@ -349,11 +366,6 @@ export default function QuestionsPage() {
                 {quickFilters.map((f) => (
                   <button key={f.label} onClick={f.onPick} style={css(`height:32px; padding:0 14px; white-space:nowrap; border:1px solid ${f.border}; border-radius:999px; background:${f.bg}; color:${f.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{f.label}</button>
                 ))}
-                  <div style={css('margin-left:auto; display:inline-flex; align-items:center; gap:5px; height:44px; padding:5px; border-radius:999px; background:#EDF0FA;')}>
-                    {sorts.map((s2) => (
-                      <button key={s2.label} onClick={s2.onPick} style={css(`border:none; cursor:pointer; height:34px; padding:0 15px; border-radius:999px; font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; background:${s2.bg}; color:${s2.color}; white-space:nowrap;`)}>{t(s2.label)}</button>
-                    ))}
-                  </div>
               </div>
 
               <div style={css('display:flex; flex-direction:column; gap:16px; margin-top:20px;')}>
@@ -364,9 +376,6 @@ export default function QuestionsPage() {
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
                         {t('Câu hỏi')}
                       </span>
-                      {q.topics.map((tp) => (
-                        <span key={tp} style={css('display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#E7ECFB; color:#2c5fff; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{tp}</span>
-                      ))}
                       <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
                     </div>
 
@@ -430,11 +439,7 @@ export default function QuestionsPage() {
                           </div>
                         )
                       )}
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; flex-wrap:wrap;')}>
-                        {q.tools.map((tool) => (
-                          <span key={tool} style={css('display:inline-flex; align-items:center; height:26px; padding:0 10px; border:1px solid #DDE3EC; border-radius:8px; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{tool}</span>
-                        ))}
-                      </div>
+                      <TagRow topics={q.topics} tools={q.tools} style={{ marginTop: 12 }} />
                     </div>
 
                     <div style={css('display:flex; align-items:center; gap:12px; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
@@ -712,11 +717,17 @@ export default function QuestionsPage() {
                         <span style={css('margin-left:8px; font:600 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Gõ @ để mention đồng nghiệp')}</span>
 
                         <div style={css('margin-left:auto; display:flex; align-items:center; gap:10px;')}>
-                          <button onClick={() => setAskDraftSaved(true)} style={css('height:38px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Lưu nháp')}</button>
+                          <button onClick={saveAskDraft} style={css('height:38px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Lưu nháp')}</button>
                           <button onClick={postQuestion} style={css(`height:40px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${askOpacity}; box-shadow:0 10px 22px rgba(44,95,255,.4);`)}>{t('Đăng')}</button>
                         </div>
                       </div>
 
+                      <div style={css('font:700 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:.04em; color:#94a3b8; margin-top:16px;')}>{t('Topic (không bắt buộc)')}</div>
+                      <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
+                        {askTopics.map((tp) => (
+                          <button key={tp.label} onClick={tp.onPick} style={css(`height:30px; padding:0 13px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tp.label}</button>
+                        ))}
+                      </div>
                       <div style={css('font:700 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:.04em; color:#94a3b8; margin-top:16px;')}>{t('Công cụ AI (không bắt buộc)')}</div>
                       <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
                         {askTools.map((tl) => (

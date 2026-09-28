@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
@@ -7,61 +6,14 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
-import Avatar, { AVATAR_COLORS } from '../components/Avatar.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
-
-/**
- * Your own big profile avatar — click it to pick a color, persisted via PATCH /auth/me.
- * The picker is a full-viewport backdrop overlay (portaled to body) rather than an
- * in-flow popover, so it never sits flush against neighboring white cards (the stats
- * grid right below it) and reads unambiguously as a floating panel, on any screen size.
- */
-function AvatarPicker({ user, onChange }) {
-  const { t } = useI18n()
-  const [open, setOpen] = useState(false)
-  return (
-    <div style={css('position:relative; flex:none;')}>
-      <button
-        onClick={() => setOpen(true)}
-        title={t('Đổi màu avatar')}
-        style={css('position:relative; border:none; background:none; padding:0; cursor:pointer; border-radius:50%; display:block;')}
-      >
-        <Avatar user={user} size={84} fontSize={28} />
-        <span style={css('position:absolute; right:-2px; bottom:-2px; width:28px; height:28px; border-radius:50%; background:#fff; border:2px solid #04060d; display:flex; align-items:center; justify-content:center; color:#2c5fff;')}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
-        </span>
-      </button>
-      {open && createPortal(
-        <div
-          onClick={() => setOpen(false)}
-          style={css('position:fixed; inset:0; z-index:2200; background:rgba(4,6,13,.6); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:24px;')}
-        >
-          <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 30px 70px rgba(6,14,40,.45); padding:22px;')}>
-            <div style={css('display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;')}>
-              <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>{t('Chọn màu avatar')}</div>
-              <button onClick={() => setOpen(false)} style={css('width:30px; height:30px; border:none; border-radius:50%; background:#F1F4FA; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;')}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-              </button>
-            </div>
-            <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:12px;')}>
-              {AVATAR_COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => { onChange(c); setOpen(false) }}
-                  title={c}
-                  style={{ width: 40, height: 40, borderRadius: '50%', background: c, border: user.avatarColor === c ? '3px solid #0F172A' : '2px solid transparent', boxShadow: '0 2px 6px rgba(0,0,0,.15)', cursor: 'pointer', padding: 0 }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
-    </div>
-  )
-}
+import TagRow from '../components/TagRow.jsx'
+import { useNotifRead, markNotifsRead, notifKey } from '../lib/notifRead.js'
+import { defaultNotifications } from '../data/notifications.js'
+import { NOTIF_ICONS } from '../components/NotificationsPanel.jsx'
+import { QUESTION_DRAFT_KEY } from './QuestionsPage.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 
@@ -79,7 +31,7 @@ const UC_ORDER = ['draft', 'pending', 'rejected', 'approved']
 // Same bright gradient/glow text treatment as the Use Case Library hero title.
 const GRAD_TEXT = 'background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));'
 const GRAD_TEXT_SM = 'background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 14px rgba(26,95,255,.6)) drop-shadow(0 0 6px rgba(90,150,255,.4));'
-const heroHeading = css(`margin:0; font:900 78px/1.1 ${FONT}; letter-spacing:-.01em; ${GRAD_TEXT}`)
+const heroHeading = css(`margin:0; font:800 44px/1.15 ${FONT}; letter-spacing:-.01em; ${GRAD_TEXT}`)
 // Smaller inline sub-headings (the two lists within "Đã lưu") — same gradient treatment,
 // scaled-down glow so it doesn't wash out the white empty-state box right below it.
 const subHeading = css(`margin:0 0 20px; font:800 26px/1.2 ${FONT}; ${GRAD_TEXT_SM}`)
@@ -123,7 +75,6 @@ function QuestionCard({ q }) {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
           {t('Câu hỏi')}
         </span>
-        {q.cat && <span style={css(`display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#EAF0FF; color:#2c5fff; font:700 11.5px ${FONT};`)}>{q.cat}</span>}
         <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
       </div>
       <div style={css('display:flex; align-items:center; gap:10px; padding:10px 18px 0;')}>
@@ -136,6 +87,7 @@ function QuestionCard({ q }) {
       <div style={css('padding:8px 18px 0;')}>
         <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
         <p style={css(`margin:5px 0 0; font:400 13.5px/1.55 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
+        <TagRow topics={q.topics} tools={q.tools} style={{ marginTop: 10 }} />
       </div>
       <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
         {q.accepted && (
@@ -163,7 +115,6 @@ function UseCaseCard({ c }) {
         <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{c.initial}</span>
         <div style={css('display:flex; flex-direction:column; min-width:0;')}>
           <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{c.author}</span>
-          <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.team}</span>
         </div>
       </div>
       <div style={css('display:flex; gap:13px;')}>
@@ -171,17 +122,11 @@ function UseCaseCard({ c }) {
           <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
         </div>
         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-          <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.32 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.title}</h3>
-          <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.desc}</p>
+          <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.title}</h3>
+          <p style={css('margin:5px 0 0; font-size:13.5px; line-height:1.55; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.desc}</p>
         </div>
       </div>
-      <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;')}>
-        {c.toolsR.length > 0 ? c.toolsR.map((tl) => (
-          <span key={tl.name} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 11px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; font:700 12px ${FONT}; color:#3A4757;`)}>{tl.name}</span>
-        )) : (
-          <span style={css(`display:inline-flex; align-items:center; height:28px; font:400 12px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
-        )}
-      </div>
+      <TagRow topics={c.topics} tools={c.toolsR.map((x) => x.name)} style={{ marginTop: 12 }} />
       <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .16s;`)}>
           {t('Xem Use Case')}
@@ -209,7 +154,8 @@ export default function ProfilePage() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
-  const section = /#(usecase|question|saved)\b/.exec(hash || '')?.[1] || null
+  const isUnread = useNotifRead()
+  const section = /#(activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'activity'
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -263,7 +209,7 @@ export default function ProfilePage() {
     statusLabel: q.resolved ? 'Đã trả lời' : t('Đang chờ trả lời'),
     statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
     statusColor: q.resolved ? '#00893F' : '#B45300',
-    cat: [].concat(q.category).filter(Boolean)[0] || '',
+    topics: q.topics || [], tools: q.tools || [],
     accepted: q.answers.some((a) => a.accepted),
     helpful: q.answers.reduce((n, a) => n + (a.helpful || 0), 0) + (q.qHelpful || 0),
     helped: !!q.iHelpedQ,
@@ -315,7 +261,7 @@ export default function ProfilePage() {
       author: c.author,
       initial: c.author.slice(0, 1).toUpperCase(),
       avatarBg: avatarColor(c.author),
-      team: c.team || c.category,
+      topics: (prdMeta[c.id] || {}).topics || [],
       helpful: ucMeta[c.id] ? ucMeta[c.id].helpful : (prdMeta[c.id] || {}).helpful || 0,
       helped: !!(ucMeta[c.id] && ucMeta[c.id].iHelped),
       comments: ucMeta[c.id] ? ucMeta[c.id].comments.length : 0,
@@ -325,13 +271,16 @@ export default function ProfilePage() {
       onOpen: () => navigate(`/use-cases/${c.id}`),
     }))
 
-  // ---- main-view stats + a light "recent activity" roll-up (not one of the 3 hash sections) ----
-  const stats = [
-    { value: myUseCases.length, label: t('Use case'), color: '#2c5fff' },
-    { value: myQuestions.length, label: t('Câu hỏi'), color: '#0F172A' },
-    { value: answersGiven, label: t('Câu trả lời'), color: '#00A352' },
-  ]
-  const recentItems = []
+  let qDraft = null
+  try { qDraft = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null') } catch { /* ignore */ }
+  const draftItem = qDraft && (qDraft.title || qDraft.body) ? [{
+    tagLabel: t('Câu hỏi'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
+    title: qDraft.title || t('(Chưa có tiêu đề)'), meta: t('Bản nháp') + ' · ' + relativeTime(qDraft.savedAt),
+    statusLabel: t('Đang nháp'), statusBg: '#EDF0FA', statusColor: '#3A4757',
+    cta: t('Tiếp tục'), primary: true,
+    onOpen: () => navigate('/questions#ask'),
+  }] : []
+  const recentItems = [].concat(draftItem)
     .concat(myQuestions.map((q) => ({
       tagLabel: t('Câu hỏi'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
       title: q.title, meta: relativeTime(q.time),
@@ -354,7 +303,7 @@ export default function ProfilePage() {
     }))
     .slice(0, 4)
 
-  const sectionTitle = section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : ''
+  const sectionTitle = section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
   return (
     <Layout active="profile">
@@ -362,27 +311,39 @@ export default function ProfilePage() {
         <SpaceBackdrop arcTop={section ? 200 : 230} bg="#04060d" />
 
         {/* Profile header — only on the main view, hidden once a specific section is selected. */}
-        {!section && (
+        {/* Section heading — gradient/glow style, no item-count label (removed per latest design revision). */}
+        {section && (
           <section style={css('position:relative; padding:48px 40px 0;')}>
-            <div style={css('max-width:760px; margin:0 auto; display:flex; align-items:center; gap:26px; flex-wrap:wrap;')}>
-              <AvatarPicker user={user} onChange={(color) => api.updateMe({ avatarColor: color }).then((d) => setUser(d.user)).catch(() => {})} />
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <h1 style={css(`margin:0; font:900 26px ${FONT}; color:#ffffff;`)}>{user.name}</h1>
-                <p style={css(`margin:6px 0 0; font:400 15px ${FONT}; color:#c3d0f5;`)}>{user.team ? user.team + ' · ' : ''}{user.email}</p>
-                <div style={css(`display:inline-flex; align-items:center; gap:8px; margin-top:10px; height:26px; padding:0 12px; border-radius:999px; background:#E7ECFB; color:#2c5fff; font:700 11.5px ${FONT};`)}>{t('Đăng nhập bằng email công ty')}</div>
+            <div style={css('max-width:760px; margin:0 auto;')}>
+              <h1 style={heroHeading}>{sectionTitle}</h1>
+            </div>
+          </section>
+        )}
+
+        {section === 'activity' && (
+          <section style={css('position:relative; padding:22px 40px 0;')}>
+            <div style={css('max-width:760px; margin:0 auto;')}>
+              <h3 style={css(`margin:0 0 14px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Thông báo')}</h3>
+              <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; overflow:hidden;')}>
+                <div style={css('display:flex; justify-content:flex-end; padding:10px 16px; border-bottom:1px solid #EEF1F7;')}>
+                  <button onClick={() => markNotifsRead(defaultNotifications.map(notifKey))} style={css(`border:none; background:transparent; cursor:pointer; font:700 12.5px ${FONT}; color:#3366F0; padding:0;`)}>{t('Đánh dấu đã đọc tất cả')}</button>
+                </div>
+                {defaultNotifications.map((n, i) => {
+                  const unread = isUnread(n)
+                  return (
+                    <div key={i} onClick={() => { markNotifsRead([notifKey(n)]); navigate(n.href) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; align-items:center; padding:14px 18px; border-bottom:1px solid #F3F5FA; background:${unread ? '#F3F7FF' : '#fff'}; cursor:pointer;`)}>
+                      <span style={css(`flex:none; width:34px; height:34px; border-radius:11px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.icon] || NOTIF_ICONS.answer}</span>
+                      <div style={css('flex:1; min-width:0;')}>
+                        <div style={css(unread ? `font:800 13.5px/1.5 ${FONT}; color:#1a5fff;` : `font:400 13.5px/1.5 ${FONT}; color:#475569;`)}>{n.text}</div>
+                        <div style={css(`margin-top:3px; font:400 12px ${FONT}; color:#94a3b8;`)}>{n.time}</div>
+                      </div>
+                      {unread && <span style={css('flex:none; width:9px; height:9px; border-radius:50%; background:#2c5fff; box-shadow:0 0 0 3px rgba(44,95,255,.18);')}></span>}
+                    </div>
+                  )
+                })}
               </div>
             </div>
-
-            <div style={css('max-width:760px; margin:26px auto 0; display:grid; grid-template-columns:repeat(3,1fr); gap:14px;')}>
-              {stats.map((s) => (
-                <div key={s.label} style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:18px 20px; box-shadow:0 8px 22px rgba(30,50,90,.06);')}>
-                  <div style={css(`font:900 26px ${FONT}; color:${s.color};`)}>{s.value}</div>
-                  <div style={css(`margin-top:5px; font:600 12.5px ${FONT}; color:#64748b;`)}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            <div style={css('max-width:760px; margin:32px auto 0;')}>
+            <div style={css('max-width:760px; margin:30px auto 0;')}>
               <h3 style={css(`margin:0 0 14px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Hoạt động gần đây')}</h3>
               {loaded && recentItems.length === 0 && (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đặt câu hỏi hoặc chia sẻ use case đầu tiên của bạn.')}</div>
@@ -407,14 +368,6 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* Section heading — gradient/glow style, no item-count label (removed per latest design revision). */}
-        {section && (
-          <section style={css('position:relative; padding:48px 40px 0;')}>
-            <div style={css('max-width:760px; margin:0 auto;')}>
-              <h1 style={heroHeading}>{sectionTitle}</h1>
-            </div>
-          </section>
-        )}
 
         {section === 'usecase' && (
           <section style={css('position:relative; padding:22px 40px 90px;')}>
@@ -439,6 +392,16 @@ export default function ProfilePage() {
         {section === 'question' && (
           <section style={css('position:relative; padding:22px 40px 90px;')}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
+              {draftItem.map((r) => (
+                <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
+                  <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
+                  <div style={css('flex:1; min-width:0;')}>
+                    <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.title}</div>
+                    <div style={css(`margin-top:3px; font:400 12.5px ${FONT}; color:#94a3b8;`)}>{r.meta}</div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); r.onOpen() }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
+                </div>
+              ))}
               {myQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
               {loaded && myQuestionCards.length === 0 && (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có câu hỏi nào.')}</div>

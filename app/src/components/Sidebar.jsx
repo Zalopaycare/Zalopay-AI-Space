@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
-import { useAuth } from '../auth/AuthContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
-import Avatar from './Avatar.jsx'
+import { useNotifRead } from '../lib/notifRead.js'
+import { defaultNotifications } from '../data/notifications.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 
 const itemBase = 'display:flex; align-items:center; gap:14px; height:46px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:15.5px; cursor:pointer; border:none; text-align:left; font-family:inherit; width:100%;'
@@ -44,15 +44,15 @@ function SubLink({ to, active, icon, children }) {
  */
 export default function Sidebar({ active }) {
   const { t } = useI18n()
-  const { user, logout } = useAuth()
   const location = useLocation()
   const [hash, setHash] = useState(location.hash)
   const [collapsed, setCollapsed] = useSidebarCollapsed()
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
-  const sub = active === 'profile' ? /#(usecase|question|saved)\b/.exec(hash)?.[1] || null : null
+  const sub = active === 'profile' ? /#(activity|usecase|question|saved)\b/.exec(hash)?.[1] || 'activity' : null
+  const isUnread = useNotifRead()
+  const unreadCount = defaultNotifications.filter(isUnread).length
   const homeActive = active === 'home'
-  const profileActive = active === 'profile' && !sub
 
   return (
     <div style={css(`position:fixed; left:0; top:0; bottom:0; width:${collapsed ? 76 : 260}px; z-index:2000; display:flex; flex-direction:column; padding:${collapsed ? '22px 10px 18px' : '22px 14px 18px'}; background:#04060d; border-right:1px solid rgba(255,255,255,.08); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
@@ -87,16 +87,25 @@ export default function Sidebar({ active }) {
         }>{t('Đặt câu hỏi')}</NavLink>
       </div>
 
-      <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
-        <NavLink to="/profile" active={profileActive} collapsed={collapsed} title={t('Hồ sơ')} icon={
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4.5"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
-        }>{t('Hồ sơ')}</NavLink>
-      </div>
+
+      {collapsed && (
+        <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
+          <NavLink to="/profile#activity" active={sub === 'activity'} collapsed title={t('Thông báo & hoạt động')} icon={
+            <span style={css('position:relative; display:inline-flex;')}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+              <span style={css(`position:absolute; top:-6px; right:-8px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:${unreadCount ? '#FF3B30' : '#475569'}; color:#fff; font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center;`)}>{unreadCount}</span>
+            </span>
+          }>{t('Thông báo & hoạt động')}</NavLink>
+        </div>
+      )}
 
       {!collapsed && (
         <>
           <div style={css('display:flex; align-items:center; padding:0 12px; margin-top:26px; margin-bottom:6px; font-size:12.5px; font-weight:700; color:#7d8aa8;')}>{t('Của tôi')}</div>
           <div style={css('display:flex; flex-direction:column; gap:2px;')}>
+            <SubLink to="/profile#activity" active={sub === 'activity'} icon={
+              <svg style={{ flex: "none" }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+            }><span style={css('white-space:nowrap;')}>{t('Thông báo')}</span><span style={css(`margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:${unreadCount ? '#FF3B30' : 'rgba(255,255,255,.14)'}; color:#fff; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;`)}>{unreadCount}</span></SubLink>
             <SubLink to="/profile#usecase" active={sub === 'usecase'} icon={
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
             }>{t('Use case của tôi')}</SubLink>
@@ -110,32 +119,6 @@ export default function Sidebar({ active }) {
         </>
       )}
 
-      <div style={{ flex: 1 }}></div>
-
-      {user ? (
-        <div style={css('position:relative;')}>
-          <Link
-            to="/profile"
-            className={hoverClass('background:rgba(255,255,255,.09);')}
-            style={css(`display:flex; align-items:center; gap:11px; padding:8px 10px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); text-decoration:none; ${collapsed ? 'justify-content:center;' : ''}`)}
-          >
-            <Avatar user={user} size={36} />
-            {!collapsed && (
-              <span style={css('display:flex; flex-direction:column; min-width:0;')}>
-                <span style={css('font-size:14px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{user.name}</span>
-              </span>
-            )}
-          </Link>
-          {!collapsed && (
-            <button
-              onClick={logout}
-              style={css('margin-top:6px; width:100%; border:none; background:transparent; cursor:pointer; padding:6px 10px; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#93a2c7; text-align:left;')}
-            >
-              {t('Đăng xuất')}
-            </button>
-          )}
-        </div>
-      ) : null}
     </div>
   )
 }

@@ -4,7 +4,8 @@ import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
-import NotificationsPanel from './NotificationsPanel.jsx'
+import AvatarColorModal from './AvatarColorModal.jsx'
+import { api } from '../lib/api.js'
 import Avatar from './Avatar.jsx'
 
 const NAV_ITEMS = [
@@ -15,13 +16,14 @@ const NAV_ITEMS = [
 
 const navItemBase = 'font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;padding:6px 2px;transition:color .15s;background:none;border:none;text-decoration:none;white-space:nowrap;'
 
-/** The thin top bar, offset by the (collapsible) sidebar: page nav, notifications + profile chip. */
+/** The thin top bar, offset by the (collapsible) sidebar: page nav + profile chip (avatar color, logout). */
 export default function TopNav({ notifications }) {
   const location = useLocation()
   const { t } = useI18n()
-  const { user, openLogin, logout } = useAuth()
+  const { user, setUser, openLogin, logout } = useAuth()
   const [collapsed] = useSidebarCollapsed()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [colorOpen, setColorOpen] = useState(false)
   const menuRef = useRef(null)
   useEffect(() => {
     if (!menuOpen) return
@@ -48,12 +50,6 @@ export default function TopNav({ notifications }) {
         })}
       </nav>
       <div style={css('flex:1; display:flex; align-items:center; justify-content:flex-end; gap:12px;')}>
-        {user && (
-          <NotificationsPanel
-            notifications={notifications}
-            buttonStyle={css('width:40px; height:40px; border:1px solid rgba(255,255,255,.18); border-radius:50%; background:rgba(255,255,255,.05); color:#dbe6ff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}
-          />
-        )}
         {user ? (
           <div style={{ position: 'relative' }} ref={menuRef}>
             <div
@@ -67,7 +63,7 @@ export default function TopNav({ notifications }) {
             </div>
             {menuOpen && (
               <div style={css('position:absolute; right:0; top:50px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:16px; box-shadow:0 26px 60px rgba(6,14,40,.34); overflow:hidden; z-index:900; padding:6px;')}>
-                <Link to="/profile" onClick={() => setMenuOpen(false)} style={css('display:block; padding:10px 12px; border-radius:10px; text-decoration:none; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{t('Hồ sơ của tôi')}</Link>
+                <button onClick={() => { setMenuOpen(false); setColorOpen(true) }} style={css('display:block; padding:10px 12px; border-radius:10px; text-decoration:none; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; width:100%; text-align:left; border:none; background:transparent; cursor:pointer;')}>{t('Đổi màu avatar')}</button>
                 <button onClick={() => { setMenuOpen(false); logout() }} style={css('display:block; width:100%; text-align:left; padding:10px 12px; border:none; background:none; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{t('Đăng xuất')}</button>
               </div>
             )}
@@ -81,6 +77,9 @@ export default function TopNav({ notifications }) {
           </button>
         )}
       </div>
+      {colorOpen && user && (
+        <AvatarColorModal user={user} onClose={() => setColorOpen(false)} onPick={(color) => api.updateMe({ avatarColor: color }).then((d) => setUser(d.user)).catch(() => {})} />
+      )}
     </div>
   )
 }

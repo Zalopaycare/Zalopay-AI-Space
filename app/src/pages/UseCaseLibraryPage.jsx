@@ -8,7 +8,7 @@ import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
-import ShareCtaBar from '../components/ShareCtaBar.jsx'
+import TagRow from '../components/TagRow.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
@@ -26,8 +26,6 @@ const EMPTY_SHARE_FORM = { title: '', audience: '', problem: '', solution: '', p
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
 const optStyle = (active) => `padding:9px 12px;border-radius:8px;font-size:13px;font-weight:${active ? '700' : '500'};color:${active ? '#1a5fff' : '#334155'};background:${active ? '#EEF3FF' : 'transparent'};cursor:pointer;white-space:nowrap;`
-const libViewActiveStyle = 'width:30px;height:30px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#2f8dff;color:#fff;'
-const libViewIdleStyle = 'width:30px;height:30px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;color:#64748b;'
 
 function copyTextToClipboard(text) {
   try {
@@ -47,21 +45,6 @@ function copyTextToClipboard(text) {
   return navigator.clipboard?.writeText ? navigator.clipboard.writeText(text) : Promise.reject()
 }
 
-const starField = [
-  ['84px', '17%', 3, '3.4s', '0s'], ['126px', '33%', 2, '4.2s', '.5s'], ['92px', '59%', 4, '3.7s', '.2s'],
-  ['150px', '79%', 3, '4.6s', '.9s'], ['206px', '11%', 2, '3.9s', '1.1s'], ['236px', '45%', 3, '4.1s', '.3s'],
-  ['178px', '88%', 4, '3.5s', '.7s'], ['280px', '25%', 2, '4.4s', '1s'], ['300px', '67%', 3, '3.8s', '.4s'],
-  ['112px', '49%', 2, '4.3s', '.6s'], ['256px', '83%', 3, '3.6s', '1.2s'], ['322px', '39%', 2, '4.5s', '.8s'],
-]
-
-function StarField() {
-  return starField.map(([top, left, size, dur, delay], i) => (
-    <span
-      key={i}
-      style={css(`position:absolute; top:${top}; left:${left}; width:${size}px; height:${size}px; border-radius:50%; background:${size >= 3 ? '#fff' : '#cfe6ff'}; box-shadow:0 0 ${size + 4}px ${size >= 3 ? '#9fd0ff' : '#2f8dff'}; animation:twinkle ${dur} ease-in-out ${delay} infinite; z-index:1; pointer-events:none;`)}
-    />
-  ))
-}
 
 export default function UseCaseLibraryPage() {
   const { id } = useParams()
@@ -90,7 +73,7 @@ export default function UseCaseLibraryPage() {
   const [libTool, setLibTool] = useState(null)
   const [libKind, setLibKind] = useState(null)
   const [libSort, setLibSort] = useState('new')
-  const [libView, setLibView] = useState('grid')
+  const [libPage, setLibPage] = useState(1)
   const [openDrop, setOpenDrop] = useState(null)
 
   const [shareOpen, setShareOpen] = useState(false)
@@ -317,7 +300,11 @@ export default function UseCaseLibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [libCat, libTopic, libGroup, libTool, libKind, libSort, q, ucMeta])
 
-  const libCards = libCases.slice(0, 9).map(mapCard)
+  useEffect(() => { setLibPage(1) }, [query, libCat, libTool, libSort])
+  const PAGE_SIZE = 6
+  const pageCount = Math.max(1, Math.ceil(libCases.length / PAGE_SIZE))
+  const curPage = Math.min(libPage, pageCount)
+  const libCards = libCases.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE).map(mapCard)
   const activeFilterCount = [libCat, libTopic, libTool, libGroup, libKind].filter(Boolean).length
 
   const catOptions = [{ label: 'Tất cả category', val: null }, ...catList.map((c) => ({ label: c, val: c }))]
@@ -383,8 +370,6 @@ export default function UseCaseLibraryPage() {
   // ================= DETAIL VIEW =================
   function renderDetail() {
     const dsel = allCases.find((x) => x.id === id) || allCases[0]
-    const dkind = kindOf(dsel.id)
-    const dstat = statusOf(dsel.id)
     const dinfo = authorInfoFor(dsel.author)
     const cd = caseDetail[dsel.id] || {}
     const howto = cd.howto || {}
@@ -397,13 +382,8 @@ export default function UseCaseLibraryPage() {
     const successR = hlList(howto.success)
     const pitfallR = hlList(howto.pitfalls)
     const contactR = hlList(howto.contact)
-    const factsR = [
-      { label: 'DÀNH CHO AI', value: cd.audience || dsel.team || dsel.category },
-      { label: 'TRẠNG THÁI', value: statusMeta(dstat).label },
-      { label: 'CATEGORY', value: dsel.category },
-      { label: 'CÔNG CỤ AI', value: dsel.tools.length ? dsel.tools.join(', ') : 'Không dùng AI tool trực tiếp' },
-      { label: 'TEAM', value: dsel.team || '—' },
-    ]
+    const securityR = hlList(howto.security)
+    const dTopics = (prdMeta[dsel.id] || {}).topics || []
     const tablesR = (cd.tables || []).map((tb) => ({ title: tb.title, note: tb.note || '', cols: tb.cols, rows: tb.rows }))
     const codeR = (cd.code || []).map((cb, i) => ({
       ...cb,
@@ -423,189 +403,79 @@ export default function UseCaseLibraryPage() {
     return (
       <div>
         <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
-          <div style={css('position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size:52px 52px; -webkit-mask-image:radial-gradient(78% 74% at 28% 22%, #000 18%, transparent 72%); mask-image:radial-gradient(78% 74% at 28% 22%, #000 18%, transparent 72%); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:6%; top:-60px; width:820px; height:560px; background:radial-gradient(50% 60% at 42% 42%, rgba(46,144,255,.5) 0%, rgba(30,120,240,.2) 44%, rgba(30,120,240,0) 70%); pointer-events:none;')}></div>
-          <StarField />
-          <div style={css('position:relative; z-index:3; max-width:1200px; margin:0 auto; padding:8px 40px 76px;')}>
+          <SpaceBackdrop arcTop={300} />
+          <div style={css('position:relative; z-index:3; max-width:900px; margin:0 auto; padding:18px 40px 40px;')}>
             <button
               onClick={() => navigate('/use-cases')}
               className={hoverClass('color:#fff;')}
-              style={css('display:inline-flex; align-items:center; gap:9px; background:none; border:none; color:#c3c3d4; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:28px; padding:0;')}
+              style={css('display:inline-flex; align-items:center; gap:9px; background:none; border:none; color:#c3c3d4; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:22px; padding:0;')}
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
               {t('Quay lại Use Case Library')}
             </button>
-            <div style={css('display:grid; grid-template-columns:1fr 560px; gap:46px; align-items:start;')}>
-              <div>
-                <div style={css('display:flex; gap:10px; margin-bottom:22px;')}>
-                  <span style={css('display:inline-flex; align-items:center; gap:7px; padding:6px 13px; border-radius:20px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); font-size:11px; font-weight:800; letter-spacing:.4px;')}>
-                    <span style={css(`width:8px; height:8px; border-radius:50%; background:${statusMeta(dstat).color}; box-shadow:0 0 8px ${statusMeta(dstat).color};`)}></span>{statusMeta(dstat).up}
-                  </span>
-                  <span style={css('display:inline-flex; align-items:center; padding:6px 13px; border-radius:20px; background:rgba(46,144,255,.16); border:1px solid rgba(46,144,255,.4); color:#e0f0ff; font-size:11px; font-weight:800; letter-spacing:.4px;')}>{dkind === 'tech' ? 'BY TECH' : 'BY NON-TECH'}</span>
-                  <span style={css(levelChip(cd.level, true))}>{levelMeta(cd.level).label}</span>
-                </div>
-                <h1 style={css('margin:0 0 18px; font-size:44px; line-height:1.12; font-weight:800; letter-spacing:-1.2px; color:#fff;')}>{dsel.title}</h1>
-                <p style={css('margin:0 0 28px; font-size:15.5px; line-height:1.68; color:#ffffff; max-width:600px; text-wrap:pretty;')}>{dsel.desc}</p>
-                <div style={css('display:flex; align-items:center; gap:14px; margin-bottom:24px;')}>
-                  <span style={css(`width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex:none;background:${avatarColor(dsel.author)}`)}>{dsel.author.slice(0, 1).toUpperCase()}</span>
-                  <div>
-                    <div style={css('font-size:15px; font-weight:700; color:#fff;')}>{dinfo.name}</div>
-                    <div style={css('font-size:13px; color:#9a9ab0;')}>{dinfo.role}</div>
-                  </div>
-                </div>
-                <div style={css('display:flex; gap:10px; flex-wrap:wrap;')}>
-                  {dsel.tools.map((name) => (
-                    <span key={name} style={css('display:inline-flex; align-items:center; padding:9px 15px; border-radius:11px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); font-size:13px; font-weight:600; color:#e6e6f0;')}>{name}</span>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div style={css('position:relative; background:linear-gradient(150deg, rgba(46,144,255,.34), rgba(20,15,32,.96) 62%); border:1px solid rgba(46,144,255,.4); border-radius:22px; padding:16px; box-shadow:0 26px 60px rgba(30,120,240,.4);')}>
-                  <div style={css('position:absolute; right:-12px; top:-16px; z-index:4; width:52px; height:52px; border-radius:16px; background:linear-gradient(135deg,#1e6fe0,#3a8dff); display:flex; align-items:center; justify-content:center; box-shadow:0 12px 26px rgba(30,120,240,.6);')}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="M7 15v-3"></path><path d="M12 15V9"></path><path d="M17 15v-6"></path></svg>
-                  </div>
-                  <div style={css('background:#fff; border-radius:16px; padding:16px; box-shadow:0 6px 20px rgba(15,23,42,.08);')}>
-                    <div style={css('position:relative; aspect-ratio:16/10; border-radius:12px; overflow:hidden; background:#eef2f9; margin-bottom:14px;')}>
-                      <ImageSlot id={'uc-hero-' + dsel.id} shape="rect" placeholder="ảnh bìa use case" />
-                    </div>
-                    <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                      {factsR.map((fx) => (
-                        <div key={fx.label} style={css('display:flex; align-items:flex-start; justify-content:space-between; gap:14px;')}>
-                          <span style={css('flex:none; font-size:10.5px; font-weight:800; letter-spacing:.06em; color:#94a3b8; padding-top:2px;')}>{fx.label}</span>
-                          <span style={css('text-align:right; font-size:12.5px; font-weight:700; line-height:1.5; color:#0f172a;')}>{fx.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;')}>
+              {dTopics.map((tp) => (
+                <span key={'t-' + tp} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:12.5px; font-weight:700;')}>{tp}</span>
+              ))}
+              {dsel.tools.map((name) => (
+                <span key={'a-' + name} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); color:#fff; font-size:12.5px; font-weight:700;')}>{name}</span>
+              ))}
             </div>
+            <h1 style={css('margin:0 0 14px; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{dsel.title}</h1>
+            <p style={css('margin:0; font-size:15.5px; line-height:1.68; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{dsel.desc}</p>
           </div>
         </section>
 
-        <div style={css('position:relative; z-index:4; background:#07070c; padding:46px 40px 60px;')}>
-          <div style={css('max-width:1200px; margin:0 auto;')}>
-            <div style={css('display:grid; grid-template-columns:1fr; gap:24px; margin-bottom:26px;')}>
-              <div style={css('border:1px solid #E6EBF3; border-radius:20px; padding:26px 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
-                <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:12px;')}>{t('Vấn đề')}</div>
-                <p style={css('margin:0 0 16px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}>{cd.problem || dsel.desc}</p>
-                <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                  {painR.map((p, i) => (
-                    <div key={i} style={css('display:flex; gap:10px; font-size:13.5px; line-height:1.55; color:#3A4757;')}>
-                      <span style={css('flex:none; margin-top:6px; width:6px; height:6px; border-radius:50%; background:#E0353F;')}></span>{p.text}
-                    </div>
-                  ))}
-                </div>
-              </div>
+        <div style={css('position:relative; z-index:4; background:#07070c; padding:10px 40px 60px;')}>
+          <div style={css('max-width:900px; margin:0 auto;')}>
+            <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
+              <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Overview</h2>
+              <span style={css('font-size:13px; color:#8b98b8;')}>Bài toán › Giải pháp › Kết quả</span>
             </div>
-
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:26px 28px; margin-bottom:26px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:22px;')}>Cách làm</div>
-              <div style={css('display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:0;')}>
-                {solutionR.map((st) => (
-                  <div key={st.num} style={css('position:relative; display:flex; flex-direction:column; gap:14px; padding:0 14px;')}>
-                    <div style={css('position:relative; display:flex; align-items:center; height:34px;')}>
-                      <span style={css('position:absolute; left:0; right:0; top:16px; height:2px; background:#DCE6FB;')}></span>
-                      <span style={css('position:relative; z-index:1; width:34px; height:34px; border-radius:50%; background:#E7ECFB; border:2px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800;')}>{st.num}</span>
-                    </div>
-                    <span style={css('font-size:13.5px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}>{st.text}</span>
+            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Bài toán')}</div>
+              <p style={css('margin:0 0 14px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}>{cd.problem || dsel.desc}</p>
+              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
+                {painR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${'#3A4757'};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#E0353F;')}></span>{it.text}
                   </div>
                 ))}
               </div>
             </div>
-
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:26px 28px; margin-bottom:26px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:20px;')}>{t('Kết quả')} &amp; trạng thái</div>
-              <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:18px;')}>
-                <div style={css('background:#F2FBF6; border:1px solid #CFEEDE; border-radius:16px; padding:20px 22px;')}>
-                  <div style={css('font-size:13px; font-weight:800; color:#00893F; margin-bottom:14px;')}>Đã đạt được</div>
-                  <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                    {resultR.map((r, i) => (
-                      <div key={i} style={css('display:flex; gap:10px; font-size:13.5px; line-height:1.6; color:#2F4A3C;')}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00A352" strokeWidth="2.4" style={{ flex: 'none', marginTop: 2 }}><path d="M20 6 9 17l-5-5"></path></svg>{r.text}
-                      </div>
-                    ))}
+            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Giải pháp')}</div>
+              <div style={css('display:flex; flex-direction:column; gap:12px;')}>
+                {solutionR.map((st) => (
+                  <div key={st.num} style={css('display:flex; gap:12px; align-items:flex-start;')}>
+                    <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;')}>{st.num}</span>
+                    <span style={css('font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}>{st.text}</span>
                   </div>
-                </div>
-                <div style={css('background:#FFF8E8; border:1px solid #F3E0B0; border-radius:16px; padding:20px 22px;')}>
-                  <div style={css('font-size:13px; font-weight:800; color:#B45300; margin-bottom:14px;')}>{t('Giới hạn & lưu ý')}</div>
-                  <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                    {nextR.map((n, i) => (
-                      <div key={i} style={css('display:flex; gap:10px; font-size:13.5px; line-height:1.6; color:#5A4522;')}>
-                        <span style={css('flex:none; margin-top:7px; width:6px; height:6px; border-radius:50%; background:#E39100;')}></span>{n.text}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
-
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:26px 28px; margin-bottom:26px;')}>
-              <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px;')}>
-                <div style={css('font-size:17px; font-weight:800; color:#0F172A;')}>Làm theo</div>
-                <span style={css(levelChip(cd.level, false))}>{levelMeta(cd.level).label}</span>
+            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Kết quả')}</div>
+              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
+                {resultR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${'#2F4A3C'};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#00A352;')}></span>{it.text}
+                  </div>
+                ))}
               </div>
-              <div style={css('font-size:12.5px; color:#64748b; margin-bottom:22px;')}>Phần <span style={css('color:#C8102E; font-weight:700;')}>chữ đỏ</span> là nội dung đề xuất thêm, chưa có trong tài liệu gốc — cần người phụ trách xác nhận.</div>
-
-              <div style={css('display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:22px; margin-bottom:22px;')}>
-                <div style={css('background:#F7F9FD; border:1px solid #E6EBF3; border-radius:16px; padding:20px 22px;')}>
-                  <div style={css('font-size:13px; font-weight:800; color:#2c5fff; margin-bottom:14px;')}>{t('Cần chuẩn bị gì')}</div>
+              {nextR.length > 0 && (
+                <div style={css('margin-top:16px; padding:14px 16px; border-radius:12px; background:#FFF8E8; border:1px solid #F3E0B0;')}>
+                  <div style={css('font-size:12.5px; font-weight:800; color:#B45300; margin-bottom:8px;')}>{t('Giới hạn & lưu ý')}</div>
                   <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                    {prepR.map((it, i) => (
-                      <div key={i} style={css(`display:flex; gap:10px; font-size:13.5px; line-height:1.6; color:${it.color};`)}>
-                        <span style={css(`flex:none; margin-top:7px; width:6px; height:6px; border-radius:50%; background:${it.dot};`)}></span>{it.text}
-                      </div>
-                    ))}
+                {nextR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${'#5A4522'};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#E39100;')}></span>{it.text}
                   </div>
-                </div>
-                <div style={css('background:#ffffff; border:1px solid #E6EBF3; border-radius:16px; padding:20px 22px;')}>
-                  <div style={css('font-size:13px; font-weight:800; color:#2c5fff; margin-bottom:14px;')}>Các bước</div>
-                  <div style={css('display:flex; flex-direction:column; gap:13px;')}>
-                    {stepsR.map((it) => (
-                      <div key={it.num} style={css('display:flex; gap:12px; align-items:flex-start;')}>
-                        <span style={css('flex:none; width:24px; height:24px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;')}>{it.num}</span>
-                        <span style={css(`font-size:13.5px; line-height:1.6; color:${it.color}; text-wrap:pretty;`)}>{it.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
-
-              <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; margin-bottom:22px;')}>
-                <div style={css('background:#F2FBF6; border:1px solid #CFEEDE; border-radius:16px; padding:20px 22px;')}>
-                  <div style={css('font-size:13px; font-weight:800; color:#00893F; margin-bottom:14px;')}>Biết là thành công khi</div>
-                  <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                    {successR.map((it, i) => (
-                      <div key={i} style={css(`display:flex; gap:10px; font-size:13.5px; line-height:1.6; color:${it.color};`)}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00A352" strokeWidth="2.4" style={{ flex: 'none', marginTop: 2 }}><path d="M20 6 9 17l-5-5"></path></svg>{it.text}
-                      </div>
-                    ))}
-                  </div>
                 </div>
-                <div style={css('background:#FDF3F4; border:1px solid #F5D6DA; border-radius:16px; padding:20px 22px;')}>
-                  <div style={css('font-size:13px; font-weight:800; color:#C0303A; margin-bottom:14px;')}>Lỗi hay gặp</div>
-                  <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                    {pitfallR.map((it, i) => (
-                      <div key={i} style={css(`display:flex; gap:10px; font-size:13.5px; line-height:1.6; color:${it.color};`)}>
-                        <span style={css('flex:none; margin-top:7px; width:6px; height:6px; border-radius:50%; background:#E0353F;')}></span>{it.text}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div style={css('background:linear-gradient(120deg,#2c5fff 0%,#1a3fd6 100%); border-radius:16px; padding:18px 22px;')}>
-                <div style={css('font-size:13px; font-weight:800; color:#ffffff; margin-bottom:10px;')}>Hỏi ai</div>
-                <div style={css('display:flex; flex-direction:column; gap:8px;')}>
-                  {contactR.map((it, i) => (
-                    <div key={i} style={css('display:flex; gap:10px; font-size:13.5px; line-height:1.6; color:#ffffff;')}>
-                      <span style={css('flex:none; margin-top:7px; width:6px; height:6px; border-radius:50%; background:#ffffff;')}></span><span style={css('color:#ffffff;')}>{it.text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
-
             {tablesR.map((tb, ti) => (
               <div key={ti} style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:26px;')}>
                 <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:6px;')}>{tb.title}</div>
@@ -631,6 +501,43 @@ export default function UseCaseLibraryPage() {
               </div>
             ))}
 
+            <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
+              <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Deep dive</h2>
+              <span style={css('font-size:13px; color:#8b98b8;')}>Chuẩn bị trước › Các bước cài đặt › Lỗi phổ biến › Bảo mật</span>
+            </div>
+            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Chuẩn bị trước')}</div>
+              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
+                {prepR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#2c5fff;')}></span>{it.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Các bước cài đặt')}</div>
+              <div style={css('display:flex; flex-direction:column; gap:12px;')}>
+                {stepsR.map((it) => (
+                  <div key={it.num} style={css('display:flex; gap:12px; align-items:flex-start;')}>
+                    <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;')}>{it.num}</span>
+                    <span style={css(`font-size:14px; line-height:1.65; color:${it.color}; text-wrap:pretty;`)}>{it.text}</span>
+                  </div>
+                ))}
+              </div>
+              {successR.length > 0 && (
+                <div style={css('margin-top:16px; padding:14px 16px; border-radius:12px; background:#F2FBF6; border:1px solid #CFEEDE;')}>
+                  <div style={css('font-size:12.5px; font-weight:800; color:#00893F; margin-bottom:8px;')}>Biết là thành công khi</div>
+                  <div style={css('display:flex; flex-direction:column; gap:11px;')}>
+                {successR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#00A352;')}></span>{it.text}
+                  </div>
+                ))}
+              </div>
+                </div>
+              )}
+            </div>
             {codeR.map((cb, ci) => (
               <div key={ci} style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:26px;')}>
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;')}>
@@ -644,6 +551,28 @@ export default function UseCaseLibraryPage() {
               </div>
             ))}
 
+            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Các lỗi phổ biến và cách khắc phục')}</div>
+              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
+                {pitfallR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#E0353F;')}></span>{it.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {securityR.length > 0 && (
+              <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Lưu ý quan trọng về bảo mật')}</div>
+              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
+                {securityR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#6F0CE2;')}></span>{it.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+            )}
             {galleryR.length > 0 && (
               <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:26px 28px; margin-bottom:26px;')}>
                 <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:18px;')}>Hình ảnh &amp; demo</div>
@@ -672,6 +601,29 @@ export default function UseCaseLibraryPage() {
                 </a>
               </div>
             )}
+
+            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Team thực hiện')}</div>
+              <div style={css('display:flex; align-items:center; gap:14px;')}>
+                <span style={css(`width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex:none;background:${avatarColor(dsel.author)}`)}>{dsel.author.slice(0, 1).toUpperCase()}</span>
+                <div style={css('min-width:0;')}>
+                  <div style={css('font-size:15px; font-weight:800; color:#0F172A;')}>{dinfo.name}</div>
+                  <div style={css('font-size:13px; color:#64748b;')}>{dsel.team || dinfo.role}</div>
+                </div>
+              </div>
+              {contactR.length > 0 && (
+                <div style={css('margin-top:16px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
+                  <div style={css('font-size:12.5px; font-weight:800; color:#2c5fff; margin-bottom:8px;')}>{t('Liên hệ')}</div>
+                  <div style={css('display:flex; flex-direction:column; gap:11px;')}>
+                {contactR.map((it, i) => (
+                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
+                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#2c5fff;')}></span>{it.text}
+                  </div>
+                ))}
+              </div>
+                </div>
+              )}
+            </div>
 
             <div id="comments" style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin-bottom:36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap;')}>
@@ -771,7 +723,6 @@ export default function UseCaseLibraryPage() {
               </div>
             </div>
 
-            <ShareCtaBar onClick={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} />
           </div>
         </div>
       </div>
@@ -814,14 +765,6 @@ export default function UseCaseLibraryPage() {
                   <Dropdown options={sortOptions} />
                 )}
               </div>
-              <div style={css('display:flex; gap:2px; background:#F1F4FA; border:1px solid #E3E8F2; border-radius:10px; padding:2px;')}>
-                <button onClick={() => setLibView('grid')} style={css(libView === 'grid' ? libViewActiveStyle : libViewIdleStyle)}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
-                </button>
-                <button onClick={() => setLibView('list')} style={css(libView === 'list' ? libViewActiveStyle : libViewIdleStyle)}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
-                </button>
-              </div>
               </div>
 
             <div id="lib-grid">
@@ -829,7 +772,7 @@ export default function UseCaseLibraryPage() {
                 <div style={css('padding:74px 0; text-align:center; color:#8a8a9e; font-size:15px;')}>{t('Không tìm thấy use case phù hợp. Thử đổi bộ lọc hoặc từ khóa khác nhé.')}</div>
               )}
 
-              {libView === 'grid' && libCards.length > 0 && (
+              {libCards.length > 0 && (
                 <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px;')}>
                   {libCards.map((c) => (
                     <div
@@ -843,7 +786,6 @@ export default function UseCaseLibraryPage() {
                           <span style={css(c.avStyleL)}>{c.avInitial}</span>
                           <div style={css('display:flex; flex-direction:column; min-width:0;')}>
                             <span style={css('font-size:13.5px; font-weight:800; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
-                            <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.team || c.category}</span>
                           </div>
                         </div>
                         <div style={css('position:relative; flex:none;')}>
@@ -875,18 +817,11 @@ export default function UseCaseLibraryPage() {
                           <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
                         </div>
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                          <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.32; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
-                          <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
+                          <h3 className="zp-card-title" style={css('margin:0; font-size:16px; font-weight:800; line-height:1.35; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
+                          <p style={css('margin:5px 0 0; font-size:13.5px; line-height:1.55; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
                         </div>
                       </div>
-                      <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;')}>
-                        {c.toolsR.map((tool) => (
-                          <span key={tool.name} style={css('display:inline-flex; align-items:center; height:28px; padding:0 11px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; font-size:12px; font-weight:700; color:#3A4757;')}>{tool.name}</span>
-                        ))}
-                        {!c.toolsR.length && (
-                          <span style={css('display:inline-flex; align-items:center; height:28px; font-size:12px; color:#94a3b8;')}>{t('Không dùng AI tool trực tiếp')}</span>
-                        )}
-                      </div>
+                      <TagRow topics={c.topics || []} tools={c.tools} style={{ marginTop: 12 }} />
                       <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
                         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:13px; font-weight:800; color:#2c5fff; transition:gap .16s;')}>
                           {t('Xem Use Case')}
@@ -899,65 +834,20 @@ export default function UseCaseLibraryPage() {
                 </div>
               )}
 
-              {libView === 'list' && libCards.length > 0 && (
-                <div style={css('display:flex; flex-direction:column; gap:14px;')}>
-                  {libCards.map((c) => (
-                    <div
-                      key={c.id}
-                      onClick={c.onOpen}
-                      className={'zp-card zp-card-dark ' + hoverClass('transform:translateY(-3px); box-shadow:0 16px 36px rgba(30,120,240,.3); border-color:rgba(46,144,255,.6);')}
-                      style={css('position:relative; border:1px solid rgba(46,144,255,.4); border-radius:16px; background:linear-gradient(150deg, rgba(46,144,255,.28) 0%, rgba(17,13,26,.98) 58%); cursor:pointer; padding:18px 22px; transition:transform .16s, box-shadow .16s, border-color .16s;')}
-                    >
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:11px; padding-right:40px; flex-wrap:wrap;')}>
-                        <span style={css('display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:20px; background:rgba(46,144,255,.14); font-size:10.5px; font-weight:700; color:#9fd0ff;')}>{c.kindLabel}</span>
-                        <span style={css(c.levelChipDark)}>{c.levelLabel}</span>
-                        {(c.topics || []).map((tp) => (
-                          <span key={tp} style={css('display:inline-flex; align-items:center; padding:5px 11px; border-radius:20px; background:rgba(255,255,255,.06); font-size:10.5px; font-weight:700; color:#c3c3d4;')}>{tp}</span>
-                        ))}
-                      </div>
-                      <h3 className="zp-card-title" style={css('margin:0 0 9px; font-size:16px; font-weight:700; line-height:1.3; color:#fff;')}>{c.title}</h3>
-                      <div style={css('display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:14px; max-width:860px;')}>
-                        <div>
-                          <div style={css('font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#ff9f6b; margin-bottom:4px;')}>{t('Vấn đề')}</div>
-                          <div style={css('font-size:12.5px; line-height:1.5; color:#c3c3d4;')}>{c.problem}</div>
-                        </div>
-                        <div>
-                          <div style={css('font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#9fd0ff; margin-bottom:4px;')}>{t('Dùng AI thế nào')}</div>
-                          <div style={css('font-size:12.5px; line-height:1.5; color:#c3c3d4;')}>{c.desc}</div>
-                        </div>
-                        <div>
-                          <div style={css('font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#6ee7a8; margin-bottom:4px;')}>{t('Kết quả')}</div>
-                          <div style={css('font-size:12.5px; line-height:1.5; color:#c3c3d4;')}>{c.result}</div>
-                        </div>
-                      </div>
-                      <div style={css('display:flex; align-items:center; gap:14px; flex-wrap:wrap;')}>
-                        <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <span style={css(c.avStyle)}>{c.avInitial}</span>
-                          <span style={css('font-size:12.5px; font-weight:700; color:#e6e6f0;')}>{c.author}</span>
-                          <span style={css('color:rgba(255,255,255,.25);')}>·</span>
-                          <span style={css('font-size:12.5px; color:#9a9ab0;')}>{c.category}</span>
-                        </div>
-                        <div style={css('display:flex; align-items:center; gap:7px; flex-wrap:wrap;')}>
-                          {c.toolsR.map((tool) => (
-                            <span key={tool.name} style={css('display:inline-flex; align-items:center; padding:4px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); font-size:11.5px; font-weight:600; color:#c3c3d4;')}>{tool.name}</span>
-                          ))}
-                        </div>
-                        <CardActions helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} />
-                      </div>
-                      <button onClick={c.onSave} title="Lưu use case" className={hoverClass('background:rgba(255,255,255,.12);')} style={css(`position:absolute; top:14px; right:14px; z-index:6; width:28px; height:28px; border:none; border-radius:8px; background:rgba(255,255,255,.06); cursor:pointer; color:${c.saveColorD}; display:flex; align-items:center; justify-content:center;`)}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                      </button>
-                    </div>
+              {pageCount > 1 && (
+                <div style={css('display:flex; align-items:center; justify-content:center; gap:6px; margin-top:26px;')}>
+                  <button disabled={curPage === 1} onClick={() => { setLibPage(curPage - 1); document.getElementById('lib-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} style={css(`height:36px; padding:0 14px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; font:700 13px inherit; cursor:pointer; opacity:${curPage === 1 ? 0.4 : 1};`)}>‹ {t('Trước')}</button>
+                  {Array.from({ length: pageCount }, (_, k) => k + 1).map((n) => (
+                    <button key={n} onClick={() => { setLibPage(n); document.getElementById('lib-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} style={css(`width:36px; height:36px; border-radius:10px; border:1px solid ${n === curPage ? '#2c5fff' : 'rgba(255,255,255,.2)'}; background:${n === curPage ? '#2c5fff' : 'rgba(255,255,255,.06)'}; color:#fff; font:800 13px inherit; cursor:pointer;`)}>{n}</button>
                   ))}
+                  <button disabled={curPage === pageCount} onClick={() => { setLibPage(curPage + 1); document.getElementById('lib-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} style={css(`height:36px; padding:0 14px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; font:700 13px inherit; cursor:pointer; opacity:${curPage === pageCount ? 0.4 : 1};`)}>{t('Sau')} ›</button>
                 </div>
               )}
+
             </div>
           </div>
         </section>
 
-        <section style={css('background:transparent; padding:6px 40px 40px;')}>
-          <ShareCtaBar onClick={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} />
-        </section>
 
         {confirmDeleteId && (
           <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
@@ -1019,7 +909,7 @@ export default function UseCaseLibraryPage() {
                   <div style={css('margin-top:16px; font-size:19px; font-weight:800; color:#0F172A;')}>{t('Đã gửi để Admin duyệt')}</div>
                   <div style={css('margin-top:8px; font-size:14px; line-height:1.6; color:#64748b;')}>Use case ở trạng thái <strong style={{ color: '#B45300' }}>Pending Review</strong>. Bạn sẽ nhận thông báo khi được duyệt hoặc bị từ chối kèm lý do. Trong lúc chờ, bài chưa xuất hiện trong Library.</div>
                   <div style={css('display:flex; justify-content:center; gap:12px; margin-top:22px;')}>
-                    <a href="/profile" onClick={(e) => { e.preventDefault(); navigate('/profile') }} style={css('display:inline-flex; align-items:center; height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:13.5px; font-weight:700; text-decoration:none;')}>{t('Xem trong My Posts')}</a>
+                    <a href="/profile#usecase" onClick={(e) => { e.preventDefault(); navigate('/profile#usecase') }} style={css('display:inline-flex; align-items:center; height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:13.5px; font-weight:700; text-decoration:none;')}>{t('Xem trong Use case của tôi')}</a>
                     <button onClick={() => { setShareOpen(false); navigate('/use-cases') }} style={css('height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;')}>{t('Về Library')}</button>
                   </div>
                 </div>
