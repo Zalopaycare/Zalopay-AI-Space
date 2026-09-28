@@ -187,6 +187,7 @@ export const PAIRS = [
   ['Tiếp tục', 'Continue'],
   ['Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc.', 'A space for Zalopay Starters to share knowledge and discover how to use AI at work.'],
   ['Upvote', 'Upvote'],
+  ['Nhập topic của bạn...', 'Enter your topic...'],
   ['Viết comment của bạn...', 'Write a comment...'],
   ['Viết comment của bạn. Gõ @ để mention đồng nghiệp.', 'Write a comment. Type @ to mention a colleague.'],
   ['Đăng comment', 'Post comment'],

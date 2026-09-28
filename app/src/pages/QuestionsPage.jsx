@@ -13,7 +13,10 @@ import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
-const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Other']
+const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Khác']
+const OTHER = 'Khác'
+// Old drafts used 'Other' for the free-text AI tool.
+const normTool = (x) => (x === 'Other' ? OTHER : x)
 const ASK_TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Coding & Technical', 'Báo cáo', 'Tự động hoá', 'Khác']
 export const QUESTION_DRAFT_KEY = 'zp-question-draft-v1'
 const DEFAULT_CATEGORY = ['Khác']
@@ -85,6 +88,7 @@ export default function QuestionsPage() {
   const [askDraftSaved, setAskDraftSaved] = useState(false)
   const [askError, setAskError] = useState('')
   const [askToolOtherText, setAskToolOtherText] = useState('')
+  const [askTopicOtherText, setAskTopicOtherText] = useState('')
   const askBodyRef = useRef(null)
   const askImageInputRef = useRef(null)
   const askDocInputRef = useRef(null)
@@ -100,7 +104,7 @@ export default function QuestionsPage() {
       setView('ask')
       try {
         const d = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null')
-        if (d) { setAskTitle(d.title || ''); setAskBody(d.body || ''); setAskToolsSel(d.tools || []); setAskTopicsSel(d.topics || []) }
+        if (d) { setAskTitle(d.title || ''); setAskBody(d.body || ''); setAskToolsSel((d.tools || []).map(normTool)); setAskTopicsSel(d.topics || []); setAskToolOtherText(d.toolOther || ''); setAskTopicOtherText(d.topicOther || '') }
       } catch { /* ignore */ }
     }
     const q0 = new URLSearchParams(window.location.search).get('q')
@@ -214,7 +218,7 @@ export default function QuestionsPage() {
 
   const saveAskDraft = () => {
     if (!askTitle.trim() && !askBody.trim()) { setAskError('Chưa có nội dung để lưu nháp.'); return }
-    try { localStorage.setItem(QUESTION_DRAFT_KEY, JSON.stringify({ title: askTitle, body: askBody, tools: askToolsSel, topics: askTopicsSel, savedAt: new Date().toISOString() })) } catch { /* ignore */ }
+    try { localStorage.setItem(QUESTION_DRAFT_KEY, JSON.stringify({ title: askTitle, body: askBody, tools: askToolsSel, topics: askTopicsSel, toolOther: askToolOtherText, topicOther: askTopicOtherText, savedAt: new Date().toISOString() })) } catch { /* ignore */ }
     navigate('/profile#question')
   }
 
@@ -226,8 +230,8 @@ export default function QuestionsPage() {
       const payload = {
         title: tt, body: bb + docNote,
         category: DEFAULT_CATEGORY,
-        topics: askTopicsSel,
-        tools: askToolsSel.map((x) => (x === 'Other' ? askToolOtherText.trim() : x)).filter(Boolean),
+        topics: askTopicsSel.map((x) => (x === OTHER ? askTopicOtherText.trim() || OTHER : x)),
+        tools: askToolsSel.map((x) => (x === OTHER ? askToolOtherText.trim() || OTHER : x)),
         images: askImages.map((img) => img.dataUrl),
       }
       api.postQuestion(payload).then((d) => {
@@ -236,7 +240,7 @@ export default function QuestionsPage() {
         setView('feed')
         setExpanded((s) => ({ ...s, [id]: true }))
         try { localStorage.removeItem(QUESTION_DRAFT_KEY) } catch { /* ignore */ }
-        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
+        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
         window.scrollTo(0, 0)
       }).catch(() => setAskError('Không đăng được câu hỏi, thử lại.'))
     })
@@ -740,14 +744,17 @@ export default function QuestionsPage() {
                           <button key={tp.label} onClick={tp.onPick} style={css(`height:30px; padding:0 13px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tp.label}</button>
                         ))}
                       </div>
+                      {askTopicsSel.indexOf(OTHER) >= 0 && (
+                        <input autoFocus value={askTopicOtherText} onChange={(e) => setAskTopicOtherText(e.target.value)} placeholder={t('Nhập topic của bạn...')} style={css('width:100%; box-sizing:border-box; margin-top:10px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; padding:10px 14px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0f172a; outline:none;')} />
+                      )}
                       <div style={css('font:700 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:.04em; color:#94a3b8; margin-top:16px;')}>{t('Công cụ AI (không bắt buộc)')}</div>
                       <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
                         {askTools.map((tl) => (
                           <button key={tl.label} onClick={tl.onPick} style={css(`height:30px; padding:0 13px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tl.label}</button>
                         ))}
                       </div>
-                      {askToolsSel.indexOf('Other') >= 0 && (
-                        <input value={askToolOtherText} onChange={(e) => setAskToolOtherText(e.target.value)} placeholder={t('Nhập công cụ AI của bạn...')} style={css('width:100%; box-sizing:border-box; margin-top:10px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; padding:10px 14px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0f172a; outline:none;')} />
+                      {askToolsSel.indexOf(OTHER) >= 0 && (
+                        <input autoFocus value={askToolOtherText} onChange={(e) => setAskToolOtherText(e.target.value)} placeholder={t('Nhập công cụ AI của bạn...')} style={css('width:100%; box-sizing:border-box; margin-top:10px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; padding:10px 14px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0f172a; outline:none;')} />
                       )}
                       {askError && <div style={css('margin-top:10px; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{askError}</div>}
                     </div>
