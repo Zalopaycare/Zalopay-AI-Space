@@ -341,9 +341,9 @@ export default function HomePage() {
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
-                    <TagRow topics={q.topics || []} tools={q.tools || []} style={{ marginTop: 10 }} />
                   </div>
-                  <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
+                  <div style={css('display:flex; align-items:center; gap:10px 12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
+                    <TagRow topics={q.topics || []} tools={q.tools || []} />
                     <CardActions helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).length} onReply={q.onOpen} />
                   </div>
                 </div>

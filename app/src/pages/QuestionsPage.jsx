@@ -455,10 +455,10 @@ export default function QuestionsPage() {
                         )}
                       </p>
                       {q.hasImages && <ImageThumbs srcs={q.images} />}
-                      <TagRow topics={q.topics} tools={q.tools} style={{ marginTop: 12 }} />
                     </div>
 
-                    <div style={css('display:flex; align-items:center; gap:12px; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
+                    <div style={css('display:flex; align-items:center; gap:10px 12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
+                      <TagRow topics={q.topics} tools={q.tools} />
                       {q.hasAccepted && (
                         <span style={css('display:inline-flex; align-items:center; gap:7px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#00893F;')}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00893F" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
