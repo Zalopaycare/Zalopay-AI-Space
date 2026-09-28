@@ -9,7 +9,7 @@ import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useNavigate } from 'react-router-dom'
 import PageActionBar from '../components/PageActionBar.jsx'
-import { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
+import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -17,6 +17,7 @@ const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Other']
 const ASK_TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Coding & Technical', 'Báo cáo', 'Tự động hoá', 'Khác']
 export const QUESTION_DRAFT_KEY = 'zp-question-draft-v1'
 const DEFAULT_CATEGORY = ['Khác']
+const MAX_ASK_IMAGES = 4
 const EMOJI = ['😀', '😅', '😍', '🤔', '👍', '🙏', '🔥', '🎉', '😢', '😮', '🚀', '💡', '✅', '❌', '⚠️', '❤️']
 const PEOPLE = [
   { name: 'HaiPD', initials: 'HP', team: 'Data' },
@@ -79,7 +80,7 @@ export default function QuestionsPage() {
   const [askToolsSel, setAskToolsSel] = useState([])
   const [askTopicsSel, setAskTopicsSel] = useState([])
   const [askFiles, setAskFiles] = useState([])
-  const [askImages, setAskImages] = useState([]) // [{name, dataUrl}] — max 2, written to the ImageSlot store once the question exists
+  const [askImages, setAskImages] = useState([]) // [{name, dataUrl}] — up to MAX_ASK_IMAGES, uploaded with the question
   const [askEmojiOpen, setAskEmojiOpen] = useState(false)
   const [askDraftSaved, setAskDraftSaved] = useState(false)
   const [askError, setAskError] = useState('')
@@ -179,13 +180,35 @@ export default function QuestionsPage() {
     requestAnimationFrame(() => { const e2 = askBodyRef.current; if (e2) { e2.focus(); e2.setSelectionRange(a + text.length, a + text.length) } })
   }
 
+  // Downscale to ≤1600px JPEG before upload so a phone photo doesn't turn into a multi-MB post.
+  const shrinkImage = (file) => new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, 1600 / Math.max(img.width, img.height))
+        if (scale === 1 && file.size < 900 * 1024) return resolve(reader.result)
+        const c = document.createElement('canvas')
+        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale)
+        const ctx = c.getContext('2d')
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height)
+        ctx.drawImage(img, 0, 0, c.width, c.height)
+        resolve(c.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = () => resolve(null)
+      img.src = reader.result
+    }
+    reader.onerror = () => resolve(null)
+    reader.readAsDataURL(file)
+  })
+
   const onPickImages = (fileList) => {
-    const files = Array.from(fileList || []).slice(0, 2 - askImages.length)
+    const files = Array.from(fileList || []).slice(0, MAX_ASK_IMAGES - askImages.length)
     files.forEach((file) => {
       if (!file.type.startsWith('image/')) return
-      const reader = new FileReader()
-      reader.onload = () => setAskImages((s) => (s.length >= 2 ? s : [...s, { name: file.name, dataUrl: reader.result }]))
-      reader.readAsDataURL(file)
+      shrinkImage(file).then((dataUrl) => {
+        if (dataUrl) setAskImages((s) => (s.length >= MAX_ASK_IMAGES ? s : [...s, { name: file.name, dataUrl }]))
+      })
     })
   }
 
@@ -205,10 +228,10 @@ export default function QuestionsPage() {
         category: DEFAULT_CATEGORY,
         topics: askTopicsSel,
         tools: askToolsSel.map((x) => (x === 'Other' ? askToolOtherText.trim() : x)).filter(Boolean),
+        images: askImages.map((img) => img.dataUrl),
       }
       api.postQuestion(payload).then((d) => {
         const id = d.question.id
-        askImages.forEach((img, i) => writeImageSlot('qimg-' + id + '-' + i, img.dataUrl))
         setQuestions((qs) => [d.question, ...qs])
         setView('feed')
         setExpanded((s) => ({ ...s, [id]: true }))
@@ -290,9 +313,9 @@ export default function QuestionsPage() {
       saveColor: q.saved ? '#00893F' : '#94a3b8',
       saveFill: q.saved ? '#00A352' : 'none',
       saveLabel: q.saved ? t('Đã lưu') : 'Lưu câu hỏi',
-      images: [0, 1].map((i) => 'qimg-' + q.id + '-' + i).filter(hasImageSlot),
-      hasImages: [0, 1].some((i) => hasImageSlot('qimg-' + q.id + '-' + i)),
-      imageCols: hasImageSlot('qimg-' + q.id + '-1') ? '1fr 1fr' : '1fr',
+      // Server-stored images; older posts may only have the poster's local copy.
+      images: (q.images && q.images.length) ? q.images : [0, 1].map((i) => 'qimg-' + q.id + '-' + i).filter(hasImageSlot).map(readImageSlot),
+      hasImages: (q.images && q.images.length > 0) || [0, 1].some((i) => hasImageSlot('qimg-' + q.id + '-' + i)),
       helpfulTotal: q.answers.reduce((n, a) => n + (a.helpful || 0), 0) + (q.qHelpful || 0),
       onHelpfulQ: (e) => { if (e) e.stopPropagation(); requireLogin(() => api.reactQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
       hasAccepted: q.answers.some((a) => a.accepted),
@@ -427,7 +450,7 @@ export default function QuestionsPage() {
                           <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3366F0; vertical-align:baseline;')}>{t('Xem thêm')}</button>
                         )}
                       </p>
-                      {q.hasImages && <ImageThumbs srcs={q.images.map(readImageSlot)} />}
+                      {q.hasImages && <ImageThumbs srcs={q.images} />}
                       <TagRow topics={q.topics} tools={q.tools} style={{ marginTop: 12 }} />
                     </div>
 
@@ -681,7 +704,7 @@ export default function QuestionsPage() {
 
                       <div style={css('display:flex; align-items:center; gap:2px; margin-top:16px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
                         <input ref={askImageInputRef} type="file" accept="image/*" multiple hidden onChange={(e) => { onPickImages(e.target.files); e.target.value = '' }} />
-                        <button onClick={() => askImageInputRef.current?.click()} title={t('Thêm hình ảnh')} disabled={askImages.length >= 2} className={hoverClass('background:#F1F4FA;')} style={css(`width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center; opacity:${askImages.length >= 2 ? .4 : 1};`)}>
+                        <button onClick={() => askImageInputRef.current?.click()} title={t('Thêm hình ảnh')} disabled={askImages.length >= MAX_ASK_IMAGES} className={hoverClass('background:#F1F4FA;')} style={css(`width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center; opacity:${askImages.length >= MAX_ASK_IMAGES ? .4 : 1};`)}>
                           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-4.5-4.5L7 20"></path></svg>
                         </button>
 

@@ -115,6 +115,14 @@ CREATE TABLE IF NOT EXISTS use_case_saves (
   PRIMARY KEY (use_case_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS question_images (
+  question_id TEXT NOT NULL,
+  idx INTEGER NOT NULL,
+  mime TEXT NOT NULL,
+  data BLOB NOT NULL,
+  PRIMARY KEY (question_id, idx)
+);
+
 CREATE TABLE IF NOT EXISTS use_case_comments (
   id TEXT PRIMARY KEY,
   use_case_id TEXT NOT NULL,

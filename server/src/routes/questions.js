@@ -37,7 +37,8 @@ function loadQuestion(id, userId) {
   return {
     id: q.id, title: q.title, body: q.body, ...userBrief(author), time: q.created_at, ts: q.created_at,
     category: asArr(q.category), topics: asArr(q.topics), tools: asArr(q.tools),
-    resolved: !!q.resolved, saved, files: [], images: [], qHelpful, iHelpedQ, answers,
+    resolved: !!q.resolved, saved, files: [],
+    images: db.prepare('SELECT idx FROM question_images WHERE question_id = ? ORDER BY idx').all(id).map((r) => `/api/questions/${id}/images/${r.idx}`), qHelpful, iHelpedQ, answers,
   }
 }
 
@@ -55,6 +56,7 @@ const deleteQuestionTx = db.transaction((id) => {
   db.prepare('DELETE FROM question_answers WHERE question_id = ?').run(id)
   db.prepare('DELETE FROM question_reactions WHERE question_id = ?').run(id)
   db.prepare('DELETE FROM saved_questions WHERE question_id = ?').run(id)
+  db.prepare('DELETE FROM question_images WHERE question_id = ?').run(id)
   db.prepare('DELETE FROM questions WHERE id = ?').run(id)
 })
 
@@ -66,15 +68,39 @@ router.delete('/:id', requireAuth, (req, res) => {
   res.json({ ok: true })
 })
 
+const MAX_IMAGES = 4
+const MAX_IMAGE_BYTES = 3 * 1024 * 1024
+// Accepts "data:image/<type>;base64,..." strings from the composer; anything else is rejected.
+function decodeImage(dataUrl) {
+  const m = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''))
+  if (!m) return null
+  const data = Buffer.from(m[2], 'base64')
+  return data.length && data.length <= MAX_IMAGE_BYTES ? { mime: m[1], data } : null
+}
+
 router.post('/', requireAuth, (req, res) => {
-  const { title, body, category = [], topics = [], tools = [] } = req.body || {}
+  const { title, body, category = [], topics = [], tools = [], images = [] } = req.body || {}
   if (!String(title || '').trim() || !String(body || '').trim() || !category.length) {
     return res.status(400).json({ error: 'missing_fields' })
   }
+  const decoded = (Array.isArray(images) ? images : []).slice(0, MAX_IMAGES).map(decodeImage)
+  if (decoded.some((d) => !d)) return res.status(400).json({ error: 'bad_image' })
   const id = nextId('q')
-  db.prepare('INSERT INTO questions (id, title, body, category, topics, tools, author_id) VALUES (?,?,?,?,?,?,?)')
-    .run(id, title.trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id)
+  db.transaction(() => {
+    db.prepare('INSERT INTO questions (id, title, body, category, topics, tools, author_id) VALUES (?,?,?,?,?,?,?)')
+      .run(id, title.trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id)
+    decoded.forEach((img, i) => db.prepare('INSERT INTO question_images (question_id, idx, mime, data) VALUES (?,?,?,?)').run(id, i, img.mime, img.data))
+  })()
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
+})
+
+router.get('/:id/images/:idx', requireAuth, (req, res) => {
+  const img = db.prepare('SELECT mime, data FROM question_images WHERE question_id = ? AND idx = ?').get(req.params.id, Number(req.params.idx))
+  if (!img) return res.status(404).end()
+  res.set('Content-Type', img.mime)
+  res.set('Cache-Control', 'private, max-age=31536000, immutable')
+  res.set('X-Content-Type-Options', 'nosniff')
+  res.send(img.data)
 })
 
 router.post('/:id/react', requireAuth, (req, res) => {
