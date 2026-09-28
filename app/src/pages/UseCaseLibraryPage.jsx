@@ -7,6 +7,7 @@ import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
+import CardActions from '../components/CardActions.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
@@ -23,8 +24,6 @@ const EMPTY_SHARE_FORM = { title: '', audience: '', problem: '', solution: '', p
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
 const optStyle = (active) => `padding:9px 13px;border-radius:8px;font-size:13px;font-weight:${active ? '700' : '500'};color:${active ? '#9fd0ff' : '#c3c3d4'};background:${active ? 'rgba(46,144,255,.18)' : 'transparent'};cursor:pointer;`
-const kindChipActive = 'padding:9px 16px;border-radius:10px;border:1px solid rgba(46,144,255,.6);background:rgba(46,144,255,.2);color:#cfe6ff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;'
-const kindChipIdle = 'padding:9px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#c3c3d4;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;'
 const libViewActiveStyle = 'width:36px;height:36px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#2f8dff;color:#fff;'
 const libViewIdleStyle = 'width:36px;height:36px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;color:#9a9ab0;'
 
@@ -90,7 +89,6 @@ export default function UseCaseLibraryPage() {
   const [libKind, setLibKind] = useState(null)
   const [libSort, setLibSort] = useState('new')
   const [libView, setLibView] = useState('grid')
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [openDrop, setOpenDrop] = useState(null)
 
   const [shareOpen, setShareOpen] = useState(false)
@@ -285,6 +283,7 @@ export default function UseCaseLibraryPage() {
       helpBorder: voted ? '#B9CCF8' : '#DDE3EC',
       helpColor: voted ? '#2c5fff' : '#3A4757',
       helpFill: voted ? '#2c5fff' : 'none',
+      helped: voted,
       onHelpful: (e) => { e.stopPropagation(); requireLogin(() => api.reactUseCase(c.id).then(() => refreshMeta(c.id)).catch(() => {})) },
     }
   }
@@ -293,7 +292,6 @@ export default function UseCaseLibraryPage() {
   const q = query.trim().toLowerCase()
   const meta = prdMeta
   const catList = useMemo(() => Array.from(new Set(allCases.map((c) => c.category))).sort((a, b) => a.localeCompare(b, 'vi')), [])
-  const topicList = useMemo(() => Array.from(new Set(Object.keys(meta).reduce((acc, k) => acc.concat(meta[k].topics || []), []))).sort((a, b) => a.localeCompare(b, 'vi')), [])
 
   const libCases = useMemo(() => {
     let list = allCases.map((c) => {
@@ -322,15 +320,11 @@ export default function UseCaseLibraryPage() {
 
   const catOptions = [{ label: 'Tất cả category', val: null }, ...catList.map((c) => ({ label: c, val: c }))]
     .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibCat(o.val); closeDrop() }, style: optStyle((libCat || null) === (o.val || null)) }))
-  const topicOptions = [{ label: 'Tất cả topic', val: null }, ...topicList.map((t) => ({ label: t, val: t }))]
     .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibTopic(o.val); closeDrop() }, style: optStyle((libTopic || null) === (o.val || null)) }))
-  const groupOptions = [{ label: 'Tất cả nhóm', val: null }, ...teamsData.map((tm) => ({ label: tm.name, val: tm.name }))]
     .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibGroup(o.val); closeDrop() }, style: optStyle((libGroup || null) === (o.val || null)) }))
   const toolOptions = [{ label: 'Tất cả công cụ AI', val: null }, ...TOOL_LIST.map((tl) => ({ label: tl, val: tl }))]
     .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibTool(o.val); closeDrop() }, style: optStyle((libTool || null) === (o.val || null)) }))
   const sortOptions = SORT_OPTS.map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibSort(o.val); closeDrop() }, style: optStyle(libSort === o.val) }))
-  const libKindChips = [{ label: 'Tất cả', val: null }, { label: 'By tech', val: 'tech' }, { label: 'By non-tech', val: 'nontech' }]
-    .map((o) => ({ label: o.label, onClick: () => setLibKind(o.val), style: (libKind || null) === (o.val || null) ? kindChipActive : kindChipIdle }))
 
   // ---- share form derivations ----
   const setField = (k) => (e) => setShareForm((f) => ({ ...f, [k]: e.target.value }))
@@ -807,14 +801,6 @@ export default function UseCaseLibraryPage() {
         <section style={css('position:relative; z-index:5; background:transparent; padding:26px 40px 52px;')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
             <div style={css('display:flex; align-items:center; gap:12px; margin-bottom:16px;')}>
-              <button
-                onClick={(e) => { e.stopPropagation(); setFiltersOpen((s) => !s); setOpenDrop(null) }}
-                className={hoverClass('background:rgba(255,255,255,.1);')}
-                style={css('display:inline-flex; align-items:center; gap:9px; padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:#e6e6f0; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;')}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18"></path><path d="M7 12h10"></path><path d="M10 18h4"></path></svg>
-                {activeFilterCount ? `Filters · ${activeFilterCount}` : 'Filters'}
-              </button>
               <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:12px 18px; box-shadow:0 10px 26px rgba(0,0,0,.25);')}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" strokeWidth="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3-3"></path></svg>
                 <input
@@ -844,17 +830,9 @@ export default function UseCaseLibraryPage() {
               </div>
             </div>
 
-            {filtersOpen && (
               <div style={css('display:flex; align-items:center; gap:12px; margin-bottom:18px; padding:16px; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:rgba(255,255,255,.03); flex-wrap:wrap;')}>
                 <FilterDropdown label={t('Chủ đề') === 'Chủ đề' ? (libCat || 'Tất cả category') : libCat || 'Tất cả category'} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
-                <FilterDropdown label={libTopic || 'Tất cả topic'} name="topic" openDrop={openDrop} setOpenDrop={setOpenDrop} options={topicOptions} width={220} />
                 <FilterDropdown label={libTool || 'Tất cả công cụ AI'} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={210} />
-                <FilterDropdown label={libGroup || 'Tất cả nhóm'} name="group" openDrop={openDrop} setOpenDrop={setOpenDrop} options={groupOptions} width={220} />
-                <div style={css('display:flex; align-items:center; gap:10px; flex-wrap:wrap;')}>
-                  {libKindChips.map((chip2, i) => (
-                    <button key={i} onClick={chip2.onClick} style={css(chip2.style)}>{chip2.label}</button>
-                  ))}
-                </div>
                 {activeFilterCount > 0 && (
                   <button
                     onClick={() => { setLibCat(null); setLibTopic(null); setLibTool(null); setLibGroup(null); setLibKind(null); setOpenDrop(null) }}
@@ -864,7 +842,6 @@ export default function UseCaseLibraryPage() {
                   </button>
                 )}
               </div>
-            )}
 
             <div id="lib-grid">
               {libCards.length === 0 && (
@@ -934,14 +911,7 @@ export default function UseCaseLibraryPage() {
                           {t('Xem Use Case')}
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                         </button>
-                        <button onClick={c.onHelpful} style={css(`margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid ${c.helpBorder}; background:${c.helpBg}; color:${c.helpColor}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill={c.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
-                          {c.helpful} {t('hữu ích')}
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); c.onOpenComments() }} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid #DDE3EC; background:#fff; color:#3A4757; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                          {c.comments ? c.comments + ' ' + t('trả lời') : t('Trả lời')}
-                        </button>
+                        <CardActions helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} />
                       </div>
                     </div>
                   ))}
@@ -979,16 +949,6 @@ export default function UseCaseLibraryPage() {
                           <div style={css('font-size:12.5px; line-height:1.5; color:#c3c3d4;')}>{c.result}</div>
                         </div>
                       </div>
-                      <div style={css('display:flex; align-items:center; gap:16px; margin-bottom:12px;')}>
-                        <span style={css('display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#c3c3d4;')}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6ee7a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.4L13.5 9H19a2 2 0 0 1 2 2.4l-1.7 8A2 2 0 0 1 17.3 22z"></path></svg>
-                          {c.helpful} {t('hữu ích')}
-                        </span>
-                        <span style={css('display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#9a9ab0;')}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                          {c.comments}
-                        </span>
-                      </div>
                       <div style={css('display:flex; align-items:center; gap:14px; flex-wrap:wrap;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <span style={css(c.avStyle)}>{c.avInitial}</span>
@@ -1001,6 +961,7 @@ export default function UseCaseLibraryPage() {
                             <span key={tool.name} style={css('display:inline-flex; align-items:center; padding:4px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); font-size:11.5px; font-weight:600; color:#c3c3d4;')}>{tool.name}</span>
                           ))}
                         </div>
+                        <CardActions helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} />
                       </div>
                       <button onClick={c.onSave} title="Lưu use case" className={hoverClass('background:rgba(255,255,255,.12);')} style={css(`position:absolute; top:14px; right:14px; z-index:6; width:28px; height:28px; border:none; border-radius:8px; background:rgba(255,255,255,.06); cursor:pointer; color:${c.saveColorD}; display:flex; align-items:center; justify-content:center;`)}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>

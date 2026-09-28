@@ -10,6 +10,7 @@ import ImageSlot from '../components/ImageSlot.jsx'
 import Avatar, { AVATAR_COLORS } from '../components/Avatar.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
+import CardActions from '../components/CardActions.jsx'
 
 /**
  * Your own big profile avatar — click it to pick a color, persisted via PATCH /auth/me.
@@ -110,85 +111,83 @@ function BoardCard({ p }) {
 
 /** Rich question card (Questions-page pattern) — reused for "Câu hỏi của tôi" and saved questions. */
 function QuestionCard({ q }) {
+  const { t } = useI18n()
   return (
-    <button
+    <div
       onClick={q.onOpen}
-      className={hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')}
-      style={css('display:block; width:100%; text-align:left; background:#ffffff; border:1px solid #E6EBF3; border-radius:22px; padding:20px 24px 18px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease; font-family:inherit;')}
+      className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')}
+      style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
     >
-      <div style={css('display:flex; align-items:center; gap:8px;')}>
-        <span style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:10px; font:700 13px ${FONT}; background:#F1E7FF; color:#6F0CE2;`)}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
-          {q.tagLabel}
+      <div style={css('display:flex; align-items:center; gap:7px; padding:20px 22px 0; flex-wrap:wrap;')}>
+        <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px ${FONT};`)}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
+          {t('Câu hỏi')}
         </span>
-        <span style={css(`margin-left:auto; flex:none; white-space:nowrap; display:inline-flex; align-items:center; height:32px; padding:0 14px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 13px ${FONT};`)}>{q.statusLabel}</span>
+        {q.cat && <span style={css(`display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#EAF0FF; color:#2c5fff; font:700 11.5px ${FONT};`)}>{q.cat}</span>}
+        <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
       </div>
-      <h3 style={css(`margin:14px 0 0; font:800 19px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
-      <p style={css(`margin:10px 0 0; font:400 15px/1.6 ${FONT}; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
-      <div style={css('display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid #EEF1F7;')}>
-        <span style={css(`flex:none; width:38px; height:38px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 13px ${FONT};`)}>{q.initials}</span>
-        <span style={css('display:flex; flex-direction:column; margin-right:6px;')}>
-          <span style={css(`font:800 14.5px ${FONT}; color:#0F172A; white-space:nowrap;`)}>{q.author}</span>
-          <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>{q.time}</span>
-        </span>
-        {q.team && (
-          <span style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; height:32px; padding:0 13px; border-radius:10px; font:700 13px ${FONT}; background:#EAF0FF; color:#2c5fff;`)}>{q.team}</span>
+      <div style={css('display:flex; align-items:center; gap:14px; padding:14px 22px 0;')}>
+        <span style={css(`flex:none; width:42px; height:42px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};`)}>{q.initials}</span>
+        <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
+          <span style={css(`font:800 15px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
+          <span style={css(`font:400 13px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.time}</span>
+        </div>
+      </div>
+      <div style={css('padding:14px 22px 0;')}>
+        <h3 className="zp-card-title" style={css(`margin:0; font:800 19px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
+        <p style={css(`margin:9px 0 0; font:400 14.5px/1.65 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
+      </div>
+      <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:16px 22px 0; padding:14px 0 16px; border-top:1px solid #EEF1F7;')}>
+        {q.accepted && (
+          <span style={css(`display:inline-flex; align-items:center; gap:7px; font:700 12.5px ${FONT}; color:#00893F;`)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00893F" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+            {t('Đã có câu trả lời được chấp nhận')}
+          </span>
         )}
-        <span style={css(`margin-left:auto; flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:9px; height:40px; padding:0 16px; border-radius:999px; font:700 14px ${FONT}; border:1px solid #DDE3EC; background:#fff; color:#3A4757;`)}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-          <span style={{ color: '#2c5fff' }}>{q.helpful}</span> {q.helpfulLabel}
-        </span>
-        <span style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:9px; height:40px; padding:0 16px; border-radius:999px; font:700 14px ${FONT}; border:1px solid #DDE3EC; background:#fff; color:#3A4757;`)}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-          {q.answers} {q.answersLabel}
-        </span>
+        <CardActions helpful={q.helpful} helped={q.helped} onHelpful={q.onHelpful} replies={q.answers} onReply={q.onOpen} />
       </div>
-    </button>
+    </div>
   )
 }
 
-/** Rich use-case card (Use Case Library pattern) — used for the saved use cases grid. */
+/** Compact use case preview — same card as Home "Use case nổi bật" and the Use Case Library grid. */
 function UseCaseCard({ c }) {
+  const { t } = useI18n()
   return (
     <div
       onClick={c.onOpen}
-      className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36); border-color:#CFE0FF;')}
-      style={css('position:relative; display:flex; flex-direction:column; background:#ffffff; border:1px solid #E6EBF3; border-radius:22px; padding:14px 14px 18px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;')}
+      className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.28); border-color:#CFE0FF;')}
+      style={css('position:relative; border:1px solid #E6EBF3; border-radius:18px; background:#ffffff; cursor:pointer; padding:16px; box-shadow:0 10px 26px rgba(0,0,0,.16); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
     >
-      <div style={css('position:relative; aspect-ratio:16 / 10; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
-        <ImageSlot id={'profile-uc-' + c.id} shape="rounded" radius={16} placeholder="ảnh use case" style={{ position: 'absolute', inset: 0 }} />
-        <span style={css(`position:absolute; top:12px; left:12px; z-index:2; pointer-events:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px 0 10px; border-radius:999px; background:#ffffff; color:#00893F; font:800 12px ${FONT}; box-shadow:0 2px 10px rgba(0,0,0,.14);`)}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-          {c.kindBadge}
-        </span>
-        <span title={c.savedLabel} style={css('position:absolute; top:10px; right:10px; z-index:3; width:38px; height:38px; border-radius:12px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 4px 14px rgba(20,30,60,.16); display:flex; align-items:center; justify-content:center; color:#2c5fff;')}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="#2c5fff" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-        </span>
+      <div style={css('display:flex; align-items:center; gap:9px; margin-bottom:12px; min-width:0;')}>
+        <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{c.initial}</span>
+        <div style={css('display:flex; flex-direction:column; min-width:0;')}>
+          <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{c.author}</span>
+          <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.team}</span>
+        </div>
       </div>
-      <div style={css('display:flex; flex-direction:column; flex:1; padding:16px 6px 0;')}>
-        <h4 style={css(`margin:0; font:800 17px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{c.title}</h4>
-        <div style={css(`margin-top:12px; font:800 11px ${FONT}; letter-spacing:.08em; color:#C2410C;`)}>{c.problemLabel}</div>
-        <p style={css(`margin:4px 0 0; font:400 14px/1.55 ${FONT}; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.problem}</p>
-        <div style={css(`margin-top:10px; font:800 11px ${FONT}; letter-spacing:.08em; color:#2c5fff;`)}>{c.solutionLabel}</div>
-        <p style={css(`margin:4px 0 0; font:400 14px/1.55 ${FONT}; color:#5B6675; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.desc}</p>
-        <div style={{ flex: 1, minHeight: 14 }}></div>
-        <div style={css('display:flex; align-items:center; gap:10px;')}>
-          <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{c.initial}</span>
-          <span style={css(`font:800 14.5px ${FONT}; color:#0F172A; white-space:nowrap;`)}>{c.author}</span>
-          <span style={css(`margin-left:auto; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid #E6EBF3; background:#fff; color:#3A4757; font:700 12.5px ${FONT}; white-space:nowrap;`)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-            {c.helpful}
-          </span>
+      <div style={css('display:flex; gap:13px;')}>
+        <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:88px; height:88px; border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
+          <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
         </div>
-        <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;')}>
-          {c.toolsR.map((tl) => (
-            <span key={tl.name} style={css(`display:inline-flex; align-items:center; height:36px; padding:0 15px; border:1px solid #DDE3EC; border-radius:11px; background:#fff; font:700 13.5px ${FONT}; color:#3A4757;`)}>{tl.name}</span>
-          ))}
+        <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
+          <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.32 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.title}</h3>
+          <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.desc}</p>
         </div>
-        <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} style={css(`margin-top:16px; display:inline-flex; align-items:center; justify-content:center; gap:12px; height:52px; border-radius:14px; border:1px solid rgba(255,255,255,.35); background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:800 16px ${FONT}; box-shadow:0 10px 24px rgba(44,95,255,.34), inset 0 1px 0 rgba(255,255,255,.35); cursor:pointer;`)}>
-          {c.ctaLabel}
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+      </div>
+      <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;')}>
+        {c.toolsR.length > 0 ? c.toolsR.map((tl) => (
+          <span key={tl.name} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 11px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; font:700 12px ${FONT}; color:#3A4757;`)}>{tl.name}</span>
+        )) : (
+          <span style={css(`display:inline-flex; align-items:center; height:28px; font:400 12px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
+        )}
+      </div>
+      <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
+        <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .16s;`)}>
+          {t('Xem Use Case')}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
         </button>
+        <CardActions helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} />
       </div>
     </div>
   )
@@ -218,6 +217,9 @@ export default function ProfilePage() {
   const [myUseCases, setMyUseCases] = useState([])
   const [savedUseCaseIds, setSavedUseCaseIds] = useState([])
   const [loaded, setLoaded] = useState(false)
+  const [ucMeta, setUcMeta] = useState({})
+  const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((m) => ({ ...m, [ucId]: d }))).catch(() => {})
+  useEffect(() => { savedUseCaseIds.forEach(refreshUcMeta) }, [savedUseCaseIds])
 
   useEffect(() => {
     if (!user) { setLoaded(true); return }
@@ -261,9 +263,14 @@ export default function ProfilePage() {
     statusLabel: q.resolved ? 'Đã trả lời' : t('Đang chờ trả lời'),
     statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
     statusColor: q.resolved ? '#00893F' : '#B45300',
-    helpfulLabel: t('hữu ích'),
+    cat: [].concat(q.category).filter(Boolean)[0] || '',
+    accepted: q.answers.some((a) => a.accepted),
     helpful: q.answers.reduce((n, a) => n + (a.helpful || 0), 0) + (q.qHelpful || 0),
-    answersLabel: t('trả lời'),
+    helped: !!q.iHelpedQ,
+    onHelpful: () => api.reactQuestion(q.id).then((d) => {
+      const swap = (list) => list.map((x) => (x.id === q.id ? d.question : x))
+      setMyQuestions(swap); setSavedQuestions(swap)
+    }).catch(() => {}),
     answers: q.answers.length,
     onOpen: () => navigate(`/questions#q=${encodeURIComponent(q.id)}`),
   })
@@ -304,18 +311,17 @@ export default function ProfilePage() {
     .map((c) => ({
       id: c.id,
       title: c.title,
-      problem: (prdMeta[c.id] || {}).problem || '',
       desc: c.desc,
       author: c.author,
       initial: c.author.slice(0, 1).toUpperCase(),
       avatarBg: avatarColor(c.author),
-      helpful: (prdMeta[c.id] || {}).helpful || 0,
+      team: c.team || c.category,
+      helpful: ucMeta[c.id] ? ucMeta[c.id].helpful : (prdMeta[c.id] || {}).helpful || 0,
+      helped: !!(ucMeta[c.id] && ucMeta[c.id].iHelped),
+      comments: ucMeta[c.id] ? ucMeta[c.id].comments.length : 0,
+      onHelpful: () => api.reactUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {}),
+      onOpenComments: () => navigate(`/use-cases/${c.id}#comments`),
       toolsR: c.tools.map((name) => ({ name })),
-      kindBadge: t('Use case'),
-      problemLabel: t('VẤN ĐỀ'),
-      solutionLabel: t('GIẢI PHÁP'),
-      ctaLabel: t('Xem Use Case'),
-      savedLabel: t('Đã lưu'),
       onOpen: () => navigate(`/use-cases/${c.id}`),
     }))
 
@@ -438,7 +444,7 @@ export default function ProfilePage() {
               {savedUseCaseCards.length === 0 ? (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; margin-bottom:40px; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu use case nào.')}</div>
               ) : (
-                <div style={css('display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr)); gap:24px; margin-bottom:40px;')}>
+                <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:40px;')}>
                   {savedUseCaseCards.map((c) => <UseCaseCard key={c.id} c={c} />)}
                 </div>
               )}

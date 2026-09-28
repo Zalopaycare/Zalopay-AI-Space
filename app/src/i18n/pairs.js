@@ -177,6 +177,20 @@ export const PAIRS = [
   ['Use case của bạn được publish để mọi người cùng sử dụng', 'Your use case gets published for everyone to use'],
   ['Use case của bạn được publish để mọi người cùng khám phá', 'Your use case gets published for everyone to explore'],
   ['Preview — đây là cách use case hiển thị sau khi được duyệt.', 'Preview — this is how the use case looks once approved.'],
+  ['Trả lời', 'Reply'],
+  ['trả lời', 'replies'],
+  ['Hữu ích', 'Helpful'],
+  ['Hủy', 'Cancel'],
+  ['Xem', 'View'],
+  ['câu trả lời', 'replies'],
+  ['Ẩn câu trả lời', 'Hide replies'],
+  ['Bỏ lưu', 'Unsave'],
+  ['Lưu câu hỏi', 'Save question'],
+  ['Copy link', 'Copy link'],
+  ['Đã copy!', 'Copied!'],
+  ['Xoá bài viết', 'Delete post'],
+  ['Câu trả lời này đã giải quyết vấn đề', 'This solved my problem'],
+  ['Bạn là người hỏi. Chọn "Câu trả lời này đã giải quyết vấn đề" ở một câu trả lời để đánh dấu đã giải quyết.', 'You asked this. Pick "This solved my problem" on an answer to mark it resolved.'],
 ]
 
 export const ATTR_PAIRS = [

@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
+import CardActions from '../components/CardActions.jsx'
 import ImageSlot, { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -232,7 +233,7 @@ export default function QuestionsPage() {
         border: a.accepted ? '#BEE9D3' : '#EEF1F7',
         helpColor: a.iHelped ? '#2c5fff' : '#64748b',
         helpFill: a.iHelped ? '#2c5fff' : 'none',
-        replyLabel: a.comments.length ? 'Reply · ' + a.comments.length : 'Reply',
+        replyLabel: a.comments.length ? t('Trả lời') + ' · ' + a.comments.length : t('Trả lời'),
         canAccept: q.author === (user?.name || '') && !q.resolved,
         showComments: !!openComments[a.id] || a.comments.length > 0,
         comments: a.comments.map((c, j) => ({ ...c, time: relativeTime(c.time), bodyEl: renderBody(c.body), avatarBg: c.avatarColor || AV[(c.author.charCodeAt(0) + j) % AV.length] })),
@@ -270,15 +271,8 @@ export default function QuestionsPage() {
       hasImages: [0, 1].some((i) => hasImageSlot('qimg-' + q.id + '-' + i)),
       imageCols: hasImageSlot('qimg-' + q.id + '-1') ? '1fr 1fr' : '1fr',
       helpfulTotal: q.answers.reduce((n, a) => n + (a.helpful || 0), 0) + (q.qHelpful || 0),
-      qHelpBg: q.iHelpedQ ? '#E7ECFB' : '#F8FAFE',
-      qHelpBorder: q.iHelpedQ ? '#B9CCF8' : '#E6EBF3',
-      qHelpFill: q.iHelpedQ ? '#2c5fff' : 'none',
       onHelpfulQ: (e) => { if (e) e.stopPropagation(); requireLogin(() => api.reactQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
       hasAccepted: q.answers.some((a) => a.accepted),
-      replyLabel: q.answers.length === 0 ? 'Reply' : q.answers.length === 1 ? '1 reply' : q.answers.length + ' replies',
-      replyBg: isExpanded ? '#E7ECFB' : '#fff',
-      replyBorder: isExpanded ? '#B9CCF8' : '#DDE3EC',
-      replyColor: isExpanded ? '#2c5fff' : '#3A4757',
       expanded: isExpanded, answers, noAnswers: q.answers.length === 0,
       isOwner: q.author === (user?.name || '') && !q.resolved && q.answers.length > 0,
       canDelete: q.author === (user?.name || ''),
@@ -331,7 +325,7 @@ export default function QuestionsPage() {
 
   return (
     <Layout active="question" notifications={notifications}>
-    <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow-x:clip;')}>
+    <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow:clip;')}>
       <SpaceBackdrop arcTop={250} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
@@ -454,20 +448,13 @@ export default function QuestionsPage() {
                     </div>
 
                     <div style={css('display:flex; align-items:center; gap:12px; margin:16px 22px 0; padding:14px 0 16px; border-top:1px solid #EEF1F7;')}>
-                      <button onClick={q.onHelpfulQ} className={hoverClass('background:#E7ECFB; border-color:#B9CCF8;')} style={css(`display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px; border:1px solid ${q.qHelpBorder}; border-radius:999px; background:${q.qHelpBg}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; cursor:pointer; transition:background .16s,border-color .16s;`)}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill={q.qHelpFill} stroke="#2c5fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                        <span style={css('color:#2c5fff;')}>{q.helpfulTotal}</span> người thấy hữu ích
-                      </button>
                       {q.hasAccepted && (
                         <span style={css('display:inline-flex; align-items:center; gap:7px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#00893F;')}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00893F" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                           {t('Đã có câu trả lời được chấp nhận')}
                         </span>
                       )}
-                      <button onClick={q.onToggle} style={css(`margin-left:auto; display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 16px; border:1px solid ${q.replyBorder}; border-radius:999px; background:${q.replyBg}; color:${q.replyColor}; font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        {q.replyLabel}
-                      </button>
+                      <CardActions helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={q.expanded} onReply={q.onToggle} />
                     </div>
 
                     {q.expanded && (
@@ -475,7 +462,7 @@ export default function QuestionsPage() {
                         {q.isOwner && (
                           <div style={css('display:flex; align-items:center; gap:11px; margin-bottom:14px; padding:12px 16px; background:#EEF3FF; border:1px solid #D7E4FF; border-radius:14px;')}>
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg>
-                            <span style={css('font:600 12.5px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E44A8;')}>Bạn là người hỏi. Chọn "This solved my problem" ở một câu trả lời để đánh dấu Resolved.</span>
+                            <span style={css('font:600 12.5px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E44A8;')}>{t('Bạn là người hỏi. Chọn "Câu trả lời này đã giải quyết vấn đề" ở một câu trả lời để đánh dấu đã giải quyết.')}</span>
                           </div>
                         )}
 
@@ -501,13 +488,13 @@ export default function QuestionsPage() {
                                 <div style={css('display:flex; align-items:center; gap:16px; margin:9px 0 0; padding-left:4px; flex-wrap:wrap;')}>
                                   <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:${a.helpColor};`)}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"></path><path d="M7 10l4.6-7a2.2 2.2 0 0 1 3.8 1.9L14.5 9h4.3a2.2 2.2 0 0 1 2.1 2.8l-1.8 7A2.2 2.2 0 0 1 17 20.5H7z"></path></svg>
-                                    Helpful · {a.helpful}
+                                    {t('Hữu ích')} · {a.helpful}
                                   </button>
                                   <button onClick={a.onReply} style={css('border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{a.replyLabel}</button>
                                   {a.canAccept && (
                                     <button onClick={a.onAccept} className={hoverClass('background:#E7F9F0;')} style={css('display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 14px; border:1px solid #00CF6A; border-radius:999px; background:#fff; color:#00893F; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>
                                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00893F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-                                      This solved my problem
+                                      {t('Câu trả lời này đã giải quyết vấn đề')}
                                     </button>
                                   )}
                                 </div>
@@ -588,7 +575,7 @@ export default function QuestionsPage() {
                                           </div>
                                         )}
                                       </div>
-                                      <button onClick={a.onPostComment} style={css('flex:none; height:34px; padding:0 15px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>Send</button>
+                                      <button onClick={a.onPostComment} style={css('flex:none; height:34px; padding:0 15px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
                                     </div>
                                   </div>
                                 )}
