@@ -8,6 +8,7 @@ import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
+import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -69,6 +70,9 @@ export default function HomePage() {
   const [openMenuId, setOpenMenuId] = useState(null)
   const [copiedCardId, setCopiedCardId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [modalReply, setModalReply] = useState(null) // { answerId, parentId, authorName } | null
+  const [modalReplyDraft, setModalReplyDraft] = useState('')
+  const [modalThreads, setModalThreads] = useState(() => new Set())
 
   const patch = (id, updated) => setQuestions((qs) => qs.map((q) => (q.id === id ? updated : q)))
 
@@ -131,7 +135,34 @@ export default function HomePage() {
     onHelpful: () => requireLogin(() => api.reactAnswer(modalSrc.id, a.id).then((d) => patch(modalSrc.id, d.question)).catch(() => {})),
   })) : []
 
-  const closeModal = () => { setOpenQ(null); setModalDraft('') }
+  const closeModal = () => { setOpenQ(null); setModalDraft(''); setModalReply(null); setModalReplyDraft('') }
+  const startModalReply = (answerId, parentId, authorName) => {
+    setModalReply({ answerId, parentId, authorName })
+    setModalReplyDraft('')
+    if (parentId) setModalThreads((s) => new Set(s).add(parentId))
+  }
+  const toggleModalThread = (cid) => setModalThreads((s) => { const n = new Set(s); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
+  const submitModalReply = () => {
+    const body = modalReplyDraft.trim()
+    if (!body || !modalReply || !modalSrc) return
+    const { answerId, parentId } = modalReply
+    requireLogin(() => api.postAnswerComment(modalSrc.id, answerId, body, parentId).then((d) => { patch(modalSrc.id, d.question); setModalReply(null); setModalReplyDraft('') }).catch(() => {}))
+  }
+  const renderModalReplyBox = (answerId, parentId) => (modalReply && modalReply.answerId === answerId && modalReply.parentId === parentId ? (
+    <div style={css('display:flex; gap:9px; align-items:center; margin-top:10px;')}>
+      <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{user?.initials || '?'}</span>
+      <input
+        autoFocus
+        value={modalReplyDraft}
+        onChange={(e) => setModalReplyDraft(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') submitModalReply() }}
+        placeholder={t('Trả lời') + ' ' + modalReply.authorName + '...'}
+        style={css(`flex:1; min-width:0; border:1px solid #DDE3EC; border-radius:999px; padding:8px 14px; font:400 13px ${FONT}; color:#0F172A; background:#fff; outline:none;`)}
+      />
+      <button onClick={() => { setModalReply(null); setModalReplyDraft('') }} style={css(`flex:none; height:32px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px ${FONT}; cursor:pointer;`)}>{t('Hủy')}</button>
+      <button onClick={submitModalReply} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12px ${FONT}; cursor:pointer; opacity:${modalReplyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>
+    </div>
+  ) : null)
   const postModalReply = () => {
     const body = modalDraft.trim()
     if (!body || !modalSrc) return
@@ -160,23 +191,25 @@ export default function HomePage() {
       onHelpful: (e) => { e.stopPropagation(); requireLogin(() => api.reactUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {})) },
       onOpen: () => navigate(`/use-cases/${c.id}`),
       canDelete: c.author === (user?.name || ''),
+      commentCount: meta && meta.comments ? meta.comments.length : 0,
     }
   })
 
   return (
     <Layout active="home" notifications={HOME_NOTIFICATIONS}>
-      <div style={css('width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
+      <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
+        <SpaceBackdrop arcTop={340} bg="#04060d" />
 
         {/* ============ WORDMARK ============ */}
-        <section style={css('position:relative; padding:56px 40px 0; background:#04060d; text-align:center; overflow:hidden;')}>
+        <section style={css('position:relative; z-index:1; padding:56px 40px 0; background:transparent; text-align:center; overflow:hidden;')}>
           <div style={css('position:relative; max-width:640px; width:100%; margin:0 auto; height:64px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
             ))}
             <div style={css('position:absolute; left:55.5%; top:0; animation:ufopatrol 7s ease-in-out infinite; pointer-events:none;')}>
-              <div style={css('position:relative; width:0; height:0; left:50%; transform:translateX(-50%);')}>
-                <div style={css('position:absolute; left:50%; top:34px; width:130px; height:210px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%); animation:beamflicker 2.2s ease-in-out infinite;')}></div>
-                <svg width="76" height="40" viewBox="0 0 76 40" style={css('position:relative; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
+              <div style={css('position:relative; width:0; height:0;')}>
+                <div style={css('position:absolute; left:0; top:27px; width:130px; height:210px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%); animation:beamflicker 2.2s ease-in-out infinite;')}></div>
+                <svg width="76" height="40" viewBox="0 0 76 40" style={css('position:absolute; left:-38px; top:0; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
                   <ellipse cx="38" cy="26" rx="36" ry="8" fill="#B7C6E0" />
                   <ellipse cx="38" cy="24" rx="27" ry="6.5" fill="#8CA0C7" />
                   <path d="M20 22 Q38 2 56 22 Z" fill="#CFE6FF" opacity="0.9" />
@@ -191,7 +224,7 @@ export default function HomePage() {
         </section>
 
         {/* ============ TRENDING QUESTIONS ============ */}
-        <section id="waiting" style={css('position:relative; padding:28px 40px 40px; background:#04060d;')}>
+        <section id="waiting" style={css('position:relative; z-index:1; padding:28px 40px 40px; background:transparent;')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
               <h2 style={css(`margin:0; font:900 30px ${FONT}; letter-spacing:-.01em; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
@@ -207,7 +240,7 @@ export default function HomePage() {
 
             <div style={css('display:flex; flex-direction:column; gap:14px; margin-top:24px;')}>
               {trending.map((q) => (
-                <div key={q.id} onClick={q.onOpen} className={hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:22px; padding:20px 24px 18px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}>
+                <div key={q.id} onClick={q.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:22px; padding:20px 24px 18px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}>
                   <div style={css('display:flex; align-items:center; gap:8px;')}>
                     <span style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:10px; font:700 13px ${FONT}; background:#F1E7FF; color:#6F0CE2;`)}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
@@ -215,7 +248,7 @@ export default function HomePage() {
                     </span>
                     <span style={css(`margin-left:auto; flex:none; white-space:nowrap; display:inline-flex; align-items:center; height:32px; padding:0 14px; border-radius:999px; background:#FFF1E0; color:#B45300; font:700 13px ${FONT};`)}>{t('Đang chờ trả lời')}</span>
                   </div>
-                  <h3 style={css(`margin:14px 0 0; font-size:19px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
+                  <h3 className="zp-card-title" style={css(`margin:14px 0 0; font-size:19px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
                   <p style={css('margin:10px 0 0; font-size:15px; line-height:1.6; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{q.body}</p>
                   <div style={css('display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid #EEF1F7;')}>
                     <span style={css(`flex:none; width:38px; height:38px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;`)}>{q.initials}</span>
@@ -294,10 +327,56 @@ export default function HomePage() {
                           <span style={css(`font:400 12px ${FONT}; color:#94a3b8;`)}>{a.timeLabel}</span>
                         </div>
                         <p style={css(`margin:7px 0 0; font:400 14px/1.6 ${FONT}; color:#3A4757;`)}>{a.body}</p>
-                        <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; margin-top:9px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:${a.helpColor};`)}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                          Hữu ích · {a.helpful}
-                        </button>
+                        <div style={css('display:flex; align-items:center; gap:16px; margin-top:9px;')}>
+                          <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:${a.helpColor};`)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
+                            Hữu ích · {a.helpful}
+                          </button>
+                          <button onClick={() => startModalReply(a.id, null, a.author)} style={css(`display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#64748b;`)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            {t('Trả lời')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
+                          </button>
+                        </div>
+                        {(a.comments || []).filter((c) => !c.parentId).map((c) => {
+                          const replies = a.comments.filter((r) => r.parentId === c.id)
+                          const open = modalThreads.has(c.id)
+                          return (
+                            <div key={c.id} style={css('margin-top:12px; padding-left:12px; border-left:2px solid #E2E8F5;')}>
+                              <div style={css('display:flex; gap:9px;')}>
+                                <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarColor || AV[c.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{c.initials}</span>
+                                <div style={css('flex:1; min-width:0;')}>
+                                  <div style={css('display:flex; align-items:center; gap:8px;')}>
+                                    <span style={css(`font:800 12.5px ${FONT}; color:#0F172A;`)}>{c.author}</span>
+                                    <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
+                                  </div>
+                                  <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{c.body}</div>
+                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
+                                </div>
+                              </div>
+                              {replies.length > 0 && (
+                                <button onClick={() => toggleModalThread(c.id)} style={css(`margin:8px 0 0 35px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px ${FONT}; color:#2c5fff;`)}>
+                                  <span style={css('width:20px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
+                                  {open ? t('Ẩn câu trả lời') : t('Xem') + ' ' + replies.length + ' ' + t('câu trả lời')}
+                                </button>
+                              )}
+                              {open && replies.map((r) => (
+                                <div key={r.id} style={css('display:flex; gap:9px; margin:10px 0 0 35px;')}>
+                                  <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${r.avatarColor || AV[r.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9px ${FONT};`)}>{r.initials}</span>
+                                  <div style={css('flex:1; min-width:0;')}>
+                                    <div style={css('display:flex; align-items:center; gap:8px;')}>
+                                      <span style={css(`font:800 12px ${FONT}; color:#0F172A;`)}>{r.author}</span>
+                                      <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
+                                    </div>
+                                    <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{r.body}</div>
+                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
+                                  </div>
+                                </div>
+                              ))}
+                              <div style={css('margin-left:35px;')}>{renderModalReplyBox(a.id, c.id)}</div>
+                            </div>
+                          )
+                        })}
+                        {renderModalReplyBox(a.id, null)}
                       </div>
                     </div>
                   ))}
@@ -330,7 +409,7 @@ export default function HomePage() {
 
             <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:24px;')}>
               {featured.map((item) => (
-                <div key={item.id} onClick={item.onOpen} className={hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
+                <div key={item.id} onClick={item.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
                   <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>
                     <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
                       <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
@@ -368,7 +447,7 @@ export default function HomePage() {
                       <ImageSlot id={'lib-' + item.id} shape="rect" placeholder="ảnh" />
                     </div>
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                      <h3 style={css(`margin:0; font:800 15px/1.32 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
+                      <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.32 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
                       <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
                     </div>
                   </div>
@@ -379,10 +458,18 @@ export default function HomePage() {
                       <span style={css(`display:inline-flex; align-items:center; height:28px; font:400 12px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
                     )}
                   </div>
-                  <div style={css('display:flex; justify-content:flex-end; margin-top:12px;')}>
-                    <button onClick={item.onHelpful} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid ${item.helpBorder}; background:${item.helpBg}; color:${item.helpColor}; font:700 12px ${FONT}; cursor:pointer; white-space:nowrap;`)}>
+                  <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
+                    <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .16s;`)}>
+                      {t('Xem Use Case')}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    </button>
+                    <button onClick={item.onHelpful} style={css(`margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid ${item.helpBorder}; background:${item.helpBg}; color:${item.helpColor}; font:700 12px ${FONT}; cursor:pointer; white-space:nowrap;`)}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill={item.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
                       <span style={css('color:#2c5fff;')}>{item.helpful}</span> {t('hữu ích')}
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); navigate(`/use-cases/${item.id}#comments`) }} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid #DDE3EC; background:#fff; color:#3A4757; font:700 12px ${FONT}; cursor:pointer; white-space:nowrap;`)}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                      {item.commentCount ? item.commentCount + ' ' + t('trả lời') : t('Trả lời')}
                     </button>
                   </div>
                 </div>

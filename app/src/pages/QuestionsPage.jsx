@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
+import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import ImageSlot, { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -331,11 +332,10 @@ export default function QuestionsPage() {
   return (
     <Layout active="question" notifications={notifications}>
     <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc;')}>
-      <div style={css('position:absolute; top:-260px; left:-8%; width:900px; height:900px; border-radius:50%; background:radial-gradient(circle,rgba(58,120,255,.34),rgba(58,120,255,0) 66%); filter:blur(60px); pointer-events:none; z-index:0;')}></div>
-      <div style={css('position:absolute; top:-160px; right:-10%; width:820px; height:820px; border-radius:50%; background:radial-gradient(circle,rgba(0,140,255,.22),rgba(0,140,255,0) 66%); filter:blur(60px); pointer-events:none; z-index:0;')}></div>
+      <SpaceBackdrop arcTop={250} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
-      <div style={css('position:relative;')}>
+      <div style={css('position:relative; z-index:1;')}>
 
         <div>
           <div style={css('position:relative; background:transparent; padding:44px 40px 50px;')}>
@@ -374,7 +374,7 @@ export default function QuestionsPage() {
 
               <div style={css('display:flex; flex-direction:column; gap:16px; margin-top:20px;')}>
                 {feed.map((q) => (
-                  <div key={q.id} data-qid={q.id} style={css('background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 20px 46px rgba(0,0,0,.34); overflow:hidden;')}>
+                  <div key={q.id} data-qid={q.id} className="zp-card" style={css('background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 20px 46px rgba(0,0,0,.34); overflow:hidden;')}>
                     <div style={css('display:flex; align-items:center; gap:7px; padding:20px 22px 0; flex-wrap:wrap;')}>
                       <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
@@ -426,7 +426,7 @@ export default function QuestionsPage() {
                     </div>
 
                     <div style={css('padding:14px 22px 0;')}>
-                      <h3 style={css('margin:0; font:800 19px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>
+                      <h3 className="zp-card-title" style={css('margin:0; font:800 19px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>
                       <p style={css('margin:9px 0 0; font:400 14.5px/1.65 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;')}>
                         {q.bodyShown}
                         {q.truncated && (

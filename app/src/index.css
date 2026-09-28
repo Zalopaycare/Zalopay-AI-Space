@@ -29,3 +29,7 @@ a { color: #1a5fff; text-decoration: none; }
 image-slot-placeholder { --is-empty-bg: rgba(255, 255, 255, .06); }
 
 input, textarea, button { font-family: inherit; }
+
+.zp-card .zp-card-title { transition: color .16s ease; }
+.zp-card:hover .zp-card-title { color: #2c5fff !important; }
+.zp-card-dark:hover .zp-card-title { color: #7fb2ff !important; }

@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
+import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
@@ -139,6 +140,11 @@ export default function UseCaseLibraryPage() {
   const refreshMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   useEffect(() => { allCases.forEach((c) => refreshMeta(c.id)) }, [])
   useEffect(() => { if (id) refreshMeta(id) }, [id])
+  useEffect(() => {
+    if (!id || location.hash !== '#comments') return
+    const tm = setTimeout(() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250)
+    return () => clearTimeout(tm)
+  }, [id, location.hash])
 
   useEffect(() => {
     if (!openMenuId) return
@@ -270,6 +276,7 @@ export default function UseCaseLibraryPage() {
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
       onOpen: () => navigate(`/use-cases/${c.id}`),
+      onOpenComments: () => navigate(`/use-cases/${c.id}#comments`),
       saveFill: saved ? 'currentColor' : 'none',
       saveColor: saved ? '#2c5fff' : '#59667A',
       saveColorD: saved ? '#9fd0ff' : '#c3c3d4',
@@ -670,7 +677,7 @@ export default function UseCaseLibraryPage() {
               </div>
             )}
 
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin-bottom:36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
+            <div id="comments" style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin-bottom:36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap;')}>
                 <button
                   onClick={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
@@ -791,11 +798,7 @@ export default function UseCaseLibraryPage() {
     return (
       <div style={css('background:#07070c; color:#fff;')}>
         <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
-          <div style={css('position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size:52px 52px; -webkit-mask-image:radial-gradient(82% 62% at 50% 16%, #000 26%, transparent 76%); mask-image:radial-gradient(82% 62% at 50% 16%, #000 26%, transparent 76%); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:50%; top:-10px; transform:translateX(-50%); width:1180px; height:600px; background:radial-gradient(50% 56% at 50% 40%, rgba(150,190,255,.62) 0%, rgba(26,95,255,.6) 22%, rgba(16,60,210,.3) 48%, rgba(16,60,210,0) 72%); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:50%; top:70px; transform:translateX(-50%); width:560px; height:320px; background:radial-gradient(50% 50% at 50% 50%, rgba(120,170,255,.55) 0%, rgba(60,120,255,0) 70%); filter:blur(6px); pointer-events:none;')}></div>
-          <div style={css('position:absolute; left:50%; top:260px; transform:translateX(-50%); width:2600px; height:2600px; border-radius:50%; background:#07070c; box-shadow:0 -2px 92px 10px rgba(26,95,255,.68), inset 0 8px 82px rgba(46,120,255,.3); pointer-events:none;')}></div>
-          <StarField />
+          <SpaceBackdrop />
           <div style={css('position:relative; z-index:4; height:360px;')}>
             <h1 style={css('position:absolute; top:110px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:74px; line-height:1; font-weight:800; letter-spacing:-2px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
           </div>
@@ -874,7 +877,7 @@ export default function UseCaseLibraryPage() {
                     <div
                       key={c.id}
                       onClick={c.onOpen}
-                      className={hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.28); border-color:#CFE0FF;')}
+                      className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.28); border-color:#CFE0FF;')}
                       style={css('position:relative; border:1px solid #E6EBF3; border-radius:18px; background:#ffffff; cursor:pointer; padding:16px; box-shadow:0 10px 26px rgba(0,0,0,.16); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
                       <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>
@@ -914,7 +917,7 @@ export default function UseCaseLibraryPage() {
                           <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
                         </div>
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                          <h3 style={css('margin:0; font-size:15px; font-weight:800; line-height:1.32; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
+                          <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.32; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
                           <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
                         </div>
                       </div>
@@ -926,15 +929,19 @@ export default function UseCaseLibraryPage() {
                           <span style={css('display:inline-flex; align-items:center; height:28px; font-size:12px; color:#94a3b8;')}>{t('Không dùng AI tool trực tiếp')}</span>
                         )}
                       </div>
-                      <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:12px;')}>
-                        <button onClick={c.onHelpful} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid ${c.helpBorder}; background:${c.helpBg}; color:${c.helpColor}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
+                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
+                        <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:13px; font-weight:800; color:#2c5fff; transition:gap .16s;')}>
+                          {t('Xem Use Case')}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                        </button>
+                        <button onClick={c.onHelpful} style={css(`margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid ${c.helpBorder}; background:${c.helpBg}; color:${c.helpColor}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill={c.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
                           {c.helpful} {t('hữu ích')}
                         </button>
-                        <span style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid #DDE3EC; background:#fff; color:#94a3b8; font-size:12px; font-weight:700; white-space:nowrap;')}>
+                        <button onClick={(e) => { e.stopPropagation(); c.onOpenComments() }} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid #DDE3EC; background:#fff; color:#3A4757; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                          {c.comments}
-                        </span>
+                          {c.comments ? c.comments + ' ' + t('trả lời') : t('Trả lời')}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -947,7 +954,7 @@ export default function UseCaseLibraryPage() {
                     <div
                       key={c.id}
                       onClick={c.onOpen}
-                      className={hoverClass('transform:translateY(-3px); box-shadow:0 16px 36px rgba(30,120,240,.3); border-color:rgba(46,144,255,.6);')}
+                      className={'zp-card zp-card-dark ' + hoverClass('transform:translateY(-3px); box-shadow:0 16px 36px rgba(30,120,240,.3); border-color:rgba(46,144,255,.6);')}
                       style={css('position:relative; border:1px solid rgba(46,144,255,.4); border-radius:16px; background:linear-gradient(150deg, rgba(46,144,255,.28) 0%, rgba(17,13,26,.98) 58%); cursor:pointer; padding:18px 22px; transition:transform .16s, box-shadow .16s, border-color .16s;')}
                     >
                       <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:11px; padding-right:40px; flex-wrap:wrap;')}>
@@ -957,7 +964,7 @@ export default function UseCaseLibraryPage() {
                           <span key={tp} style={css('display:inline-flex; align-items:center; padding:5px 11px; border-radius:20px; background:rgba(255,255,255,.06); font-size:10.5px; font-weight:700; color:#c3c3d4;')}>{tp}</span>
                         ))}
                       </div>
-                      <h3 style={css('margin:0 0 9px; font-size:16px; font-weight:700; line-height:1.3; color:#fff;')}>{c.title}</h3>
+                      <h3 className="zp-card-title" style={css('margin:0 0 9px; font-size:16px; font-weight:700; line-height:1.3; color:#fff;')}>{c.title}</h3>
                       <div style={css('display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:14px; max-width:860px;')}>
                         <div>
                           <div style={css('font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#ff9f6b; margin-bottom:4px;')}>{t('Vấn đề')}</div>

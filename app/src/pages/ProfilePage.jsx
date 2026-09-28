@@ -9,6 +9,7 @@ import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import Avatar, { AVATAR_COLORS } from '../components/Avatar.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
+import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 
 /**
  * Your own big profile avatar — click it to pick a color, persisted via PATCH /auth/me.
@@ -345,7 +346,8 @@ export default function ProfilePage() {
 
   return (
     <Layout active="profile">
-      <div style={css('width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
+      <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
+        <SpaceBackdrop arcTop={section ? 200 : 230} bg="#04060d" />
 
         {/* Profile header — only on the main view, hidden once a specific section is selected. */}
         {!section && (
