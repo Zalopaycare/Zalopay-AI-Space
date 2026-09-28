@@ -7,6 +7,7 @@ import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
+import logo from '../assets/zalopay-ai-space-logo.png'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -155,7 +156,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <h1 style={css(`position:relative; margin:0; font-family:${FONT}; font-size:104px; line-height:1.05; font-weight:700; letter-spacing:-3px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6)); text-wrap:balance;`)}>Zalopay AI Space</h1>
+          <img src={logo} alt="Zalopay AI Space" style={css('position:relative; display:block; margin:0 auto; width:min(100%,640px); height:auto; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')} />
         </section>
 
         {/* ============ TRENDING QUESTIONS ============ */}
@@ -296,50 +297,47 @@ export default function HomePage() {
           <div style={css('max-width:1200px; margin:0 auto;')}>
             <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
 
-            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; margin-top:24px;')}>
+            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:24px;')}>
               {featured.map((item) => (
-                <div key={item.id} onClick={item.onOpen} className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36); border-color:#CFE0FF;')} style={css('position:relative; display:flex; flex-direction:column; background:#ffffff; border:1px solid #E6EBF3; border-radius:22px; padding:14px 14px 18px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;')}>
-                  <div onClick={(e) => e.stopPropagation()} style={css('position:relative; aspect-ratio:16 / 10; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
-                    <ImageSlot id={'lib-' + item.id} shape="rounded" radius={16} placeholder="ảnh use case" style={{ position: 'absolute', inset: 0 }} />
-                    <span style={css(`position:absolute; top:12px; left:12px; z-index:2; pointer-events:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px 0 10px; border-radius:999px; background:#ffffff; color:#00893F; font:800 12px ${FONT}; box-shadow:0 2px 10px rgba(0,0,0,.14);`)}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-                      {t('Use case')}
-                    </span>
-                    <button onClick={item.onSaveToggle} title="Lưu use case" style={css(`position:absolute; top:10px; right:10px; z-index:3; width:38px; height:38px; border-radius:12px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 4px 14px rgba(20,30,60,.16); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:${item.saveColor};`)}>
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                <div key={item.id} onClick={item.onOpen} className={hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
+                  <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>
+                    <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
+                      <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
+                      <div style={css('display:flex; flex-direction:column; min-width:0;')}>
+                        <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
+                        <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{item.team || item.category}</span>
+                      </div>
+                    </div>
+                    <button onClick={item.onSaveToggle} title="Lưu use case" style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:${item.saveColor};`)}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                     </button>
                   </div>
-                  <div style={css('display:flex; flex-direction:column; flex:1; padding:16px 6px 0;')}>
-                    <h3 style={css(`margin:0; font:800 17px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{item.title}</h3>
-                    <div style={css('margin-top:12px; font:800 11px "Aeonik Pro"; letter-spacing:.08em; color:#C2410C;')}>{t('VẤN ĐỀ')}</div>
-                    <p style={css('margin:4px 0 0; font-size:14px; line-height:1.55; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.problem}</p>
-                    <div style={css('margin-top:10px; font:800 11px "Aeonik Pro"; letter-spacing:.08em; color:#2c5fff;')}>{t('GIẢI PHÁP')}</div>
-                    <p style={css('margin:4px 0 0; font-size:14px; line-height:1.55; color:#5B6675; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
-                    <div style={{ flex: 1, minHeight: 14 }}></div>
-                    <div style={css('display:flex; align-items:center; gap:10px;')}>
-                      <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
-                      <span style={css(`font:800 14.5px ${FONT}; color:#0F172A; white-space:nowrap;`)}>{item.author}</span>
-                      <button onClick={item.onHelpful} style={css(`margin-left:auto; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid ${item.helpBorder}; background:${item.helpBg}; color:${item.helpColor}; font:700 12.5px ${FONT}; cursor:pointer; white-space:nowrap;`)}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill={item.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                        <span style={css('color:#2c5fff;')}>{item.helpful}</span> {t('hữu ích')}
-                      </button>
+                  <div style={css('display:flex; gap:13px;')}>
+                    <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:88px; height:88px; border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
+                      <ImageSlot id={'lib-' + item.id} shape="rect" placeholder="ảnh" />
                     </div>
-                    <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;')}>
-                      {item.tools.length > 0 ? item.tools.map((tl) => (
-                        <span key={tl} style={css(`display:inline-flex; align-items:center; height:36px; padding:0 15px; border:1px solid #DDE3EC; border-radius:11px; background:#fff; font:700 13.5px ${FONT}; color:#3A4757;`)}>{tl}</span>
-                      )) : (
-                        <span style={css(`display:inline-flex; align-items:center; height:36px; font:400 13px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
-                      )}
+                    <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
+                      <h3 style={css(`margin:0; font:800 15px/1.32 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
+                      <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
                     </div>
-                    <button onClick={item.onOpen} className={hoverClass('transform:translateY(-1px); box-shadow:0 14px 30px rgba(44,95,255,.5), inset 0 1px 0 rgba(255,255,255,.42);')} style={css(`margin-top:16px; position:relative; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; gap:12px; height:52px; border-radius:14px; border:1px solid rgba(255,255,255,.35); background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:800 16px ${FONT}; cursor:pointer; box-shadow:0 10px 24px rgba(44,95,255,.34),inset 0 1px 0 rgba(255,255,255,.35); transition:transform .18s ease,box-shadow .18s ease;`)}>
-                      {t('Xem Use Case')}
-                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                  </div>
+                  <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;')}>
+                    {item.tools.length > 0 ? item.tools.map((tl) => (
+                      <span key={tl} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 11px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; font:700 12px ${FONT}; color:#3A4757;`)}>{tl}</span>
+                    )) : (
+                      <span style={css(`display:inline-flex; align-items:center; height:28px; font:400 12px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
+                    )}
+                  </div>
+                  <div style={css('margin-top:12px;')}>
+                    <button onClick={item.onHelpful} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid ${item.helpBorder}; background:${item.helpBg}; color:${item.helpColor}; font:700 12px ${FONT}; cursor:pointer; white-space:nowrap;`)}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill={item.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
+                      <span style={css('color:#2c5fff;')}>{item.helpful}</span> {t('hữu ích')}
                     </button>
                   </div>
                 </div>
               ))}
 
-              <a href="/use-cases" onClick={(e) => { e.preventDefault(); navigate('/use-cases') }} className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36);')} style={css('display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; min-height:420px; border-radius:22px; border:1.5px dashed #B6CBF2; background:linear-gradient(160deg,#e8eaee 0%,#c4c9d4 100%); text-decoration:none; transition:transform .18s ease,box-shadow .18s ease;')}>
+              <a href="/use-cases" onClick={(e) => { e.preventDefault(); navigate('/use-cases') }} className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36);')} style={css('display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:180px; border-radius:18px; border:1.5px dashed #B6CBF2; background:linear-gradient(160deg,#e8eaee 0%,#c4c9d4 100%); text-decoration:none; transition:transform .18s ease,box-shadow .18s ease;')}>
                 <span style={{ ...css('display:flex; align-items:center; justify-content:center; width:64px; height:64px; border-radius:50%; background:linear-gradient(120deg,#0033C9,#1266e6); box-shadow:0 12px 28px rgba(10,60,200,.35);'), animation: 'wiggleCall 2.4s ease-in-out infinite' }}>
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                 </span>

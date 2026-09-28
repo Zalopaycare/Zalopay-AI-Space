@@ -784,55 +784,52 @@ export default function UseCaseLibraryPage() {
               )}
 
               {libView === 'grid' && libCards.length > 0 && (
-                <div style={css('display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr)); gap:24px;')}>
+                <div style={css('display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr)); gap:18px;')}>
                   {libCards.map((c) => (
                     <div
                       key={c.id}
                       onClick={c.onOpen}
-                      className={hoverClass('transform:translateY(-4px); box-shadow:0 24px 54px rgba(0,0,0,.36); border-color:#CFE0FF;')}
-                      style={css('position:relative; display:flex; flex-direction:column; border:1px solid #E6EBF3; border-radius:22px; background:#ffffff; cursor:pointer; padding:14px 14px 18px; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
+                      className={hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.28); border-color:#CFE0FF;')}
+                      style={css('position:relative; border:1px solid #E6EBF3; border-radius:18px; background:#ffffff; cursor:pointer; padding:16px; box-shadow:0 10px 26px rgba(0,0,0,.16); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
-                      <div onClick={(e) => e.stopPropagation()} style={css('position:relative; aspect-ratio:16/10; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
-                        <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh use case" />
-                        <span style={css('position:absolute; top:12px; left:12px; z-index:2; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px 0 10px; border-radius:999px; background:#ffffff; color:#00893F; font-size:12px; font-weight:800; box-shadow:0 2px 10px rgba(0,0,0,.14); pointer-events:none;')}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-                          {t('Use case')}
-                        </span>
-                        <button onClick={c.onSave} title="Lưu use case" className={hoverClass('background:#F2F6FF;')} style={css(`position:absolute; top:10px; right:10px; z-index:3; width:38px; height:38px; border-radius:12px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 4px 14px rgba(20,30,60,.16); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:${c.saveColor};`)}>
-                          <svg width="17" height="17" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                      <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>
+                        <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
+                          <span style={css(c.avStyleL)}>{c.avInitial}</span>
+                          <div style={css('display:flex; flex-direction:column; min-width:0;')}>
+                            <span style={css('font-size:13.5px; font-weight:800; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
+                            <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.team || c.category}</span>
+                          </div>
+                        </div>
+                        <button onClick={c.onSave} title="Lưu use case" className={hoverClass('background:#F2F6FF;')} style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:${c.saveColor};`)}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                         </button>
                       </div>
-                      <div style={css('display:flex; flex-direction:column; flex:1; padding:16px 6px 0;')}>
-                        <h3 style={css('margin:0; font-size:17px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;')}>{c.title}</h3>
-                        <div style={css('margin-top:12px; font-size:11px; font-weight:800; letter-spacing:.08em; color:#C2410C;')}>{t('VẤN ĐỀ')}</div>
-                        <p style={css('margin:4px 0 0; font-size:14px; line-height:1.55; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.problem}</p>
-                        <div style={css('margin-top:10px; font-size:11px; font-weight:800; letter-spacing:.08em; color:#2c5fff;')}>{t('GIẢI PHÁP')}</div>
-                        <p style={css('margin:4px 0 0; font-size:14px; line-height:1.55; color:#5B6675; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;')}>{c.desc}</p>
-                        <div style={css('flex:1; min-height:14px;')}></div>
-                        <div style={css('display:flex; align-items:center; gap:10px;')}>
-                          <span style={css(c.avStyleL)}>{c.avInitial}</span>
-                          <span style={css('font-size:14.5px; font-weight:800; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
-                          <button onClick={c.onHelpful} style={css(`margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid ${c.helpBorder}; background:${c.helpBg}; color:${c.helpColor}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill={c.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
-                            {c.helpful} {t('hữu ích')}
-                          </button>
-                          <span style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid #DDE3EC; background:#fff; color:#94a3b8; font-size:12.5px; font-weight:700; white-space:nowrap;')}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            {c.comments}
-                          </span>
+                      <div style={css('display:flex; gap:13px;')}>
+                        <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:88px; height:88px; border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
+                          <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
                         </div>
-                        <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;')}>
-                          {c.toolsR.map((tool) => (
-                            <span key={tool.name} style={css('display:inline-flex; align-items:center; height:36px; padding:0 15px; border:1px solid #DDE3EC; border-radius:11px; background:#fff; font-size:13.5px; font-weight:700; color:#3A4757;')}>{tool.name}</span>
-                          ))}
-                          {!c.toolsR.length && (
-                            <span style={css('display:inline-flex; align-items:center; height:36px; font-size:13px; color:#94a3b8;')}>{t('Không dùng AI tool trực tiếp')}</span>
-                          )}
+                        <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
+                          <h3 style={css('margin:0; font-size:15px; font-weight:800; line-height:1.32; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
+                          <p style={css('margin:5px 0 0; font-size:12.5px; line-height:1.5; color:#5B6675; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
                         </div>
-                        <button onClick={c.onOpen} className={hoverClass('filter:brightness(1.06); box-shadow:0 14px 30px rgba(44,95,255,.5);')} style={css('margin-top:16px; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:12px; height:52px; border-radius:14px; border:1px solid rgba(255,255,255,.35); background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 10px 24px rgba(44,95,255,.34), inset 0 1px 0 rgba(255,255,255,.35); transition:filter .16s, box-shadow .16s;')}>
-                          {t('Xem Use Case')}
-                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                      </div>
+                      <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;')}>
+                        {c.toolsR.map((tool) => (
+                          <span key={tool.name} style={css('display:inline-flex; align-items:center; height:28px; padding:0 11px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; font-size:12px; font-weight:700; color:#3A4757;')}>{tool.name}</span>
+                        ))}
+                        {!c.toolsR.length && (
+                          <span style={css('display:inline-flex; align-items:center; height:28px; font-size:12px; color:#94a3b8;')}>{t('Không dùng AI tool trực tiếp')}</span>
+                        )}
+                      </div>
+                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px;')}>
+                        <button onClick={c.onHelpful} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid ${c.helpBorder}; background:${c.helpBg}; color:${c.helpColor}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill={c.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
+                          {c.helpful} {t('hữu ích')}
                         </button>
+                        <span style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid #DDE3EC; background:#fff; color:#94a3b8; font-size:12px; font-weight:700; white-space:nowrap;')}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                          {c.comments}
+                        </span>
                       </div>
                     </div>
                   ))}

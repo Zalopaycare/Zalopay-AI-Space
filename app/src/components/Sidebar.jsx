@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
 import Avatar from './Avatar.jsx'
+import logo from '../assets/zalopay-ai-space-logo.png'
 
 const itemBase = 'display:flex; align-items:center; gap:14px; height:46px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:15.5px; cursor:pointer; border:none; text-align:left; font-family:inherit; width:100%;'
 const subItemBase = 'display:flex; align-items:center; gap:14px; height:42px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14.5px;'
@@ -58,8 +59,8 @@ export default function Sidebar({ active }) {
       <div style={css(`display:flex; align-items:center; gap:8px; margin-bottom:28px; ${collapsed ? 'justify-content:center;' : 'padding:4px 12px 0;'}`)}>
         {!collapsed && (
           <Link to="/" style={css('display:flex; align-items:center; gap:10px; text-decoration:none; flex:1; min-width:0;')}>
-            <span style={css('font-size:17px; font-weight:800; letter-spacing:-.3px; color:#fff; white-space:nowrap;')}>Zalopay AI Space</span>
-            <span style={css('font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px; background:rgba(255,255,255,.16); color:#dbe6ff;')}>Beta</span>
+            <img src={logo} alt="Zalopay AI Space" style={{ height: 22, width: 'auto', display: 'block' }} />
+            <span style={css('font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px; background:rgba(255,255,255,.16); color:#dbe6ff; flex:none;')}>Beta</span>
           </Link>
         )}
         <button
