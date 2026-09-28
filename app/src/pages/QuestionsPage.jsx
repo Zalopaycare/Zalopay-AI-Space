@@ -359,7 +359,7 @@ export default function QuestionsPage() {
               <div style={css('display:flex; flex-direction:column; gap:16px; margin-top:20px;')}>
                 {feed.map((q) => (
                   <div key={q.id} data-qid={q.id} className="zp-card" style={css('background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 20px 46px rgba(0,0,0,.34); overflow:hidden;')}>
-                    <div style={css('display:flex; align-items:center; gap:7px; padding:20px 22px 0; flex-wrap:wrap;')}>
+                    <div style={css('display:flex; align-items:center; gap:7px; padding:14px 18px 0; flex-wrap:wrap;')}>
                       <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
                         {t('Câu hỏi')}
@@ -370,8 +370,8 @@ export default function QuestionsPage() {
                       <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
                     </div>
 
-                    <div style={css('display:flex; gap:14px; padding:14px 22px 0;')}>
-                      <div style={css(`flex:none; width:42px; height:42px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.initials}</div>
+                    <div style={css('display:flex; gap:10px; padding:10px 18px 0;')}>
+                      <div style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
                           <span style={css('font:800 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span>
@@ -409,9 +409,9 @@ export default function QuestionsPage() {
                       </div>
                     </div>
 
-                    <div style={css('padding:14px 22px 0;')}>
-                      <h3 className="zp-card-title" style={css('margin:0; font:800 19px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>
-                      <p style={css('margin:9px 0 0; font:400 14.5px/1.65 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;')}>
+                    <div style={css('padding:8px 18px 0;')}>
+                      <h3 className="zp-card-title" style={css('margin:0; font:800 16px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>
+                      <p style={css('margin:5px 0 0; font:400 13.5px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;')}>
                         {q.bodyShown}
                         {q.truncated && (
                           <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3366F0; vertical-align:baseline;')}>{t('Xem thêm')}</button>
@@ -437,7 +437,7 @@ export default function QuestionsPage() {
                       </div>
                     </div>
 
-                    <div style={css('display:flex; align-items:center; gap:12px; margin:16px 22px 0; padding:14px 0 16px; border-top:1px solid #EEF1F7;')}>
+                    <div style={css('display:flex; align-items:center; gap:12px; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
                       {q.hasAccepted && (
                         <span style={css('display:inline-flex; align-items:center; gap:7px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#00893F;')}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00893F" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>

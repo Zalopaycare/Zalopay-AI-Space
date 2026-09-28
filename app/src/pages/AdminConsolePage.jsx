@@ -256,7 +256,6 @@ export default function AdminConsolePage() {
             <span style={css(font(800, 24) + ';letter-spacing:-.5px;color:#fff;')}>Zalopay</span>
             <span style={css('width:1px; height:22px; background:rgba(255,255,255,.35);')}></span>
             <span style={css(font(600, 15) + ';color:#dbe6ff;')}>AI Community</span>
-            <span style={css(font(700, 11) + ';padding:2px 9px;border-radius:20px;background:rgba(255,255,255,.16);color:#dbe6ff;')}>Beta</span>
           </div>
           <nav style={css('display:flex; align-items:center; gap:34px;')}>
             <Link to="/" style={css(font(600, 15) + ';padding:6px 2px;color:#c3d0f5;border-bottom:2px solid transparent;text-decoration:none;')}>Home</Link>

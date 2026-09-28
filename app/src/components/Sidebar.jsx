@@ -60,7 +60,6 @@ export default function Sidebar({ active }) {
         {!collapsed && (
           <Link to="/" style={css('display:flex; align-items:center; gap:10px; text-decoration:none; flex:1; min-width:0;')}>
             <img src={logo} alt="Zalopay AI Space" style={{ height: 14, width: 'auto', display: 'block' }} />
-            <span style={css('font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px; background:rgba(255,255,255,.16); color:#dbe6ff; flex:none;')}>Beta</span>
           </Link>
         )}
         <button

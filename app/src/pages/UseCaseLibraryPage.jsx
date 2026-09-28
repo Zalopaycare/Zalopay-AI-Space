@@ -25,9 +25,9 @@ const SORT_OPTS = [{ label: 'Gần nhất', val: 'new' }, { label: 'Được nhi
 const EMPTY_SHARE_FORM = { title: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '' }
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
-const optStyle = (active) => `padding:9px 13px;border-radius:8px;font-size:13px;font-weight:${active ? '700' : '500'};color:${active ? '#9fd0ff' : '#c3c3d4'};background:${active ? 'rgba(46,144,255,.18)' : 'transparent'};cursor:pointer;`
-const libViewActiveStyle = 'width:36px;height:36px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#2f8dff;color:#fff;'
-const libViewIdleStyle = 'width:36px;height:36px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;color:#9a9ab0;'
+const optStyle = (active) => `padding:9px 12px;border-radius:8px;font-size:13px;font-weight:${active ? '700' : '500'};color:${active ? '#1a5fff' : '#334155'};background:${active ? '#EEF3FF' : 'transparent'};cursor:pointer;white-space:nowrap;`
+const libViewActiveStyle = 'width:30px;height:30px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#2f8dff;color:#fff;'
+const libViewIdleStyle = 'width:30px;height:30px;border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;color:#64748b;'
 
 function copyTextToClipboard(text) {
   try {
@@ -794,27 +794,27 @@ export default function UseCaseLibraryPage() {
         <section style={css('position:relative; z-index:5; background:transparent; padding:26px 40px 52px;')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
 
-              <div style={css('display:flex; align-items:center; gap:12px; margin-bottom:18px; padding:16px; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:rgba(255,255,255,.03); flex-wrap:wrap;')}>
+              <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:fit-content; max-width:100%; margin:0 auto 18px; padding:6px; border-radius:14px; background:rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.9); backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); box-shadow:0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.9);')}>
                 <FilterDropdown label={t('Chủ đề') === 'Chủ đề' ? (libCat || 'Tất cả category') : libCat || 'Tất cả category'} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
                 <FilterDropdown label={libTool || 'Tất cả công cụ AI'} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={210} />
                 {activeFilterCount > 0 && (
                   <button
                     onClick={() => { setLibCat(null); setLibTopic(null); setLibTool(null); setLibGroup(null); setLibKind(null); setOpenDrop(null) }}
-                    style={css('padding:11px 15px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:transparent; color:#9fd0ff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;')}
+                    style={css('height:36px; padding:0 12px; border-radius:10px; border:none; background:transparent; color:#1a5fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;')}
                   >
                     {t('Xoá bộ lọc')}
                   </button>
                 )}
-              <div style={{ position: 'relative', marginLeft: 'auto' }}>
-                <button onClick={(e) => { e.stopPropagation(); setOpenDrop((s) => (s === 'sort' ? null : 'sort')) }} style={css('display:inline-flex; align-items:center; gap:10px; justify-content:space-between; min-width:130px; padding:12px 15px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:#e6e6f0; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;')}>
+              <div style={{ position: 'relative', marginLeft: 8 }}>
+                <button onClick={(e) => { e.stopPropagation(); setOpenDrop((s) => (s === 'sort' ? null : 'sort')) }} style={css('display:inline-flex; align-items:center; gap:8px; justify-content:space-between; height:36px; padding:0 12px 0 14px; border-radius:10px; border:1px solid #E3E8F2; background:#fff; color:#1E293B; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; min-width:120px;')}>
                   {(SORT_OPTS.find((o) => o.val === libSort) || SORT_OPTS[0]).label}
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
                 </button>
                 {openDrop === 'sort' && (
                   <Dropdown options={sortOptions} />
                 )}
               </div>
-              <div style={css('display:flex; gap:4px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:4px;')}>
+              <div style={css('display:flex; gap:2px; background:#F1F4FA; border:1px solid #E3E8F2; border-radius:10px; padding:2px;')}>
                 <button onClick={() => setLibView('grid')} style={css(libView === 'grid' ? libViewActiveStyle : libViewIdleStyle)}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
                 </button>
@@ -1197,10 +1197,10 @@ function Dropdown({ options }) {
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      style={css('position:absolute; top:50px; right:0; z-index:30; width:170px; background:#14141c; border:1px solid rgba(255,255,255,.1); border-radius:12px; box-shadow:0 18px 40px rgba(0,0,0,.5); padding:6px;')}
+      style={css('position:absolute; top:42px; right:0; z-index:30; width:170px; background:#ffffff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.22); padding:6px;')}
     >
       {options.map((opt, i) => (
-        <div key={i} onClick={opt.onClick} className={hoverClass('background:rgba(255,255,255,.06);')} style={css(opt.style)}>{opt.label}</div>
+        <div key={i} onClick={opt.onClick} className={hoverClass('background:#F3F6FC;')} style={css(opt.style)}>{opt.label}</div>
       ))}
     </div>
   )
@@ -1212,15 +1212,15 @@ function FilterDropdown({ label, name, openDrop, setOpenDrop, options, width }) 
     <div style={{ position: 'relative' }}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpenDrop(open ? null : name) }}
-        style={css('display:inline-flex; align-items:center; gap:10px; justify-content:space-between; min-width:190px; padding:11px 15px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:#e6e6f0; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;')}
+        style={css('display:inline-flex; align-items:center; gap:8px; justify-content:space-between; height:36px; padding:0 12px 0 14px; border-radius:10px; border:1px solid #E3E8F2; background:#fff; color:#1E293B; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; min-width:150px;')}
       >
         {label}
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
       </button>
       {open && (
-        <div onClick={(e) => e.stopPropagation()} style={css(`position:absolute; top:50px; left:0; z-index:30; width:${width}px; max-height:300px; overflow:auto; background:#14141c; border:1px solid rgba(255,255,255,.1); border-radius:12px; box-shadow:0 18px 40px rgba(0,0,0,.5); padding:6px;`)}>
+        <div onClick={(e) => e.stopPropagation()} style={css(`position:absolute; top:42px; left:0; z-index:30; min-width:${width}px; max-height:300px; overflow:auto; background:#ffffff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.22); padding:6px;`)}>
           {options.map((opt, i) => (
-            <div key={i} onClick={opt.onClick} className={hoverClass('background:rgba(255,255,255,.06);')} style={css(opt.style)}>{opt.label}</div>
+            <div key={i} onClick={opt.onClick} className={hoverClass('background:#F3F6FC;')} style={css(opt.style)}>{opt.label}</div>
           ))}
         </div>
       )}

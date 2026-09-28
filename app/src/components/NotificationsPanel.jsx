@@ -26,7 +26,19 @@ const NOTIF_ICONS = {
 export default function NotificationsPanel({ notifications = defaultNotifications, buttonStyle }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
-  const [readAll, setReadAll] = useState(false)
+  // Which notifications the viewer has opened, kept in this browser so bold/unread survives reloads.
+  const [readKeys, setReadKeys] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('zp-notif-read') || '[]')) } catch { return new Set() }
+  })
+  const notifKey = (n) => n.text
+  // Persist synchronously: clicking a notification navigates away, which can unmount this panel
+  // before a deferred state updater would ever run.
+  const markRead = (keys) => {
+    const next = new Set(readKeys); keys.forEach((k) => next.add(k))
+    try { localStorage.setItem('zp-notif-read', JSON.stringify([...next])) } catch { /* ignore */ }
+    setReadKeys(next)
+  }
+  const isUnread = (n) => !!n.unread && !readKeys.has(notifKey(n))
   const [narrow, setNarrow] = useState(() => (typeof window !== 'undefined' ? window.matchMedia(NARROW_QUERY).matches : false))
   const [coords, setCoords] = useState({ top: 0, left: 0 })
   const ref = useRef(null)
@@ -48,7 +60,7 @@ export default function NotificationsPanel({ notifications = defaultNotification
     return () => document.removeEventListener('click', close)
   }, [open])
 
-  const unread = readAll ? 0 : notifications.filter((n) => n.unread).length
+  const unread = notifications.filter(isUnread).length
 
   const panel = (
     <div
@@ -58,7 +70,7 @@ export default function NotificationsPanel({ notifications = defaultNotification
       <div style={css('flex:none; display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid #EEF1F7;')}>
         <span style={css('font-size:15px; font-weight:800; color:#0F172A;')}>{t('Thông báo')}</span>
         <button
-          onClick={() => setReadAll(true)}
+          onClick={() => markRead(notifications.map(notifKey))}
           style={css('border:none; background:transparent; cursor:pointer; font-size:12.5px; font-weight:700; color:#3366F0; padding:0;')}
         >
           {t('Đánh dấu đã đọc tất cả')}
@@ -71,12 +83,13 @@ export default function NotificationsPanel({ notifications = defaultNotification
             href={n.href}
             onClick={(e) => {
               e.preventDefault()
+              markRead([notifKey(n)])
               setOpen(false)
               if (n.onOpen) n.onOpen()
               else navigate(n.href)
             }}
             style={css(
-              `display:flex; gap:12px; padding:14px 18px; border-bottom:1px solid #F3F5FA; background:${n.unread && !readAll ? '#F6F9FF' : '#fff'}; text-decoration:none; cursor:pointer;`,
+              `display:flex; gap:12px; padding:14px 18px; border-bottom:1px solid #F3F5FA; background:${isUnread(n) ? '#F3F7FF' : '#fff'}; text-decoration:none; cursor:pointer;`,
             )}
           >
             <span
@@ -87,7 +100,7 @@ export default function NotificationsPanel({ notifications = defaultNotification
               {NOTIF_ICONS[n.icon] || NOTIF_ICONS.answer}
             </span>
             <div style={css('flex:1; min-width:0;')}>
-              <div style={css('font-size:13.5px; font-weight:600; line-height:1.5; color:#0F172A;')}>{n.text}</div>
+              <div style={css(isUnread(n) ? 'font-size:13.5px; font-weight:800; line-height:1.5; color:#1a5fff;' : 'font-size:13.5px; font-weight:400; line-height:1.5; color:#475569;')}>{n.text}</div>
               <div style={css('display:flex; align-items:center; gap:8px; margin-top:5px;')}>
                 <span style={css('font-size:12px; color:#94a3b8;')}>{n.time}</span>
                 {n.hasTeams && (
@@ -95,6 +108,7 @@ export default function NotificationsPanel({ notifications = defaultNotification
                 )}
               </div>
             </div>
+            {isUnread(n) && <span style={css('flex:none; align-self:center; width:9px; height:9px; border-radius:50%; background:#2c5fff; box-shadow:0 0 0 3px rgba(44,95,255,.18);')}></span>}
           </a>
         ))}
       </div>

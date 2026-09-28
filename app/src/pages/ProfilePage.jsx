@@ -118,7 +118,7 @@ function QuestionCard({ q }) {
       className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')}
       style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
     >
-      <div style={css('display:flex; align-items:center; gap:7px; padding:20px 22px 0; flex-wrap:wrap;')}>
+      <div style={css('display:flex; align-items:center; gap:7px; padding:14px 18px 0; flex-wrap:wrap;')}>
         <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px ${FONT};`)}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
           {t('Câu hỏi')}
@@ -126,18 +126,18 @@ function QuestionCard({ q }) {
         {q.cat && <span style={css(`display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#EAF0FF; color:#2c5fff; font:700 11.5px ${FONT};`)}>{q.cat}</span>}
         <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
       </div>
-      <div style={css('display:flex; align-items:center; gap:14px; padding:14px 22px 0;')}>
-        <span style={css(`flex:none; width:42px; height:42px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};`)}>{q.initials}</span>
+      <div style={css('display:flex; align-items:center; gap:10px; padding:10px 18px 0;')}>
+        <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
         <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
-          <span style={css(`font:800 15px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
+          <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
           <span style={css(`font:400 13px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.time}</span>
         </div>
       </div>
-      <div style={css('padding:14px 22px 0;')}>
-        <h3 className="zp-card-title" style={css(`margin:0; font:800 19px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
-        <p style={css(`margin:9px 0 0; font:400 14.5px/1.65 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
+      <div style={css('padding:8px 18px 0;')}>
+        <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>
+        <p style={css(`margin:5px 0 0; font:400 13.5px/1.55 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
       </div>
-      <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:16px 22px 0; padding:14px 0 16px; border-top:1px solid #EEF1F7;')}>
+      <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
         {q.accepted && (
           <span style={css(`display:inline-flex; align-items:center; gap:7px; font:700 12.5px ${FONT}; color:#00893F;`)}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00893F" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
@@ -337,6 +337,8 @@ export default function ProfilePage() {
       title: q.title, meta: relativeTime(q.time),
       statusLabel: q.resolved ? 'Đã trả lời' : t('Đang chờ trả lời'),
       statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0', statusColor: q.resolved ? '#00893F' : '#B45300',
+      cta: t('Xem chi tiết'), primary: false,
+      onOpen: () => navigate(`/questions#q=${encodeURIComponent(q.id)}`),
     })))
     .concat(myUseCases.map((c) => {
       const st = UC_STATUS[c.reviewStatus] || UC_STATUS.pending
@@ -344,6 +346,10 @@ export default function ProfilePage() {
         tagLabel: t('Use case'), tagBg: '#E7F9F0', tagColor: '#00893F',
         title: c.title, meta: relativeTime(c.time),
         statusLabel: t(st.label), statusBg: st.bg, statusColor: st.color,
+        // Pending actions on the viewer's side get a "continue" CTA; everything else just opens it.
+        cta: c.reviewStatus === 'draft' ? t('Tiếp tục') : c.reviewStatus === 'rejected' ? t('Sửa & gửi lại') : t('Xem chi tiết'),
+        primary: c.reviewStatus === 'draft' || c.reviewStatus === 'rejected',
+        onOpen: () => navigate(c.reviewStatus === 'draft' || c.reviewStatus === 'rejected' ? '/use-cases?share=1' : c.reviewStatus === 'approved' ? '/use-cases' : '/profile#usecase'),
       }
     }))
     .slice(0, 4)
@@ -383,13 +389,17 @@ export default function ProfilePage() {
               )}
               <div style={css('display:flex; flex-direction:column; gap:12px; padding-bottom:90px;')}>
                 {recentItems.map((r, i) => (
-                  <div key={i} style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:18px 22px; display:flex; align-items:center; gap:16px; box-shadow:0 8px 22px rgba(30,50,90,.06);')}>
+                  <div key={i} onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF; box-shadow:0 14px 30px rgba(30,50,90,.14);')} style={css('cursor:pointer; transition:transform .16s, box-shadow .16s, border-color .16s; background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px; box-shadow:0 8px 22px rgba(30,50,90,.06);')}>
                     <span style={css(`flex:none; display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:999px; background:${r.tagBg}; color:${r.tagColor}; font:700 12px ${FONT};`)}>{r.tagLabel}</span>
                     <div style={css('flex:1; min-width:0;')}>
-                      <div style={css(`font:700 15px ${FONT}; color:#0F172A;`)}>{r.title}</div>
+                      <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.title}</div>
                       <div style={css(`margin-top:3px; font:400 13px ${FONT}; color:#94a3b8;`)}>{r.meta}</div>
                     </div>
                     <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${r.statusBg}; color:${r.statusColor}; font:700 11.5px ${FONT};`)}>{r.statusLabel}</span>
+                    <button onClick={(e) => { e.stopPropagation(); r.onOpen() }} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; border-radius:999px; font:700 12.5px ${FONT}; cursor:pointer; white-space:nowrap; ${r.primary ? 'border:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff;' : 'border:1px solid #DDE3EC; background:#fff; color:#2c5fff;'}`)}>
+                      {r.cta}
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    </button>
                   </div>
                 ))}
               </div>
