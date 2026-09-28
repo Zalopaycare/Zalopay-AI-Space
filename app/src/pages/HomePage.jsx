@@ -14,15 +14,16 @@ import aiCube from '../assets/ai-cube.png'
 import aiOpenai from '../assets/ai-openai.png'
 import aiClaude from '../assets/ai-claude.png'
 import CardActions from '../components/CardActions.jsx'
+import ShareCtaBar from '../components/ShareCtaBar.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const FEATURED_IDS = ['c1', 'c2', 'c3']
 const AI_LOGOS = [
-  { src: aiCloud, alt: 'Cloud terminal', w: 40, pos: { left: -118, top: 6 } },
-  { src: aiCube, alt: 'Cursor', w: 32, pos: { left: -70, bottom: -30 } },
-  { src: aiOpenai, alt: 'ChatGPT', w: 36, pos: { right: -118, top: -2 } },
-  { src: aiClaude, alt: 'Claude', w: 38, pos: { right: -72, bottom: -34 } },
+  { src: aiCloud, alt: 'Cloud terminal', w: 34, pos: { left: -96, top: -6 } },
+  { src: aiCube, alt: 'Cursor', w: 26, pos: { left: -54, bottom: -36 } },
+  { src: aiOpenai, alt: 'ChatGPT', w: 30, pos: { right: -96, top: -4 } },
+  { src: aiClaude, alt: 'Claude', w: 32, pos: { right: -56, bottom: -40 } },
 ]
 
 // The Pixar-style wordmark intro plays once per page load, not on every in-app visit to Home.
@@ -234,17 +235,17 @@ export default function HomePage() {
   return (
     <Layout active="home" notifications={HOME_NOTIFICATIONS}>
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
-        <SpaceBackdrop arcTop={340} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
+        <SpaceBackdrop arcTop={250} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 
         {/* ============ WORDMARK ============ */}
-        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:56px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
+        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:28px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
           <div style={css('position:relative; max-width:640px; width:100%; margin:0 auto; height:64px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
             ))}
             <div className="zp-ufo">
               <div style={css('position:relative; width:0; height:0;')}>
-                <div style={css('position:absolute; left:0; top:27px; width:130px; height:210px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%);')} className="zp-beam"></div>
+                <div style={css('position:absolute; left:0; top:27px; width:110px; height:150px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%);')} className="zp-beam"></div>
                 <svg width="76" height="40" viewBox="0 0 76 40" style={css('position:absolute; left:-38px; top:0; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
                   <ellipse cx="38" cy="26" rx="36" ry="8" fill="#B7C6E0" />
                   <ellipse cx="38" cy="24" rx="27" ry="6.5" fill="#8CA0C7" />
@@ -270,7 +271,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p className="zp-tagline" style={css(`position:relative; margin:18px auto 0; max-width:640px; font:500 17px/1.6 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc')}</p>
+          <p className="zp-tagline" style={css(`position:relative; margin:14px auto 0; max-width:640px; font:500 17px/1.6 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc')}</p>
         </section>
 
         {/* ============ TRENDING QUESTIONS ============ */}
@@ -471,7 +472,7 @@ export default function HomePage() {
         </section>
 
         {/* ============ FEATURED USE CASES ============ */}
-        <section id="featured" style={css('position:relative; padding:24px 40px 110px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
+        <section id="featured" style={css('position:relative; padding:24px 40px 36px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
             <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
 
@@ -548,31 +549,8 @@ export default function HomePage() {
         </section>
 
         {/* ============ SHARE YOUR USE CASE ============ */}
-        <section style={css('position:relative; background:#04060d; padding:0 40px 64px;')}>
-          <div style={css('max-width:900px; margin:0 auto; display:flex; gap:40px; align-items:center; flex-wrap:wrap; background:linear-gradient(120deg,#0033C9 0%,#0a4fe0 52%,#1266e6 100%); border-radius:24px; padding:44px 46px; box-shadow:0 22px 60px rgba(0,40,150,.34); position:relative; overflow:hidden; color:#fff;')}>
-            <div style={css('position:absolute; right:-6%; top:-40%; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.4) 0%,rgba(0,207,106,0) 66%); filter:blur(30px); pointer-events:none;')}></div>
-            <div style={css('position:absolute; left:24%; bottom:-60%; width:560px; height:420px; border-radius:50%; background:radial-gradient(circle,rgba(90,170,255,.5) 0%,rgba(90,170,255,0) 68%); filter:blur(40px); pointer-events:none;')}></div>
-            <div style={css('flex:1 1 360px; min-width:280px; position:relative; z-index:2;')}>
-              <h2 style={css(`margin:0; font:900 27px/1.15 ${FONT}; letter-spacing:-.01em; color:#fff;`)}>Share your AI use case with Us</h2>
-              <p style={css(`margin:14px 0 0; font:400 15px/1.6 ${FONT}; color:rgba(255,255,255,.82);`)}>{t('Bạn đang dùng AI để giải quyết công việc hiệu quả hơn?')} {t('Hãy chia sẻ để cùng nhau học hỏi và tạo ra giá trị lớn hơn cho Zalopay.')}</p>
-            </div>
-            <div style={css('flex:1 1 320px; min-width:260px; display:flex; align-items:flex-start; justify-content:center; gap:6px; position:relative; z-index:2;')}>
-              {steps.map((item, i) => (
-                <Fragment key={i}>
-                  {item.showArrow && (
-                    <svg width="22" height="22" style={{ flex: 'none', marginTop: 42 }} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.55)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-                  )}
-                  <div style={css('width:170px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:13px;')}>
-                    <div style={css(`position:relative; width:64px; height:64px; border-radius:18px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; box-shadow:0 0 34px ${item.glow}, inset 0 1px 0 rgba(255,255,255,.35);`)}>
-                      {item.icon}
-                    </div>
-                    <div style={css(`font:800 15px ${FONT}; color:#fff;`)}>{item.title}</div>
-                    <div style={css(`font:400 12.5px/1.5 ${FONT}; color:rgba(255,255,255,.72);`)}>{item.desc}</div>
-                  </div>
-                </Fragment>
-              ))}
-            </div>
-          </div>
+        <section style={css('position:relative; background:#04060d; padding:0 40px 56px;')}>
+          <ShareCtaBar onClick={() => navigate('/use-cases?share=1')} />
         </section>
       </div>
 

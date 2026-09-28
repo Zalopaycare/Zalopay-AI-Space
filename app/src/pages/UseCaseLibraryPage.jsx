@@ -8,6 +8,7 @@ import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
+import ShareCtaBar from '../components/ShareCtaBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
@@ -769,18 +770,7 @@ export default function UseCaseLibraryPage() {
               </div>
             </div>
 
-            <div style={css('position:relative; overflow:hidden; border-radius:22px; padding:32px 38px; background:radial-gradient(58% 120% at 93% 6%, rgba(46,144,255,.42) 0%, rgba(46,144,255,0) 46%), linear-gradient(122deg,#0b1f5e 0%,#1a5fff 52%,#3a8dff 100%); display:flex; align-items:center; justify-content:space-between; color:#fff; gap:24px;')}>
-              <div>
-                <div style={css('font-size:24px; font-weight:800; letter-spacing:-.5px; margin-bottom:8px;')}>Share your AI with Zalopay</div>
-                <p style={css('margin:0; font-size:14px; line-height:1.6; color:rgba(255,255,255,.88);')}>{t('Bạn có một AI use case hay workflow hữu ích?')}<br />{t('Hãy chia sẻ để cùng nhau học hỏi và tạo ra giá trị lớn hơn cho Zalopay.')}</p>
-              </div>
-              <div style={css('display:flex; align-items:center; gap:18px; flex:none;')}>
-                <button onClick={() => { setShareOpen(true); setShareStage((s) => (s === 'submitted' ? 'form' : s)) }} style={css('display:inline-flex; align-items:center; gap:9px; padding:14px 26px; border-radius:12px; background:#fff; color:#1a5fff; font-size:15px; font-weight:700; box-shadow:0 14px 30px rgba(40,10,90,.34); border:none; cursor:pointer;')}>
-                  {t('Chia sẻ ngay')}
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
-                </button>
-              </div>
-            </div>
+            <ShareCtaBar onClick={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} />
           </div>
         </div>
       </div>
@@ -792,9 +782,9 @@ export default function UseCaseLibraryPage() {
     return (
       <div style={css('background:#07070c; color:#fff;')}>
         <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
-          <SpaceBackdrop />
-          <div style={css('position:relative; z-index:4; height:360px;')}>
-            <h1 style={css('position:absolute; top:110px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:74px; line-height:1; font-weight:800; letter-spacing:-2px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
+          <SpaceBackdrop arcTop={190} />
+          <div style={css('position:relative; z-index:4; height:230px;')}>
+            <h1 style={css('position:absolute; top:52px; left:0; right:0; margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:74px; line-height:1; font-weight:800; letter-spacing:-2px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
           </div>
         </section>
 
@@ -974,35 +964,8 @@ export default function UseCaseLibraryPage() {
           </div>
         </section>
 
-        <section style={css('background:transparent; padding:6px 40px 34px;')}>
-          <div style={css('position:relative; overflow:hidden; max-width:1200px; margin:0 auto; background:radial-gradient(58% 120% at 93% 6%, rgba(46,144,255,.42) 0%, rgba(46,144,255,0) 46%), linear-gradient(122deg,#0a1f52 0%,#1e5fd6 52%,#2f8dff 100%); border:1px solid rgba(255,255,255,.14); border-radius:24px; padding:44px 46px; display:grid; grid-template-columns:1fr 1.18fr; gap:44px; align-items:center; box-shadow:0 26px 60px rgba(20,80,200,.42);')}>
-            <div style={css('position:relative; z-index:1;')}>
-              <h2 style={css('margin:0 0 12px; font-size:28px; font-weight:800; letter-spacing:-.5px; color:#fff;')}>Share your AI use case with us</h2>
-              <p style={css('margin:0 0 26px; font-size:14.5px; line-height:1.65; color:rgba(255,255,255,.88);')}>{t('Bạn đang dùng AI để giải quyết công việc hiệu quả hơn?')}<br />{t('Hãy chia sẻ để cùng nhau học hỏi và tạo ra giá trị lớn hơn cho Zalopay nhé!')}</p>
-              <div style={css('display:flex; align-items:center; gap:18px;')}>
-                <button onClick={() => { setShareOpen(true); setShareStage((s) => (s === 'submitted' ? 'form' : s)) }} className={hoverClass('transform:translateY(-2px); box-shadow:0 18px 40px rgba(6,30,120,.5);')} style={css('display:inline-flex; align-items:center; gap:9px; padding:13px 24px; border-radius:12px; background:#fff; color:#1e5fd6; font-size:15px; font-weight:700; box-shadow:0 14px 30px rgba(6,30,120,.34); transition:transform .16s, box-shadow .16s; border:none; cursor:pointer;')}>
-                  {t('Chia sẻ Use Case')}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
-                </button>
-              </div>
-            </div>
-            <div style={css('position:relative; z-index:1; display:flex; align-items:stretch; justify-content:space-between; gap:10px;')}>
-              {[
-                { n: '1.', title: '1. Điền form ngắn', desc: t('Chia sẻ workflow & tài liệu liên quan của bạn') },
-                { n: '2.', title: '2. Zalopay AI Team hỗ trợ', desc: t('Phỏng vấn nhanh và giúp bạn trình bày lại một cách trự quan hơn') },
-                { n: '3.', title: '3. Lan tỏa giá trị', desc: t('Use case của bạn được publish để mọi người cùng khám phá') },
-              ].map((step, i) => (
-                <div key={i} style={css('flex:1; text-align:center; padding:22px 14px; border-radius:18px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:inset 0 1px 0 rgba(255,255,255,.3);')}>
-                  <div style={css('position:relative; width:56px; height:56px; margin:0 auto 14px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.34); box-shadow:0 8px 22px rgba(6,30,120,.42), inset 0 1px 0 rgba(255,255,255,.5);')}>
-                    <div style={css(`position:absolute; inset:0; border-radius:16px; background:radial-gradient(circle at 50% 30%, rgba(130,195,255,.75), rgba(130,195,255,0) 70%); animation:glowpulse 3.6s ease-in-out infinite ${i * 0.5}s;`)}></div>
-                    <span style={{ position: 'relative', fontSize: 22, fontWeight: 800, color: '#fff', filter: 'drop-shadow(0 0 6px rgba(255,255,255,.6))' }}>{step.n}</span>
-                  </div>
-                  <div style={css('font-size:14px; font-weight:700; color:#fff; margin-bottom:6px;')}>{step.title}</div>
-                  <div style={css('font-size:12px; line-height:1.5; color:rgba(255,255,255,.82);')}>{step.desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <section style={css('background:transparent; padding:6px 40px 40px;')}>
+          <ShareCtaBar onClick={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} />
         </section>
 
         {confirmDeleteId && (

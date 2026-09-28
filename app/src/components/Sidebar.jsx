@@ -59,7 +59,7 @@ export default function Sidebar({ active }) {
       <div style={css(`display:flex; align-items:center; gap:8px; margin-bottom:28px; ${collapsed ? 'justify-content:center;' : 'padding:4px 12px 0;'}`)}>
         {!collapsed && (
           <Link to="/" style={css('display:flex; align-items:center; gap:10px; text-decoration:none; flex:1; min-width:0;')}>
-            <img src={logo} alt="Zalopay AI Space" style={{ height: 22, width: 'auto', display: 'block' }} />
+            <img src={logo} alt="Zalopay AI Space" style={{ height: 14, width: 'auto', display: 'block' }} />
             <span style={css('font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px; background:rgba(255,255,255,.16); color:#dbe6ff; flex:none;')}>Beta</span>
           </Link>
         )}
