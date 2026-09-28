@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 
 const {
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM,
+  SMTP_TLS_SERVERNAME, SMTP_TLS_INSECURE,
   ALLOW_DEV_LOGIN_CODE,
 } = process.env
 
@@ -15,7 +16,16 @@ if (SMTP_HOST) {
     // have no SMTP_USER/SMTP_PASS — they authenticate by source IP instead, over STARTTLS.
     auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
     requireTLS: !SMTP_USER,
+    // When SMTP_HOST is a bare IP the relay's certificate names a hostname instead:
+    // SMTP_TLS_SERVERNAME checks the cert against that name; SMTP_TLS_INSECURE=true skips the check.
+    tls: {
+      ...(SMTP_TLS_SERVERNAME ? { servername: SMTP_TLS_SERVERNAME } : {}),
+      ...(String(SMTP_TLS_INSECURE || '').toLowerCase() === 'true' ? { rejectUnauthorized: false } : {}),
+    },
   })
+  transporter.verify()
+    .then(() => console.log(`[mailer] SMTP ready: ${SMTP_HOST}:${SMTP_PORT || 587} as ${SMTP_USER || '(IP relay)'}`))
+    .catch((e) => console.error(`[mailer] SMTP check failed for ${SMTP_HOST}:${SMTP_PORT || 587}: ${e.code || ''} ${e.message}`))
 }
 
 export const mailerConfigured = !!transporter
