@@ -57,6 +57,9 @@ export default function QuestionsPage() {
   const [replyMention, setReplyMention] = useState(null)
   const [openComments, setOpenComments] = useState({})
   const [commentDrafts, setCommentDrafts] = useState({})
+  const [commentReplyTarget, setCommentReplyTarget] = useState(null) // { answerId, parentId, authorName } | null
+  const [commentReplyDraft, setCommentReplyDraft] = useState('')
+  const [expandedCommentThreads, setExpandedCommentThreads] = useState(() => new Set())
   const [commentMention, setCommentMention] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
@@ -126,6 +129,21 @@ export default function QuestionsPage() {
       setConfirmDeleteId(null)
     }).catch(() => setConfirmDeleteId(null))
   }
+
+  const startCommentReply = (answerId, parentId, authorName) => {
+    setCommentReplyTarget({ answerId, parentId, authorName })
+    setCommentReplyDraft('')
+    setExpandedCommentThreads((s) => new Set(s).add(parentId))
+  }
+  const cancelCommentReply = () => { setCommentReplyTarget(null); setCommentReplyDraft('') }
+  const submitCommentReply = (qId) => {
+    if (!commentReplyTarget) return
+    const body = commentReplyDraft.trim()
+    if (!body) return
+    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId).then((d) => patch(qId, d.question)).catch(() => {}))
+    cancelCommentReply()
+  }
+  const toggleCommentThread = (cid) => setExpandedCommentThreads((s) => { const n = new Set(s); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
 
   useEffect(() => {
     if (!openMenuId) return
@@ -496,19 +514,64 @@ export default function QuestionsPage() {
 
                                 {a.showComments && (
                                   <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:12px; padding-left:14px; border-left:2px solid #E2E8F5;')}>
-                                    {a.comments.map((c) => (
-                                      <div key={c.id} style={css('display:flex; gap:10px;')}>
-                                        <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{c.initials}</div>
-                                        <div style={css('flex:1; min-width:0; background:#fff; border:1px solid #EEF1F7; border-radius:14px; padding:10px 13px;')}>
-                                          <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                            <span style={css('font:800 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span>
-                                            <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.team}</span>
-                                            <span style={css('margin-left:auto; font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.time}</span>
+                                    {a.comments.filter((c) => !c.parentId).map((c) => {
+                                      const replies = a.comments.filter((r) => r.parentId === c.id)
+                                      const expanded = expandedCommentThreads.has(c.id)
+                                      return (
+                                        <div key={c.id}>
+                                          <div style={css('display:flex; gap:10px;')}>
+                                            <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{c.initials}</div>
+                                            <div style={css('flex:1; min-width:0; background:#fff; border:1px solid #EEF1F7; border-radius:14px; padding:10px 13px;')}>
+                                              <div style={css('display:flex; align-items:center; gap:8px;')}>
+                                                <span style={css('font:800 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span>
+                                                <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.team}</span>
+                                                <span style={css('margin-left:auto; font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.time}</span>
+                                              </div>
+                                              <div style={css('margin-top:5px; font:400 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{c.bodyEl}</div>
+                                              <button onClick={() => startCommentReply(a.id, c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                                            </div>
                                           </div>
-                                          <div style={css('margin-top:5px; font:400 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{c.bodyEl}</div>
+
+                                          {replies.length > 0 && (
+                                            <button onClick={() => toggleCommentThread(c.id)} style={css('margin:8px 0 0 36px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
+                                              <span style={css('width:20px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
+                                              {expanded ? t('Ẩn câu trả lời') : t('Xem') + ' ' + replies.length + ' ' + t('câu trả lời')}
+                                            </button>
+                                          )}
+
+                                          {expanded && replies.map((r) => (
+                                            <div key={r.id} style={css('display:flex; gap:10px; margin:10px 0 0 36px;')}>
+                                              <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${r.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{r.initials}</div>
+                                              <div style={css('flex:1; min-width:0; background:#fff; border:1px solid #EEF1F7; border-radius:14px; padding:9px 12px;')}>
+                                                <div style={css('display:flex; align-items:center; gap:8px;')}>
+                                                  <span style={css('font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span>
+                                                  <span style={css('margin-left:auto; font:400 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{r.time}</span>
+                                                </div>
+                                                <div style={css('margin-top:4px; font:400 13px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{r.bodyEl}</div>
+                                                <button onClick={() => startCommentReply(a.id, c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                                              </div>
+                                            </div>
+                                          ))}
+
+                                          {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (
+                                            <div style={css('display:flex; gap:10px; margin:10px 0 0 36px; align-items:center;')}>
+                                              <div style={css('flex:none; width:24px; height:24px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
+                                              <div style={{ flex: 1 }}>
+                                                <input
+                                                  autoFocus
+                                                  value={commentReplyDraft}
+                                                  onChange={(e) => setCommentReplyDraft(e.target.value)}
+                                                  placeholder={t('Trả lời') + ' ' + commentReplyTarget.authorName + '...'}
+                                                  style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')}
+                                                />
+                                              </div>
+                                              <button onClick={cancelCommentReply} style={css('flex:none; height:32px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
+                                              <button onClick={() => submitCommentReply(q.id)} style={css('flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
+                                            </div>
+                                          )}
                                         </div>
-                                      </div>
-                                    ))}
+                                      )
+                                    })}
                                     <div style={css('display:flex; gap:10px; align-items:center;')}>
                                       <div style={css('flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
                                       <div style={css('flex:1; position:relative;')}>

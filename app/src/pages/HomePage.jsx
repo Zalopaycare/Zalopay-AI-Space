@@ -20,6 +20,12 @@ const UFO_STARS = [
   { left: '80%', top: '44px', size: '2px', dur: '2.4s', delay: '-1.1s' },
   { left: '96%', top: '2px', size: '2px', dur: '3.4s', delay: '-.2s' },
   { left: '70%', top: '0px', size: '2px', dur: '2.9s', delay: '-1.6s' },
+  { left: '38%', top: '10px', size: '2px', dur: '2.5s', delay: '-.6s' },
+  { left: '46%', top: '46px', size: '2px', dur: '3.2s', delay: '-2.4s' },
+  { left: '58%', top: '4px', size: '3px', dur: '2.7s', delay: '-1.3s' },
+  { left: '63%', top: '40px', size: '2px', dur: '2.3s', delay: '-.2s' },
+  { left: '32%', top: '48px', size: '2px', dur: '3.5s', delay: '-1.9s' },
+  { left: '52%', top: '18px', size: '2px', dur: '2.9s', delay: '-.8s' },
 ]
 
 const HOME_NOTIFICATIONS = [
@@ -60,8 +66,32 @@ export default function HomePage() {
   const [openQ, setOpenQ] = useState(null)
   const [modalDraft, setModalDraft] = useState('')
   const [ucMeta, setUcMeta] = useState({})
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const [copiedCardId, setCopiedCardId] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const patch = (id, updated) => setQuestions((qs) => qs.map((q) => (q.id === id ? updated : q)))
+
+  useEffect(() => {
+    if (!openMenuId) return
+    const close = () => setOpenMenuId(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [openMenuId])
+
+  const copyCardLink = (e, ucId) => {
+    e.stopPropagation()
+    const url = window.location.origin + '/use-cases/' + ucId
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiedCardId(ucId)
+      setTimeout(() => setCopiedCardId((c) => (c === ucId ? null : c)), 1500)
+    }).catch(() => {})
+    setOpenMenuId(null)
+  }
+
+  const deleteUseCase = (ucId) => {
+    api.deleteUseCase(ucId).then(() => setConfirmDeleteId(null)).catch(() => setConfirmDeleteId(null))
+  }
 
   useEffect(() => {
     api.listQuestions().then((d) => setQuestions(d.questions || [])).catch(() => {})
@@ -129,6 +159,7 @@ export default function HomePage() {
       onSaveToggle: (e) => { e.stopPropagation(); requireLogin(() => api.saveUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {})) },
       onHelpful: (e) => { e.stopPropagation(); requireLogin(() => api.reactUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {})) },
       onOpen: () => navigate(`/use-cases/${c.id}`),
+      canDelete: c.author === (user?.name || ''),
     }
   })
 
@@ -138,11 +169,11 @@ export default function HomePage() {
 
         {/* ============ WORDMARK ============ */}
         <section style={css('position:relative; padding:56px 40px 0; background:#04060d; text-align:center; overflow:hidden;')}>
-          <div style={css('position:relative; max-width:900px; margin:0 auto; height:64px;')}>
+          <div style={css('position:relative; max-width:640px; width:100%; margin:0 auto; height:64px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
             ))}
-            <div style={css('position:absolute; left:58%; top:0; animation:ufobob 3.6s ease-in-out infinite; pointer-events:none;')}>
+            <div style={css('position:absolute; left:55.5%; top:0; animation:ufopatrol 7s ease-in-out infinite; pointer-events:none;')}>
               <div style={css('position:relative; width:0; height:0; left:50%; transform:translateX(-50%);')}>
                 <div style={css('position:absolute; left:50%; top:34px; width:130px; height:210px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%); animation:beamflicker 2.2s ease-in-out infinite;')}></div>
                 <svg width="76" height="40" viewBox="0 0 76 40" style={css('position:relative; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
@@ -308,9 +339,29 @@ export default function HomePage() {
                         <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{item.team || item.category}</span>
                       </div>
                     </div>
-                    <button onClick={item.onSaveToggle} title="Lưu use case" style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:${item.saveColor};`)}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                    </button>
+                    <div style={css('position:relative; flex:none;')}>
+                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === item.id ? null : item.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
+                      </button>
+                      {openMenuId === item.id && (
+                        <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:190px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
+                          <button onClick={(e) => copyCardLink(e, item.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#0F172A; text-align:left;`)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
+                            {copiedCardId === item.id ? t('Đã copy!') : t('Copy link')}
+                          </button>
+                          <button onClick={(e) => { item.onSaveToggle(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#0F172A; text-align:left;`)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                            {item.saveFill === 'currentColor' ? t('Bỏ lưu') : t('Lưu use case')}
+                          </button>
+                          {item.canDelete && (
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#D8232A; text-align:left;`)}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
+                              {t('Xoá bài viết')}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div style={css('display:flex; gap:13px;')}>
                     <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:88px; height:88px; border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
@@ -328,7 +379,7 @@ export default function HomePage() {
                       <span style={css(`display:inline-flex; align-items:center; height:28px; font:400 12px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
                     )}
                   </div>
-                  <div style={css('margin-top:12px;')}>
+                  <div style={css('display:flex; justify-content:flex-end; margin-top:12px;')}>
                     <button onClick={item.onHelpful} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid ${item.helpBorder}; background:${item.helpBg}; color:${item.helpColor}; font:700 12px ${FONT}; cursor:pointer; white-space:nowrap;`)}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill={item.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
                       <span style={css('color:#2c5fff;')}>{item.helpful}</span> {t('hữu ích')}
@@ -376,6 +427,22 @@ export default function HomePage() {
           </div>
         </section>
       </div>
+
+      {confirmDeleteId && (
+        <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
+          <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
+            <div style={css('width:52px; height:52px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
+            </div>
+            <div style={css(`margin-top:16px; font:800 16px ${FONT}; color:#0F172A;`)}>{t('Bạn muốn xóa vĩnh viễn bài viết này?')}</div>
+            <div style={css(`margin-top:8px; font:400 13.5px/1.5 ${FONT}; color:#64748b;`)}>{t('Hành động này không thể hoàn tác.')}</div>
+            <div style={css('display:flex; gap:10px; margin-top:22px;')}>
+              <button onClick={() => setConfirmDeleteId(null)} style={css(`flex:1; height:44px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px ${FONT}; cursor:pointer;`)}>{t('Quay lại')}</button>
+              <button onClick={() => deleteUseCase(confirmDeleteId)} style={css(`flex:1; height:44px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px ${FONT}; cursor:pointer;`)}>{t('Đồng ý')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

@@ -14,6 +14,13 @@ a { color: #1a5fff; text-decoration: none; }
 @keyframes ping { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(1.7); opacity: 0; } }
 @keyframes glowpulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
 @keyframes ufobob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-16px); } }
+@keyframes ufopatrol {
+  0%   { transform: translateX(calc(-50% - 70px)) translateY(0); }
+  25%  { transform: translateX(calc(-50% - 20px)) translateY(-16px); }
+  50%  { transform: translateX(calc(-50% + 70px)) translateY(0); }
+  75%  { transform: translateX(calc(-50% - 20px)) translateY(-16px); }
+  100% { transform: translateX(calc(-50% - 70px)) translateY(0); }
+}
 @keyframes beamflicker { 0%, 100% { opacity: .78; } 50% { opacity: 1; } }
 @keyframes twinkle { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.25); } }
 @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-3px); } 40% { transform: translateX(3px); } 60% { transform: translateX(-2px); } 80% { transform: translateX(2px); } }

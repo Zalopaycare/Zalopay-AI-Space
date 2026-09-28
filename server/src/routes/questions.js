@@ -25,7 +25,7 @@ function loadQuestion(id, userId) {
   const answers = db.prepare('SELECT * FROM question_answers WHERE question_id = ? ORDER BY created_at ASC').all(id).map((a) => {
     const aAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(a.author_id)
     const comments = db.prepare('SELECT * FROM answer_comments WHERE answer_id = ? ORDER BY created_at ASC').all(a.id).map((c) => ({
-      id: c.id, ...userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), time: c.created_at, body: c.body,
+      id: c.id, ...userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), time: c.created_at, body: c.body, parentId: c.parent_id || null,
     }))
     const helpful = db.prepare('SELECT COUNT(*) n FROM answer_reactions WHERE answer_id = ?').get(a.id).n
     const iHelped = userId ? !!db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(a.id, userId) : false
@@ -133,9 +133,10 @@ router.post('/:id/answers/:answerId/accept', requireAuth, (req, res) => {
 router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const { id, answerId } = req.params
   const body = String(req.body?.body || '').trim()
+  const parentId = req.body?.parentId ? String(req.body.parentId) : null
   if (!body) return res.status(400).json({ error: 'empty_body' })
   const cid = nextId('c')
-  db.prepare('INSERT INTO answer_comments (id, answer_id, author_id, body) VALUES (?,?,?,?)').run(cid, answerId, req.user.id, body)
+  db.prepare('INSERT INTO answer_comments (id, answer_id, author_id, body, parent_id) VALUES (?,?,?,?,?)').run(cid, answerId, req.user.id, body, parentId)
 
   const answer = db.prepare('SELECT * FROM question_answers WHERE id = ?').get(answerId)
   const aAuthor = answer ? db.prepare('SELECT * FROM users WHERE id = ?').get(answer.author_id) : null

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS answer_comments (
   answer_id TEXT NOT NULL REFERENCES question_answers(id),
   author_id INTEGER NOT NULL REFERENCES users(id),
   body TEXT NOT NULL,
+  parent_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -119,6 +120,7 @@ CREATE TABLE IF NOT EXISTS use_case_comments (
   use_case_id TEXT NOT NULL,
   author_id INTEGER NOT NULL REFERENCES users(id),
   body TEXT NOT NULL,
+  parent_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 `)
@@ -128,6 +130,16 @@ CREATE TABLE IF NOT EXISTS use_case_comments (
 const userColumns = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name)
 if (!userColumns.includes('avatar_color')) {
   db.exec('ALTER TABLE users ADD COLUMN avatar_color TEXT')
+}
+
+const answerCommentColumns = db.prepare("PRAGMA table_info(answer_comments)").all().map((c) => c.name)
+if (!answerCommentColumns.includes('parent_id')) {
+  db.exec('ALTER TABLE answer_comments ADD COLUMN parent_id TEXT')
+}
+
+const useCaseCommentColumns = db.prepare("PRAGMA table_info(use_case_comments)").all().map((c) => c.name)
+if (!useCaseCommentColumns.includes('parent_id')) {
+  db.exec('ALTER TABLE use_case_comments ADD COLUMN parent_id TEXT')
 }
 
 export function nextId(prefix) {

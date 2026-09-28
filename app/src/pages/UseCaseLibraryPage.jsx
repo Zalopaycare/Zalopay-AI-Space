@@ -73,8 +73,14 @@ export default function UseCaseLibraryPage() {
   const [query, setQuery] = useState('')
   const [ucMeta, setUcMeta] = useState({}) // id -> { helpful, iHelped, saved, comments: [] }
   const [dDraft, setDDraft] = useState('')
+  const [replyTarget, setReplyTarget] = useState(null) // { parentId, authorName } | null
+  const [replyDraft, setReplyDraft] = useState('')
+  const [expandedThreads, setExpandedThreads] = useState(() => new Set())
   const [copiedCode, setCopiedCode] = useState(null)
   const [copiedLabel, setCopiedLabel] = useState('')
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const [copiedCardId, setCopiedCardId] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const [libCat, setLibCat] = useState(null)
   const [libTopic, setLibTopic] = useState(null)
@@ -133,6 +139,39 @@ export default function UseCaseLibraryPage() {
   const refreshMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   useEffect(() => { allCases.forEach((c) => refreshMeta(c.id)) }, [])
   useEffect(() => { if (id) refreshMeta(id) }, [id])
+
+  useEffect(() => {
+    if (!openMenuId) return
+    const close = () => setOpenMenuId(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [openMenuId])
+
+  const copyCardLink = (e, ucId) => {
+    e.stopPropagation()
+    const url = window.location.origin + '/use-cases/' + ucId
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiedCardId(ucId)
+      setTimeout(() => setCopiedCardId((c) => (c === ucId ? null : c)), 1500)
+    }).catch(() => {})
+    setOpenMenuId(null)
+  }
+
+  const deleteUseCase = (ucId) => {
+    api.deleteUseCase(ucId).then(() => {
+      setUcMeta((m) => { const n = { ...m }; delete n[ucId]; return n })
+      setConfirmDeleteId(null)
+    }).catch(() => setConfirmDeleteId(null))
+  }
+
+  const toggleThread = (pid) => setExpandedThreads((s) => { const n = new Set(s); if (n.has(pid)) n.delete(pid); else n.add(pid); return n })
+  const startReply = (topId, authorName) => { setReplyTarget({ parentId: topId, authorName }); setReplyDraft(''); setExpandedThreads((s) => new Set(s).add(topId)) }
+  const cancelReply = () => { setReplyTarget(null); setReplyDraft('') }
+  const submitReply = (ucId) => {
+    const text = replyDraft.trim()
+    if (!text || !replyTarget) return
+    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
+  }
 
   // ---- draft restore + autosave ----
   const restoredRef = useRef(false)
@@ -227,6 +266,7 @@ export default function UseCaseLibraryPage() {
       levelChipLight: levelChip(cd.level, false),
       levelChipDark: levelChip(cd.level, true),
       overview: c.desc || c.problem,
+      canDelete: c.author === (user?.name || ''),
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
       onOpen: () => navigate(`/use-cases/${c.id}`),
@@ -671,15 +711,60 @@ export default function UseCaseLibraryPage() {
               </div>
 
               <div style={css('display:flex; flex-direction:column; gap:14px; margin-top:8px;')}>
-                {commentsList.map((c, i) => (
-                  <div key={c.id || i} style={css('display:flex; gap:12px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
-                    <span style={css('width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;')}>{c.initials}</span>
-                    <div>
-                      <div style={css('font-size:13px; font-weight:700; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}</span></div>
-                      <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{c.body}</div>
+                {commentsList.filter((c) => !c.parentId).map((c) => {
+                  const replies = commentsList.filter((r) => r.parentId === c.id)
+                  const expanded = expandedThreads.has(c.id)
+                  return (
+                    <div key={c.id} style={css('padding-top:14px; border-top:1px solid #EEF1F7;')}>
+                      <div style={css('display:flex; gap:12px;')}>
+                        <span style={css('width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;')}>{c.initials}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={css('font-size:13px; font-weight:700; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}</span></div>
+                          <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{c.body}</div>
+                          <button onClick={() => startReply(c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                        </div>
+                      </div>
+
+                      {replies.length > 0 && (
+                        <button onClick={() => toggleThread(c.id)} style={css('margin:10px 0 0 48px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
+                          <span style={css('width:22px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
+                          {expanded ? t('Ẩn câu trả lời') : t('Xem') + ' ' + replies.length + ' ' + t('câu trả lời')}
+                        </button>
+                      )}
+
+                      {expanded && replies.map((r) => (
+                        <div key={r.id} style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
+                          <span style={css('width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;')}>{r.initials}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={css('font-size:12.5px; font-weight:700; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}</span></div>
+                            <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{r.body}</div>
+                            <button onClick={() => startReply(c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {replyTarget?.parentId === c.id && (
+                        <div style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
+                          <span style={css('width:30px; height:30px; border-radius:50%; flex:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;')}>{user?.initials || '?'}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <textarea
+                              autoFocus
+                              value={replyDraft}
+                              onChange={(e) => setReplyDraft(e.target.value)}
+                              rows={1}
+                              placeholder={t('Trả lời') + ' ' + replyTarget.authorName + '...'}
+                              style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font-family:inherit; font-size:13px; line-height:1.5; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
+                            />
+                            <div style={css('display:flex; justify-content:flex-end; gap:8px; margin-top:8px;')}>
+                              <button onClick={cancelReply} style={css('height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
+                              <button onClick={() => submitReply(dsel.id)} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${replyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -784,7 +869,7 @@ export default function UseCaseLibraryPage() {
               )}
 
               {libView === 'grid' && libCards.length > 0 && (
-                <div style={css('display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr)); gap:18px;')}>
+                <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px;')}>
                   {libCards.map((c) => (
                     <div
                       key={c.id}
@@ -800,9 +885,29 @@ export default function UseCaseLibraryPage() {
                             <span style={css('font-size:11.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.team || c.category}</span>
                           </div>
                         </div>
-                        <button onClick={c.onSave} title="Lưu use case" className={hoverClass('background:#F2F6FF;')} style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:${c.saveColor};`)}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                        </button>
+                        <div style={css('position:relative; flex:none;')}>
+                          <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === c.id ? null : c.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
+                          </button>
+                          {openMenuId === c.id && (
+                            <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:190px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
+                              <button onClick={(e) => copyCardLink(e, c.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
+                                {copiedCardId === c.id ? t('Đã copy!') : t('Copy link')}
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); c.onSave(e); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                                {c.saveFill === 'currentColor' ? t('Bỏ lưu') : t('Lưu use case')}
+                              </button>
+                              {c.canDelete && (
+                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(c.id); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
+                                  {t('Xoá bài viết')}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div style={css('display:flex; gap:13px;')}>
                         <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:88px; height:88px; border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
@@ -821,7 +926,7 @@ export default function UseCaseLibraryPage() {
                           <span style={css('display:inline-flex; align-items:center; height:28px; font-size:12px; color:#94a3b8;')}>{t('Không dùng AI tool trực tiếp')}</span>
                         )}
                       </div>
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px;')}>
+                      <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:12px;')}>
                         <button onClick={c.onHelpful} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border-radius:999px; border:1px solid ${c.helpBorder}; background:${c.helpBg}; color:${c.helpColor}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill={c.helpFill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
                           {c.helpful} {t('hữu ích')}
@@ -931,6 +1036,22 @@ export default function UseCaseLibraryPage() {
             </div>
           </div>
         </section>
+
+        {confirmDeleteId && (
+          <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
+            <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
+              <div style={css('width:52px; height:52px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
+              </div>
+              <div style={css('margin-top:16px; font:800 16px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{t('Bạn muốn xóa vĩnh viễn bài viết này?')}</div>
+              <div style={css('margin-top:8px; font:400 13.5px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Hành động này không thể hoàn tác.')}</div>
+              <div style={css('display:flex; gap:10px; margin-top:22px;')}>
+                <button onClick={() => setConfirmDeleteId(null)} style={css('flex:1; height:44px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Quay lại')}</button>
+                <button onClick={() => deleteUseCase(confirmDeleteId)} style={css('flex:1; height:44px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Đồng ý')}</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

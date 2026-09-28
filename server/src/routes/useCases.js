@@ -12,9 +12,9 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const helpful = db.prepare('SELECT COUNT(*) n FROM use_case_reactions WHERE use_case_id = ?').get(id).n
   const iHelped = req.user ? !!db.prepare('SELECT 1 FROM use_case_reactions WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
   const saved = req.user ? !!db.prepare('SELECT 1 FROM use_case_saves WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
-  const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at DESC').all(id).map((c) => {
+  const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at ASC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
-    return { id: c.id, author: u ? u.name : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body }
+    return { id: c.id, author: u ? u.name : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null }
   })
   res.json({ helpful, iHelped, saved, comments })
 })
@@ -41,13 +41,26 @@ router.post('/:id/react', requireAuth, (req, res) => {
   res.json({ helpful, iHelped: !exists })
 })
 
+router.delete('/:id', requireAuth, (req, res) => {
+  const { id } = req.params
+  const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
+  if (!row) return res.status(404).json({ error: 'not_found' })
+  if (!req.user.is_admin && row.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
+  db.prepare('DELETE FROM use_case_comments WHERE use_case_id = ?').run(id)
+  db.prepare('DELETE FROM use_case_reactions WHERE use_case_id = ?').run(id)
+  db.prepare('DELETE FROM use_case_saves WHERE use_case_id = ?').run(id)
+  db.prepare('DELETE FROM use_case_submissions WHERE id = ?').run(id)
+  res.json({ ok: true })
+})
+
 router.post('/:id/comments', requireAuth, (req, res) => {
   const { id } = req.params
   const body = String(req.body?.body || '').trim()
+  const parentId = req.body?.parentId ? String(req.body.parentId) : null
   if (!body) return res.status(400).json({ error: 'empty_body' })
   const cid = nextId('ucc')
-  db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body) VALUES (?,?,?,?)').run(cid, id, req.user.id, body)
-  res.status(201).json({ id: cid, author: req.user.name, initials: req.user.initials, time: new Date().toISOString(), body })
+  db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body, parent_id) VALUES (?,?,?,?,?)').run(cid, id, req.user.id, body, parentId)
+  res.status(201).json({ id: cid, author: req.user.name, initials: req.user.initials, avatarColor: req.user.avatar_color || null, time: new Date().toISOString(), body, parentId })
 })
 
 // Share-a-use-case submissions (pending admin review).
