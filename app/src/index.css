@@ -16,9 +16,9 @@ a { color: #1a5fff; text-decoration: none; }
 @keyframes ufobob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-16px); } }
 @keyframes ufopatrol {
   0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(70px, -16px); }
+  25% { transform: translate(50px, -8px); }
   50% { transform: translate(0, 0); }
-  75% { transform: translate(-70px, -16px); }
+  75% { transform: translate(-50px, -8px); }
 }
 
 @keyframes beamflicker { 0%, 100% { opacity: .78; } 50% { opacity: 1; } }
@@ -37,8 +37,8 @@ input, textarea, button { font-family: inherit; }
 /* Home wordmark: UFO patrol, plus a one-time intro (fly in, sweep the beam to reveal the logo, "ting"). */
 .zp-ufo { position: absolute; left: 55.5%; top: 0; pointer-events: none; animation: ufopatrol 7s ease-in-out infinite; }
 .zp-beam { animation: beamflicker 2.2s ease-in-out infinite; }
-.zp-flash { position: absolute; left: 50%; top: 50%; width: 820px; height: 300px; margin: -150px 0 0 -410px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,255,255,.9), rgba(160,200,255,.5) 42%, rgba(80,140,255,0) 100%); opacity: 0; pointer-events: none; }
-.zp-glint { position: absolute; left: 59.7%; top: 13%; margin: -36px 0 0 -36px; opacity: 0; pointer-events: none; filter: drop-shadow(0 0 10px #bfe6ff) drop-shadow(0 0 22px #6fc3ff); }
+.zp-flash { position: absolute; left: 50%; top: 50%; width: 600px; height: 220px; margin: -110px 0 0 -300px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,255,255,.9), rgba(160,200,255,.5) 42%, rgba(80,140,255,0) 100%); opacity: 0; pointer-events: none; }
+.zp-glint { position: absolute; left: 59.7%; top: 13%; margin: -26px 0 0 -26px; width: 52px; height: 52px; opacity: 0; pointer-events: none; filter: drop-shadow(0 0 10px #bfe6ff) drop-shadow(0 0 22px #6fc3ff); }
 .zp-intro .zp-ufo { animation: ufointro 4.4s forwards, ufopatrol 7s ease-in-out 4.4s infinite; }
 .zp-intro .zp-beam { animation: beamintro 4.4s forwards, beamflicker 2.2s ease-in-out 4.4s infinite; }
 .zp-logo-ting { filter: drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6)); }

@@ -6,12 +6,9 @@ const ATTR_EN = Object.fromEntries(PAIRS.concat(ATTR_PAIRS).filter((p) => p[0] !
 
 const I18nContext = createContext({ lang: 'vi', t: (s) => s, ta: (s) => s, setLang: () => {} })
 
+// The language switch was removed; the site is Vietnamese-only (EN strings stay in pairs.js).
 function readInitialLang() {
-  try {
-    return localStorage.getItem('zp-lang') || 'vi'
-  } catch {
-    return 'vi'
-  }
+  return 'vi'
 }
 
 export function I18nProvider({ children }) {

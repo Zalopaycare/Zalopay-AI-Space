@@ -15,35 +15,7 @@ const NAV_ITEMS = [
 
 const navItemBase = 'font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;padding:6px 2px;transition:color .15s;background:none;border:none;text-decoration:none;white-space:nowrap;'
 
-function LangPill() {
-  const { lang, setLang } = useI18n()
-  return (
-    <div
-      style={css(
-        'display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);',
-      )}
-    >
-      <button
-        onClick={() => setLang('vi')}
-        style={css(
-          `height:28px;padding:0 11px;border:none;border-radius:999px;background:${lang === 'vi' ? '#ffffff' : 'transparent'};color:${lang === 'vi' ? '#0e2f8a' : '#c3d0f5'};font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;`,
-        )}
-      >
-        VI
-      </button>
-      <button
-        onClick={() => setLang('en')}
-        style={css(
-          `height:28px;padding:0 11px;border:none;border-radius:999px;background:${lang === 'en' ? '#ffffff' : 'transparent'};color:${lang === 'en' ? '#0e2f8a' : '#c3d0f5'};font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;`,
-        )}
-      >
-        EN
-      </button>
-    </div>
-  )
-}
-
-/** The thin top bar, offset by the (collapsible) sidebar: page nav, language switch, notifications + profile chip. */
+/** The thin top bar, offset by the (collapsible) sidebar: page nav, notifications + profile chip. */
 export default function TopNav({ notifications }) {
   const location = useLocation()
   const { t } = useI18n()
@@ -76,7 +48,6 @@ export default function TopNav({ notifications }) {
         })}
       </nav>
       <div style={css('flex:1; display:flex; align-items:center; justify-content:flex-end; gap:12px;')}>
-        <LangPill />
         {user && (
           <NotificationsPanel
             notifications={notifications}

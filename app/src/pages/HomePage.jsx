@@ -21,10 +21,10 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const FEATURED_IDS = ['c1', 'c2', 'c3']
 const AI_LOGOS = [
-  { src: aiCloud, alt: 'Cloud terminal', w: 34, pos: { left: -96, top: 16 } },
-  { src: aiCube, alt: 'Cursor', w: 26, pos: { left: -54, bottom: -36 } },
-  { src: aiOpenai, alt: 'ChatGPT', w: 30, pos: { right: -96, top: 18 } },
-  { src: aiClaude, alt: 'Claude', w: 32, pos: { right: -56, bottom: -40 } },
+  { src: aiCloud, alt: 'Cloud terminal', w: 28, pos: { left: -64, top: 58 } },
+  { src: aiCube, alt: 'Cursor', w: 22, pos: { left: -40, bottom: 60 } },
+  { src: aiOpenai, alt: 'ChatGPT', w: 26, pos: { right: -62, top: 60 } },
+  { src: aiClaude, alt: 'Claude', w: 26, pos: { right: -42, bottom: 60 } },
 ]
 
 // The Pixar-style wordmark intro plays once per page load, not on every in-app visit to Home.
@@ -237,18 +237,18 @@ export default function HomePage() {
   return (
     <Layout active="home" notifications={HOME_NOTIFICATIONS}>
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
-        <SpaceBackdrop arcTop={300} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
+        <SpaceBackdrop arcTop={240} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 
         {/* ============ WORDMARK ============ */}
-        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:16px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
-          <div style={css('position:relative; max-width:640px; width:100%; margin:0 auto; height:44px;')}>
+        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:14px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
+          <div style={css('position:relative; max-width:440px; width:100%; margin:0 auto; height:38px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
             ))}
             <div className="zp-ufo">
               <div style={css('position:relative; width:0; height:0;')}>
-                <div style={css('position:absolute; left:0; top:27px; width:110px; height:150px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%);')} className="zp-beam"></div>
-                <svg width="76" height="40" viewBox="0 0 76 40" style={css('position:absolute; left:-38px; top:0; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
+                <div style={css('position:absolute; left:0; top:24px; width:84px; height:96px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%);')} className="zp-beam"></div>
+                <svg width="60" height="32" viewBox="0 0 76 40" style={css('position:absolute; left:-30px; top:0; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
                   <ellipse cx="38" cy="26" rx="36" ry="8" fill="#B7C6E0" />
                   <ellipse cx="38" cy="24" rx="27" ry="6.5" fill="#8CA0C7" />
                   <path d="M20 22 Q38 2 56 22 Z" fill="#CFE6FF" opacity="0.9" />
@@ -259,7 +259,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div style={css('position:relative; margin:0 auto; width:min(100%,640px);')}>
+          <div style={css('position:relative; margin:0 auto; width:min(100%,440px);')}>
             <div className="zp-logo-ting" style={css('position:relative;')}>
               <div className="zp-flash"></div>
               <div className="zp-logo-reveal">
@@ -273,10 +273,10 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p className="zp-tagline" style={css(`position:relative; margin:14px auto 0; max-width:640px; font:500 17px/1.6 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc')}</p>
+          <p className="zp-tagline" style={css(`position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc')}</p>
         </section>
 
-        <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => navigate('/questions#ask')} query={homeQuery} onQuery={setHomeQuery} onSubmit={(v) => navigate('/questions' + (v.trim() ? '?q=' + encodeURIComponent(v.trim()) : ''))} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
+        <PageActionBar searchOnly maxWidth={560} query={homeQuery} onQuery={setHomeQuery} onSubmit={(v) => navigate('/questions' + (v.trim() ? '?q=' + encodeURIComponent(v.trim()) : ''))} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
 
         {/* ============ TRENDING QUESTIONS ============ */}
         <section id="waiting" style={css('position:relative; z-index:1; padding:28px 40px 40px; background:transparent;')}>
