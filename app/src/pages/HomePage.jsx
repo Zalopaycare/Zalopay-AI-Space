@@ -203,7 +203,7 @@ export default function HomePage() {
   return (
     <Layout active="home" notifications={HOME_NOTIFICATIONS}>
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
-        <SpaceBackdrop arcTop={340} bg="#04060d" />
+        <SpaceBackdrop arcTop={340} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 
         {/* ============ WORDMARK ============ */}
         <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:56px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
@@ -228,7 +228,7 @@ export default function HomePage() {
           <div className="zp-logo-ting" style={css('position:relative; margin:0 auto; width:min(100%,640px);')}>
             <div className="zp-flash"></div>
             <div className="zp-logo-reveal">
-              <img src={logo} alt="Zalopay AI Space" style={css('position:relative; display:block; width:100%; height:auto; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')} />
+              <img src={logo} alt="Zalopay AI Space" style={css('position:relative; display:block; width:100%; height:auto;')} />
             </div>
             <svg className="zp-glint" width="72" height="72" viewBox="0 0 24 24"><path d="M12 0 C12.8 7.5 16.5 11.2 24 12 C16.5 12.8 12.8 16.5 12 24 C11.2 16.5 7.5 12.8 0 12 C7.5 11.2 11.2 7.5 12 0 Z" fill="#fff" /></svg>
           </div>
