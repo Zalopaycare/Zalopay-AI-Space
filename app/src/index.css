@@ -94,3 +94,7 @@ input, textarea, button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .zp-ailogo, .zp-intro .zp-ailogo, .zp-intro .zp-tagline { animation: none !important; opacity: 1; }
 }
+
+.zp-mascot { animation: mascotfloat 3.2s ease-in-out infinite; transform-origin: 50% 80%; }
+@keyframes mascotfloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) { .zp-mascot { animation: none; } }

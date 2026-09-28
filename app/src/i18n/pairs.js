@@ -182,6 +182,7 @@ export const PAIRS = [
   ['Kể Toro nghe với', 'Tell Toro about it'],
   ['Bạn có use case AI muốn chia sẻ?', 'Got an AI use case to share?'],
   ['Chia sẻ use case', 'Share a use case'],
+  ['Khám phá cách các Zalopay Starter đang ứng dụng AI để làm việc nhanh và tốt hơn.', 'See how Zalopay Starters use AI to work faster and better.'],
   ['Trả lời', 'Reply'],
   ['trả lời', 'replies'],
   ['Hữu ích', 'Helpful'],

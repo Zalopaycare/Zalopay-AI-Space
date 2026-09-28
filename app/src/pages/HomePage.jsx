@@ -21,9 +21,9 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const FEATURED_IDS = ['c1', 'c2', 'c3']
 const AI_LOGOS = [
-  { src: aiCloud, alt: 'Cloud terminal', w: 34, pos: { left: -96, top: -6 } },
+  { src: aiCloud, alt: 'Cloud terminal', w: 34, pos: { left: -96, top: 16 } },
   { src: aiCube, alt: 'Cursor', w: 26, pos: { left: -54, bottom: -36 } },
-  { src: aiOpenai, alt: 'ChatGPT', w: 30, pos: { right: -96, top: -4 } },
+  { src: aiOpenai, alt: 'ChatGPT', w: 30, pos: { right: -96, top: 18 } },
   { src: aiClaude, alt: 'Claude', w: 32, pos: { right: -56, bottom: -40 } },
 ]
 
@@ -237,12 +237,11 @@ export default function HomePage() {
   return (
     <Layout active="home" notifications={HOME_NOTIFICATIONS}>
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
-        <SpaceBackdrop arcTop={390} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
-        <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => navigate('/questions#ask')} query={homeQuery} onQuery={setHomeQuery} onSubmit={(v) => navigate('/questions' + (v.trim() ? '?q=' + encodeURIComponent(v.trim()) : ''))} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
+        <SpaceBackdrop arcTop={300} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 
         {/* ============ WORDMARK ============ */}
-        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:28px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
-          <div style={css('position:relative; max-width:640px; width:100%; margin:0 auto; height:64px;')}>
+        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:16px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
+          <div style={css('position:relative; max-width:640px; width:100%; margin:0 auto; height:44px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
             ))}
@@ -276,6 +275,8 @@ export default function HomePage() {
           </div>
           <p className="zp-tagline" style={css(`position:relative; margin:14px auto 0; max-width:640px; font:500 17px/1.6 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter khám phá và trao đổi kiến thức và ứng dụng AI trong công việc')}</p>
         </section>
+
+        <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => navigate('/questions#ask')} query={homeQuery} onQuery={setHomeQuery} onSubmit={(v) => navigate('/questions' + (v.trim() ? '?q=' + encodeURIComponent(v.trim()) : ''))} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
 
         {/* ============ TRENDING QUESTIONS ============ */}
         <section id="waiting" style={css('position:relative; z-index:1; padding:28px 40px 40px; background:transparent;')}>

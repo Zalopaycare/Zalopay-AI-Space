@@ -329,20 +329,20 @@ export default function QuestionsPage() {
   return (
     <Layout active="question" notifications={notifications}>
     <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow:clip;')}>
-      <SpaceBackdrop arcTop={390} />
+      <SpaceBackdrop arcTop={300} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:relative; z-index:1;')}>
-        <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => setView('ask')} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
 
         <div>
-          <div style={css('position:relative; background:transparent; padding:34px 40px 36px;')}>
+          <div style={css('position:relative; background:transparent; padding:50px 40px 36px;')}>
             <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
               <h1 style={css('margin:0; text-align:center; font:700 70px/1.04 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('Câu hỏi')}</h1>
               <p style={css('margin:14px auto 0; max-width:620px; text-align:center; font:400 16px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Hỏi nhanh, trả lời thẳng vào việc. Người đặt câu hỏi chọn câu trả lời đã giải quyết được vấn đề.')}</p>
             </div>
           </div>
 
+          <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => setView('ask')} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
           <div style={css('padding:24px 40px 90px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <div style={css('display:flex; align-items:center; gap:8px; margin-top:0; flex-wrap:wrap;')}>
