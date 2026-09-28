@@ -9,7 +9,8 @@ import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useNavigate } from 'react-router-dom'
 import PageActionBar from '../components/PageActionBar.jsx'
-import ImageSlot, { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
+import { writeImageSlot, hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
+import ImageThumbs from '../components/ImageThumbs.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Other']
@@ -426,19 +427,7 @@ export default function QuestionsPage() {
                           <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3366F0; vertical-align:baseline;')}>{t('Xem thêm')}</button>
                         )}
                       </p>
-                      {q.hasImages && (
-                        q.images.length === 1 ? (
-                          <div style={css('margin-top:14px; border-radius:14px; overflow:hidden; border:1px solid #E6EBF3; background:#EEF2F9;')}>
-                            <img src={readImageSlot(q.images[0])} alt="" style={{ display: 'block', width: '100%', height: 'auto' }} />
-                          </div>
-                        ) : (
-                          <div style={css(`display:grid; grid-template-columns:${q.imageCols}; gap:6px; margin-top:14px; border-radius:14px; overflow:hidden; border:1px solid #E6EBF3;`)}>
-                            {q.images.map((imgId) => (
-                              <ImageSlot key={imgId} id={imgId} placeholder="Hình ảnh" shape="rect" style={{ width: '100%', height: 230, background: '#EEF2F9' }} />
-                            ))}
-                          </div>
-                        )
-                      )}
+                      {q.hasImages && <ImageThumbs srcs={q.images.map(readImageSlot)} />}
                       <TagRow topics={q.topics} tools={q.tools} style={{ marginTop: 12 }} />
                     </div>
 
