@@ -15,10 +15,17 @@ export function AuthProvider({ children }) {
     api.config().then((d) => setSsoEnabled(!!d.ssoEnabled)).catch(() => {})
   }, [])
 
+  // With SSO configured, "Đăng nhập" goes straight to Microsoft; the email-code modal only
+  // remains as the fallback for environments without SSO (local dev, staging).
   const openLogin = useCallback((onDone) => {
+    if (ssoEnabled) {
+      const next = window.location.pathname + window.location.search + window.location.hash
+      window.location.href = '/api/auth/sso/login?next=' + encodeURIComponent(next)
+      return
+    }
     setAfterLogin(() => onDone || null)
     setLoginOpen(true)
-  }, [])
+  }, [ssoEnabled])
 
   const closeLogin = useCallback(() => { setLoginOpen(false); setAfterLogin(null) }, [])
 

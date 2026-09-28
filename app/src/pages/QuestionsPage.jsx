@@ -331,7 +331,7 @@ export default function QuestionsPage() {
 
   return (
     <Layout active="question" notifications={notifications}>
-    <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc;')}>
+    <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow-x:clip;')}>
       <SpaceBackdrop arcTop={250} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>

@@ -13,6 +13,9 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const FEATURED_IDS = ['c1', 'c2', 'c3']
+// The Pixar-style wordmark intro plays once per page load, not on every in-app visit to Home.
+let introPlayed = false
+
 const UFO_STARS = [
   { left: '4%', top: '6px', size: '2px', dur: '2.6s', delay: '-.4s' },
   { left: '14%', top: '38px', size: '3px', dur: '3.1s', delay: '-1.8s' },
@@ -67,6 +70,8 @@ export default function HomePage() {
   const [openQ, setOpenQ] = useState(null)
   const [modalDraft, setModalDraft] = useState('')
   const [ucMeta, setUcMeta] = useState({})
+  const [playIntro] = useState(() => !introPlayed)
+  useEffect(() => { introPlayed = true }, [])
   const [openMenuId, setOpenMenuId] = useState(null)
   const [copiedCardId, setCopiedCardId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
@@ -201,14 +206,14 @@ export default function HomePage() {
         <SpaceBackdrop arcTop={340} bg="#04060d" />
 
         {/* ============ WORDMARK ============ */}
-        <section style={css('position:relative; z-index:1; padding:56px 40px 0; background:transparent; text-align:center; overflow:hidden;')}>
+        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:56px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
           <div style={css('position:relative; max-width:640px; width:100%; margin:0 auto; height:64px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
             ))}
-            <div style={css('position:absolute; left:55.5%; top:0; animation:ufopatrol 7s ease-in-out infinite; pointer-events:none;')}>
+            <div className="zp-ufo">
               <div style={css('position:relative; width:0; height:0;')}>
-                <div style={css('position:absolute; left:0; top:27px; width:130px; height:210px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%); animation:beamflicker 2.2s ease-in-out infinite;')}></div>
+                <div style={css('position:absolute; left:0; top:27px; width:130px; height:210px; transform:translateX(-50%); clip-path:polygon(50% 0%, 100% 100%, 0% 100%); background:linear-gradient(180deg,rgba(180,225,255,.5) 0%,rgba(140,200,255,.12) 65%,rgba(140,200,255,0) 100%);')} className="zp-beam"></div>
                 <svg width="76" height="40" viewBox="0 0 76 40" style={css('position:absolute; left:-38px; top:0; display:block; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));')}>
                   <ellipse cx="38" cy="26" rx="36" ry="8" fill="#B7C6E0" />
                   <ellipse cx="38" cy="24" rx="27" ry="6.5" fill="#8CA0C7" />
@@ -220,7 +225,13 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <img src={logo} alt="Zalopay AI Space" style={css('position:relative; display:block; margin:0 auto; width:min(100%,640px); height:auto; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')} />
+          <div className="zp-logo-ting" style={css('position:relative; margin:0 auto; width:min(100%,640px);')}>
+            <div className="zp-flash"></div>
+            <div className="zp-logo-reveal">
+              <img src={logo} alt="Zalopay AI Space" style={css('position:relative; display:block; width:100%; height:auto; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')} />
+            </div>
+            <svg className="zp-glint" width="72" height="72" viewBox="0 0 24 24"><path d="M12 0 C12.8 7.5 16.5 11.2 24 12 C16.5 12.8 12.8 16.5 12 24 C11.2 16.5 7.5 12.8 0 12 C7.5 11.2 11.2 7.5 12 0 Z" fill="#fff" /></svg>
+          </div>
         </section>
 
         {/* ============ TRENDING QUESTIONS ============ */}
@@ -458,7 +469,7 @@ export default function HomePage() {
                       <span style={css(`display:inline-flex; align-items:center; height:28px; font:400 12px ${FONT}; color:#94a3b8;`)}>{t('Không dùng AI tool trực tiếp')}</span>
                     )}
                   </div>
-                  <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
+                  <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
                     <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .16s;`)}>
                       {t('Xem Use Case')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>

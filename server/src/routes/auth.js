@@ -63,8 +63,10 @@ router.get('/sso/login', async (req, res) => {
     const codeVerifier = client.randomPKCECodeVerifier()
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier)
     const state = client.randomState()
+    const rawNext = String(req.query.next || '/')
+    const next = /^\/(?![\/\\])/.test(rawNext) && !rawNext.startsWith('/api/') ? rawNext : '/'
 
-    res.cookie(SSO_COOKIE, JSON.stringify({ state, codeVerifier }), {
+    res.cookie(SSO_COOKIE, JSON.stringify({ state, codeVerifier, next }), {
       httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 5 * 60 * 1000,
     })
 
@@ -89,7 +91,7 @@ router.get('/sso/callback', async (req, res) => {
   if (!pendingRaw) return res.status(400).send('Phiên đăng nhập đã hết hạn, vui lòng thử lại.')
 
   try {
-    const { state, codeVerifier } = JSON.parse(pendingRaw)
+    const { state, codeVerifier, next } = JSON.parse(pendingRaw)
     const config = await getOidcConfig()
     const currentUrl = new URL(req.originalUrl, SSO_REDIRECT_URI)
     const tokens = await client.authorizationCodeGrant(config, currentUrl, {
@@ -106,7 +108,7 @@ router.get('/sso/callback', async (req, res) => {
       db.prepare('UPDATE users SET name = ? WHERE id = ?').run(claims.name, user.id)
     }
     issueSession(res, db.prepare('SELECT * FROM users WHERE id = ?').get(user.id))
-    res.redirect('/')
+    res.redirect(typeof next === 'string' && /^\/(?![\/\\])/.test(next) ? next : '/')
   } catch (err) {
     console.error('[sso] callback failed', err)
     res.status(500).send('Đăng nhập SSO thất bại, vui lòng thử lại hoặc dùng đăng nhập bằng mã email.')

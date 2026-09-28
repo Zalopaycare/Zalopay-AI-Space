@@ -804,7 +804,7 @@ export default function UseCaseLibraryPage() {
           </div>
         </section>
 
-        <section style={css('background:transparent; padding:26px 40px 52px;')}>
+        <section style={css('position:relative; z-index:5; background:transparent; padding:26px 40px 52px;')}>
           <div style={css('max-width:1200px; margin:0 auto;')}>
             <div style={css('display:flex; align-items:center; gap:12px; margin-bottom:16px;')}>
               <button
@@ -815,14 +815,14 @@ export default function UseCaseLibraryPage() {
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18"></path><path d="M7 12h10"></path><path d="M10 18h4"></path></svg>
                 {activeFilterCount ? `Filters · ${activeFilterCount}` : 'Filters'}
               </button>
-              <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px 15px;')}>
+              <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:12px 18px; box-shadow:0 10px 26px rgba(0,0,0,.25);')}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" strokeWidth="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3-3"></path></svg>
                 <input
                   ref={searchInputRef}
                   placeholder={t('Tìm use case: PRD, báo cáo, phân tích dữ liệu, ...')}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  style={css('flex:1; border:none; outline:none; font-size:13.5px; color:#e6e6f0; font-family:inherit; background:transparent;')}
+                  style={css('flex:1; border:none; outline:none; font-size:14px; color:#0F172A; font-family:inherit; background:transparent;')}
                 />
               </div>
               <div style={{ position: 'relative' }}>
@@ -929,7 +929,7 @@ export default function UseCaseLibraryPage() {
                           <span style={css('display:inline-flex; align-items:center; height:28px; font-size:12px; color:#94a3b8;')}>{t('Không dùng AI tool trực tiếp')}</span>
                         )}
                       </div>
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
+                      <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
                         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:13px; font-weight:800; color:#2c5fff; transition:gap .16s;')}>
                           {t('Xem Use Case')}
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
