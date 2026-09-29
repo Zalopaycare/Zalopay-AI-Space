@@ -21,7 +21,7 @@ export default function TopNav() {
   const [collapsed] = useSidebarCollapsed()
 
   return (
-    <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:${collapsed ? 68 : 224}px; right:0; height:58px; z-index:1900; display:flex; align-items:center; padding:0 28px; background:linear-gradient(90deg, rgba(14,30,90,.55) 0%, rgba(8,15,44,.42) 50%, rgba(14,30,90,.55) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.16); box-shadow:0 8px 30px rgba(10,30,110,.18); font-family:inherit; transition:left .16s ease;`)}>
+    <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:${collapsed ? 68 : 224}px; right:0; height:58px; z-index:1900; display:flex; align-items:center; padding:0 28px; background:linear-gradient(90deg, rgba(9,18,58,.86) 0%, rgba(5,9,28,.84) 50%, rgba(9,18,58,.86) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.12); box-shadow:0 8px 30px rgba(0,0,0,.35); font-family:inherit; transition:left .16s ease;`)}>
       <div style={{ flex: 1 }}></div>
       <nav style={css('display:flex; align-items:center; gap:6px;')}>
         {NAV_ITEMS.map((item) => {

@@ -11,6 +11,7 @@ import ImageSlot from '../components/ImageSlot.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
+import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
@@ -26,7 +27,6 @@ const SORT_OPTS = [{ label: 'Gần nhất', val: 'new' }, { label: 'Được nhi
 const EMPTY_SHARE_FORM = { title: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '' }
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
-const optStyle = (active) => `padding:9px 12px;border-radius:8px;font-size:13px;font-weight:${active ? '700' : '500'};color:${active ? '#1a5fff' : '#334155'};background:${active ? '#EEF3FF' : 'transparent'};cursor:pointer;white-space:nowrap;`
 
 function copyTextToClipboard(text) {
   try {
@@ -328,7 +328,7 @@ export default function UseCaseLibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [libCat, libTopic, libGroup, libTool, libKind, libSort, q, ucMeta, pubV])
 
-  useEffect(() => { setLibPage(1) }, [query, libCat, libTool, libSort])
+  useEffect(() => { setLibPage(1) }, [query, libCat, libTool, libSort, libGroup, libTopic])
   const PAGE_SIZE = 6
   const pageCount = Math.max(1, Math.ceil(libCases.length / PAGE_SIZE))
   const curPage = Math.min(libPage, pageCount)
@@ -336,12 +336,17 @@ export default function UseCaseLibraryPage() {
   const activeFilterCount = [libCat, libTopic, libTool, libGroup, libKind].filter(Boolean).length
 
   const catOptions = [{ label: 'Tất cả category', val: null }, ...catList.map((c) => ({ label: c, val: c }))]
-    .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibCat(o.val); closeDrop() }, style: optStyle((libCat || null) === (o.val || null)) }))
-    .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibTopic(o.val); closeDrop() }, style: optStyle((libTopic || null) === (o.val || null)) }))
-    .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibGroup(o.val); closeDrop() }, style: optStyle((libGroup || null) === (o.val || null)) }))
+    .map((o) => ({ label: t(o.label), active: (libCat || null) === (o.val || null), onClick: () => { setLibCat(o.val); closeDrop() } }))
   const toolOptions = [{ label: 'Tất cả công cụ AI', val: null }, ...TOOL_LIST.map((tl) => ({ label: tl, val: tl }))]
-    .map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibTool(o.val); closeDrop() }, style: optStyle((libTool || null) === (o.val || null)) }))
-  const sortOptions = SORT_OPTS.map((o) => ({ label: o.label, val: o.val, onClick: () => { setLibSort(o.val); closeDrop() }, style: optStyle(libSort === o.val) }))
+    .map((o) => ({ label: t(o.label), active: (libTool || null) === (o.val || null), onClick: () => { setLibTool(o.val); closeDrop() } }))
+  const sortOptions = SORT_OPTS.map((o) => ({ label: t(o.label), active: libSort === o.val, onClick: () => { setLibSort(o.val); closeDrop() } }))
+  const libFilters = (
+    <>
+      <FilterPill label={libCat || t('Category')} active={!!libCat} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
+      <FilterPill label={libTool || t('Công cụ AI')} active={!!libTool} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={200} />
+      <FilterPill label={t((SORT_OPTS.find((o) => o.val === libSort) || SORT_OPTS[0]).label)} name="sort" openDrop={openDrop} setOpenDrop={setOpenDrop} options={sortOptions} width={200} align="right" />
+    </>
+  )
 
   // ---- share form derivations ----
   const setField = (k) => (e) => setShareForm((f) => ({ ...f, [k]: e.target.value }))
@@ -636,7 +641,7 @@ export default function UseCaseLibraryPage() {
               <div style={css('display:flex; align-items:center; gap:14px;')}>
                 <span style={css(`width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex:none;background:${avatarColor(dsel.author)}`)}>{dsel.author.slice(0, 1).toUpperCase()}</span>
                 <div style={css('min-width:0;')}>
-                  <div style={css('font-size:15px; font-weight:800; color:#0F172A;')}>{dinfo.name}</div>
+                  <div style={css('font-size:14px; font-weight:600; color:#0F172A;')}>{dinfo.name}</div>
                   <div style={css('font-size:13px; color:#64748b;')}>{dsel.team || dinfo.role}</div>
                 </div>
               </div>
@@ -711,7 +716,7 @@ export default function UseCaseLibraryPage() {
                         <span style={css('width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;')}>{c.initials}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
-                            <div style={css('flex:1; min-width:0; font-size:13px; font-weight:700; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
+                            <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
                             <CommentMenu isOwner={!!user && c.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(c.id)} onDelete={() => ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} onReport={() => ucModals.askReport('uc_comment', c.id)} />
                           </div>
                           {editingCmt === c.id
@@ -733,7 +738,7 @@ export default function UseCaseLibraryPage() {
                           <span style={css('width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;')}>{r.initials}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={css('display:flex; align-items:center; gap:8px;')}>
-                              <div style={css('flex:1; min-width:0; font-size:12.5px; font-weight:700; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
+                              <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
                               <CommentMenu isOwner={!!user && r.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(r.id)} onDelete={() => ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} onReport={() => ucModals.askReport('uc_comment', r.id)} />
                             </div>
                             {editingCmt === r.id
@@ -786,33 +791,22 @@ export default function UseCaseLibraryPage() {
             <h1 style={css('margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:50px; line-height:1.06; font-weight:800; letter-spacing:-1px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
             <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Khám phá cách các Zalopay Starter đang ứng dụng AI để làm việc nhanh và tốt hơn.')}</p>
           </div>
-          <PageActionBar ref={searchInputRef} prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, phân tích dữ liệu, ..." />
+          <PageActionBar ref={searchInputRef} prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, dữ liệu..." filters={libFilters} />
         </section>
 
         <section style={css('position:relative; z-index:5; background:transparent; padding:26px 40px 52px;')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
 
-              <div style={css('position:relative; z-index:20; display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:fit-content; max-width:100%; margin:0 auto 18px; padding:6px; border-radius:14px; background:rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.9); backdrop-filter:blur(16px) saturate(1.4); -webkit-backdrop-filter:blur(16px) saturate(1.4); box-shadow:0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.9);')}>
-                <FilterDropdown label={t('Chủ đề') === 'Chủ đề' ? (libCat || 'Tất cả category') : libCat || 'Tất cả category'} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
-                <FilterDropdown label={libTool || 'Tất cả công cụ AI'} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={210} />
-                {activeFilterCount > 0 && (
+              {activeFilterCount > 0 && (
+                <div style={css('display:flex; justify-content:flex-end; margin:-14px 0 8px;')}>
                   <button
                     onClick={() => { setLibCat(null); setLibTopic(null); setLibTool(null); setLibGroup(null); setLibKind(null); setOpenDrop(null) }}
-                    style={css('height:36px; padding:0 12px; border-radius:10px; border:none; background:transparent; color:#1a5fff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;')}
+                    style={css('height:28px; padding:0 4px; border:none; background:transparent; color:#8fb4ff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;')}
                   >
                     {t('Xoá bộ lọc')}
                   </button>
-                )}
-              <div style={{ position: 'relative', marginLeft: 8 }}>
-                <button onClick={(e) => { e.stopPropagation(); setOpenDrop((s) => (s === 'sort' ? null : 'sort')) }} style={css('display:inline-flex; align-items:center; gap:8px; justify-content:space-between; height:36px; padding:0 12px 0 14px; border-radius:10px; border:1px solid #E3E8F2; background:#fff; color:#1E293B; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; min-width:120px;')}>
-                  {(SORT_OPTS.find((o) => o.val === libSort) || SORT_OPTS[0]).label}
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
-                </button>
-                {openDrop === 'sort' && (
-                  <Dropdown options={sortOptions} />
-                )}
-              </div>
-              </div>
+                </div>
+              )}
 
             <div id="lib-grid">
               {libCards.length === 0 && (
@@ -826,13 +820,13 @@ export default function UseCaseLibraryPage() {
                       key={c.id}
                       onClick={c.onOpen}
                       className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.28); border-color:#CFE0FF;')}
-                      style={css('position:relative; border:1px solid #E6EBF3; border-radius:18px; background:#ffffff; cursor:pointer; padding:16px; box-shadow:0 10px 26px rgba(0,0,0,.16); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
+                      style={css('position:relative; display:flex; flex-direction:column; border:1px solid #E6EBF3; border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 10px 26px rgba(0,0,0,.16); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
-                      <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>
+                      <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;')}>
                         <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
-                          <span style={css(c.avStyleL)}>{c.avInitial}</span>
+                          <span style={css(c.avStyle)}>{c.avInitial}</span>
                           <div style={css('display:flex; flex-direction:column; min-width:0;')}>
-                            <span style={css('font-size:13.5px; font-weight:800; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
+                            <span style={css('font-size:12.5px; font-weight:600; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
                           </div>
                         </div>
                         <div style={css('position:relative; flex:none;')}>
@@ -860,7 +854,7 @@ export default function UseCaseLibraryPage() {
                         </div>
                       </div>
                       <div style={css('display:flex; gap:13px;')}>
-                        <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:88px; height:88px; border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
+                        <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:76px; height:76px; border-radius:12px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
                           <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
                         </div>
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
@@ -868,13 +862,13 @@ export default function UseCaseLibraryPage() {
                           <p style={css('margin:5px 0 0; font-size:13.5px; line-height:1.55; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
                         </div>
                       </div>
-                      <TagRow topics={c.topics || []} tools={c.tools} style={{ marginTop: 12 }} />
-                      <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
-                        <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:13px; font-weight:800; color:#2c5fff; transition:gap .16s;')}>
+                      <TagRow topics={c.topics || []} tools={c.tools} style={{ marginTop: 10, marginBottom: 12 }} />
+                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:10px; border-top:1px solid #EEF1F7;')}>
+                        <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
                           {t('Xem Use Case')}
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                         </button>
-                        <CardActions helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} />
+                        <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} />
                       </div>
                     </div>
                   ))}
@@ -981,7 +975,7 @@ export default function UseCaseLibraryPage() {
                     <h2 style={css('margin:14px 0 0; font-size:24px; font-weight:800; line-height:1.3; color:#0F172A;')}>{previewTitle}</h2>
                     <div style={css('display:flex; align-items:center; gap:11px; margin-top:12px;')}>
                       <span style={css('width:28px; height:28px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;')}>{user?.initials || '?'}</span>
-                      <span style={css('font-size:13px; font-weight:700; color:#0F172A;')}>{user?.name || 'Chưa đăng nhập'}</span>
+                      <span style={css('font-size:13px; font-weight:600; color:#0F172A;')}>{user?.domain || user?.name || 'Chưa đăng nhập'}</span>
                       <span style={css('color:#CDD5DD;')}>·</span>
                       <span style={css('font-size:13px; color:#94a3b8;')}>{user?.team || shareForm.team}</span>
                     </div>
@@ -1136,41 +1130,6 @@ export default function UseCaseLibraryPage() {
       {isDetail ? renderDetail() : renderLibrary()}
       {shareOpen && renderShareModal()}
     </Layout>
-  )
-}
-
-function Dropdown({ options }) {
-  return (
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={css('position:absolute; top:42px; right:0; z-index:30; width:170px; background:#ffffff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.22); padding:6px;')}
-    >
-      {options.map((opt, i) => (
-        <div key={i} onClick={opt.onClick} className={hoverClass('background:#F3F6FC;')} style={css(opt.style)}>{opt.label}</div>
-      ))}
-    </div>
-  )
-}
-
-function FilterDropdown({ label, name, openDrop, setOpenDrop, options, width }) {
-  const open = openDrop === name
-  return (
-    <div style={{ position: 'relative' }}>
-      <button
-        onClick={(e) => { e.stopPropagation(); setOpenDrop(open ? null : name) }}
-        style={css('display:inline-flex; align-items:center; gap:8px; justify-content:space-between; height:36px; padding:0 12px 0 14px; border-radius:10px; border:1px solid #E3E8F2; background:#fff; color:#1E293B; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; min-width:150px;')}
-      >
-        {label}
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
-      </button>
-      {open && (
-        <div onClick={(e) => e.stopPropagation()} style={css(`position:absolute; top:42px; left:0; z-index:30; min-width:${width}px; max-height:300px; overflow:auto; background:#ffffff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.22); padding:6px;`)}>
-          {options.map((opt, i) => (
-            <div key={i} onClick={opt.onClick} className={hoverClass('background:#F3F6FC;')} style={css(opt.style)}>{opt.label}</div>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 

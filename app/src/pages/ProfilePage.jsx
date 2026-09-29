@@ -32,7 +32,7 @@ const UC_ORDER = ['draft', 'pending', 'changes_requested', 'rejected', 'approved
 // Same bright gradient/glow text treatment as the Use Case Library hero title.
 const GRAD_TEXT = 'background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));'
 const GRAD_TEXT_SM = 'background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 14px rgba(26,95,255,.6)) drop-shadow(0 0 6px rgba(90,150,255,.4));'
-const heroHeading = css(`margin:0; font:800 44px/1.15 ${FONT}; letter-spacing:-.01em; ${GRAD_TEXT}`)
+const heroHeading = css(`margin:0; font:800 34px/1.15 ${FONT}; letter-spacing:-.01em; ${GRAD_TEXT}`)
 // Smaller inline sub-headings (the two lists within "Đã lưu") — same gradient treatment,
 // scaled-down glow so it doesn't wash out the white empty-state box right below it.
 const subHeading = css(`margin:0 0 20px; font:800 26px/1.2 ${FONT}; ${GRAD_TEXT_SM}`)
@@ -71,25 +71,19 @@ function QuestionCard({ q }) {
       className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')}
       style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
     >
-      <div style={css('display:flex; align-items:center; gap:7px; padding:14px 18px 0; flex-wrap:wrap;')}>
-        <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px ${FONT};`)}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
-          {t('Câu hỏi')}
-        </span>
-        <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
-      </div>
-      <div style={css('display:flex; align-items:center; gap:10px; padding:10px 18px 0;')}>
-        <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
+      <div style={css('display:flex; align-items:center; gap:10px; padding:12px 16px 0;')}>
+        <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
         <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
-          <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
-          <span style={css(`font:400 13px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.time}</span>
+          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
+          <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.time}</span>
         </div>
+        <span style={css(`flex:none; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
       </div>
-      <div style={css('padding:8px 18px 0;')}>
+      <div style={css('padding:6px 16px 0;')}>
         {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
         <p style={css(`margin:5px 0 0; font:400 13.5px/1.55 ${FONT}; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
       </div>
-      <div style={css('display:flex; align-items:center; gap:10px 12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
+      <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
         <TagRow topics={q.topics} tools={q.tools} />
         {q.accepted && (
           <span style={css(`display:inline-flex; align-items:center; gap:7px; font:700 12.5px ${FONT}; color:#00893F;`)}>
@@ -97,7 +91,7 @@ function QuestionCard({ q }) {
             {t('Đã có câu trả lời được chấp nhận')}
           </span>
         )}
-        <CardActions helpful={q.helpful} helped={q.helped} onHelpful={q.onHelpful} replies={q.answers} onReply={q.onOpen} />
+        <CardActions compact helpful={q.helpful} helped={q.helped} onHelpful={q.onHelpful} replies={q.answers} onReply={q.onOpen} />
       </div>
     </div>
   )
@@ -115,7 +109,7 @@ function UseCaseCard({ c }) {
       <div style={css('display:flex; align-items:center; gap:9px; margin-bottom:12px; min-width:0;')}>
         <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{c.initial}</span>
         <div style={css('display:flex; flex-direction:column; min-width:0;')}>
-          <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{c.author}</span>
+          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{c.author}</span>
         </div>
       </div>
       <div style={css('display:flex; gap:13px;')}>
@@ -150,6 +144,7 @@ export default function ProfilePage() {
   // react-router's useLocation() re-renders on hash-only navigation within the same route, but we
   // also listen for the native `hashchange` event as a fallback, per the known SPA gotcha.
   const [hash, setHash] = useState(location.hash)
+  const [showAllNotif, setShowAllNotif] = useState(false)
   useEffect(() => { setHash(location.hash) }, [location.hash])
   useEffect(() => {
     const onHash = () => setHash(window.location.hash)
@@ -320,7 +315,7 @@ export default function ProfilePage() {
         {/* Profile header — only on the main view, hidden once a specific section is selected. */}
         {/* Section heading — gradient/glow style, no item-count label (removed per latest design revision). */}
         {section && (
-          <section style={css('position:relative; padding:28px 40px 0;')}>
+          <section style={css('position:relative; padding:22px 40px 0;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h1 style={heroHeading}>{sectionTitle}</h1>
             </div>
@@ -328,9 +323,9 @@ export default function ProfilePage() {
         )}
 
         {section === 'activity' && (
-          <section style={css('position:relative; padding:22px 40px 0;')}>
+          <section style={css('position:relative; padding:14px 40px 0;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              <h3 style={css(`margin:0 0 14px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Thông báo')}</h3>
+              <h3 style={css(`margin:0 0 10px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Thông báo')}</h3>
               <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; overflow:hidden;')}>
                 <div style={css('display:flex; justify-content:flex-end; padding:10px 16px; border-bottom:1px solid #EEF1F7;')}>
                   <button onClick={() => markNotificationsRead()} disabled={!notif.unread} style={css(`border:none; background:transparent; cursor:${notif.unread ? 'pointer' : 'default'}; font:700 12.5px ${FONT}; color:${notif.unread ? '#3366F0' : '#94a3b8'}; padding:0;`)}>{t('Đánh dấu đã đọc tất cả')}</button>
@@ -338,27 +333,32 @@ export default function ProfilePage() {
                 {notif.loaded && notif.items.length === 0 && (
                   <div style={css(`padding:32px 18px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có thông báo nào. Khi có người trả lời, bình luận hoặc nhắc đến bạn, thông báo sẽ hiện ở đây.')}</div>
                 )}
-                {notif.items.map((n) => {
+                {notif.items.slice(0, showAllNotif ? undefined : 6).map((n) => {
                   const unread = n.unread
                   return (
-                    <div key={n.id} onClick={() => { if (unread) markNotificationsRead([n.id]); if (n.href) navigate(n.href) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; align-items:center; padding:14px 18px; border-bottom:1px solid #F3F5FA; background:${unread ? '#F3F7FF' : '#fff'}; cursor:pointer;`)}>
-                      <span style={css(`flex:none; width:34px; height:34px; border-radius:11px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
+                    <div key={n.id} onClick={() => { if (unread) markNotificationsRead([n.id]); if (n.href) navigate(n.href) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid #F3F5FA; background:${unread ? '#F3F7FF' : '#fff'}; cursor:pointer;`)}>
+                      <span style={css(`flex:none; width:30px; height:30px; border-radius:10px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css(unread ? `font:800 13.5px/1.5 ${FONT}; color:#1a5fff;` : `font:400 13.5px/1.5 ${FONT}; color:#475569;`)}>{n.text}</div>
-                        <div style={css(`margin-top:3px; font:400 12px ${FONT}; color:#94a3b8;`)}>{n.timeLabel}</div>
+                        <div style={css(`margin-top:1px; font:400 12px ${FONT}; color:#94a3b8;`)}>{n.timeLabel}</div>
                       </div>
                       {unread && <span style={css('flex:none; width:9px; height:9px; border-radius:50%; background:#2c5fff; box-shadow:0 0 0 3px rgba(44,95,255,.18);')}></span>}
                     </div>
                   )
                 })}
+                {notif.items.length > 6 && (
+                  <button onClick={() => setShowAllNotif((v) => !v)} className={hoverClass('background:#F7F9FD;')} style={css(`display:block; width:100%; padding:10px 16px; border:none; background:#fff; cursor:pointer; font:700 12.5px ${FONT}; color:#2c5fff;`)}>
+                    {showAllNotif ? t('Thu gọn') : t('Xem thêm') + ` (${notif.items.length - 6})`}
+                  </button>
+                )}
               </div>
             </div>
-            <div style={css('max-width:760px; margin:30px auto 0;')}>
-              <h3 style={css(`margin:0 0 14px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Hoạt động gần đây')}</h3>
+            <div style={css('max-width:760px; margin:22px auto 0;')}>
+              <h3 style={css(`margin:0 0 10px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Hoạt động gần đây')}</h3>
               {loaded && recentItems.length === 0 && (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đặt câu hỏi hoặc chia sẻ use case đầu tiên của bạn.')}</div>
               )}
-              <div style={css('display:flex; flex-direction:column; gap:12px; padding-bottom:40px;')}>
+              <div style={css('display:flex; flex-direction:column; gap:8px; padding-bottom:32px;')}>
                 {recentItems.map((r, i) => (
                   <div key={i} onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF; box-shadow:0 14px 30px rgba(30,50,90,.14);')} style={css('cursor:pointer; transition:transform .16s, box-shadow .16s, border-color .16s; background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px; box-shadow:0 8px 22px rgba(30,50,90,.06);')}>
                     <span style={css(`flex:none; display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:999px; background:${r.tagBg}; color:${r.tagColor}; font:700 12px ${FONT};`)}>{r.tagLabel}</span>

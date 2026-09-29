@@ -335,10 +335,10 @@ export default function HomePage() {
         )}
 
         {/* ============ TRENDING QUESTIONS ============ */}
-        <section id="waiting" style={css('position:relative; z-index:1; padding:28px 40px 40px; background:transparent;')}>
+        <section id="waiting" style={css('position:relative; z-index:1; padding:22px 40px 16px; background:transparent;')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
-              <h2 style={css(`margin:0; font:900 30px ${FONT}; letter-spacing:-.01em; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
+              <h2 style={css(`margin:0; font:900 26px ${FONT}; letter-spacing:-.01em; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
               <button
                 onClick={() => navigate('/questions')}
                 className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}
@@ -349,38 +349,32 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div style={css('display:flex; flex-direction:column; gap:14px; margin-top:24px;')}>
+            <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
               {trending.map((q) => (
                 <div key={q.id} onClick={q.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')} style={css('position:relative; display:flex; flex-direction:column; min-width:0; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}>
-                  <div style={css('display:flex; align-items:center; gap:7px; padding:14px 18px 0; flex-wrap:wrap;')}>
-                    <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px ${FONT};`)}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
-                      {t('Câu hỏi')}
-                    </span>
-                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#FFF1E0; color:#B45300; font:700 11.5px ${FONT};`)}>{t('Đang chờ trả lời')}</span>
-                  </div>
-                  <div style={css('display:flex; align-items:center; gap:10px; padding:10px 18px 0;')}>
-                    <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
+                  <div style={css('display:flex; align-items:center; gap:10px; padding:12px 16px 0;')}>
+                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
                     <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
-                      <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
-                      <span style={css(`font:400 13px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
+                      <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
+                      <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
                     </div>
+                    <span style={css(`flex:none; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#FFF1E0; color:#B45300; font:700 11.5px ${FONT};`)}>{t('Đang chờ trả lời')}</span>
                     <div style={css('position:relative; flex:none;')}>
-                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === 'q:' + q.id ? null : 'q:' + q.id)) }} title={t('Thêm')} style={css('width:38px; height:38px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
+                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === 'q:' + q.id ? null : 'q:' + q.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
                       </button>
                       {openMenuId === 'q:' + q.id && (
-                        <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:44px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
-                          <button onClick={(e) => copyLink(e, '/questions#q=' + encodeURIComponent(q.id), 'q:' + q.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#0F172A; text-align:left;`)}>
+                        <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
+                          <button onClick={(e) => copyLink(e, '/questions#q=' + encodeURIComponent(q.id), 'q:' + q.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                             {copiedCardId === 'q:' + q.id ? t('Đã copy!') : t('Copy link')}
                           </button>
-                          <button onClick={(e) => { q.onSave(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#0F172A; text-align:left;`)}>
+                          <button onClick={(e) => { q.onSave(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saved ? '#00A352' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                             {q.saved ? t('Bỏ lưu') : t('Lưu câu hỏi')}
                           </button>
                           {q.canDelete && (
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId('q:' + q.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#D8232A; text-align:left;`)}>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId('q:' + q.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                               {t('Xoá bài viết')}
                             </button>
@@ -389,7 +383,7 @@ export default function HomePage() {
                       )}
                     </div>
                   </div>
-                  <div style={css('flex:1; padding:8px 18px 0;')}>
+                  <div style={css('flex:1; padding:6px 16px 0;')}>
                     {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
                     <p style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 13.5px' : '500 15px'}/1.55 ${FONT}; color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
                     <button onClick={(e) => { e.stopPropagation(); navigate('/questions#q=' + encodeURIComponent(q.id)) }} className={hoverClass('color:#1741c9;')} style={css(`display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#2c5fff;`)}>
@@ -397,9 +391,9 @@ export default function HomePage() {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
                   </div>
-                  <div style={css('display:flex; align-items:center; gap:10px 12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
+                  <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
                     <TagRow topics={q.topics || []} tools={q.tools || []} />
-                    <CardActions helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).length} onReply={q.onOpen} />
+                    <CardActions compact helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).length} onReply={q.onOpen} />
                   </div>
                 </div>
               ))}
@@ -420,7 +414,7 @@ export default function HomePage() {
                   <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${modalSrc.avatarColor || AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};`)}>{modalSrc.initials}</span>
                   <div style={css('flex:1; min-width:0;')}>
                     <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                      <span style={css(`font:800 14.5px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span>
+                      <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span>
                       <span style={css(`font:400 13px ${FONT}; color:#94a3b8;`)}>{relativeTime(modalSrc.time)}</span>
                       <span style={css(`display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${modalSrc.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${modalSrc.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{modalSrc.resolved ? 'Resolved' : t('Đang chờ trả lời')}</span>
                     </div>
@@ -456,7 +450,7 @@ export default function HomePage() {
                       <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{a.initials}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                          <span style={css(`font:800 13.5px ${FONT}; color:#0F172A;`)}>{a.author}</span>
+                          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A;`)}>{a.author}</span>
                           <span style={css(`font:400 12px ${FONT}; color:#94a3b8;`)}>{a.timeLabel}</span>
                         </div>
                         <p style={css(`margin:7px 0 0; font:400 14px/1.6 ${FONT}; color:#3A4757;`)}>{a.body}</p>
@@ -479,7 +473,7 @@ export default function HomePage() {
                                 <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarColor || AV[c.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{c.initials}</span>
                                 <div style={css('flex:1; min-width:0;')}>
                                   <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                    <span style={css(`font:800 12.5px ${FONT}; color:#0F172A;`)}>{c.author}</span>
+                                    <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{c.author}</span>
                                     <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
                                   </div>
                                   <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{c.body}</div>
@@ -497,7 +491,7 @@ export default function HomePage() {
                                   <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${r.avatarColor || AV[r.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9px ${FONT};`)}>{r.initials}</span>
                                   <div style={css('flex:1; min-width:0;')}>
                                     <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                      <span style={css(`font:800 12px ${FONT}; color:#0F172A;`)}>{r.author}</span>
+                                      <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{r.author}</span>
                                       <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
                                     </div>
                                     <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{r.body}</div>
@@ -514,7 +508,7 @@ export default function HomePage() {
                     </div>
                   ))}
                   {modalAnswers.length === 0 && (
-                    <div style={css(`padding:16px 0 6px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có comment nào. Comment đầu tiên thường giúp ích nhất.')}</div>
+                    <div style={css(`padding:16px 0 6px; text-align:center; font:600 13px ${FONT}; color:#94a3b8;`)}>{t('Chưa có comment nào. Comment đầu tiên thường giúp ích nhất.')}</div>
                   )}
 
                   <div style={css('display:flex; gap:12px; margin-top:16px;')}>
@@ -550,14 +544,14 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:24px;')}>
+            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:16px;')}>
               {featured.map((item) => (
-                <div key={item.id} onClick={item.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
-                  <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>
+                <div key={item.id} onClick={item.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; display:flex; flex-direction:column; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:14px 16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
+                  <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;')}>
                     <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
-                      <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
+                      <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
                       <div style={css('display:flex; flex-direction:column; min-width:0;')}>
-                        <span style={css(`font:800 13.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
+                        <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
                       </div>
                     </div>
                     <div style={css('position:relative; flex:none;')}>
@@ -566,16 +560,16 @@ export default function HomePage() {
                       </button>
                       {openMenuId === item.id && (
                         <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:190px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
-                          <button onClick={(e) => copyCardLink(e, item.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#0F172A; text-align:left;`)}>
+                          <button onClick={(e) => copyCardLink(e, item.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                             {copiedCardId === item.id ? t('Đã copy!') : t('Copy link')}
                           </button>
-                          <button onClick={(e) => { item.onSaveToggle(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#0F172A; text-align:left;`)}>
+                          <button onClick={(e) => { item.onSaveToggle(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                             {item.saveFill === 'currentColor' ? t('Bỏ lưu') : t('Lưu use case')}
                           </button>
                           {item.canDelete && (
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px ${FONT}; color:#D8232A; text-align:left;`)}>
+                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                               {t('Xoá bài viết')}
                             </button>
@@ -585,7 +579,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div style={css('display:flex; gap:13px;')}>
-                    <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:88px; height:88px; border-radius:13px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
+                    <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:76px; height:76px; border-radius:12px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
                       <ImageSlot id={'lib-' + item.id} shape="rect" placeholder="ảnh" />
                     </div>
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
@@ -593,13 +587,13 @@ export default function HomePage() {
                       <p style={css('margin:5px 0 0; font-size:13.5px; line-height:1.55; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
                     </div>
                   </div>
-                  <TagRow topics={(prdMeta[item.id] || {}).topics || []} tools={item.tools} style={{ marginTop: 12 }} />
-                  <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7;')}>
-                    <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .16s;`)}>
+                  <TagRow topics={(prdMeta[item.id] || {}).topics || []} tools={item.tools} style={{ marginTop: 10, marginBottom: 12 }} />
+                  <div style={css('display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:10px; border-top:1px solid #EEF1F7;')}>
+                    <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 12.5px ${FONT}; color:#2c5fff; white-space:nowrap; transition:gap .16s;`)}>
                       {t('Xem Use Case')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
-                    <CardActions helpful={item.helpful} helped={item.helped} onHelpful={item.onHelpful} replies={item.commentCount} onReply={() => navigate(`/use-cases/${item.id}#comments`)} />
+                    <CardActions compact helpful={item.helpful} helped={item.helped} onHelpful={item.onHelpful} replies={item.commentCount} onReply={() => navigate(`/use-cases/${item.id}#comments`)} />
                   </div>
                 </div>
               ))}

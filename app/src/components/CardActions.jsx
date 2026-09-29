@@ -1,14 +1,15 @@
 import { css } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 
-const pill = 'flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; white-space:nowrap; transition:background .16s, border-color .16s;'
+const PILL = 'flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; white-space:nowrap; transition:background .16s, border-color .16s;'
 
 /** The helpful + reply pill pair every preview card (questions and use cases, on every page) ends with. */
-export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply }) {
+export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply, compact = false }) {
   const { t } = useI18n()
+  const pill = compact ? PILL + 'height:28px; padding:0 10px; gap:5px; font-size:12px;' : PILL
   const stop = (fn) => (e) => { e.stopPropagation(); if (fn) fn(e) }
   return (
-    <div style={css('margin-left:auto; display:flex; align-items:center; gap:8px;')}>
+    <div style={css(`margin-left:auto; display:flex; align-items:center; gap:${compact ? 6 : 8}px;`)}>
       <button
         onClick={stop(onHelpful)}
         style={css(`${pill} border:1px solid ${helped ? '#B9CCF8' : '#DDE3EC'}; background:${helped ? '#EAF1FF' : '#fff'}; color:#3A4757;`)}

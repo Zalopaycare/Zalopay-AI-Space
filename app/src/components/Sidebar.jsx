@@ -139,7 +139,18 @@ export default function Sidebar({ active }) {
       {user && (
         <div ref={menuRef} style={css('position:relative; margin-top:16px;')}>
           {menuOpen && (
-            <div style={css('position:absolute; left:0; right:0; bottom:calc(100% + 8px); background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:5;')}>
+            <div style={css(`position:absolute; left:0; ${collapsed ? 'width:210px;' : 'right:0;'} bottom:calc(100% + 8px); background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:5;`)}>
+              {user.isAdmin && (
+                <SoftLink
+                  to="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className={hoverClass('background:#EEF3FF !important;')}
+                  style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff; white-space:nowrap;')}
+                >
+                  <svg style={{ flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+                  {t('Visit Admin Dashboard')}
+                </SoftLink>
+              )}
               <button onClick={() => { setMenuOpen(false); logout() }} style={css('display:block; width:100%; text-align:left; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{t('Đăng xuất')}</button>
             </div>
           )}
@@ -150,7 +161,7 @@ export default function Sidebar({ active }) {
             style={css(`display:flex; align-items:center; gap:10px; width:100%; padding:5px ${collapsed ? '5px' : '10px 5px 5px'}; border-radius:14px; background:rgba(80,130,255,.10); border:1px solid rgba(130,170,255,.22); cursor:pointer; font-family:inherit; ${collapsed ? 'justify-content:center;' : ''}`)}
           >
             <Avatar user={user} size={30} fontSize={11.5} />
-            {!collapsed && <span style={css('flex:1; min-width:0; text-align:left; font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{user.name}</span>}
+            {!collapsed && <span style={css('flex:1; min-width:0; text-align:left; font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>}
             {!collapsed && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3d0f5" strokeWidth="2.2" style={{ flex: 'none' }}><path d="m18 15-6-6-6 6"></path></svg>}
           </button>
         </div>

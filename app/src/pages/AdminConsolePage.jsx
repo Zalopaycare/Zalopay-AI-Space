@@ -13,7 +13,7 @@ import logo from '../assets/zalopay-ai-space-logo.png'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const font = (weight, size, lh) => `font:${weight} ${size}px${lh ? '/' + lh : ''} "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif`
-const card = 'background:#fff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 10px 24px rgba(30,50,90,.06);'
+const card = 'background:#fff; border:1px solid #E6EBF3; border-radius:18px; box-shadow:0 14px 34px rgba(0,0,0,.30);'
 const UC_STATUS = {
   pending: { label: 'Chờ duyệt', bg: '#FFF1E0', fg: '#B45300' },
   approved: { label: 'Đã đăng', bg: '#E7F9F0', fg: '#00893F' },
@@ -30,11 +30,11 @@ const btn = (kind) => {
 }
 const pill = (bg, fg) => `display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${bg}; color:${fg}; ${font(700, 11.5)}; white-space:nowrap;`
 
-function Tabs({ tabs, value, onChange }) {
+function Tabs({ tabs, value, onChange, light = false }) {
   return (
-    <div style={css('display:inline-flex; background:#EDF0FA; border-radius:12px; padding:5px; gap:5px;')}>
+    <div style={css(`display:inline-flex; flex-wrap:wrap; border-radius:999px; padding:4px; gap:4px; ${light ? 'background:#EDF0FA;' : 'background:rgba(255,255,255,.07); border:1px solid rgba(130,170,255,.22); backdrop-filter:blur(12px);'}`)}>
       {tabs.map(([k, label, n]) => (
-        <button key={k} onClick={() => onChange(k)} style={css(`border:none; cursor:pointer; height:36px; padding:0 14px; border-radius:9px; ${font(700, 12.5)}; background:${value === k ? '#fff' : 'transparent'}; color:${value === k ? '#2c5fff' : '#2A3A57'};`)}>
+        <button key={k} onClick={() => onChange(k)} className={value === k ? undefined : hoverClass(light ? 'color:#2c5fff !important;' : 'color:#fff !important; background:rgba(60,110,255,.22) !important;')} style={css(`border:none; cursor:pointer; height:36px; padding:0 14px; border-radius:999px; ${font(700, 12.5)}; white-space:nowrap; background:${value === k ? '#fff' : 'transparent'}; color:${value === k ? '#2c5fff' : light ? '#2A3A57' : '#b4c3e8'};`)}>
           {label}{n != null ? ` · ${n}` : ''}
         </button>
       ))}
@@ -44,7 +44,7 @@ function Tabs({ tabs, value, onChange }) {
 
 function Search({ value, onChange, placeholder }) {
   return (
-    <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; padding:11px 16px;')}>
+    <div style={css('flex:1; min-width:240px; display:flex; align-items:center; gap:10px; height:46px; box-sizing:border-box; background:#fff; border:1px solid #E6EBF3; border-radius:999px; padding:0 18px; box-shadow:0 10px 26px rgba(0,0,0,.25);')}>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={css('flex:1; border:none; outline:none; background:transparent; font-size:14px; color:#0f172a;')} />
     </div>
@@ -54,8 +54,8 @@ function Search({ value, onChange, placeholder }) {
 function Heading({ title, sub }) {
   return (
     <>
-      <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>{title}</h1>
-      <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>{sub}</p>
+      <h1 style={css('margin:0;' + font(800, 30, 1.15) + ';letter-spacing:-.01em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 50%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{title}</h1>
+      <p style={css('margin:6px 0 0;' + font(400, 14) + ';color:rgba(206,219,245,.72);')}>{sub}</p>
     </>
   )
 }
@@ -64,8 +64,8 @@ function Bars({ rows, color }) {
   const max = rows.reduce((m, r) => Math.max(m, r[1]), 1)
   if (!rows.length) return <div style={css(font(600, 13) + ';color:#94a3b8; padding:10px 0;')}>Chưa có dữ liệu.</div>
   return (
-    <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-      {rows.map(([label, value]) => (
+    <div style={css('display:flex; flex-direction:column; gap:10px;')}>
+      {rows.slice(0, 6).map(([label, value]) => (
         <div key={label}>
           <div style={css('display:flex; justify-content:space-between; gap:12px;' + font(600, 12.5) + ';color:#3A4757;')}><span>{label}</span><span style={{ color: '#94a3b8' }}>{value}</span></div>
           <div style={css('margin-top:6px; height:9px; border-radius:999px; background:#EDF0FA; overflow:hidden;')}><div style={css(`height:9px; border-radius:999px; background:${color}; width:${Math.round((value / max) * 100)}%;`)}></div></div>
@@ -128,7 +128,7 @@ export default function AdminConsolePage() {
 
   if (!user || !isAdmin) {
     return (
-      <div style={css('min-height:100vh; display:flex; align-items:center; justify-content:center; background:#eef1f9; padding:24px;')}>
+      <div style={css('min-height:100vh; display:flex; align-items:center; justify-content:center; background:#04060d; padding:24px;')}>
         <div style={css('max-width:420px; text-align:center; padding:40px 32px;' + card)}>
           <div style={css(font(800, 18) + ';color:#0f172a;')}>{!user ? 'Cần đăng nhập' : 'Không có quyền truy cập'}</div>
           <div style={css('margin-top:10px;' + font(400, 14, 1.6) + ';color:#64748b;')}>
@@ -228,8 +228,8 @@ export default function AdminConsolePage() {
   ]
 
   const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:14px; align-items:center;`
-  const headRow = (cols) => css(grid(cols) + 'padding:14px 22px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
-  const bodyRow = (cols) => css(grid(cols) + 'padding:16px 22px; border-bottom:1px solid #F3F5FA;')
+  const headRow = (cols) => css(grid(cols) + 'padding:11px 20px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
+  const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
   const UC_COLS = 'minmax(0,1fr) 140px 120px 330px'
   const Q_COLS = 'minmax(0,1fr) 150px 80px 80px 130px 150px'
@@ -242,16 +242,20 @@ export default function AdminConsolePage() {
   const resolveReport = (r, action) => api.resolveReport(r.id, action).then(() => { reloadReports(); if (action === 'delete') reloadQuestions() }).catch(() => {})
 
   return (
-    <div style={css('min-height:100vh; background:#eef1f9; color:#0f172a;')}>
-      <header style={css('position:sticky; top:0; z-index:400; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%);')}>
-        <div style={css('display:flex; align-items:center; justify-content:space-between; padding:16px 32px;')}>
+    <div style={css('min-height:100vh; background:radial-gradient(70% 40% at 60% 0%, rgba(44,95,255,.22), transparent 70%), #04060d; color:#e8eefc;')}>
+      <header style={css('position:sticky; top:0; z-index:400; height:58px; box-sizing:border-box; background:linear-gradient(90deg, rgba(9,18,58,.86) 0%, rgba(5,9,28,.84) 50%, rgba(9,18,58,.86) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.12); box-shadow:0 8px 30px rgba(0,0,0,.35);')}>
+        <div style={css('display:flex; align-items:center; justify-content:space-between; height:100%; padding:0 24px;')}>
           <div style={css('display:flex; align-items:center; gap:12px;')}>
-            <img src={logo} alt="Zalopay AI Space" style={{ height: 16, width: 'auto', display: 'block' }} />
-            <span style={css(font(800, 10.5) + ';letter-spacing:.6px;padding:3px 8px;border-radius:6px;background:rgba(0,207,106,.18);color:#5ff2a6;')}>ADMIN</span>
+            <Link to="/" style={{ display: 'flex' }}><img src={logo} alt="Zalopay AI Space" style={{ height: 15, width: 'auto', display: 'block' }} /></Link>
+            <span style={css(font(800, 10.5) + ';letter-spacing:.6px;padding:3px 9px;border-radius:999px;background:rgba(60,110,255,.22);border:1px solid rgba(130,175,255,.45);color:#dbe8ff;')}>ADMIN</span>
+            <Link to="/" className={hoverClass('color:#fff !important; background:rgba(60,110,255,.22) !important; border-color:rgba(130,175,255,.45) !important;')} style={css('margin-left:8px; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid transparent; text-decoration:none; color:#b4c3e8;' + font(600, 13) + ';')}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+              Về trang chính
+            </Link>
           </div>
           <div style={css('display:flex; align-items:center; gap:12px;')}>
             <div style={{ position: 'relative' }} ref={notifRef}>
-              <button onClick={() => setNotifOpen((o) => !o)} title="Thông báo" style={css(`position:relative; display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:${notifOpen ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.06)'}; border:1px solid rgba(255,255,255,.14); cursor:pointer;`)}>
+              <button onClick={() => setNotifOpen((o) => !o)} title="Thông báo" style={css(`position:relative; display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:${notifOpen ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.06)'}; border:1px solid rgba(255,255,255,.14); cursor:pointer;`)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dbe6ff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
                 {notif.unread > 0 && <span style={css('position:absolute; top:-3px; right:-3px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#FF3B30; color:#fff;' + font(800, 10.5) + ';display:flex; align-items:center; justify-content:center; box-sizing:border-box;')}>{notif.unread}</span>}
               </button>
@@ -275,29 +279,29 @@ export default function AdminConsolePage() {
               )}
             </div>
             <div style={css('display:flex; align-items:center; gap:10px; padding:4px 6px 4px 4px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);')}>
-              <span style={css(`width:32px; height:32px; border-radius:50%; background:${user.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{user.initials}</span>
-              <span style={css(font(600, 14) + ';color:#fff; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;')}>{user.name}</span>
+              <span style={css(`width:30px; height:30px; border-radius:50%; background:${user.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';')}>{user.initials}</span>
+              <span style={css(font(600, 13) + ';color:#fff; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>
               <button onClick={() => logout()} className={hoverClass('background:rgba(255,59,48,.28);')} style={css('height:30px; padding:0 12px; border:none; border-radius:999px; background:rgba(255,59,48,.16); color:#ffb4ae;' + font(700, 12) + ';cursor:pointer;')}>Đăng xuất</button>
             </div>
           </div>
         </div>
       </header>
 
-      <div style={css('display:grid; grid-template-columns:240px minmax(0,1fr); align-items:start;')}>
-        <aside style={css('position:sticky; top:72px; min-height:calc(100vh - 72px); box-sizing:border-box; background:#fff; border-right:1px solid #E6EBF3; padding:26px 16px;')}>
-          <div style={css('padding:0 12px 14px;' + font(700, 11.5) + ';letter-spacing:.6px;color:#94a3b8;')}>QUẢN TRỊ</div>
-          <div style={css('display:flex; flex-direction:column; gap:4px;')}>
+      <div style={css('display:grid; grid-template-columns:224px minmax(0,1fr); align-items:start;')}>
+        <aside style={css('position:sticky; top:58px; height:calc(100vh - 58px); box-sizing:border-box; padding:20px 12px; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.26), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.62) 0%, rgba(9,16,46,.74) 50%, rgba(5,9,26,.86) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16);')}>
+          <div style={css('padding:0 12px 10px;' + font(700, 11.5) + ';letter-spacing:.04em;color:#8aa0d6;')}>QUẢN TRỊ</div>
+          <div style={css('display:flex; flex-direction:column; gap:2px;')}>
             {menu.map(([k, label, dot, badge]) => (
-              <button key={k} onClick={() => setSection(k)} style={css(`display:flex; align-items:center; gap:11px; width:100%; height:46px; padding:0 14px; border:none; border-radius:12px; background:${section === k ? '#EDF3FF' : 'transparent'}; color:${section === k ? '#1E44A8' : '#3A4757'};` + font(700, 14) + ';cursor:pointer; text-align:left;')}>
-                <span style={css(`flex:none; width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
+              <button key={k} onClick={() => setSection(k)} className={section === k ? undefined : hoverClass('background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)) !important; border-color:rgba(130,175,255,.55) !important; color:#dbe8ff !important; box-shadow:0 0 18px rgba(44,95,255,.28) !important;')} style={css(`display:flex; align-items:center; gap:11px; width:100%; height:40px; padding:0 12px; border-radius:12px; cursor:pointer; text-align:left; transition:background .15s, border-color .15s, box-shadow .15s, color .15s; ${section === k ? 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)); border:1px solid rgba(130,175,255,.55); color:#dbe8ff; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10);' : 'background:transparent; border:1px solid transparent; color:#b4c3e8;'}` + font(section === k ? 700 : 500, 14) + ';')}>
+                <span style={css(`flex:none; width:8px; height:8px; border-radius:50%; background:${dot}; box-shadow:0 0 8px ${dot};`)}></span>
                 <span style={{ flex: 1 }}>{label}</span>
-                {badge > 0 && <span style={css('display:flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; background:#FFF1E0; color:#B45300;' + font(800, 11) + ';')}>{badge}</span>}
+                {badge > 0 && <span style={css('display:flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#FF3B30; color:#fff;' + font(800, 11) + ';')}>{badge}</span>}
               </button>
             ))}
           </div>
         </aside>
 
-        <main style={css('padding:30px 40px 80px; min-width:0;')}>
+        <main style={css('padding:24px 32px 60px; min-width:0; max-width:1240px;')}>
           {section === 'dashboard' && (
             <div>
               <div style={css('display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
@@ -308,7 +312,7 @@ export default function AdminConsolePage() {
                 </div>
               </div>
 
-              <div style={css('margin-top:22px; padding:20px 22px;' + card)}>
+              <div style={css('margin-top:18px; padding:16px 18px;' + card)}>
                 <div style={css(font(800, 16) + ';color:#0f172a;')}>Việc cần xử lý</div>
                 {todos.length === 0 ? (
                   <div style={css('display:flex; align-items:center; gap:10px; margin-top:12px;' + font(600, 13.5) + ';color:#00893F;')}>
@@ -316,9 +320,9 @@ export default function AdminConsolePage() {
                     Không có việc nào đang chờ. Mọi thứ đều ổn!
                   </div>
                 ) : (
-                  <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:14px;')}>
+                  <div style={css('display:flex; flex-direction:column; gap:8px; margin-top:12px;')}>
                     {todos.map((x) => (
-                      <div key={x.title} style={css(`display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:14px; background:#F8FAFE; border:1px solid #EEF1F7; border-left:4px solid ${x.color};`)}>
+                      <div key={x.title} style={css(`display:flex; align-items:center; gap:14px; padding:9px 12px; border-radius:14px; background:#F8FAFE; border:1px solid #EEF1F7; border-left:4px solid ${x.color};`)}>
                         <span style={css(font(900, 24) + `;color:${x.color}; min-width:34px; text-align:center;`)}>{x.n}</span>
                         <div style={css('flex:1; min-width:0;')}>
                           <div style={css(font(700, 14) + ';color:#0f172a;')}>{x.n} {x.title}</div>
@@ -331,24 +335,24 @@ export default function AdminConsolePage() {
                 )}
               </div>
 
-              <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin-top:20px;')}>
+              <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-top:14px;')}>
                 {statCards.map((k) => (
-                  <button key={k.label} onClick={k.go} className={hoverClass(`border-color:${k.color}; transform:translateY(-2px);`)} style={css(`display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:16px 18px; text-align:left; cursor:${k.go ? 'pointer' : 'default'}; transition:transform .15s, border-color .15s; ${card} border-top:4px solid ${k.color};`)}>
+                  <button key={k.label} onClick={k.go} className={hoverClass(`border-color:${k.color}; transform:translateY(-2px);`)} style={css(`display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:14px 16px; text-align:left; cursor:${k.go ? 'pointer' : 'default'}; transition:transform .15s, border-color .15s; ${card} border-top:4px solid ${k.color};`)}>
                     <span style={css(font(700, 12.5) + ';color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;')}>{k.label}</span>
-                    <span style={css(font(900, 30, 1.1) + `;color:${k.color};`)}>{k.value}</span>
+                    <span style={css(font(900, 26, 1.1) + `;color:${k.color};`)}>{k.value}</span>
                     <span style={css(k.up == null ? pill('#EDF0FA', '#64748b') : k.up ? pill('#E7F9F0', '#00893F') : pill('#FFECEC', '#D8232A'))}>{k.badge}</span>
                     <span style={css(font(500, 11.5) + ';color:#94a3b8; white-space:nowrap;')}>{k.foot}</span>
                   </button>
                 ))}
               </div>
 
-              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
+              <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
                     <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp</h2>
                     <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Điểm = trả lời ×3 + like nhận được ×2 + use case được duyệt ×5 + comment/reply ×1 + câu hỏi ×1.</p>
                   </div>
-                  <Tabs value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} />
+                  <Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} />
                 </div>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
                   <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>CÂU HỎI</span><span>USE CASE</span><span>ĐIỂM</span></div>
@@ -370,7 +374,7 @@ export default function AdminConsolePage() {
                 </div>
               </div>
 
-              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
+              <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
                 <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Theo phòng ban</h2>
                 <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Phòng ban lấy từ Microsoft khi mỗi người đăng nhập bằng SSO. Người chưa đăng nhập lại từ khi có tính năng này nằm ở "Chưa rõ phòng ban".</p>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
@@ -388,13 +392,13 @@ export default function AdminConsolePage() {
                 </div>
               </div>
 
-              <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;')}>
-                <div style={css('padding:24px 26px;' + card)}>
-                  <h2 style={css('margin:0 0 18px;' + font(800, 17) + ';color:#0f172a;')}>Topic được gắn nhiều nhất</h2>
+              <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;')}>
+                <div style={css('padding:18px 20px;' + card)}>
+                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Topic được gắn nhiều nhất</h2>
                   <Bars rows={topTopics} color="linear-gradient(90deg,#8B5CF6,#6F0CE2)" />
                 </div>
-                <div style={css('padding:24px 26px;' + card)}>
-                  <h2 style={css('margin:0 0 18px;' + font(800, 17) + ';color:#0f172a;')}>Công cụ AI được nhắc nhiều nhất</h2>
+                <div style={css('padding:18px 20px;' + card)}>
+                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Công cụ AI được nhắc nhiều nhất</h2>
                   <Bars rows={topTools} color="linear-gradient(90deg,#4480ff,#2c5fff)" />
                 </div>
               </div>
@@ -404,7 +408,7 @@ export default function AdminConsolePage() {
           {section === 'usecases' && (
             <div>
               <Heading title="Duyệt use case" sub="Use case người dùng gửi phải được duyệt trước khi đăng. Từ chối cần kèm lý do để tác giả sửa." />
-              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px; flex-wrap:wrap;')}>
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={ucQuery} onChange={setUcQuery} placeholder="Tìm theo tên use case, tác giả, team..." />
                 <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Chờ duyệt', pending.length], ['approved', 'Đã đăng', approved.length], ['changes_requested', 'Cần chỉnh sửa', submissions.filter((x) => x.reviewStatus === 'changes_requested').length], ['rejected', 'Từ chối', submissions.filter((x) => x.reviewStatus === 'rejected').length], ['all', 'Tất cả', submissions.length]]} />
               </div>
@@ -440,7 +444,7 @@ export default function AdminConsolePage() {
           {section === 'questions' && (
             <div>
               <Heading title="Câu hỏi" sub="Câu hỏi được đăng trực tiếp. Admin có thể xem và xoá bài không phù hợp." />
-              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px; flex-wrap:wrap;')}>
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={qQuery} onChange={setQQuery} placeholder="Tìm theo nội dung hoặc tác giả..." />
                 <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['waiting', 'Chờ chọn đáp án', questions.filter((q) => q.answers.length && !q.resolved).length], ['resolved', 'Đã giải quyết', questions.filter((q) => q.resolved).length]]} />
               </div>
@@ -470,7 +474,7 @@ export default function AdminConsolePage() {
           {section === 'reports' && (
             <div>
               <Heading title="Báo cáo" sub="Comment bị người dùng báo cáo. Xoá nội dung nếu vi phạm, hoặc bỏ qua nếu không có vấn đề." />
-              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px;')}>
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px;')}>
                 <Tabs value={repStatus} onChange={setRepStatus} tabs={[['open', 'Chờ xử lý', reports.filter((r) => r.status === 'open').length], ['done', 'Đã xử lý', reports.filter((r) => r.status !== 'open').length], ['all', 'Tất cả', reports.length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
@@ -502,7 +506,7 @@ export default function AdminConsolePage() {
           {section === 'users' && (
             <div>
               <Heading title="Thành viên" sub="Những người đã đăng nhập vào Zalopay AI Space. Quyền Admin được cấu hình qua biến ADMIN_EMAILS." />
-              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px;')}>
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px;')}>
                 <Search value={userQuery} onChange={setUserQuery} placeholder="Tìm theo tên hoặc email..." />
               </div>
               <div style={css('display:flex; align-items:flex-start; gap:14px; margin-top:18px; padding:16px 18px;' + card + (dirStatus?.state === 'ok' ? 'border-color:#BEE9D3;' : dirStatus ? 'border-color:#F5C9CB;' : ''))}>
@@ -618,7 +622,7 @@ export default function AdminConsolePage() {
           <div style={css('width:440px; max-width:100%; background:#fff; border-radius:22px; padding:26px 28px; box-shadow:0 40px 90px rgba(6,14,40,.5); box-sizing:border-box;')}>
             <div style={css(font(800, 17, 1.45) + ';color:#0f172a;')}>{confirm.text}</div>
             <div style={css('margin-top:8px;' + font(400, 13.5) + ';color:#64748b;')}>Không thể hoàn tác.</div>
-            <div style={css('display:flex; justify-content:flex-end; gap:12px; margin-top:22px;')}>
+            <div style={css('display:flex; justify-content:flex-end; gap:12px; margin-top:18px;')}>
               <button onClick={() => setConfirm(null)} style={css('height:42px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757;' + font(700, 13.5) + ';cursor:pointer;')}>Huỷ</button>
               <button onClick={() => { confirm.run(); setConfirm(null) }} style={css('height:42px; padding:0 22px; border:none; border-radius:999px; background:#D8232A; color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá</button>
             </div>

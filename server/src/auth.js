@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { db } from './db.js'
+import { domainName } from './mentions.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me'
 const COOKIE_NAME = 'session'
@@ -86,5 +87,5 @@ export function requireAuth(req, res, next) {
 
 export function publicUser(u) {
   if (!u) return null
-  return { id: u.id, name: u.name, initials: u.initials, team: u.team, email: u.email, isAdmin: !!u.is_admin, avatarColor: u.avatar_color || null }
+  return { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: u.initials, team: u.team, email: u.email, isAdmin: !!u.is_admin, avatarColor: u.avatar_color || null }
 }

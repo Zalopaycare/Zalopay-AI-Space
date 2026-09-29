@@ -9,6 +9,8 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useNavigate } from 'react-router-dom'
+import Avatar from '../components/Avatar.jsx'
+import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
@@ -44,7 +46,14 @@ export default function QuestionsPage() {
   const [loaded, setLoaded] = useState(false)
   const [view, setView] = useState('feed') // 'feed' | 'ask'
   const [query, setQuery] = useState('')
-  const sort = 'latest'
+  const [sort, setSort] = useState('latest')
+  const [openDrop, setOpenDrop] = useState(null)
+  useEffect(() => {
+    if (!openDrop) return
+    const close = () => setOpenDrop(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [openDrop])
   const [quick, setQuick] = useState('all')
   const [expanded, setExpanded] = useState({})
   const [fullBody, setFullBody] = useState({})
@@ -291,9 +300,10 @@ export default function QuestionsPage() {
   const helpfulSum = (q) => q.answers.reduce((n, a) => n + a.helpful, 0)
   let list = questions.filter(match)
   const tsNum = (v) => new Date(String(v).includes('T') ? v : String(v).replace(' ', 'T') + 'Z').getTime()
-  list = sort === 'active' ? list.slice().sort((a, b) => b.answers.length - a.answers.length || helpfulSum(b) - helpfulSum(a))
-    : sort === 'all' ? list.slice()
-      : list.slice().sort((a, b) => tsNum(b.ts) - tsNum(a.ts))
+  // "Nổi bật nhất": most upvotes (question + its answers), then most comments, then newest.
+  const score = (q) => helpfulSum(q) + (q.qHelpful || 0)
+  list = sort === 'top' ? list.slice().sort((a, b) => score(b) - score(a) || b.answers.length - a.answers.length || tsNum(b.ts) - tsNum(a.ts))
+    : list.slice().sort((a, b) => tsNum(b.ts) - tsNum(a.ts))
 
   const feed = list.map((q) => {
     const isExpanded = !!expanded[q.id]
@@ -378,7 +388,7 @@ export default function QuestionsPage() {
 
 
 
-  const quickFilters = [['all', 'Mới đăng'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời']].map(([k, label]) => ({
+  const quickFilters = [['all', 'Tất cả'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời']].map(([k, label]) => ({
     label: t(label), ...chip(quick === k), onPick: () => setQuick(k),
   }))
   const isEmpty = feed.length === 0
@@ -392,44 +402,37 @@ export default function QuestionsPage() {
   // One question card; inModal adds the full comment thread (the popup opened by clicking a card).
   const renderQCard = (q, inModal) => (
                   <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : 'zp-card'} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; ${inModal ? '' : 'box-shadow:0 20px 46px rgba(0,0,0,.34); cursor:pointer;'} overflow:hidden;`)}>
-                    <div style={css('display:flex; align-items:center; gap:7px; padding:14px 18px 0; flex-wrap:wrap;')}>
-                      <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
-                        {t('Câu hỏi')}
-                      </span>
-                      <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
-                    </div>
-
-                    <div style={css('display:flex; gap:10px; padding:10px 18px 0;')}>
-                      <div style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.initials}</div>
+                    <div style={css('display:flex; align-items:center; gap:10px; padding:12px 16px 0;')}>
+                      <div style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                          <span style={css('font:800 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span>
+                          <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span>
                           <span style={css('font:400 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.team}</span>
                           <span style={css('color:#CDD5DD;')}>·</span>
-                          <span style={css('font:400 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.time}</span>
+                          <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.time}</span>
                         </div>
                       </div>
+                      <span style={css(`flex:none; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setOpenMenuId((id) => (id === q.id ? null : q.id)) }}
                           title={t('Thêm')}
-                          style={css('width:38px; height:38px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}
+                          style={css('width:32px; height:32px; border:1px solid #E6EBF3; border-radius:10px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}
                         >
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
                         </button>
                         {openMenuId === q.id && (
-                          <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:44px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
-                            <button onClick={() => copyLink(q.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                          <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
+                            <button onClick={() => copyLink(q.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                               {copiedId === q.id ? t('Đã copy!') : t('Copy link')}
                             </button>
-                            <button onClick={() => { q.onSave(); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                            <button onClick={() => { q.onSave(); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                               {q.saveLabel}
                             </button>
                             {q.canDelete && (
-                              <button onClick={() => { setConfirmDeleteId(q.id); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
+                              <button onClick={() => { setConfirmDeleteId(q.id); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                                 {t('Xoá bài viết')}
                               </button>
@@ -439,7 +442,7 @@ export default function QuestionsPage() {
                       </div>
                     </div>
 
-                    <div style={css('padding:8px 18px 0;')}>
+                    <div style={css('padding:6px 16px 0;')}>
                       {q.hasTitle !== false && <h3 className="zp-card-title" style={css('margin:0; font:800 16px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>}
                       <p style={css(q.hasTitle !== false ? 'margin:5px 0 0; font:400 13.5px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;' : 'margin:2px 0 0; font:500 15px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:pre-wrap;')}>
                         {q.bodyShown}
@@ -447,10 +450,10 @@ export default function QuestionsPage() {
                           <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3366F0; vertical-align:baseline;')}>{t('Xem thêm')}</button>
                         )}
                       </p>
-                      {q.hasImages && <ImageThumbs srcs={q.images} />}
+                      {q.hasImages && <ImageThumbs srcs={q.images} height={inModal ? 200 : 140} />}
                     </div>
 
-                    <div style={css('display:flex; align-items:center; gap:10px 12px; flex-wrap:wrap; margin:12px 18px 0; padding:10px 0 12px; border-top:1px solid #EEF1F7;')}>
+                    <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
                       <TagRow topics={q.topics} tools={q.tools} />
                       {q.hasAccepted && (
                         <span style={css('display:inline-flex; align-items:center; gap:7px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#00893F;')}>
@@ -458,7 +461,7 @@ export default function QuestionsPage() {
                           {t('Đã có câu trả lời được chấp nhận')}
                         </span>
                       )}
-                      <CardActions helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={q.expanded} onReply={q.onToggle} />
+                      <CardActions compact helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={q.expanded} onReply={q.onToggle} />
                     </div>
 
                     {inModal && (
@@ -483,7 +486,7 @@ export default function QuestionsPage() {
                                     </div>
                                   )}
                                   <div style={css('display:flex; align-items:center; gap:9px; flex-wrap:wrap;')}>
-                                    <span style={css('font:800 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{a.author}</span>
+                                    <span style={css('font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{a.author}</span>
                                     <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{a.team}</span>
                                     <span style={css('margin-left:auto; font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{a.time}{a.edited ? ' · đã sửa' : ''}</span>
                                     <CommentMenu isOwner={isMine(a)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'answer', id: a.id })} onDelete={() => askDeleteAnswer(q.id, a.id)} onReport={() => cmodals.askReport('answer', a.id)} />
@@ -523,7 +526,7 @@ export default function QuestionsPage() {
                                             <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{c.initials}</div>
                                             <div className="zp-cmt" style={css('flex:1; min-width:0; background:#fff; border:1px solid #EEF1F7; border-radius:14px; padding:10px 13px;')}>
                                               <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                                <span style={css('font:800 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span>
+                                                <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span>
                                                 <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.team}</span>
                                                 <span style={css('margin-left:auto; font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.time}{c.edited ? ' · đã sửa' : ''}</span>
                                                 <CommentMenu isOwner={isMine(c)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: c.id })} onDelete={() => askDeleteComment(q.id, a.id, c.id)} onReport={() => cmodals.askReport('comment', c.id)} />
@@ -547,7 +550,7 @@ export default function QuestionsPage() {
                                               <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${r.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{r.initials}</div>
                                               <div className="zp-cmt" style={css('flex:1; min-width:0; background:#fff; border:1px solid #EEF1F7; border-radius:14px; padding:9px 12px;')}>
                                                 <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                                  <span style={css('font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span>
+                                                  <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span>
                                                   <span style={css('margin-left:auto; font:400 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{r.time}{r.edited ? ' · đã sửa' : ''}</span>
                                                   <CommentMenu isOwner={isMine(r)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: r.id })} onDelete={() => askDeleteComment(q.id, a.id, r.id)} onReport={() => cmodals.askReport('comment', r.id)} />
                                                 </div>
@@ -606,7 +609,7 @@ export default function QuestionsPage() {
                           ))}
 
                           {q.noAnswers && (
-                            <div style={css('padding:18px 0; text-align:center; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Chưa có comment nào. Comment đầu tiên thường giúp ích nhất.')}</div>
+                            <div style={css('padding:18px 0; text-align:center; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Chưa có comment nào. Comment đầu tiên thường giúp ích nhất.')}</div>
                           )}
                         </div>
 
@@ -655,8 +658,14 @@ export default function QuestionsPage() {
             </div>
           </div>
 
-          <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => setView('ask')} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, tác giả, công cụ..." />
-          <div style={css('padding:24px 40px 90px;')}>
+          <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => setView('ask')} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, tác giả, công cụ..." filters={
+            <FilterPill
+              label={t(sort === 'top' ? 'Nổi bật nhất' : 'Mới nhất')}
+              name="qsort" openDrop={openDrop} setOpenDrop={setOpenDrop} width={180} align="right"
+              options={[['latest', 'Mới nhất'], ['top', 'Nổi bật nhất']].map(([k, l]) => ({ label: t(l), active: sort === k, onClick: () => { setSort(k); setOpenDrop(null) } }))}
+            />
+          } />
+          <div style={css('padding:16px 40px 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <div style={css('display:flex; align-items:center; gap:8px; margin-top:0; flex-wrap:wrap;')}>
                 {quickFilters.map((f) => (
@@ -664,7 +673,7 @@ export default function QuestionsPage() {
                 ))}
               </div>
 
-              <div style={css('display:flex; flex-direction:column; gap:16px; margin-top:20px;')}>
+              <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:14px;')}>
                 {feed.map((q) => renderQCard(q, false))}
 
                 {isEmpty && (
@@ -695,7 +704,7 @@ export default function QuestionsPage() {
           </div>
         )}
 
-        {view === 'ask' && (
+        {view === 'ask' && createPortal(
           <div onClick={() => setView('feed')} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:44px 24px; overflow-y:auto;')}>
             <div onClick={(e) => e.stopPropagation()} style={css('width:760px; max-width:100%;')}>
               <div style={css('display:flex; align-items:flex-start; gap:16px; margin-bottom:20px;')}>
@@ -718,9 +727,9 @@ export default function QuestionsPage() {
 
                 <div style={css('background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; padding:22px 24px 20px; box-shadow:0 20px 46px rgba(0,0,0,.34);')}>
                   <div style={css('display:flex; gap:14px;')}>
-                    <span style={css('flex:none; width:44px; height:44px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 15px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</span>
+                    <Avatar user={user} size={44} fontSize={15} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={css('font:800 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{user ? `${user.name}${user.team ? ' · ' + user.team : ''}` : t('Chưa đăng nhập')}</div>
+                      <div style={css('font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{user ? `${user.domain || user.name}${user.team ? ' · ' + user.team : ''}` : t('Chưa đăng nhập')}</div>
 
 
                       <textarea ref={askBodyRef} value={askBody} onChange={(e) => { setAskBody(e.target.value); setAskError('') }} rows={5} placeholder={t('Bạn đang vướng ở đâu với AI? Mô tả bối cảnh, cách bạn đã thử và kết quả mong đợi...')} style={css('width:100%; margin-top:6px; border:none; outline:none; background:transparent; padding:0; font:400 15px/1.65 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
@@ -802,10 +811,11 @@ export default function QuestionsPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
 
-        <div style={css('display:flex; justify-content:center; padding:36px 0 56px;')}>
+        <div style={css('display:flex; justify-content:center; padding:0 0 40px;')}>
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={css('display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; box-shadow:0 6px 18px rgba(30,50,90,.06);')}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
             {t('Quay lại đầu trang')}
