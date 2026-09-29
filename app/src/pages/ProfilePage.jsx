@@ -10,9 +10,8 @@ import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
-import { useNotifRead, markNotifsRead, notifKey } from '../lib/notifRead.js'
-import { defaultNotifications } from '../data/notifications.js'
-import { NOTIF_ICONS } from '../components/NotificationsPanel.jsx'
+import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
+import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import { QUESTION_DRAFT_KEY } from './QuestionsPage.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
@@ -154,7 +153,7 @@ export default function ProfilePage() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
-  const isUnread = useNotifRead()
+  const notif = useNotifications(!!user)
   const section = /#(activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'activity'
 
   const [myQuestions, setMyQuestions] = useState([])
@@ -327,16 +326,19 @@ export default function ProfilePage() {
               <h3 style={css(`margin:0 0 14px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Thông báo')}</h3>
               <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; overflow:hidden;')}>
                 <div style={css('display:flex; justify-content:flex-end; padding:10px 16px; border-bottom:1px solid #EEF1F7;')}>
-                  <button onClick={() => markNotifsRead(defaultNotifications.map(notifKey))} style={css(`border:none; background:transparent; cursor:pointer; font:700 12.5px ${FONT}; color:#3366F0; padding:0;`)}>{t('Đánh dấu đã đọc tất cả')}</button>
+                  <button onClick={() => markNotificationsRead()} disabled={!notif.unread} style={css(`border:none; background:transparent; cursor:${notif.unread ? 'pointer' : 'default'}; font:700 12.5px ${FONT}; color:${notif.unread ? '#3366F0' : '#94a3b8'}; padding:0;`)}>{t('Đánh dấu đã đọc tất cả')}</button>
                 </div>
-                {defaultNotifications.map((n, i) => {
-                  const unread = isUnread(n)
+                {notif.loaded && notif.items.length === 0 && (
+                  <div style={css(`padding:32px 18px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có thông báo nào. Khi có người trả lời, bình luận hoặc nhắc đến bạn, thông báo sẽ hiện ở đây.')}</div>
+                )}
+                {notif.items.map((n) => {
+                  const unread = n.unread
                   return (
-                    <div key={i} onClick={() => { markNotifsRead([notifKey(n)]); navigate(n.href) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; align-items:center; padding:14px 18px; border-bottom:1px solid #F3F5FA; background:${unread ? '#F3F7FF' : '#fff'}; cursor:pointer;`)}>
-                      <span style={css(`flex:none; width:34px; height:34px; border-radius:11px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.icon] || NOTIF_ICONS.answer}</span>
+                    <div key={n.id} onClick={() => { if (unread) markNotificationsRead([n.id]); if (n.href) navigate(n.href) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; align-items:center; padding:14px 18px; border-bottom:1px solid #F3F5FA; background:${unread ? '#F3F7FF' : '#fff'}; cursor:pointer;`)}>
+                      <span style={css(`flex:none; width:34px; height:34px; border-radius:11px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css(unread ? `font:800 13.5px/1.5 ${FONT}; color:#1a5fff;` : `font:400 13.5px/1.5 ${FONT}; color:#475569;`)}>{n.text}</div>
-                        <div style={css(`margin-top:3px; font:400 12px ${FONT}; color:#94a3b8;`)}>{n.time}</div>
+                        <div style={css(`margin-top:3px; font:400 12px ${FONT}; color:#94a3b8;`)}>{n.timeLabel}</div>
                       </div>
                       {unread && <span style={css('flex:none; width:9px; height:9px; border-radius:50%; background:#2c5fff; box-shadow:0 0 0 3px rgba(44,95,255,.18);')}></span>}
                     </div>

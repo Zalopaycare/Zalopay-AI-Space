@@ -3,10 +3,9 @@ import { Link, useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
-import { useNotifRead } from '../lib/notifRead.js'
+import { useNotifications } from '../lib/notifications.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import Avatar from './Avatar.jsx'
-import { defaultNotifications } from '../data/notifications.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 
 const itemBase = 'display:flex; align-items:center; gap:14px; height:46px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:15.5px; cursor:pointer; border:none; text-align:left; font-family:inherit; width:100%;'
@@ -61,8 +60,7 @@ export default function Sidebar({ active }) {
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
   const sub = active === 'profile' ? /#(activity|usecase|question|saved)\b/.exec(hash)?.[1] || 'activity' : null
-  const isUnread = useNotifRead()
-  const unreadCount = defaultNotifications.filter(isUnread).length
+  const { unread: unreadCount } = useNotifications(!!user)
   const homeActive = active === 'home'
 
   return (

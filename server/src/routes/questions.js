@@ -3,6 +3,7 @@ import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName } from '../mentions.js'
+import { notify } from '../notifications.js'
 
 const router = express.Router()
 
@@ -130,6 +131,7 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
+    notify(qAuthor.email, { kind: 'answer', text: `${domainName(req.user.email, req.user.name)} đã trả lời câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions#q=${id}`, actor: req.user.name })
     sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
   notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email] })
@@ -167,6 +169,8 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const answer = db.prepare('SELECT * FROM question_answers WHERE id = ?').get(answerId)
   const aAuthor = answer ? db.prepare('SELECT * FROM users WHERE id = ?').get(answer.author_id) : null
   if (aAuthor && aAuthor.id !== req.user.id) {
+    const qr = db.prepare('SELECT title, body FROM questions WHERE id = ?').get(id)
+    notify(aAuthor.email, { kind: 'comment', text: `${domainName(req.user.email, req.user.name)} đã bình luận câu trả lời của bạn${qr ? ` trong "${qTitle(qr)}"` : ''}`, href: `/questions#q=${id}`, actor: req.user.name })
     sendMail({ to: aAuthor.email, subject: 'Có bình luận mới cho câu trả lời của bạn', text: `${req.user.name} đã bình luận: "${body}"\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
   const qRow = db.prepare('SELECT title, body FROM questions WHERE id = ?').get(id)

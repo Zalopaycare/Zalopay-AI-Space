@@ -14,7 +14,6 @@ import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
 } from '../data/useCases.js'
-import { defaultNotifications } from '../data/notifications.js'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
 const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
@@ -1076,7 +1075,7 @@ export default function UseCaseLibraryPage() {
   }
 
   return (
-    <Layout active="usecase" notifications={defaultNotifications}>
+    <Layout active="usecase">
       {isDetail ? renderDetail() : renderLibrary()}
       {shareOpen && renderShareModal()}
     </Layout>

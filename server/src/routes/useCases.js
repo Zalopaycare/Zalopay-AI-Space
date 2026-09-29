@@ -2,7 +2,8 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
-import { notifyMentions, appUrl } from '../mentions.js'
+import { notifyMentions, appUrl, domainName } from '../mentions.js'
+import { notify } from '../notifications.js'
 
 const router = express.Router()
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
@@ -75,7 +76,8 @@ router.get('/submissions', requireAuth, (req, res) => {
   let rows
   if (onlyMine) rows = db.prepare('SELECT * FROM use_case_submissions WHERE author_id = ? ORDER BY created_at DESC').all(req.user.id)
   else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' ORDER BY created_at DESC").all()
-  else rows = db.prepare('SELECT * FROM use_case_submissions ORDER BY created_at DESC').all()
+  else if (req.user.is_admin) rows = db.prepare('SELECT * FROM use_case_submissions ORDER BY created_at DESC').all()
+  else return res.status(403).json({ error: 'admin_only' })
   res.json({
     submissions: rows.map((r) => {
       const author = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
@@ -111,6 +113,7 @@ router.post('/submissions', requireAuth, (req, res) => {
   const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
   const admins = [...new Set([...envAdmins, ...dbAdmins])].filter((e) => e !== req.user.email.toLowerCase())
   for (const to of admins) {
+    notify(to, { kind: 'submission', text: `${domainName(req.user.email, req.user.name)} gửi use case mới chờ duyệt: "${f.title.trim()}"`, href: '/admin', actor: req.user.name })
     sendMail({
       to,
       subject: `Use case mới chờ duyệt: ${f.title.trim()}`,
@@ -136,6 +139,9 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
   const author = row ? db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id) : null
   if (author) {
+    notify(author.email, status === 'approved'
+      ? { kind: 'approved', text: `Use case "${row.title}" của bạn đã được duyệt và hiển thị công khai`, href: '/profile#usecase' }
+      : { kind: 'rejected', text: `Use case "${row.title}" của bạn bị từ chối${note ? ': ' + note : ''}`, href: '/profile#usecase' })
     const subject = status === 'approved' ? 'Use case của bạn đã được duyệt' : 'Use case của bạn bị từ chối'
     const text = status === 'approved'
       ? `Use case "${row.title}" đã được duyệt và hiển thị công khai.\n\nXem tại: ${appUrl(req)}/profile#usecase`

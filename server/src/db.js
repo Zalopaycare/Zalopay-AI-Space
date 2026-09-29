@@ -115,6 +115,18 @@ CREATE TABLE IF NOT EXISTS use_case_saves (
   PRIMARY KEY (use_case_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  text TEXT NOT NULL,
+  href TEXT NOT NULL DEFAULT '',
+  actor TEXT NOT NULL DEFAULT '',
+  read INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS notifications_email ON notifications (email, created_at);
+
 CREATE TABLE IF NOT EXISTS question_images (
   question_id TEXT NOT NULL,
   idx INTEGER NOT NULL,

@@ -24,20 +24,7 @@ const MAX_ASK_IMAGES = 4
 const EMOJI = ['😀', '😅', '😍', '🤔', '👍', '🙏', '🔥', '🎉', '😢', '😮', '🚀', '💡', '✅', '❌', '⚠️', '❤️']
 const CLAMP = 200
 
-const INITIAL_NOTIFICATIONS = [
-  { id: 'n1', kind: 'answer', text: 'HaiPD đã trả lời câu hỏi của bạn: "Làm sao để dùng Claude tóm tắt file PDF dài hơn 50 trang?"', time: '2 giờ trước', unread: true, target: 'q1' },
-  { id: 'n2', kind: 'mention', text: 'QuyenNT đã mention bạn trong một bình luận', time: '1 giờ trước', unread: true, teams: 'delivered', target: 'q1' },
-  { id: 'n3', kind: 'approved', text: 'Use case "Tóm tắt phản hồi khách hàng theo tuần" của bạn đã được duyệt', time: 'Hôm qua', unread: true, target: null },
-  { id: 'n4', kind: 'rejected', text: 'Use case "Auto QA script" bị từ chối — Admin có ghi lý do', time: '2 ngày trước', unread: false, target: null },
-  { id: 'n5', kind: 'mention', text: 'DucMH đã mention bạn trong một câu trả lời', time: '3 ngày trước', unread: false, teams: 'failed', target: 'q4' },
-]
 
-const NK = {
-  answer: { iconBg: '#E7ECFB', iconFg: '#2c5fff' },
-  mention: { iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
-  approved: { iconBg: '#E7F9F0', iconFg: '#00893F' },
-  rejected: { iconBg: '#FFECEC', iconFg: '#D8232A' },
-}
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#ffffff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
 // Accent/case-insensitive so "@nguyen" finds "Nguyễn".
@@ -52,12 +39,10 @@ export default function QuestionsPage() {
   const navigate = useNavigate()
   const [questions, setQuestions] = useState([])
   const [loaded, setLoaded] = useState(false)
-  const [notificationsState, setNotificationsState] = useState(INITIAL_NOTIFICATIONS)
   const [view, setView] = useState('feed') // 'feed' | 'ask'
   const [query, setQuery] = useState('')
   const sort = 'latest'
   const [quick, setQuick] = useState('all')
-  const [readAll, setReadAll] = useState(false)
   const [expanded, setExpanded] = useState({})
   const [fullBody, setFullBody] = useState({})
   const [replyDrafts, setReplyDrafts] = useState({})
@@ -352,22 +337,7 @@ export default function QuestionsPage() {
     }
   })
 
-  const notifications = notificationsState.map((n) => {
-    const unread = n.unread && !readAll
-    return {
-      ...n, ...(NK[n.kind] || NK.answer),
-      icon: n.kind,
-      hasTeams: !!n.teams,
-      teamsLabel: n.teams === 'failed' ? 'Teams: gửi thất bại' : 'Đã gửi qua Teams',
-      teamsBg: n.teams === 'failed' ? '#FFECEC' : '#E7F9F0',
-      teamsFg: n.teams === 'failed' ? '#D8232A' : '#00893F',
-      unread,
-      onOpen: () => {
-        setReadAll(true); setView('feed')
-        if (n.target) { setExpanded((s) => ({ ...s, [n.target]: true })); setFullBody((s) => ({ ...s, [n.target]: true })) }
-      },
-    }
-  })
+
 
   const quickFilters = [['all', 'Mới đăng'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời']].map(([k, label]) => ({
     label: t(label), ...chip(quick === k), onPick: () => setQuick(k),
@@ -381,7 +351,7 @@ export default function QuestionsPage() {
   const askOpacity = askBody.trim() ? 1 : 0.5
 
   return (
-    <Layout active="question" notifications={notifications}>
+    <Layout active="question">
     <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow:clip;')}>
       <SpaceBackdrop arcTop={190} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>

@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 const navItemBase = 'font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;padding:6px 2px;transition:color .15s;background:none;border:none;text-decoration:none;white-space:nowrap;'
 
 /** The thin top bar, offset by the (collapsible) sidebar: page nav (+ login button when signed out); the profile chip lives at the bottom of the Sidebar. */
-export default function TopNav({ notifications }) {
+export default function TopNav() {
   const location = useLocation()
   const { t } = useI18n()
   const { user, openLogin } = useAuth()

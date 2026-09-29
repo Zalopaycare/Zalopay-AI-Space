@@ -47,12 +47,6 @@ const UFO_STARS = [
   { left: '52%', top: '18px', size: '2px', dur: '2.9s', delay: '-.8s' },
 ]
 
-const HOME_NOTIFICATIONS = [
-  { text: 'HaiPD đã trả lời câu hỏi của bạn về tóm tắt PDF dài', href: '/questions', time: '2 giờ trước', unread: true, icon: 'answer', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
-  { text: 'QuyenNT đã mention bạn trong một bình luận', href: '/questions', time: '1 giờ trước', unread: true, icon: 'mention', iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
-  { text: 'Use case "Tóm tắt phản hồi khách hàng theo tuần" đã được duyệt', href: '/use-cases', time: 'Hôm qua', unread: true, icon: 'approved', iconBg: '#E7F9F0', iconFg: '#00893F' },
-  { text: 'Use case "Auto QA script" bị từ chối — xem lý do trong Use case của tôi', href: '/profile#posts', time: '2 ngày trước', unread: false, icon: 'rejected', iconBg: '#FFECEC', iconFg: '#D8232A' },
-]
 
 const steps = [
   {
@@ -248,7 +242,7 @@ export default function HomePage() {
   })
 
   return (
-    <Layout active="home" notifications={HOME_NOTIFICATIONS}>
+    <Layout active="home">
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
         <SpaceBackdrop arcTop={240} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 

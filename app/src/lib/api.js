@@ -22,6 +22,9 @@ export const api = {
   me: () => request('/auth/me'),
   updateMe: (patch) => request('/auth/me', { method: 'PATCH', body: JSON.stringify(patch) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
+  listNotifications: () => request('/notifications'),
+  markNotificationsRead: (ids) => request('/notifications/read', { method: 'POST', body: JSON.stringify(ids ? { ids } : {}) }),
+  adminUsers: () => request('/admin/users'),
   listUsers: (q) => request('/auth/users?q=' + encodeURIComponent(q || '')),
 
   listQuestions: () => request('/questions'),

@@ -1,246 +1,127 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import { allCases, prdMeta } from '../data/useCases.js'
+import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
+import { NOTIF_ICONS } from '../components/notifIcons.jsx'
+import logo from '../assets/zalopay-ai-space-logo.png'
+
+// Admin console: review use case submissions and look at the community's real numbers.
+// Everything here comes from the API — no sample data.
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
-const CATEGORIES = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
+const font = (weight, size, lh) => `font:${weight} ${size}px${lh ? '/' + lh : ''} "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif`
+const card = 'background:#fff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 10px 24px rgba(30,50,90,.06);'
 const UC_STATUS = {
-  approved: { label: 'Published', bg: '#E7F9F0', fg: '#00893F' },
-  pending: { label: 'Pending Review', bg: '#FFF1E0', fg: '#B45300' },
-  rejected: { label: 'Rejected', bg: '#FFECEC', fg: '#D8232A' },
+  pending: { label: 'Chờ duyệt', bg: '#FFF1E0', fg: '#B45300' },
+  approved: { label: 'Đã đăng', bg: '#E7F9F0', fg: '#00893F' },
+  rejected: { label: 'Từ chối', bg: '#FFECEC', fg: '#D8232A' },
+}
+const toDate = (t) => new Date(String(t || '').replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(t)) ? '' : 'Z'))
+const fmtDate = (t) => { const d = toDate(t); return isNaN(d) ? '—' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) }
+const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
+
+const btn = (kind) => {
+  const k = { approve: ['#E7F9F0', '#BEE9D3', '#00893F'], reject: ['#FFECEC', '#F5C9CB', '#D8232A'], plain: ['#fff', '#DDE3EC', '#3A4757'] }[kind]
+  return `height:32px; padding:0 12px; border:1px solid ${k[1]}; border-radius:9px; background:${k[0]}; color:${k[2]}; ${font(700, 12)}; cursor:pointer; white-space:nowrap;`
+}
+const pill = (bg, fg) => `display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${bg}; color:${fg}; ${font(700, 11.5)}; white-space:nowrap;`
+
+function Tabs({ tabs, value, onChange }) {
+  return (
+    <div style={css('display:inline-flex; background:#EDF0FA; border-radius:12px; padding:5px; gap:5px;')}>
+      {tabs.map(([k, label, n]) => (
+        <button key={k} onClick={() => onChange(k)} style={css(`border:none; cursor:pointer; height:36px; padding:0 14px; border-radius:9px; ${font(700, 12.5)}; background:${value === k ? '#fff' : 'transparent'}; color:${value === k ? '#2c5fff' : '#2A3A57'};`)}>
+          {label}{n != null ? ` · ${n}` : ''}
+        </button>
+      ))}
+    </div>
+  )
 }
 
-const INITIAL_TOPICS = [
-  { id: 't1', name: 'Prompting', uc: 18, q: 12, active: true },
-  { id: 't2', name: 'Tóm tắt', uc: 14, q: 9, active: true },
-  { id: 't3', name: 'Tài liệu dài', uc: 9, q: 11, active: true },
-  { id: 't4', name: 'Bảo mật dữ liệu', uc: 7, q: 10, active: true },
-  { id: 't5', name: 'Tiếng Việt', uc: 11, q: 6, active: true },
-  { id: 't6', name: 'Ticket & CSKH', uc: 8, q: 7, active: true },
-  { id: 't7', name: 'Code review', uc: 6, q: 8, active: true },
-  { id: 't8', name: 'Báo cáo', uc: 10, q: 4, active: true },
-  { id: 't9', name: 'Slide & thuyết trình', uc: 5, q: 3, active: true },
-  { id: 't10', name: 'OCR', uc: 4, q: 2, active: false },
-]
-const INITIAL_USERS = [
-  { id: 'e1', name: 'Nguyễn Thảo', initials: 'NT', email: 'nguyen.thao@zalopay.vn', dept: 'Product Ops', role: 'Admin', status: 'Active', joined: '12/01/2025' },
-  { id: 'e2', name: 'Phạm Duy Hải', initials: 'PH', email: 'pham.hai@zalopay.vn', dept: 'Data', role: 'Employee', status: 'Active', joined: '03/03/2025' },
-  { id: 'e3', name: 'Nguyễn Thu Quyên', initials: 'NQ', email: 'nguyen.quyen@zalopay.vn', dept: 'Marketing', role: 'Employee', status: 'Active', joined: '18/04/2025' },
-  { id: 'e4', name: 'Vũ Ngọc Trúc', initials: 'VT', email: 'vu.truc@zalopay.vn', dept: 'Customer Support', role: 'Employee', status: 'Active', joined: '22/05/2025' },
-  { id: 'e5', name: 'Mai Hữu Đức', initials: 'MD', email: 'mai.duc@zalopay.vn', dept: 'Engineering', role: 'Admin', status: 'Active', joined: '09/07/2025' },
-  { id: 'e6', name: 'Đỗ Thanh Lan', initials: 'DL', email: 'do.lan@zalopay.vn', dept: 'People Enablement', role: 'Employee', status: 'Invited', joined: '01/09/2026' },
-]
-const INITIAL_NOTIFICATIONS = [
-  { id: 'n1', text: 'TrucVN gửi use case mới chờ duyệt: "Tự động phân loại & trả lời ticket CSKH"', time: '2 giờ trước', iconText: '⏳', iconBg: '#FFF1E0', iconFg: '#B45300' },
-  { id: 'n2', text: 'QuyenNT gửi use case mới chờ duyệt: "Sinh mô tả sản phẩm & nội dung SEO"', time: 'Hôm qua', iconText: '⏳', iconBg: '#FFF1E0', iconFg: '#B45300' },
-  { id: 'n3', text: '2 câu hỏi quá 48 giờ chưa có câu trả lời', time: '2 ngày trước', iconText: '?', iconBg: '#E7ECFB', iconFg: '#2c5fff' },
-]
-// Illustrative placeholder trend — real monthly history needs more data than this
-// young a system has; swap for a real /api/stats/monthly endpoint once there's enough of it.
-const MONTHS = ['T10', 'T11', 'T12', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9']
-const UC_SERIES = [4, 6, 5, 9, 8, 12, 11, 15, 14, 18, 17, 21]
-const Q_SERIES = [8, 11, 9, 14, 16, 15, 19, 22, 20, 26, 24, 29]
+function Search({ value, onChange, placeholder }) {
+  return (
+    <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; padding:11px 16px;')}>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={css('flex:1; border:none; outline:none; background:transparent; font-size:14px; color:#0f172a;')} />
+    </div>
+  )
+}
 
-const act = (label, kind, onClick) => ({
-  label, onClick,
-  bg: kind === 'approve' ? '#E7F9F0' : kind === 'reject' ? '#FFECEC' : '#fff',
-  border: kind === 'approve' ? '#BEE9D3' : kind === 'reject' ? '#F5C9CB' : '#DDE3EC',
-  color: kind === 'approve' ? '#00893F' : kind === 'reject' ? '#D8232A' : '#3A4757',
-})
-const tabStyle = (active) => ({ bg: active ? '#fff' : 'transparent', color: active ? '#2c5fff' : '#2A3A57' })
-const font = (weight, size, lh) => `font:${weight} ${size}px${lh ? '/' + lh : ''} "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif`
+function Heading({ title, sub }) {
+  return (
+    <>
+      <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>{title}</h1>
+      <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>{sub}</p>
+    </>
+  )
+}
+
+function Bars({ rows, color }) {
+  const max = rows.reduce((m, r) => Math.max(m, r[1]), 1)
+  if (!rows.length) return <div style={css(font(600, 13) + ';color:#94a3b8; padding:10px 0;')}>Chưa có dữ liệu.</div>
+  return (
+    <div style={css('display:flex; flex-direction:column; gap:12px;')}>
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <div style={css('display:flex; justify-content:space-between; gap:12px;' + font(600, 12.5) + ';color:#3A4757;')}><span>{label}</span><span style={{ color: '#94a3b8' }}>{value}</span></div>
+          <div style={css('margin-top:6px; height:9px; border-radius:999px; background:#EDF0FA; overflow:hidden;')}><div style={css(`height:9px; border-radius:999px; background:${color}; width:${Math.round((value / max) * 100)}%;`)}></div></div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const Field = ({ label, value }) => (value ? (
+  <div style={css('margin-top:16px;')}>
+    <div style={css(font(800, 11.5) + ';letter-spacing:.04em;color:#94a3b8; text-transform:uppercase;')}>{label}</div>
+    <div style={css('margin-top:5px;' + font(400, 14, 1.65) + ';color:#0f172a; white-space:pre-wrap; word-break:break-word;')}>{value}</div>
+  </div>
+) : null)
 
 export default function AdminConsolePage() {
-  const navigate = useNavigate()
-  const { user, openLogin } = useAuth()
+  const { user, openLogin, logout } = useAuth()
+  const isAdmin = !!user?.isAdmin
   const [section, setSection] = useState('dashboard')
-  const [notifOpen, setNotifOpen] = useState(false)
-  const [topicScope, setTopicScope] = useState('all')
+  const [submissions, setSubmissions] = useState([])
+  const [questions, setQuestions] = useState([])
+  const [users, setUsers] = useState([])
+  const [ucStatus, setUcStatus] = useState('pending')
   const [ucQuery, setUcQuery] = useState('')
-  const [ucStatus, setUcStatus] = useState('all')
-  const [qQuery, setQQuery] = useState('')
   const [qStatus, setQStatus] = useState('all')
+  const [qQuery, setQQuery] = useState('')
   const [userQuery, setUserQuery] = useState('')
+  const [detailId, setDetailId] = useState(null)
   const [rejectId, setRejectId] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
-  const [newTopic, setNewTopic] = useState('')
-  const [editingTopic, setEditingTopic] = useState(null)
-  const [topicDraft, setTopicDraft] = useState('')
-  const [settingsState, setSettingsState] = useState({ teams: true, attachments: true, digest: false })
-  const [submissions, setSubmissions] = useState([])
-  const [rawQuestions, setRawQuestions] = useState([])
-  const [topics, setTopics] = useState(INITIAL_TOPICS)
-  const [users, setUsers] = useState(INITIAL_USERS)
+  const [confirm, setConfirm] = useState(null) // { text, run }
+  const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
+  const notif = useNotifications(isAdmin)
 
-  const reloadSubmissions = () => api.listSubmissions().then((d) => setSubmissions(d.submissions)).catch(() => {})
-  const reloadQuestions = () => api.listQuestions().then((d) => setRawQuestions(d.questions)).catch(() => {})
-  useEffect(() => { if (user?.isAdmin) { reloadSubmissions(); reloadQuestions() } }, [user])
+  const reloadSubmissions = () => api.listSubmissions().then((d) => setSubmissions(d.submissions || [])).catch(() => {})
+  const reloadQuestions = () => api.listQuestions().then((d) => setQuestions(d.questions || [])).catch(() => {})
+  const reloadUsers = () => api.adminUsers().then((d) => setUsers(d.users || [])).catch(() => {})
+  useEffect(() => { if (isAdmin) { reloadSubmissions(); reloadQuestions(); reloadUsers() } }, [isAdmin])
+  useEffect(() => {
+    if (!notifOpen) return
+    const close = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [notifOpen])
 
-  const useCases = submissions.map((s) => ({
-    id: s.id, title: s.title, author: s.author, dept: s.team, category: [].concat(s.category)[0] || '—',
-    status: s.reviewStatus, date: relativeTime(s.time), reason: s.adminNote,
-  }))
-
-  const questions = rawQuestions.map((q) => ({
-    id: q.id, title: q.title, author: q.author, dept: q.team,
-    category: [].concat(q.category)[0] || '—', topics: q.topics,
-    answers: q.answers.length, resolved: q.resolved, created: relativeTime(q.time), resolvedAt: '',
-  }))
-
-  const pending = useCases.filter((u) => u.status === 'pending').length
-  const unanswered = questions.filter((q) => q.answers === 0).length
-
-  const menuDefs = [
-    ['dashboard', 'Dashboard', '#2c5fff', 0],
-    ['usecases', 'Use Case Management', '#00A352', pending],
-    ['questions', 'Question Management', '#FF8D00', unanswered],
-    ['taxonomy', 'Categories & Topics', '#6F0CE2', 0],
-    ['users', 'Users', '#00B7FF', 0],
-    ['settings', 'Settings', '#94a3b8', 0],
-  ]
-  const menu = menuDefs.map(([k, label, dot, badge]) => ({
-    key: k, label, dot, bg: section === k ? '#EDF3FF' : 'transparent', color: section === k ? '#1E44A8' : '#3A4757',
-    badge, badgeDisplay: badge ? 'flex' : 'none', onPick: () => { setSection(k); setNotifOpen(false) },
-  }))
-
-  // dashboard chart geometry
-  const maxV = 32, W = 1000, H = 240
-  const px = (i) => (i * (W - 40)) / (MONTHS.length - 1) + 20
-  const py = (v) => H - 16 - (v / maxV) * (H - 34)
-  const pts = (arr) => arr.map((v, i) => px(i).toFixed(1) + ',' + py(v).toFixed(1)).join(' ')
-  const dots = (arr) => arr.map((v, i) => ({ x: px(i).toFixed(1), y: py(v).toFixed(1) }))
-  const gridLines = [0, 1, 2, 3, 4].map((i) => ({ y: (16 + i * ((H - 34) / 4)).toFixed(0) }))
-  const bars = (rows) => { const max = rows.reduce((m, r) => Math.max(m, r[1]), 1); return rows.map((r) => ({ label: r[0], value: r[1], width: Math.round((r[1] / max) * 100) + '%' })) }
-
-  // real category/topic tallies: the 5 built-in use cases + admin-approved submissions, and all real questions
-  const approvedUseCases = submissions.filter((s) => s.reviewStatus === 'approved')
-  const ucCatTally = {}
-  allCases.forEach((c) => { ucCatTally[c.category] = (ucCatTally[c.category] || 0) + 1 })
-  approvedUseCases.forEach((s) => { const c = [].concat(s.category)[0]; if (c) ucCatTally[c] = (ucCatTally[c] || 0) + 1 })
-  const qCatTally = {}
-  questions.forEach((q) => { if (q.category && q.category !== '—') qCatTally[q.category] = (qCatTally[q.category] || 0) + 1 })
-  const ucByCat = bars(Object.entries(ucCatTally).sort((a, b) => b[1] - a[1]))
-  const qByCat = bars(Object.entries(qCatTally).sort((a, b) => b[1] - a[1]))
-
-  const topicTally = {}
-  const bump = (name, key) => { if (!name) return; topicTally[name] = topicTally[name] || { uc: 0, q: 0 }; topicTally[name][key]++ }
-  allCases.forEach((c) => (prdMeta[c.id]?.topics || []).forEach((tp) => bump(tp, 'uc')))
-  approvedUseCases.forEach((s) => (s.topics || []).forEach((tp) => bump(tp, 'uc')))
-  questions.forEach((q) => (q.topics || []).forEach((tp) => bump(tp, 'q')))
-
-  const topicVal = (t) => (topicScope === 'uc' ? t.uc : topicScope === 'q' ? t.q : t.uc + t.q)
-  const topSorted = Object.entries(topicTally).map(([name, v]) => ({ name, ...v })).sort((a, b) => topicVal(b) - topicVal(a)).slice(0, 10)
-  const topMax = topicVal(topSorted[0] || { uc: 1, q: 0 }) || 1
-  const topTopics = topSorted.map((t, i) => ({ rank: '#' + (i + 1), label: t.name, value: topicVal(t), width: Math.round((topicVal(t) / topMax) * 100) + '%' }))
-  const topicScopes = [['all', 'All'], ['uc', 'Use Cases'], ['q', 'Questions']].map(([k, label]) => ({ label, ...tabStyle(topicScope === k), onPick: () => setTopicScope(k) }))
-
-  // use case management
-  const ucq = ucQuery.trim().toLowerCase()
-  const ucFiltered = useCases.filter((u) => (ucStatus === 'all' || u.status === ucStatus) && (!ucq || (u.title + ' ' + u.author).toLowerCase().indexOf(ucq) >= 0))
-  const ucRows = ucFiltered.map((u) => {
-    const st = UC_STATUS[u.status] || UC_STATUS.pending
-    const actions = [act('View', 'plain', () => {})]
-    if (u.status === 'pending') {
-      actions.push(act('Approve', 'approve', () => api.reviewSubmission(u.id, 'approved').then(reloadSubmissions).catch(() => {})))
-      actions.push(act('Reject', 'reject', () => { setRejectId(u.id); setRejectReason('') }))
-    } else {
-      actions.push(act('Delete', 'reject', () => api.deleteSubmission(u.id).then(reloadSubmissions).catch(() => {})))
-    }
-    return { ...u, statusLabel: st.label, statusBg: st.bg, statusFg: st.fg, meta: u.dept + ' · ' + u.date, hasReason: u.status === 'rejected' && !!u.reason, actions }
-  })
-  const ucStatusTabs = [['all', 'All'], ['pending', 'Pending'], ['approved', 'Published'], ['rejected', 'Rejected']]
-    .map(([k, label]) => ({ key: k, label, ...tabStyle(ucStatus === k), onPick: () => setUcStatus(k) }))
-
-  // question management
-  const qq = qQuery.trim().toLowerCase()
-  const qFiltered = questions.filter((q) => (qStatus === 'all' || (qStatus === 'resolved') === q.resolved) && (!qq || (q.title + ' ' + q.author).toLowerCase().indexOf(qq) >= 0))
-  const qRows = qFiltered.map((q) => ({
-    ...q,
-    statusLabel: q.resolved ? 'Resolved' : 'Waiting for answers',
-    statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
-    statusFg: q.resolved ? '#00893F' : '#B45300',
-    meta: q.dept + ' · created ' + q.created + (q.resolvedAt ? ' · resolved ' + q.resolvedAt : ''),
-    actions: [act('View', 'plain', () => navigate(`/questions#q=${q.id}`)), act('Delete', 'reject', () => api.deleteQuestion(q.id).then(reloadQuestions).catch(() => {}))],
-  }))
-  const qStatusTabs = [['all', 'All'], ['waiting', 'Waiting'], ['resolved', 'Resolved']]
-    .map(([k, label]) => ({ key: k, label, ...tabStyle(qStatus === k), onPick: () => setQStatus(k) }))
-
-  // taxonomy
-  const catCount = {}
-  CATEGORIES.forEach((c) => { catCount[c] = 0 })
-  Object.entries(ucCatTally).forEach(([c, n]) => { catCount[c] = (catCount[c] || 0) + n })
-  Object.entries(qCatTally).forEach(([c, n]) => { catCount[c] = (catCount[c] || 0) + n })
-  const categoryRows = Object.keys(catCount).sort().map((c, i) => ({ num: i + 1, label: c, count: catCount[c] + ' bài' }))
-  const topicRows = topics.map((t) => {
-    const editing = editingTopic === t.id
-    const actions = []
-    if (editing) {
-      actions.push(act('Save', 'approve', () => { setTopics((list) => list.map((x) => (x.id === t.id ? { ...x, name: topicDraft.trim() || x.name } : x))); setEditingTopic(null); setTopicDraft('') }))
-      actions.push(act('Cancel', 'plain', () => { setEditingTopic(null); setTopicDraft('') }))
-    } else {
-      actions.push(act('Rename', 'plain', () => { setEditingTopic(t.id); setTopicDraft(t.name) }))
-      actions.push(act(t.active ? 'Deactivate' : 'Activate', t.active ? 'reject' : 'approve', () => setTopics((list) => list.map((x) => (x.id === t.id ? { ...x, active: !x.active } : x)))))
-    }
-    return {
-      ...t, editing, notEditing: !editing, draft: topicDraft,
-      onDraft: (e) => setTopicDraft(e.target.value),
-      rowBg: t.active ? '#fff' : '#FAFBFD', nameColor: t.active ? '#3A4757' : '#94a3b8',
-      usage: t.uc + t.q + ' lượt gắn',
-      stateLabel: t.active ? 'Active' : 'Deactivated', stateBg: t.active ? '#E7F9F0' : '#EDF0FA', stateFg: t.active ? '#00893F' : '#64748b',
-      actions,
-    }
-  })
-
-  // users
-  const uq = userQuery.trim().toLowerCase()
-  const userRows = users.filter((u) => !uq || (u.name + ' ' + u.email + ' ' + u.dept).toLowerCase().indexOf(uq) >= 0).map((u, i) => ({
-    ...u,
-    avatarBg: AV[i % AV.length],
-    roleBg: u.role === 'Admin' ? '#EDE7FF' : '#EDF0FA',
-    roleBorder: u.role === 'Admin' ? '#D3C4FF' : '#DDE3EC',
-    roleFg: u.role === 'Admin' ? '#6F0CE2' : '#3A4757',
-    statusFg: u.status === 'Active' ? '#00A352' : '#B45300',
-    onToggleRole: () => setUsers((list) => list.map((x) => (x.id === u.id ? { ...x, role: x.role === 'Admin' ? 'Employee' : 'Admin' } : x))),
-  }))
-
-  const settingDefs = [
-    ['teams', 'Teams Chat notification', 'Gửi thông báo mention qua Microsoft Teams theo pattern đã được IT phê duyệt. Tắt thì thông báo trong sản phẩm vẫn hoạt động.'],
-    ['attachments', 'File attachment cho Questions', 'Cho phép đính kèm file trong Ask a Question và Answers.'],
-    ['digest', 'Email digest hằng tuần cho Admin', 'Tổng hợp use case chờ duyệt và câu hỏi chưa được trả lời.'],
-  ]
-  const settingsList = settingDefs.map(([k, label, desc]) => ({
-    key: k, label, desc, trackBg: settingsState[k] ? '#00CF6A' : '#CBD5E1', knobPos: settingsState[k] ? 'flex-end' : 'flex-start',
-    onToggle: () => setSettingsState((s) => ({ ...s, [k]: !s[k] })),
-  }))
-
-  const rejectTarget = useCases.find((u) => u.id === rejectId)
-  const kpis = [
-    { label: 'Total Use Cases', value: allCases.length + approvedUseCases.length, hint: 'Đã publish', icon: 'UC', iconBg: '#E7ECFB', iconFg: '#2c5fff', valueColor: '#0F172A' },
-    { label: 'Total Questions', value: questions.length, hint: 'Toàn bộ thread', icon: '?', iconBg: '#E7F9F0', iconFg: '#00893F', valueColor: '#0F172A' },
-    { label: 'Pending Use Cases', value: pending, hint: 'Chờ Admin duyệt', icon: '⏳', iconBg: '#FFF1E0', iconFg: '#B45300', valueColor: '#B45300' },
-    { label: 'Unanswered Questions', value: unanswered, hint: 'Chưa có câu trả lời', icon: '!', iconBg: '#FFECEC', iconFg: '#D8232A', valueColor: '#D8232A' },
-  ]
-
-  const gridCols5 = '1fr 148px 150px 128px 200px'
-  const gridCols6 = '1fr 130px 150px 84px 148px 152px'
-  const gridColsUsers = '210px 1fr 160px 130px 110px 120px'
-
-  if (!user || !user.isAdmin) {
+  if (!user || !isAdmin) {
     return (
       <div style={css('min-height:100vh; display:flex; align-items:center; justify-content:center; background:#eef1f9; padding:24px;')}>
-        <div style={css('max-width:420px; text-align:center; background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:40px 32px; box-shadow:0 10px 24px rgba(30,50,90,.08);')}>
+        <div style={css('max-width:420px; text-align:center; padding:40px 32px;' + card)}>
           <div style={css(font(800, 18) + ';color:#0f172a;')}>{!user ? 'Cần đăng nhập' : 'Không có quyền truy cập'}</div>
           <div style={css('margin-top:10px;' + font(400, 14, 1.6) + ';color:#64748b;')}>
-            {!user ? 'Bạn cần đăng nhập bằng email công ty để vào Admin Console.' : 'Tài khoản của bạn chưa có quyền Admin.'}
+            {!user ? 'Bạn cần đăng nhập bằng email công ty để vào trang Admin.' : 'Tài khoản của bạn chưa có quyền Admin. Nếu vừa được thêm quyền, hãy đăng xuất rồi đăng nhập lại.'}
           </div>
           <div style={css('display:flex; align-items:center; justify-content:center; gap:12px; margin-top:20px;')}>
-            {!user && (
-              <button onClick={() => openLogin()} style={css('height:42px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}>Đăng nhập</button>
-            )}
+            {!user && <button onClick={() => openLogin()} style={css('height:42px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}>Đăng nhập</button>}
             <Link to="/" style={css('display:inline-flex; height:42px; padding:0 20px; align-items:center; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757;' + font(700, 13.5) + ';text-decoration:none;')}>Về trang chủ</Link>
           </div>
         </div>
@@ -248,164 +129,172 @@ export default function AdminConsolePage() {
     )
   }
 
+  // ---- derived data ----
+  const pending = submissions.filter((s) => s.reviewStatus === 'pending')
+  const approved = submissions.filter((s) => s.reviewStatus === 'approved')
+  const unanswered = questions.filter((q) => !q.answers.length)
+  const commentsTotal = questions.reduce((n, q) => n + q.answers.length + q.answers.reduce((m, a) => m + (a.comments || []).length, 0), 0)
+
+  // last 6 calendar months: questions posted, use cases submitted, new members
+  const now = new Date()
+  const months = Array.from({ length: 6 }, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1); return { key: d.getFullYear() * 12 + d.getMonth(), label: 'T' + (d.getMonth() + 1) } })
+  const monthOf = (t) => { const d = toDate(t); return d.getFullYear() * 12 + d.getMonth() }
+  const tally = (list, field) => months.map((m) => list.filter((x) => monthOf(x[field]) === m.key).length)
+  const series = [
+    { label: 'Câu hỏi', color: '#2c5fff', values: tally(questions, 'time') },
+    { label: 'Use case gửi duyệt', color: '#00A352', values: tally(submissions, 'time') },
+    { label: 'Thành viên mới', color: '#FF8D00', values: tally(users, 'joined') },
+  ]
+  const chartMax = Math.max(1, ...series.flatMap((s) => s.values))
+
+  const count = (lists) => { const t = {}; lists.forEach((l) => l.forEach((x) => { if (x) t[x] = (t[x] || 0) + 1 })); return Object.entries(t).sort((a, b) => b[1] - a[1]).slice(0, 8) }
+  const topTopics = count([...questions.map((q) => q.topics || []), ...approved.map((s) => s.topics || []), ...allCases.map((c) => prdMeta[c.id]?.topics || [])])
+  const topTools = count([...questions.map((q) => q.tools || []), ...approved.map((s) => s.tools || []), ...allCases.map((c) => c.tools || [])])
+
+  const kpis = [
+    { label: 'Thành viên', value: users.length, hint: 'Đã đăng nhập ít nhất 1 lần', color: '#0F172A' },
+    { label: 'Use case đã đăng', value: allCases.length + approved.length, hint: `${allCases.length} có sẵn · ${approved.length} được duyệt`, color: '#0F172A' },
+    { label: 'Use case chờ duyệt', value: pending.length, hint: 'Cần Admin xử lý', color: pending.length ? '#B45300' : '#0F172A' },
+    { label: 'Câu hỏi', value: questions.length, hint: `${commentsTotal} câu trả lời & comment`, color: '#0F172A' },
+    { label: 'Chưa có trả lời', value: unanswered.length, hint: 'Câu hỏi chưa ai trả lời', color: unanswered.length ? '#D8232A' : '#0F172A' },
+  ]
+
+  // ---- use case review ----
+  const ucq = fold(ucQuery.trim())
+  const ucRows = submissions.filter((s) => (ucStatus === 'all' || s.reviewStatus === ucStatus) && (!ucq || fold(s.title + ' ' + s.author + ' ' + s.team).includes(ucq)))
+  const detail = submissions.find((s) => s.id === detailId)
+  const approve = (id) => api.reviewSubmission(id, 'approved').then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {})
+  const remove = (s) => setConfirm({ text: `Xoá vĩnh viễn use case "${s.title}"?`, run: () => api.deleteSubmission(s.id).then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {}) })
+
+  // ---- questions ----
+  const qq = fold(qQuery.trim())
+  const qRows = questions.filter((q) => (qStatus === 'all' || (qStatus === 'resolved' ? q.resolved : qStatus === 'unanswered' ? !q.answers.length : !!q.answers.length && !q.resolved)) && (!qq || fold(q.title + ' ' + q.body + ' ' + q.author + ' ' + (q.fullName || '')).includes(qq)))
+  const helpful = (q) => (q.qHelpful || 0) + q.answers.reduce((n, a) => n + (a.helpful || 0), 0)
+
+  // ---- users ----
+  const uq = fold(userQuery.trim())
+  const userRows = users.filter((u) => !uq || fold(u.name + ' ' + u.email + ' ' + u.domain).includes(uq))
+
+  const menu = [
+    ['dashboard', 'Tổng quan', '#2c5fff', 0],
+    ['usecases', 'Duyệt use case', '#00A352', pending.length],
+    ['questions', 'Câu hỏi', '#FF8D00', unanswered.length],
+    ['users', 'Thành viên', '#00B7FF', 0],
+  ]
+
+  const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:14px; align-items:center;`
+  const headRow = (cols) => css(grid(cols) + 'padding:14px 22px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
+  const bodyRow = (cols) => css(grid(cols) + 'padding:16px 22px; border-bottom:1px solid #F3F5FA;')
+  const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
+  const UC_COLS = 'minmax(0,1fr) 170px 110px 230px'
+  const Q_COLS = 'minmax(0,1fr) 150px 80px 80px 130px 150px'
+  const U_COLS = 'minmax(0,1fr) 110px 120px 80px 80px 80px'
+
   return (
-    <div style={css('width:100%; margin:0 auto; background:#eef1f9; color:#0f172a;')}>
-      <div style={css('position:relative; z-index:400; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%);')}>
-        <div style={css('max-width:1440px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; padding:22px 40px;')}>
-          <div style={css('display:flex; align-items:center; gap:11px;')}>
-            <span style={css(font(800, 24) + ';letter-spacing:-.5px;color:#fff;')}>Zalopay</span>
-            <span style={css('width:1px; height:22px; background:rgba(255,255,255,.35);')}></span>
-            <span style={css(font(600, 15) + ';color:#dbe6ff;')}>AI Community</span>
+    <div style={css('min-height:100vh; background:#eef1f9; color:#0f172a;')}>
+      <header style={css('position:sticky; top:0; z-index:400; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%);')}>
+        <div style={css('display:flex; align-items:center; justify-content:space-between; padding:16px 32px;')}>
+          <div style={css('display:flex; align-items:center; gap:12px;')}>
+            <img src={logo} alt="Zalopay AI Space" style={{ height: 16, width: 'auto', display: 'block' }} />
+            <span style={css(font(800, 10.5) + ';letter-spacing:.6px;padding:3px 8px;border-radius:6px;background:rgba(0,207,106,.18);color:#5ff2a6;')}>ADMIN</span>
           </div>
-          <nav style={css('display:flex; align-items:center; gap:34px;')}>
-            <Link to="/" style={css(font(600, 15) + ';padding:6px 2px;color:#c3d0f5;border-bottom:2px solid transparent;text-decoration:none;')}>Home</Link>
-            <Link to="/use-cases" style={css(font(600, 15) + ';padding:6px 2px;color:#c3d0f5;border-bottom:2px solid transparent;text-decoration:none;')}>Use Case Library</Link>
-            <Link to="/questions" style={css(font(600, 15) + ';padding:6px 2px;color:#c3d0f5;border-bottom:2px solid transparent;text-decoration:none;')}>Questions</Link>
-            <span style={css('display:inline-flex; align-items:center; gap:7px;' + font(600, 15) + ';padding:6px 2px;color:#fff;border-bottom:2px solid #fff;')}>Admin
-              <span style={css(font(700, 9.5) + ';letter-spacing:.5px;padding:2px 6px;border-radius:5px;background:rgba(0,207,106,.18);color:#5ff2a6;')}>ADMIN</span>
-            </span>
-          </nav>
           <div style={css('display:flex; align-items:center; gap:12px;')}>
             <div style={{ position: 'relative' }} ref={notifRef}>
-              <button
-                onClick={(e) => { e.stopPropagation(); setNotifOpen((o) => !o) }}
-                style={css(`display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:${notifOpen ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.05)'}; border:1px solid rgba(255,255,255,.18); cursor:pointer; padding:0;`)}
-              >
+              <button onClick={() => setNotifOpen((o) => !o)} title="Thông báo" style={css(`position:relative; display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:${notifOpen ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.06)'}; border:1px solid rgba(255,255,255,.14); cursor:pointer;`)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dbe6ff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
-                <span style={css('position:absolute; top:-2px; right:-2px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#FF3B30; color:#fff;' + font(800, 10.5) + ';display:flex;align-items:center;justify-content:center;border:2px solid #0a1129;')}>{INITIAL_NOTIFICATIONS.length}</span>
+                {notif.unread > 0 && <span style={css('position:absolute; top:-3px; right:-3px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#FF3B30; color:#fff;' + font(800, 10.5) + ';display:flex; align-items:center; justify-content:center; box-sizing:border-box;')}>{notif.unread}</span>}
               </button>
               {notifOpen && (
-                <div style={css('position:absolute; right:0; top:52px; width:380px; background:#fff; border:1px solid #E6EBF3; border-radius:18px; box-shadow:0 26px 60px rgba(6,14,40,.34); overflow:hidden; z-index:600;')}>
-                  <div style={css('padding:16px 18px; border-bottom:1px solid #EEF1F7;' + font(800, 15) + ';color:#0f172a;')}>Notifications</div>
-                  {INITIAL_NOTIFICATIONS.map((n) => (
-                    <div key={n.id} style={css('display:flex; gap:12px; padding:14px 18px; border-bottom:1px solid #F3F5FA;')}>
-                      <span style={css(`flex:none; width:34px; height:34px; border-radius:11px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{n.iconText}</span>
+                <div style={css('position:absolute; right:0; top:50px; width:380px; max-height:460px; overflow-y:auto; background:#fff; border:1px solid #E6EBF3; border-radius:18px; box-shadow:0 26px 60px rgba(6,14,40,.34); z-index:600;')}>
+                  <div style={css('display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #EEF1F7;')}>
+                    <span style={css(font(800, 15) + ';color:#0f172a;')}>Thông báo</span>
+                    {notif.unread > 0 && <button onClick={() => markNotificationsRead()} style={css('border:none; background:none; padding:0; cursor:pointer;' + font(700, 12) + ';color:#2c5fff;')}>Đánh dấu đã đọc</button>}
+                  </div>
+                  {notif.items.length === 0 && <div style={css('padding:28px 18px; text-align:center;' + font(600, 13) + ';color:#94a3b8;')}>Chưa có thông báo nào.</div>}
+                  {notif.items.map((n) => (
+                    <div key={n.id} onClick={() => { if (n.unread) markNotificationsRead([n.id]); if (n.kind === 'submission') { setSection('usecases'); setUcStatus('pending') } else if (n.href) window.open(n.href, '_blank'); setNotifOpen(false) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F3F5FA; cursor:pointer; background:${n.unread ? '#F3F7FF' : '#fff'};`)}>
+                      <span style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
                       <div style={css('flex:1; min-width:0;')}>
-                        <div style={css(font(600, 13.5, 1.5) + ';color:#0f172a;')}>{n.text}</div>
-                        <div style={css('margin-top:5px;' + font(400, 12) + ';color:#94a3b8;')}>{n.time}</div>
+                        <div style={css(font(n.unread ? 800 : 500, 13, 1.5) + `;color:${n.unread ? '#1a5fff' : '#334155'};`)}>{n.text}</div>
+                        <div style={css('margin-top:4px;' + font(400, 11.5) + ';color:#94a3b8;')}>{n.timeLabel}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            <button onClick={() => navigate('/profile')} className={hoverClass('')} style={css('display:flex; align-items:center; gap:11px; padding:5px 15px 5px 5px; border-radius:999px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.18); cursor:pointer; text-decoration:none; border-width:1px;')}>
-              <div style={css('width:36px; height:36px; border-radius:50%; background:#fff; color:#0e2f8a; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px;')}>{user?.initials || '?'}</div>
-              <span style={css(font(600, 15) + ';color:#fff;white-space:nowrap;')}>{user?.name || ''}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3d0f5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
-            </button>
+            <div style={css('display:flex; align-items:center; gap:10px; padding:4px 6px 4px 4px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);')}>
+              <span style={css(`width:32px; height:32px; border-radius:50%; background:${user.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{user.initials}</span>
+              <span style={css(font(600, 14) + ';color:#fff; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;')}>{user.name}</span>
+              <button onClick={() => logout()} className={hoverClass('background:rgba(255,59,48,.28);')} style={css('height:30px; padding:0 12px; border:none; border-radius:999px; background:rgba(255,59,48,.16); color:#ffb4ae;' + font(700, 12) + ';cursor:pointer;')}>Đăng xuất</button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div style={css('display:grid; grid-template-columns:252px 1fr; align-items:start;')}>
-        <aside style={css('min-height:900px; background:#fff; border-right:1px solid #E6EBF3; padding:26px 18px 60px;')}>
-          <div style={css('padding:0 12px 14px;' + font(700, 11.5) + ';letter-spacing:.6px;color:#94a3b8;')}>ADMIN CONSOLE</div>
+      <div style={css('display:grid; grid-template-columns:240px minmax(0,1fr); align-items:start;')}>
+        <aside style={css('position:sticky; top:72px; min-height:calc(100vh - 72px); box-sizing:border-box; background:#fff; border-right:1px solid #E6EBF3; padding:26px 16px;')}>
+          <div style={css('padding:0 12px 14px;' + font(700, 11.5) + ';letter-spacing:.6px;color:#94a3b8;')}>QUẢN TRỊ</div>
           <div style={css('display:flex; flex-direction:column; gap:4px;')}>
-            {menu.map((m) => (
-              <button key={m.key} onClick={m.onPick} style={css(`display:flex; align-items:center; gap:11px; width:100%; height:46px; padding:0 14px; border:none; border-radius:12px; background:${m.bg}; color:${m.color};` + font(700, 14) + ';cursor:pointer;text-align:left;')}>
-                <span style={css(`flex:none; width:8px; height:8px; border-radius:50%; background:${m.dot};`)}></span>
-                <span style={{ flex: 1 }}>{m.label}</span>
-                <span style={css(`display:${m.badgeDisplay}; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; background:#FFF1E0; color:#B45300;` + font(800, 11) + ';')}>{m.badge}</span>
+            {menu.map(([k, label, dot, badge]) => (
+              <button key={k} onClick={() => setSection(k)} style={css(`display:flex; align-items:center; gap:11px; width:100%; height:46px; padding:0 14px; border:none; border-radius:12px; background:${section === k ? '#EDF3FF' : 'transparent'}; color:${section === k ? '#1E44A8' : '#3A4757'};` + font(700, 14) + ';cursor:pointer; text-align:left;')}>
+                <span style={css(`flex:none; width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
+                <span style={{ flex: 1 }}>{label}</span>
+                {badge > 0 && <span style={css('display:flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; background:#FFF1E0; color:#B45300;' + font(800, 11) + ';')}>{badge}</span>}
               </button>
             ))}
-          </div>
-          <div style={css('margin-top:28px; padding:16px; border:1px solid #E6EBF3; border-radius:14px; background:#F8FAFE;')}>
-            <div style={css(font(800, 12.5) + ';color:#3A4757;')}>Đăng nhập bằng email công ty</div>
-            <div style={css('margin-top:6px;' + font(400, 12, 1.55) + ';color:#64748b;')}>{user?.email} · Admin</div>
           </div>
         </aside>
 
         <main style={css('padding:30px 40px 80px; min-width:0;')}>
           {section === 'dashboard' && (
             <div>
-              <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>Dashboard</h1>
-              <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>Content &amp; Community Overview. Không bao gồm phân tích engagement hay reputation.</p>
-
-              <div style={css('display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:24px;')}>
+              <Heading title="Tổng quan" sub="Số liệu thật của cộng đồng, cập nhật mỗi khi mở trang." />
+              <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin-top:24px;')}>
                 {kpis.map((k) => (
-                  <div key={k.label} style={css('background:#fff; border:1px solid #E6EBF3; border-radius:18px; padding:20px 22px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                    <div style={css('display:flex; align-items:center; justify-content:space-between;')}>
-                      <span style={css(font(700, 12.5) + ';color:#64748b;')}>{k.label}</span>
-                      <span style={css(`width:30px; height:30px; border-radius:10px; background:${k.iconBg}; color:${k.iconFg}; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{k.icon}</span>
-                    </div>
-                    <div style={css(`margin-top:14px;` + font(900, 32) + `;color:${k.valueColor};`)}>{k.value}</div>
-                    <div style={css('margin-top:6px;' + font(600, 12) + ';color:#94a3b8;')}>{k.hint}</div>
+                  <div key={k.label} style={css('padding:18px 20px;' + card)}>
+                    <div style={css(font(700, 12.5) + ';color:#64748b;')}>{k.label}</div>
+                    <div style={css('margin-top:10px;' + font(900, 30) + `;color:${k.color};`)}>{k.value}</div>
+                    <div style={css('margin-top:4px;' + font(600, 11.5, 1.4) + ';color:#94a3b8;')}>{k.hint}</div>
                   </div>
                 ))}
               </div>
 
-              <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:24px 26px; margin-top:20px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                <div style={css('display:flex; align-items:center; justify-content:space-between;')}>
+              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
+                <div style={css('display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
-                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Community Activity Over Time</h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Bài đã publish theo tháng. Use Case ở trạng thái Draft/Rejected không được tính.</p>
+                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Hoạt động 6 tháng gần đây</h2>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Đếm theo tháng tạo.</p>
                   </div>
-                  <div style={css('display:flex; gap:16px;')}>
-                    <span style={css('display:inline-flex; align-items:center; gap:7px;' + font(700, 12.5) + ';color:#3A4757;')}><span style={css('width:12px; height:3px; border-radius:2px; background:#2c5fff;')}></span>Use Cases</span>
-                    <span style={css('display:inline-flex; align-items:center; gap:7px;' + font(700, 12.5) + ';color:#3A4757;')}><span style={css('width:12px; height:3px; border-radius:2px; background:#00CF6A;')}></span>Questions</span>
+                  <div style={css('display:flex; gap:16px; flex-wrap:wrap;')}>
+                    {series.map((s) => <span key={s.label} style={css('display:inline-flex; align-items:center; gap:7px;' + font(700, 12.5) + ';color:#3A4757;')}><span style={css(`width:10px; height:10px; border-radius:3px; background:${s.color};`)}></span>{s.label}</span>)}
                   </div>
                 </div>
-                <div style={css('margin-top:20px; position:relative;')}>
-                  <svg width="100%" height="240" viewBox="0 0 1000 240" preserveAspectRatio="none" style={{ display: 'block', overflow: 'visible' }}>
-                    {gridLines.map((g, i) => (<line key={i} x1="0" y1={g.y} x2="1000" y2={g.y} stroke="#EEF1F7" strokeWidth="1"></line>))}
-                    <polyline points={pts(UC_SERIES)} fill="none" stroke="#2c5fff" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"></polyline>
-                    <polyline points={pts(Q_SERIES)} fill="none" stroke="#00CF6A" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"></polyline>
-                    {dots(UC_SERIES).map((d, i) => (<circle key={i} cx={d.x} cy={d.y} r="4" fill="#fff" stroke="#2c5fff" strokeWidth="2.5"></circle>))}
-                    {dots(Q_SERIES).map((d, i) => (<circle key={i} cx={d.x} cy={d.y} r="4" fill="#fff" stroke="#00CF6A" strokeWidth="2.5"></circle>))}
-                  </svg>
-                  <div style={css('display:flex; justify-content:space-between; margin-top:10px;')}>
-                    {MONTHS.map((m, i) => (<span key={i} style={css(font(600, 11.5) + ';color:#94a3b8;')}>{m}</span>))}
-                  </div>
+                <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:18px; margin-top:22px; height:220px; align-items:end; border-bottom:1px solid #EEF1F7;')}>
+                  {months.map((m, i) => (
+                    <div key={m.key} style={css('height:100%; display:flex; align-items:flex-end; justify-content:center; gap:6px;')}>
+                      {series.map((s) => (
+                        <div key={s.label} title={`${s.label}: ${s.values[i]}`} style={css('flex:1; max-width:26px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;')}>
+                          <span style={css(font(700, 11) + ';color:#64748b; margin-bottom:4px;')}>{s.values[i] || ''}</span>
+                          <div style={css(`width:100%; height:${Math.max(s.values[i] ? 4 : 0, Math.round((s.values[i] / chartMax) * 180))}px; border-radius:6px 6px 0 0; background:${s.color};`)}></div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:18px; margin-top:10px;')}>
+                  {months.map((m) => <span key={m.key} style={css('text-align:center;' + font(600, 12) + ';color:#94a3b8;')}>{m.label}</span>)}
                 </div>
               </div>
 
               <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;')}>
-                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:24px 26px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                  <h2 style={css('margin:0 0 18px;' + font(800, 17) + ';color:#0f172a;')}>Use Cases by Category</h2>
-                  <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                    {ucByCat.map((r) => (
-                      <div key={r.label}>
-                        <div style={css('display:flex; justify-content:space-between;' + font(600, 12.5) + ';color:#3A4757;')}><span>{r.label}</span><span style={{ color: '#94a3b8' }}>{r.value}</span></div>
-                        <div style={css('margin-top:6px; height:9px; border-radius:999px; background:#EDF0FA; overflow:hidden;')}><div style={css(`height:9px; border-radius:999px; background:linear-gradient(90deg,#4480ff,#2c5fff); width:${r.width};`)}></div></div>
-                      </div>
-                    ))}
-                  </div>
+                <div style={css('padding:24px 26px;' + card)}>
+                  <h2 style={css('margin:0 0 18px;' + font(800, 17) + ';color:#0f172a;')}>Topic được gắn nhiều nhất</h2>
+                  <Bars rows={topTopics} color="linear-gradient(90deg,#8B5CF6,#6F0CE2)" />
                 </div>
-                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:24px 26px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                  <h2 style={css('margin:0 0 18px;' + font(800, 17) + ';color:#0f172a;')}>Questions by Category</h2>
-                  <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                    {qByCat.map((r) => (
-                      <div key={r.label}>
-                        <div style={css('display:flex; justify-content:space-between;' + font(600, 12.5) + ';color:#3A4757;')}><span>{r.label}</span><span style={{ color: '#94a3b8' }}>{r.value}</span></div>
-                        <div style={css('margin-top:6px; height:9px; border-radius:999px; background:#EDF0FA; overflow:hidden;')}><div style={css(`height:9px; border-radius:999px; background:linear-gradient(90deg,#00E27A,#00A352); width:${r.width};`)}></div></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:24px 26px; margin-top:20px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                <div style={css('display:flex; align-items:center; justify-content:space-between;')}>
-                  <div>
-                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top Topics</h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Mỗi bài gắn tối đa 3 Topic, nên tổng lượt gắn topic có thể lớn hơn tổng số bài.</p>
-                  </div>
-                  <div style={css('display:inline-flex; background:#EDF0FA; border-radius:12px; padding:5px; gap:5px;')}>
-                    {topicScopes.map((tsc) => (
-                      <button key={tsc.label} onClick={tsc.onPick} style={css(`border:none; cursor:pointer; height:34px; padding:0 14px; border-radius:9px;` + font(700, 12.5) + `;background:${tsc.bg}; color:${tsc.color};`)}>{tsc.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:12px 28px; margin-top:20px;')}>
-                  {topTopics.map((r) => (
-                    <div key={r.label} style={css('display:flex; align-items:center; gap:12px;')}>
-                      <span style={css('flex:none; width:22px;' + font(800, 12) + ';color:#94a3b8;')}>{r.rank}</span>
-                      <span style={css('flex:none; width:132px;' + font(700, 12.5) + ';color:#3A4757;')}>{r.label}</span>
-                      <div style={css('flex:1; height:9px; border-radius:999px; background:#EDF0FA; overflow:hidden;')}><div style={css(`height:9px; border-radius:999px; background:linear-gradient(90deg,#8B5CF6,#6F0CE2); width:${r.width};`)}></div></div>
-                      <span style={css('flex:none; width:34px; text-align:right;' + font(700, 12.5) + ';color:#64748b;')}>{r.value}</span>
-                    </div>
-                  ))}
+                <div style={css('padding:24px 26px;' + card)}>
+                  <h2 style={css('margin:0 0 18px;' + font(800, 17) + ';color:#0f172a;')}>Công cụ AI được nhắc nhiều nhất</h2>
+                  <Bars rows={topTools} color="linear-gradient(90deg,#4480ff,#2c5fff)" />
                 </div>
               </div>
             </div>
@@ -413,233 +302,172 @@ export default function AdminConsolePage() {
 
           {section === 'usecases' && (
             <div>
-              <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>Use Case Management</h1>
-              <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>Use Case phải được duyệt trước khi publish. Từ chối bắt buộc kèm lý do.</p>
-
-              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px;')}>
-                <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; padding:11px 16px;')}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-                  <input value={ucQuery} onChange={(e) => setUcQuery(e.target.value)} placeholder="Tìm theo tiêu đề hoặc tác giả..." style={css('flex:1; border:none; outline:none; background:transparent; font-size:14px; color:#0f172a;')} />
-                </div>
-                <div style={css('display:inline-flex; background:#EDF0FA; border-radius:12px; padding:5px; gap:5px;')}>
-                  {ucStatusTabs.map((tb) => (
-                    <button key={tb.key} onClick={tb.onPick} style={css(`border:none; cursor:pointer; height:36px; padding:0 14px; border-radius:9px;` + font(700, 12.5) + `;background:${tb.bg}; color:${tb.color};`)}>{tb.label}</button>
-                  ))}
-                </div>
+              <Heading title="Duyệt use case" sub="Use case người dùng gửi phải được duyệt trước khi đăng. Từ chối cần kèm lý do để tác giả sửa." />
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px; flex-wrap:wrap;')}>
+                <Search value={ucQuery} onChange={setUcQuery} placeholder="Tìm theo tên use case, tác giả, team..." />
+                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Chờ duyệt', pending.length], ['approved', 'Đã đăng', approved.length], ['rejected', 'Từ chối', submissions.length - pending.length - approved.length], ['all', 'Tất cả', submissions.length]]} />
               </div>
-
-              <div style={css('margin-top:16px; background:#fff; border:1px solid #E6EBF3; border-radius:20px; overflow:hidden; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                <div style={css(`display:grid; grid-template-columns:${gridCols5}; gap:14px; padding:14px 22px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;` + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')}>
-                  <span>USE CASE</span><span>AUTHOR</span><span>CATEGORY</span><span>STATUS</span><span style={{ textAlign: 'right' }}>ACTIONS</span>
-                </div>
-                {ucRows.map((r) => (
-                  <div key={r.id} style={css(`display:grid; grid-template-columns:${gridCols5}; gap:14px; padding:16px 22px; border-bottom:1px solid #F3F5FA; align-items:center;`)}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={css(font(700, 14) + ';color:#0f172a;')}>{r.title}</div>
-                      <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{r.meta}</div>
-                      {r.hasReason && (
-                        <div style={css('margin-top:8px; padding:9px 12px; border-radius:10px; background:#FFECEC;' + font(600, 12, 1.5) + ';color:#B4232A;')}>Lý do từ chối: {r.reason}</div>
-                      )}
+              <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                {ucRows.map((s) => {
+                  const st = UC_STATUS[s.reviewStatus] || UC_STATUS.pending
+                  return (
+                    <div key={s.id} style={bodyRow(UC_COLS)}>
+                      <div style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => setDetailId(s.id)}>
+                        <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a;')}>{s.title}</div>
+                        <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0], relativeTime(s.time)].filter(Boolean).join(' · ')}</div>
+                        {s.reviewStatus === 'rejected' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFECEC;' + font(600, 12, 1.5) + ';color:#B4232A;')}>Lý do từ chối: {s.adminNote}</div>}
+                      </div>
+                      <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis;')}>{s.author}</div>
+                      <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
+                      <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                        <button onClick={() => setDetailId(s.id)} style={css(btn('plain'))}>Xem</button>
+                        {s.reviewStatus === 'pending' && <button onClick={() => approve(s.id)} style={css(btn('approve'))}>Duyệt</button>}
+                        {s.reviewStatus === 'pending' && <button onClick={() => { setRejectId(s.id); setRejectReason('') }} style={css(btn('reject'))}>Từ chối</button>}
+                        {s.reviewStatus !== 'pending' && <button onClick={() => remove(s)} style={css(btn('reject'))}>Xoá</button>}
+                      </div>
                     </div>
-                    <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{r.author}</div>
-                    <div style={css(font(400, 12.5) + ';color:#64748b;')}>{r.category}</div>
-                    <div><span style={css(`display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${r.statusBg}; color:${r.statusFg};` + font(700, 11.5) + ';')}>{r.statusLabel}</span></div>
-                    <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
-                      {r.actions.map((a, i) => (
-                        <button key={i} onClick={a.onClick} style={css(`height:32px; padding:0 12px; border:1px solid ${a.border}; border-radius:9px; background:${a.bg}; color:${a.color};` + font(700, 12) + ';cursor:pointer;')}>{a.label}</button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {ucRows.length === 0 && (
-                  <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>Không có use case nào khớp bộ lọc.</div>
-                )}
+                  )
+                })}
+                {ucRows.length === 0 && empty(ucStatus === 'pending' && !ucq ? 'Không có use case nào đang chờ duyệt.' : 'Không có use case nào khớp bộ lọc.')}
               </div>
             </div>
           )}
 
           {section === 'questions' && (
             <div>
-              <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>Question Management</h1>
-              <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>Câu hỏi publish trực tiếp, không có bước tiền kiểm duyệt. Admin chỉ quản trị sau khi đã đăng.</p>
-
-              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px;')}>
-                <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; padding:11px 16px;')}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-                  <input value={qQuery} onChange={(e) => setQQuery(e.target.value)} placeholder="Tìm theo tiêu đề hoặc tác giả..." style={css('flex:1; border:none; outline:none; background:transparent; font-size:14px; color:#0f172a;')} />
-                </div>
-                <div style={css('display:inline-flex; background:#EDF0FA; border-radius:12px; padding:5px; gap:5px;')}>
-                  {qStatusTabs.map((tb) => (
-                    <button key={tb.key} onClick={tb.onPick} style={css(`border:none; cursor:pointer; height:36px; padding:0 14px; border-radius:9px;` + font(700, 12.5) + `;background:${tb.bg}; color:${tb.color};`)}>{tb.label}</button>
-                  ))}
-                </div>
+              <Heading title="Câu hỏi" sub="Câu hỏi được đăng trực tiếp. Admin có thể xem và xoá bài không phù hợp." />
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px; flex-wrap:wrap;')}>
+                <Search value={qQuery} onChange={setQQuery} placeholder="Tìm theo nội dung hoặc tác giả..." />
+                <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['waiting', 'Chờ chọn đáp án', questions.filter((q) => q.answers.length && !q.resolved).length], ['resolved', 'Đã giải quyết', questions.filter((q) => q.resolved).length]]} />
               </div>
-
-              <div style={css('margin-top:16px; background:#fff; border:1px solid #E6EBF3; border-radius:20px; overflow:hidden; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                <div style={css(`display:grid; grid-template-columns:${gridCols6}; gap:14px; padding:14px 22px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;` + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')}>
-                  <span>QUESTION</span><span>AUTHOR</span><span>CATEGORY</span><span>ANSWERS</span><span>STATUS</span><span style={{ textAlign: 'right' }}>ACTIONS</span>
-                </div>
-                {qRows.map((r) => (
-                  <div key={r.id} style={css(`display:grid; grid-template-columns:${gridCols6}; gap:14px; padding:16px 22px; border-bottom:1px solid #F3F5FA; align-items:center;`)}>
+              <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                <div style={headRow(Q_COLS)}><span>CÂU HỎI</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>UPVOTE</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                {qRows.map((q) => (
+                  <div key={q.id} style={bodyRow(Q_COLS)}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={css(font(700, 14) + ';color:#0f172a;')}>{r.title}</div>
-                      <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{r.meta}</div>
+                      <div style={css(font(700, 14) + ';color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{q.title}</div>
+                      <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[relativeTime(q.time), ...(q.topics || [])].join(' · ')}</div>
                     </div>
-                    <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{r.author}</div>
-                    <div style={css(font(400, 12.5) + ';color:#64748b;')}>{r.category}</div>
-                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{r.answers}</div>
-                    <div><span style={css(`display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${r.statusBg}; color:${r.statusFg};` + font(700, 11.5) + ';')}>{r.statusLabel}</span></div>
+                    <div style={css(font(600, 12.5) + ';color:#3A4757;')} title={q.fullName}>{q.author}</div>
+                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{q.answers.length}</div>
+                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{helpful(q)}</div>
+                    <div><span style={css(q.resolved ? pill('#E7F9F0', '#00893F') : q.answers.length ? pill('#EAF0FF', '#2c5fff') : pill('#FFF1E0', '#B45300'))}>{q.resolved ? 'Đã giải quyết' : q.answers.length ? 'Chờ chọn đáp án' : 'Chưa có trả lời'}</span></div>
                     <div style={css('display:flex; justify-content:flex-end; gap:7px;')}>
-                      {r.actions.map((a, i) => (
-                        <button key={i} onClick={a.onClick} style={css(`height:32px; padding:0 12px; border:1px solid ${a.border}; border-radius:9px; background:${a.bg}; color:${a.color};` + font(700, 12) + ';cursor:pointer;')}>{a.label}</button>
-                      ))}
+                      <a href={`/questions#q=${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Xem</a>
+                      <button onClick={() => setConfirm({ text: `Xoá câu hỏi "${q.title}" cùng toàn bộ câu trả lời?`, run: () => api.deleteQuestion(q.id).then(reloadQuestions).catch(() => {}) })} style={css(btn('reject'))}>Xoá</button>
                     </div>
                   </div>
                 ))}
-                {qRows.length === 0 && (
-                  <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>Không có câu hỏi nào khớp bộ lọc.</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {section === 'taxonomy' && (
-            <div>
-              <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>Categories &amp; Topics</h1>
-              <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>Category là metadata, không phải điều hướng. Người dùng không tạo được Topic tự do.</p>
-
-              <div style={css('display:grid; grid-template-columns:380px 1fr; gap:20px; margin-top:22px; align-items:start;')}>
-                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:22px 24px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                  <h2 style={css('margin:0 0 4px;' + font(800, 16) + ';color:#0f172a;')}>Categories</h2>
-                  <p style={css('margin:0 0 16px;' + font(400, 12.5) + ';color:#94a3b8;')}>9 category cố định. Mỗi bài chọn đúng 1.</p>
-                  <div style={css('display:flex; flex-direction:column; gap:8px;')}>
-                    {categoryRows.map((c) => (
-                      <div key={c.label} style={css('display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid #EEF1F7; border-radius:12px;')}>
-                        <span style={css('flex:none; width:22px;' + font(800, 12) + ';color:#94a3b8;')}>{c.num}</span>
-                        <span style={css('flex:1;' + font(700, 13) + ';color:#3A4757;')}>{c.label}</span>
-                        <span style={css(font(600, 12) + ';color:#94a3b8;')}>{c.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:22px 24px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                  <div>
-                    <h2 style={css('margin:0 0 4px;' + font(800, 16) + ';color:#0f172a;')}>Topics</h2>
-                    <p style={css('margin:0;' + font(400, 12.5) + ';color:#94a3b8;')}>Deactivate không xóa topic khỏi các bài đã đăng.</p>
-                  </div>
-                  <div style={css('display:flex; gap:10px; margin-top:16px;')}>
-                    <input value={newTopic} onChange={(e) => setNewTopic(e.target.value)} placeholder="Tên topic mới..." style={css('flex:1; border:1px solid #E6EBF3; border-radius:11px; padding:11px 14px; font-size:13.5px; color:#0f172a; outline:none; box-sizing:border-box;')} />
-                    <button
-                      onClick={() => { const n = newTopic.trim(); if (!n) return; setTopics((list) => [...list, { id: 't' + Date.now(), name: n, uc: 0, q: 0, active: true }]); setNewTopic('') }}
-                      style={css('height:44px; padding:0 20px; border:none; border-radius:11px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}
-                    >
-                      Create
-                    </button>
-                  </div>
-                  <div style={css('margin-top:18px; display:flex; flex-direction:column; gap:8px;')}>
-                    {topicRows.map((t) => (
-                      <div key={t.id} style={css(`display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid #EEF1F7; border-radius:12px; background:${t.rowBg};`)}>
-                        {t.editing ? (
-                          <input value={t.draft} onChange={t.onDraft} style={css('flex:1; border:1px solid #B9CCF8; border-radius:9px; padding:8px 11px; font-size:13px; color:#0f172a; outline:none;')} />
-                        ) : (
-                          <span style={css(`flex:1;` + font(700, 13) + `;color:${t.nameColor};`)}>{t.name}</span>
-                        )}
-                        <span style={css(font(600, 12) + ';color:#94a3b8;')}>{t.usage}</span>
-                        <span style={css(`display:inline-flex; align-items:center; height:22px; padding:0 10px; border-radius:999px; background:${t.stateBg}; color:${t.stateFg};` + font(700, 11) + ';')}>{t.stateLabel}</span>
-                        {t.actions.map((a, i) => (
-                          <button key={i} onClick={a.onClick} style={css(`height:30px; padding:0 12px; border:1px solid ${a.border}; border-radius:9px; background:${a.bg}; color:${a.color};` + font(700, 12) + ';cursor:pointer;')}>{a.label}</button>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {qRows.length === 0 && empty('Không có câu hỏi nào khớp bộ lọc.')}
               </div>
             </div>
           )}
 
           {section === 'users' && (
             <div>
-              <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>Users</h1>
-              <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>Danh tính lấy từ Microsoft Entra ID. Chỉ có 2 role: Employee và Admin.</p>
-
+              <Heading title="Thành viên" sub="Những người đã đăng nhập vào Zalopay AI Space. Quyền Admin được cấu hình qua biến ADMIN_EMAILS." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px;')}>
-                <div style={css('flex:1; display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; padding:11px 16px;')}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-                  <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="Tìm theo tên, email hoặc department..." style={css('flex:1; border:none; outline:none; background:transparent; font-size:14px; color:#0f172a;')} />
-                </div>
-                <span style={css(font(600, 13) + ';color:#64748b;')}>{userRows.length} users</span>
+                <Search value={userQuery} onChange={setUserQuery} placeholder="Tìm theo tên hoặc email..." />
               </div>
-
-              <div style={css('margin-top:16px; background:#fff; border:1px solid #E6EBF3; border-radius:20px; overflow:hidden; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                <div style={css(`display:grid; grid-template-columns:${gridColsUsers}; gap:14px; padding:14px 22px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;` + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')}>
-                  <span>NAME</span><span>EMAIL</span><span>DEPARTMENT</span><span>ROLE</span><span>STATUS</span><span>JOINED</span>
-                </div>
-                {userRows.map((u) => (
-                  <div key={u.id} style={css(`display:grid; grid-template-columns:${gridColsUsers}; gap:14px; padding:14px 22px; border-bottom:1px solid #F3F5FA; align-items:center;`)}>
-                    <div style={css('display:flex; align-items:center; gap:11px; min-width:0;')}>
-                      <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${u.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';')}>{u.initials}</span>
-                      <span style={css(font(700, 13.5) + ';color:#0f172a;')}>{u.name}</span>
+              <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                <div style={headRow(U_COLS)}><span>THÀNH VIÊN</span><span>VAI TRÒ</span><span>THAM GIA</span><span>CÂU HỎI</span><span>TRẢ LỜI</span><span>USE CASE</span></div>
+                {userRows.map((u, i) => (
+                  <div key={u.id} style={bodyRow(U_COLS)}>
+                    <div style={css('display:flex; align-items:center; gap:12px; min-width:0;')}>
+                      <span style={css(`flex:none; width:36px; height:36px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{u.initials}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={css(font(700, 14) + ';color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{u.name} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
+                        <div style={css('margin-top:3px;' + font(400, 12) + ';color:#64748b; overflow:hidden; text-overflow:ellipsis;')}>{u.email}</div>
+                      </div>
                     </div>
-                    <div style={css(font(400, 12.5) + ';color:#64748b;overflow:hidden;text-overflow:ellipsis;')}>{u.email}</div>
-                    <div style={css(font(400, 12.5) + ';color:#64748b;')}>{u.dept}</div>
-                    <div>
-                      <button onClick={u.onToggleRole} style={css(`height:30px; padding:0 12px; border:1px solid ${u.roleBorder}; border-radius:999px; background:${u.roleBg}; color:${u.roleFg};` + font(700, 12) + ';cursor:pointer;')}>{u.role}</button>
-                    </div>
-                    <div><span style={css(`display:inline-flex; align-items:center; gap:6px;` + font(700, 12) + `;color:${u.statusFg};`)}><span style={css(`width:7px; height:7px; border-radius:50%; background:${u.statusFg};`)}></span>{u.status}</span></div>
-                    <div style={css(font(400, 12.5) + ';color:#94a3b8;')}>{u.joined}</div>
+                    <div><span style={css(u.isAdmin ? pill('#EDE7FF', '#6F0CE2') : pill('#EDF0FA', '#3A4757'))}>{u.isAdmin ? 'Admin' : 'Thành viên'}</span></div>
+                    <div style={css(font(500, 12.5) + ';color:#64748b;')}>{fmtDate(u.joined)}</div>
+                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.questions}</div>
+                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.answers}</div>
+                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.useCases}</div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {section === 'settings' && (
-            <div>
-              <h1 style={css('margin:0;' + font(800, 28) + ';letter-spacing:-.01em;color:#0f172a;')}>Settings</h1>
-              <p style={css('margin:8px 0 0;' + font(400, 14.5) + ';color:#64748b;')}>Chỉ giữ những cấu hình thật sự cần Admin kiểm soát.</p>
-              <div style={css('margin-top:22px; max-width:760px; display:flex; flex-direction:column; gap:12px;')}>
-                {settingsList.map((s) => (
-                  <div key={s.key} style={css('display:flex; align-items:center; gap:18px; background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:20px 22px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                    <div style={{ flex: 1 }}>
-                      <div style={css(font(800, 14.5) + ';color:#0f172a;')}>{s.label}</div>
-                      <div style={css('margin-top:5px;' + font(400, 13, 1.55) + ';color:#64748b;')}>{s.desc}</div>
-                    </div>
-                    <button onClick={s.onToggle} style={css(`flex:none; width:54px; height:30px; border-radius:999px; border:none; background:${s.trackBg}; cursor:pointer; padding:3px; display:flex; justify-content:${s.knobPos};`)}>
-                      <span style={css('width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(15,23,42,.25);')}></span>
-                    </button>
-                  </div>
-                ))}
-                <div style={css('display:flex; align-items:center; gap:12px; background:#F8FAFE; border:1px solid #E6EBF3; border-radius:16px; padding:18px 22px;')}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg>
-                  <span style={css(font(600, 13, 1.55) + ';color:#64748b;')}>Teams notification phụ thuộc cấu hình Microsoft Graph của tenant. Thông báo trong sản phẩm luôn hoạt động độc lập với Teams.</span>
-                </div>
+                {userRows.length === 0 && empty('Không tìm thấy thành viên nào.')}
               </div>
             </div>
           )}
         </main>
       </div>
 
-      {rejectTarget && (
-        <div style={css('position:fixed; inset:0; z-index:900; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:40px;')}>
-          <div style={css('width:520px; background:#fff; border-radius:22px; padding:28px 30px; box-shadow:0 40px 90px rgba(6,14,40,.5);')}>
-            <div style={css(font(800, 19) + ';color:#0f172a;')}>Reject use case</div>
-            <div style={css('margin-top:8px;' + font(400, 13.5, 1.6) + ';color:#64748b;')}>{rejectTarget.title} · {rejectTarget.author}</div>
+      {detail && (
+        <div onClick={() => setDetailId(null)} style={css('position:fixed; inset:0; z-index:900; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:32px;')}>
+          <div onClick={(e) => e.stopPropagation()} style={css('width:760px; max-width:100%; max-height:100%; overflow-y:auto; background:#fff; border-radius:22px; padding:28px 32px; box-shadow:0 40px 90px rgba(6,14,40,.5); box-sizing:border-box;')}>
+            <div style={css('display:flex; align-items:flex-start; gap:16px;')}>
+              <div style={css('flex:1; min-width:0;')}>
+                <span style={css(pill((UC_STATUS[detail.reviewStatus] || UC_STATUS.pending).bg, (UC_STATUS[detail.reviewStatus] || UC_STATUS.pending).fg))}>{(UC_STATUS[detail.reviewStatus] || UC_STATUS.pending).label}</span>
+                <div style={css('margin-top:12px;' + font(800, 21, 1.35) + ';color:#0f172a;')}>{detail.title}</div>
+                <div style={css('margin-top:6px;' + font(400, 13) + ';color:#64748b;')}>{detail.author} · {detail.team} · gửi {relativeTime(detail.time)}</div>
+              </div>
+              <button onClick={() => setDetailId(null)} style={css('flex:none; width:36px; height:36px; border:1px solid #E6EBF3; border-radius:11px; background:#fff; color:#64748b; cursor:pointer;' + font(700, 16) + ';')}>✕</button>
+            </div>
+            <div style={css('display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;')}>
+              {[...[].concat(detail.category), ...(detail.topics || [])].filter(Boolean).map((x) => <span key={'c' + x} style={css(pill('#EAF0FF', '#2c5fff'))}>{x}</span>)}
+              {(detail.tools || []).map((x) => <span key={'t' + x} style={css(pill('#F1F4FA', '#3A4757'))}>{x}</span>)}
+            </div>
+            <Field label="Dành cho" value={detail.audience} />
+            <Field label="Vấn đề / bối cảnh" value={detail.problem} />
+            <Field label="Giải pháp" value={detail.solution} />
+            <Field label="Cần chuẩn bị" value={detail.prep} />
+            <Field label="Prompt" value={detail.prompt} />
+            <Field label="Kết quả" value={detail.result} />
+            <Field label="Giới hạn" value={detail.limits} />
+            <Field label="Người liên hệ" value={detail.contact} />
+            <Field label="Link" value={detail.link} />
+            {detail.reviewStatus === 'rejected' && <Field label="Lý do từ chối" value={detail.adminNote} />}
+            <div style={css('display:flex; justify-content:flex-end; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
+              {detail.reviewStatus === 'pending' ? (
+                <>
+                  <button onClick={() => { setRejectId(detail.id); setRejectReason('') }} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Từ chối</button>
+                  <button onClick={() => approve(detail.id)} style={css('height:42px; padding:0 22px; border:none; border-radius:999px; background:#00A352; color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}>Duyệt & đăng</button>
+                </>
+              ) : (
+                <button onClick={() => remove(detail)} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá use case</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectId && (
+        <div style={css('position:fixed; inset:0; z-index:950; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:40px;')}>
+          <div style={css('width:520px; max-width:100%; background:#fff; border-radius:22px; padding:28px 30px; box-shadow:0 40px 90px rgba(6,14,40,.5); box-sizing:border-box;')}>
+            <div style={css(font(800, 19) + ';color:#0f172a;')}>Từ chối use case</div>
+            <div style={css('margin-top:8px;' + font(400, 13.5, 1.6) + ';color:#64748b;')}>{(submissions.find((s) => s.id === rejectId) || {}).title}</div>
             <div style={css('margin-top:20px;' + font(800, 13) + ';color:#0f172a;')}>Lý do từ chối <span style={{ color: '#E0353F' }}>*</span></div>
-            <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={4} placeholder="Nêu rõ điểm cần bổ sung để tác giả có thể sửa và gửi lại..." style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.6; color:#0f172a; outline:none; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
+            <textarea autoFocus value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={4} placeholder="Nêu rõ điểm cần bổ sung để tác giả sửa và gửi lại. Lý do này sẽ được gửi qua email cho tác giả." style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.6; color:#0f172a; outline:none; resize:vertical; display:block; box-sizing:border-box; font-family:inherit;')}></textarea>
             <div style={css('display:flex; justify-content:flex-end; gap:12px; margin-top:20px;')}>
-              <button onClick={() => { setRejectId(null); setRejectReason('') }} style={css('height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757;' + font(700, 13.5) + ';cursor:pointer;')}>Cancel</button>
+              <button onClick={() => { setRejectId(null); setRejectReason('') }} style={css('height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757;' + font(700, 13.5) + ';cursor:pointer;')}>Huỷ</button>
               <button
+                disabled={!rejectReason.trim()}
                 onClick={() => {
                   const reason = rejectReason.trim()
-                  if (!reason || !rejectId) return
-                  api.reviewSubmission(rejectId, 'rejected', reason).then(reloadSubmissions).catch(() => {})
+                  if (!reason) return
+                  api.reviewSubmission(rejectId, 'rejected', reason).then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {})
                   setRejectId(null); setRejectReason('')
                 }}
-                style={css(`height:44px; padding:0 22px; border:none; border-radius:999px; background:#D8232A; color:#fff;` + font(700, 13.5) + `;cursor:pointer;opacity:${rejectReason.trim() ? 1 : 0.5};`)}
+                style={css(`height:44px; padding:0 22px; border:none; border-radius:999px; background:#D8232A; color:#fff;` + font(700, 13.5) + `;cursor:pointer; opacity:${rejectReason.trim() ? 1 : 0.5};`)}
               >
-                Reject with reason
+                Từ chối & gửi lý do
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirm && (
+        <div style={css('position:fixed; inset:0; z-index:960; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:40px;')}>
+          <div style={css('width:440px; max-width:100%; background:#fff; border-radius:22px; padding:26px 28px; box-shadow:0 40px 90px rgba(6,14,40,.5); box-sizing:border-box;')}>
+            <div style={css(font(800, 17, 1.45) + ';color:#0f172a;')}>{confirm.text}</div>
+            <div style={css('margin-top:8px;' + font(400, 13.5) + ';color:#64748b;')}>Không thể hoàn tác.</div>
+            <div style={css('display:flex; justify-content:flex-end; gap:12px; margin-top:22px;')}>
+              <button onClick={() => setConfirm(null)} style={css('height:42px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757;' + font(700, 13.5) + ';cursor:pointer;')}>Huỷ</button>
+              <button onClick={() => { confirm.run(); setConfirm(null) }} style={css('height:42px; padding:0 22px; border:none; border-radius:999px; background:#D8232A; color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá</button>
             </div>
           </div>
         </div>

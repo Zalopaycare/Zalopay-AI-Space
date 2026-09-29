@@ -1,6 +1,7 @@
 import { db } from './db.js'
 import { isCompanyEmail } from './auth.js'
 import { sendMail } from './mailer.js'
+import { notify } from './notifications.js'
 
 // "@thyndm" (email handle of a signed-up user) or "@thyndm@vng.com.vn" (any company address).
 const MENTION_RE = /@([A-Za-z0-9._-]+(?:@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)?)/g
@@ -57,6 +58,7 @@ export function notifyMentions(req, { text, where, path, skip = [] }) {
   const excerpt = String(text).length > 400 ? String(text).slice(0, 400) + '…' : String(text)
   for (const to of mentionedEmails(text)) {
     if (skipSet.has(to)) continue
+    notify(to, { kind: 'mention', text: `${domainName(actor.email, actor.name)} đã nhắc đến bạn trong ${where}`, href: path, actor: actor.name })
     sendMail({
       to,
       subject: `${actor.name} đã nhắc đến bạn trên Zalopay AI Space`,
