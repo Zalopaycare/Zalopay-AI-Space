@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../components/CommentMenu.jsx'
 import { api, relativeTime } from '../lib/api.js'
+import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
@@ -48,6 +49,7 @@ function copyTextToClipboard(text) {
 
 export default function UseCaseLibraryPage() {
   const { id } = useParams()
+  const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useI18n()
@@ -91,6 +93,8 @@ export default function UseCaseLibraryPage() {
   const [shareToolOtherText, setShareToolOtherText] = useState('')
   const [shareFileList, setShareFileList] = useState([])
   const [shareError, setShareError] = useState('')
+  // Editing a submission the admin sent back ("Yêu cầu chỉnh sửa"): { id, note } | null
+  const [editing, setEditing] = useState(null)
   const [draftSavedAt, setDraftSavedAt] = useState('')
   const [hasDraft, setHasDraft] = useState(false)
 
@@ -102,6 +106,27 @@ export default function UseCaseLibraryPage() {
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
   }, [])
+
+  // ?edit=<id>: reopen my submission, prefilled, to fix what the admin asked for and resubmit.
+  useEffect(() => {
+    const editId = new URLSearchParams(location.search).get('edit')
+    if (!editId) return
+    api.listSubmissions('?mine=1').then((d) => {
+      const s = (d.submissions || []).find((x) => x.id === editId)
+      if (!s) return
+      setShareForm({ title: s.title || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '' })
+      setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
+      setShareCategory([].concat(s.category || []))
+      const known = (list, all) => list.filter((x) => all.includes(x))
+      const extra = (list, all) => list.filter((x) => !all.includes(x))
+      const tps = s.topics || [], tls = s.tools || []
+      setShareTopicSel([...known(tps, TOPICS), ...(extra(tps, TOPICS).length ? ['Khác'] : [])]); setShareTopicOtherText(extra(tps, TOPICS).join(', '))
+      setShareToolSel([...known(tls, TOOLS), ...(extra(tls, TOOLS).length ? ['Khác'] : [])]); setShareToolOtherText(extra(tls, TOOLS).join(', '))
+      setEditing({ id: s.id, note: s.adminNote || '', status: s.reviewStatus })
+      setShareStage('form'); setShareError(''); setShareOpen(true)
+    }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search])
 
   // open the share modal via ?share=1 (used by other pages' "Share a Use Case" CTAs)
   useEffect(() => {
@@ -123,7 +148,7 @@ export default function UseCaseLibraryPage() {
 
   // real helpful-vote counts + comments for each use case, backed by the API
   const refreshMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
-  useEffect(() => { allCases.forEach((c) => refreshMeta(c.id)) }, [])
+  useEffect(() => { allCases.forEach((c) => refreshMeta(c.id)) }, [pubV])
   useEffect(() => { if (id) refreshMeta(id) }, [id])
   useEffect(() => {
     if (!id || location.hash !== '#comments') return
@@ -193,7 +218,7 @@ export default function UseCaseLibraryPage() {
   }, [])
 
   useEffect(() => {
-    if (!restoredRef.current) return
+    if (!restoredRef.current || editing) return
     const payload = draftPayload()
     const json = JSON.stringify(payload)
     if (json === draftJsonRef.current) return
@@ -222,14 +247,14 @@ export default function UseCaseLibraryPage() {
   const submitShare = () => {
     if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Required trước khi gửi duyệt.'); return }
     requireLogin(() => {
-      api.submitUseCase({
+      (editing ? (p) => api.updateSubmission(editing.id, p) : api.submitUseCase)({
         title: shareForm.title.trim(), audience: shareForm.audience.trim(), team: shareForm.team.trim(),
         problem: shareForm.problem.trim(), solution: shareForm.solution.trim(), prep: shareForm.prep.trim(),
         prompt: shareForm.prompt.trim(), result: shareForm.result.trim(), limits: shareForm.limits.trim(),
         contact: shareForm.contact.trim(), link: shareForm.link.trim(),
         kind: shareKind, status: shareStatus, level: shareLevel,
         category: shareCategory, topics: previewTopics, tools: previewTools,
-      }).then(() => { setShareStage('submitted'); setShareError(''); clearDraft() })
+      }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft() })
         .catch(() => setShareError('Không gửi được use case, thử lại.'))
     })
   }
@@ -278,7 +303,7 @@ export default function UseCaseLibraryPage() {
   // ---- library filter/sort/derivations ----
   const q = query.trim().toLowerCase()
   const meta = prdMeta
-  const catList = useMemo(() => Array.from(new Set(allCases.map((c) => c.category))).sort((a, b) => a.localeCompare(b, 'vi')), [])
+  const catList = useMemo(() => Array.from(new Set(allCases.map((c) => c.category))).sort((a, b) => a.localeCompare(b, 'vi')), [pubV])
 
   const libCases = useMemo(() => {
     let list = allCases.map((c) => {
@@ -297,10 +322,11 @@ export default function UseCaseLibraryPage() {
     if (libKind) list = list.filter((c) => c.kind === libKind)
     if (q) list = list.filter((c) => (c.title + ' ' + c.desc + ' ' + c.author + ' ' + c.category + ' ' + c.tools.join(' ')).toLowerCase().includes(q))
     if (libSort === 'helpful') list = list.slice().sort((a, b) => (b.helpful || 0) - (a.helpful || 0))
-    else list = list.slice().reverse()
+    // Newest first: approved community submissions (already newest-first), then the built-ins.
+    else list = [...list.filter((c) => c.submitted), ...list.filter((c) => !c.submitted).reverse()]
     return list
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [libCat, libTopic, libGroup, libTool, libKind, libSort, q, ucMeta])
+  }, [libCat, libTopic, libGroup, libTool, libKind, libSort, q, ucMeta, pubV])
 
   useEffect(() => { setLibPage(1) }, [query, libCat, libTool, libSort])
   const PAGE_SIZE = 6
@@ -371,7 +397,8 @@ export default function UseCaseLibraryPage() {
 
   // ================= DETAIL VIEW =================
   function renderDetail() {
-    const dsel = allCases.find((x) => x.id === id) || allCases[0]
+    const dsel = allCases.find((x) => x.id === id) || (pubLoaded ? allCases[0] : null)
+    if (!dsel) return <div style={css('min-height:60vh; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;')}>Đang tải use case…</div>
     const dinfo = authorInfoFor(dsel.author)
     const cd = caseDetail[dsel.id] || {}
     const howto = cd.howto || {}
@@ -517,7 +544,7 @@ export default function UseCaseLibraryPage() {
                 ))}
               </div>
             </div>
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+            <div style={css((stepsR.length ? '' : 'display:none; ') + 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
               <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Các bước cài đặt')}</div>
               <div style={css('display:flex; flex-direction:column; gap:12px;')}>
                 {stepsR.map((it) => (
@@ -553,7 +580,7 @@ export default function UseCaseLibraryPage() {
               </div>
             ))}
 
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
+            <div style={css((pitfallR.length ? '' : 'display:none; ') + 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
               <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Các lỗi phổ biến và cách khắc phục')}</div>
               <div style={css('display:flex; flex-direction:column; gap:11px;')}>
                 {pitfallR.map((it, i) => (
@@ -890,7 +917,7 @@ export default function UseCaseLibraryPage() {
 
   // ================= SHARE MODAL =================
   function renderShareModal() {
-    const shareHeading = shareStage === 'submitted' ? 'Use case đã được gửi' : shareStage === 'preview' ? 'Preview use case' : t('Chia sẻ Use Case')
+    const shareHeading = shareStage === 'submitted' ? (editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Preview use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
     const shareSubhead = shareStage === 'submitted' ? 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
     const shareOpacity = valid ? 1 : 0.5
     const shareHint = shareError || 'Sau khi gửi, bài ở trạng thái Pending Review và chưa hiển thị trong Library.'
@@ -898,12 +925,12 @@ export default function UseCaseLibraryPage() {
 
     return (
       <div
-        onClick={() => { setShareOpen(false); setShareError('') }}
+        onClick={() => { setShareOpen(false); setShareError(''); if (editing) { setEditing(null); resetShareForm(); navigate('/use-cases', { replace: true }) } }}
         style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,8,20,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:48px 24px; overflow-y:auto; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}
       >
         <div onClick={(e) => e.stopPropagation()} style={css('width:880px; max-width:100%; background:#eef1f9; border-radius:24px; box-shadow:0 44px 110px rgba(2,8,30,.6); overflow:hidden;')}>
           <div style={css('position:relative; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%); padding:26px 32px 28px;')}>
-            <button onClick={() => { setShareOpen(false); setShareError('') }} title="Đóng" style={css('position:absolute; top:22px; right:22px; width:36px; height:36px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#dbe6ff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;')}>
+            <button onClick={() => { setShareOpen(false); setShareError(''); if (editing) { setEditing(null); resetShareForm(); navigate('/use-cases', { replace: true }) } }} title="Đóng" style={css('position:absolute; top:22px; right:22px; width:36px; height:36px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#dbe6ff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
             </button>
             <h1 style={css('margin:0; padding-right:56px; font-size:26px; font-weight:800; line-height:1.25; letter-spacing:-.01em; color:#fff;')}>{shareHeading}</h1>
@@ -911,7 +938,7 @@ export default function UseCaseLibraryPage() {
             <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
               <span style={css('display:inline-flex; align-items:center; gap:8px; height:30px; padding:0 13px; border-radius:999px; background:rgba(22,214,140,.14); border:1px solid rgba(22,214,140,.34); font-size:12px; font-weight:700; color:#6fe3aa;')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-                {hasDraft ? 'Nháp đã lưu lúc ' + draftSavedAt : 'Nháp tự lưu khi bạn gõ'}
+                {editing ? 'Sửa xong bấm "Gửi lại để duyệt"' : hasDraft ? 'Nháp đã lưu lúc ' + draftSavedAt : 'Nháp tự lưu khi bạn gõ'}
               </span>
               {hasDraft && (
                 <button onClick={clearDraft} style={css('height:30px; padding:0 13px; border-radius:999px; border:1px solid rgba(255,255,255,.2); background:transparent; color:#c3d0f5; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;')}>{t('Xoá nháp')}</button>
@@ -982,7 +1009,7 @@ export default function UseCaseLibraryPage() {
                       onClick={submitShare}
                       style={css('margin-left:auto; height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
                     >
-                      {t('Gửi duyệt')}
+                      {editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                     </button>
                   </div>
                 </div>
@@ -990,6 +1017,15 @@ export default function UseCaseLibraryPage() {
 
               {shareStage === 'form' && (
                 <div>
+                  {editing?.note && (
+                    <div style={css('display:flex; gap:12px; margin-bottom:16px; padding:14px 18px; border-radius:16px; background:#FFF7E8; border:1px solid #F3DCB4;')}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A5B00" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: 2 }}><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+                      <div>
+                        <div style={css('font:800 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#7A4700;')}>Admin cần bạn chỉnh sửa / bổ sung</div>
+                        <div style={css('margin-top:4px; font:500 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#5C3A00; white-space:pre-wrap;')}>{editing.note}</div>
+                      </div>
+                    </div>
+                  )}
                   <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:26px 28px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
                     {shareFields.map((f) => (
                       <div key={f.key} style={css('margin-bottom:24px;')}>
@@ -1081,7 +1117,7 @@ export default function UseCaseLibraryPage() {
                         onClick={submitShare}
                         style={css(`height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; opacity:${shareOpacity}; box-shadow:0 12px 26px rgba(44,95,255,.4);`)}
                       >
-                        {t('Gửi duyệt')}
+                        {editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                       </button>
                     </div>
                   </div>

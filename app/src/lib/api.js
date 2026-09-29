@@ -56,6 +56,7 @@ export const api = {
   commentUseCase: (id, body, parentId, title, extra = {}) => request(`/use-cases/${id}/comments`, { method: 'POST', body: JSON.stringify({ body, parentId: parentId || null, title: title || '', ...extra }) }),
   submitUseCase: (payload) => request('/use-cases/submissions', { method: 'POST', body: JSON.stringify(payload) }),
   listSubmissions: (params = '') => request(`/use-cases/submissions${params}`),
+  updateSubmission: (id, payload) => request(`/use-cases/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   reviewSubmission: (id, status, note) => request(`/use-cases/submissions/${id}/review`, { method: 'POST', body: JSON.stringify({ status, note }) }),
   deleteSubmission: (id) => request(`/use-cases/submissions/${id}`, { method: 'DELETE' }),
 }

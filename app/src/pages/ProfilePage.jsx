@@ -7,6 +7,7 @@ import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
+import { usePublishedUseCases } from '../lib/publishedUseCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
@@ -22,10 +23,11 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const UC_STATUS = {
   draft: { label: 'Đang nháp', bg: '#EDF0FA', color: '#3A4757', accent: '#94a3b8' },
   pending: { label: 'Chờ duyệt', bg: '#FFF1E0', color: '#B45300', accent: '#FF8D00' },
+  changes_requested: { label: 'Cần chỉnh sửa', bg: '#FFF4E3', color: '#9A5B00', accent: '#F5A524' },
   rejected: { label: 'Bị từ chối', bg: '#FFECEC', color: '#D8232A', accent: '#E0353F' },
   approved: { label: 'Đã đăng', bg: '#E7F9F0', color: '#00893F', accent: '#00CF6A' },
 }
-const UC_ORDER = ['draft', 'pending', 'rejected', 'approved']
+const UC_ORDER = ['draft', 'pending', 'changes_requested', 'rejected', 'approved']
 
 // Same bright gradient/glow text treatment as the Use Case Library hero title.
 const GRAD_TEXT = 'background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));'
@@ -50,7 +52,7 @@ function BoardCard({ p }) {
       <h4 style={css(`margin:12px 0 0; font:800 16.5px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{p.title}</h4>
       <p style={css(`margin:8px 0 0; font:400 13.5px/1.55 ${FONT}; color:#5B6675;`)}>{p.desc}</p>
       {p.hasReason && (
-        <div style={css(`margin-top:12px; padding:12px 14px; border-radius:12px; background:#FFECEC; font:600 12.5px/1.55 ${FONT}; color:#B4232A;`)}>{p.reasonPrefix}: {p.reason}</div>
+        <div style={css(`margin-top:12px; padding:12px 14px; border-radius:12px; background:${p.reasonBg || '#FFECEC'}; font:600 12.5px/1.55 ${FONT}; color:${p.reasonColor || '#B4232A'}; white-space:pre-wrap;`)}>{p.reasonPrefix}: {p.reason}</div>
       )}
       <div style={css(`display:flex; align-items:center; gap:14px; margin-top:14px; padding-top:12px; border-top:1px solid #EEF1F7; font:600 12.5px ${FONT}; color:#64748b;`)}>
         <span>{p.metric}</span>
@@ -141,6 +143,7 @@ export default function ProfilePage() {
   const { t } = useI18n()
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
+  usePublishedUseCases() // approved submissions appear in "Đã lưu" too
   const location = useLocation()
 
   // Section is driven by the Sidebar's "Của tôi" sub-links (/profile#usecase|#question|#saved).
@@ -223,7 +226,9 @@ export default function ProfilePage() {
   const myQuestionCards = myQuestions.map(mapQuestion)
   const savedQuestionCards = savedQuestions.map(mapQuestion)
 
-  // ---- use case board (4 status columns, always in this order) ----
+  // ---- use case board (status columns, always in this order) ----
+  const ucCta = (c) => ({ changes_requested: t('Chỉnh sửa & gửi lại'), rejected: t('Gửi use case mới'), draft: t('Tiếp tục'), approved: t('Xem trong Thư viện') })[c.reviewStatus] || t('Xem use case')
+  const ucHref = (c) => ({ changes_requested: `/use-cases?edit=${encodeURIComponent(c.id)}`, rejected: '/use-cases?share=1', draft: '/use-cases?share=1', approved: `/use-cases/${encodeURIComponent(c.id)}` })[c.reviewStatus] || '/profile#usecase'
   const ucPosts = myUseCases.map((c) => {
     const st = UC_STATUS[c.reviewStatus] || UC_STATUS.pending
     return {
@@ -236,12 +241,14 @@ export default function ProfilePage() {
       kindLabel: t('Use case'),
       title: c.title,
       desc: c.problem,
-      hasReason: c.reviewStatus === 'rejected',
-      reasonPrefix: t('Admin từ chối'),
+      hasReason: (c.reviewStatus === 'rejected' || c.reviewStatus === 'changes_requested') && !!c.adminNote,
+      reasonPrefix: c.reviewStatus === 'changes_requested' ? t('Admin cần bổ sung') : t('Admin từ chối'),
+      reasonBg: c.reviewStatus === 'changes_requested' ? '#FFF4E3' : '#FFECEC',
+      reasonColor: c.reviewStatus === 'changes_requested' ? '#7A4700' : '#B4232A',
       reason: c.adminNote,
       metric: c.reviewStatus === 'approved' ? t('Đã publish') : t('Chưa publish'),
-      cta: c.reviewStatus === 'rejected' ? t('Sửa & gửi lại') : t('Xem use case'),
-      onOpen: () => navigate(c.reviewStatus === 'rejected' ? '/use-cases?share=1' : '/use-cases'),
+      cta: ucCta(c),
+      onOpen: () => navigate(ucHref(c)),
     }
   })
   const ucColumns = UC_ORDER.map((key) => {
@@ -296,9 +303,9 @@ export default function ProfilePage() {
         title: c.title, meta: relativeTime(c.time),
         statusLabel: t(st.label), statusBg: st.bg, statusColor: st.color,
         // Pending actions on the viewer's side get a "continue" CTA; everything else just opens it.
-        cta: c.reviewStatus === 'draft' ? t('Tiếp tục') : c.reviewStatus === 'rejected' ? t('Sửa & gửi lại') : t('Xem chi tiết'),
-        primary: c.reviewStatus === 'draft' || c.reviewStatus === 'rejected',
-        onOpen: () => navigate(c.reviewStatus === 'draft' || c.reviewStatus === 'rejected' ? '/use-cases?share=1' : c.reviewStatus === 'approved' ? '/use-cases' : '/profile#usecase'),
+        cta: ucCta(c),
+        primary: ['draft', 'rejected', 'changes_requested'].includes(c.reviewStatus),
+        onOpen: () => navigate(ucHref(c)),
       }
     }))
     .slice(0, 4)

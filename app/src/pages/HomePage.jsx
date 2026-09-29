@@ -8,6 +8,7 @@ import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
+import { usePublishedUseCases } from '../lib/publishedUseCases.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import aiCloud from '../assets/ai-cloud.png'
@@ -148,7 +149,10 @@ export default function HomePage() {
   }, [])
 
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
-  useEffect(() => { FEATURED_IDS.forEach(refreshUcMeta) }, [])
+  // Newest approved community use cases first, topped up with the built-in picks.
+  const { version: pubV } = usePublishedUseCases()
+  const featuredCases = [...allCases.filter((c) => c.submitted), ...FEATURED_IDS.map((fid) => allCases.find((c) => c.id === fid)).filter(Boolean)].slice(0, 4)
+  useEffect(() => { featuredCases.forEach((c) => refreshUcMeta(c.id)) }, [pubV]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- trending questions (top 3 unresolved by helpfulness, then recency) ----
   const searchNeedle = fold(homeQuery.trim())
@@ -225,7 +229,7 @@ export default function HomePage() {
   }
 
   // ---- featured use cases (real data, live helpful/save counts) ----
-  const featured = FEATURED_IDS.map((id) => allCases.find((c) => c.id === id)).filter(Boolean).map((c) => {
+  const featured = featuredCases.map((c) => {
     const meta = ucMeta[c.id]
     const saved = meta ? meta.saved : false
     const helpful = meta ? meta.helpful : (prdMeta[c.id] || {}).helpful || 0

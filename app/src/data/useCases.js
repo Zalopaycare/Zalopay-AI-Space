@@ -504,3 +504,44 @@ export function hlList(arr) {
     return { text, made, color: made ? '#C8102E' : '#3A4757', dot: made ? '#C8102E' : '#9FB6E8' }
   })
 }
+
+// ---- Approved community submissions -------------------------------------------------
+// The built-in cases above ship with the app; use cases people submit and admins approve
+// come from the API and are merged into the same structures (allCases, prdMeta, caseDetail,
+// kind/status/author lookups) so every page renders them exactly like the built-ins.
+
+export const builtinCases = allCases.slice()
+
+const KIND_MAP = { 'By tech': 'tech', 'By non-tech': 'nontech' }
+const STATUS_MAP = { 'Ý tưởng': 'planning', Prototype: 'prototype', 'Đang dùng thật': 'inuse' }
+const lines = (t) => String(t || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim()).filter(Boolean)
+const firstPara = (t) => { const p = String(t || '').trim().split(/\n\s*\n/)[0] || ''; return p.length > 220 ? p.slice(0, 220).trimEnd() + '…' : p }
+
+/** Replace the merged submissions with `subs` (approved, newest first). */
+export function registerPublished(subs) {
+  for (let i = allCases.length - 1; i >= 0; i--) if (!builtinCases.includes(allCases[i])) allCases.splice(i, 1)
+  const cases = subs.map((s) => {
+    const author = s.authorDomain || s.author || 'Chưa rõ'
+    KIND_BY_ID[s.id] = KIND_MAP[s.kind] || 'tech'
+    STATUS_BY_ID[s.id] = STATUS_MAP[s.status] || 'inuse'
+    authorInfo[author] = { name: s.author || author, role: 'Zalopay' + (s.team ? ' · ' + s.team : '') }
+    prdMeta[s.id] = { problem: s.problem, result: s.result, topics: s.topics || [], helpful: 0, comments: 0 }
+    caseDetail[s.id] = {
+      summary: s.problem,
+      problem: s.problem,
+      solution: lines(s.solution),
+      result: lines(s.result),
+      next: [],
+      pain: [],
+      level: 'ready',
+      howto: { prep: lines(s.prep), steps: [], pitfalls: lines(s.limits), contact: s.contact ? [s.contact] : [] },
+      code: s.prompt ? [{ title: 'PROMPT', code: s.prompt }] : [],
+    }
+    return {
+      id: s.id, title: s.title, desc: firstPara(lines(s.solution).join(' · ') || s.problem), author, team: s.team || '',
+      category: [].concat(s.category)[0] || 'Khác', tools: s.tools || [], repo: '', repoHref: s.link || '',
+      audience: [], publishedAt: s.publishedAt || s.time, submitted: true,
+    }
+  })
+  allCases.unshift(...cases)
+}

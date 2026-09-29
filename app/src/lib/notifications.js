@@ -50,4 +50,5 @@ export const NOTIF_STYLE = {
   rejected: { iconBg: '#FFECEC', iconFg: '#D8232A' },
   submission: { iconBg: '#FFF1E0', iconFg: '#B45300' },
   report: { iconBg: '#FFECEC', iconFg: '#D8232A' },
+  changes: { iconBg: '#FFF4E3', iconFg: '#9A5B00' },
 }

@@ -99,7 +99,7 @@ router.get('/submissions', requireAuth, (req, res) => {
   const onlyApproved = req.query.status === 'approved'
   let rows
   if (onlyMine) rows = db.prepare('SELECT * FROM use_case_submissions WHERE author_id = ? ORDER BY created_at DESC').all(req.user.id)
-  else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' ORDER BY created_at DESC").all()
+  else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' ORDER BY COALESCE(published_at, created_at) DESC").all()
   else if (req.user.is_admin) rows = db.prepare('SELECT * FROM use_case_submissions ORDER BY created_at DESC').all()
   else return res.status(403).json({ error: 'admin_only' })
   res.json({
@@ -111,11 +111,20 @@ router.get('/submissions', requireAuth, (req, res) => {
         kind: r.kind, status: r.status_field, level: r.level,
         category: asArr(r.category), topics: asArr(r.topics), tools: asArr(r.tools),
         reviewStatus: r.review_status, adminNote: r.admin_note,
-        author: author ? author.name : '—', authorId: r.author_id, time: r.created_at,
+        author: author ? author.name : '—', authorDomain: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, time: r.created_at,
+        publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
       }
     }),
   })
 })
+
+const adminEmailsFor = (req) => {
+  const envAdmins = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
+  return [...new Set([...envAdmins, ...dbAdmins])].filter((e) => e !== req.user.email.toLowerCase())
+}
+const SUBMISSION_FIELDS = ['title', 'audience', 'team', 'problem', 'solution', 'prep', 'prompt', 'result']
+const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.kind && f.status && f.level
 
 router.post('/submissions', requireAuth, (req, res) => {
   const f = req.body || {}
@@ -133,10 +142,7 @@ router.post('/submissions', requireAuth, (req, res) => {
       f.kind, f.status, f.level, JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), req.user.id)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
-  const envAdmins = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
-  const admins = [...new Set([...envAdmins, ...dbAdmins])].filter((e) => e !== req.user.email.toLowerCase())
-  for (const to of admins) {
+  for (const to of adminEmailsFor(req)) {
     notify(to, { kind: 'submission', text: `${domainName(req.user.email, req.user.name)} gửi use case mới chờ duyệt: "${f.title.trim()}"`, href: '/admin', actor: req.user.name })
     sendMail({
       to,
@@ -145,6 +151,29 @@ router.post('/submissions', requireAuth, (req, res) => {
     }).catch((e) => console.error('[use-cases] admin notify failed:', e.message))
   }
   res.status(201).json({ id })
+})
+
+// Author edits a submission the admin sent back ("Yêu cầu chỉnh sửa") and resubmits it for review.
+router.patch('/submissions/:id', requireAuth, (req, res) => {
+  const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(req.params.id)
+  if (!row) return res.status(404).json({ error: 'not_found' })
+  if (row.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
+  if (!['changes_requested', 'pending'].includes(row.review_status)) return res.status(409).json({ error: 'not_editable' })
+  const f = req.body || {}
+  if (!validSubmission(f)) return res.status(400).json({ error: 'missing_fields' })
+  db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
+    limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = 'pending' WHERE id = ?`)
+    .run(f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
+      String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(), f.kind, f.status, f.level,
+      JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), row.id)
+  if (row.review_status === 'changes_requested') {
+    const who = domainName(req.user.email, req.user.name)
+    for (const to of adminEmailsFor(req)) {
+      notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa và gửi lại use case: "${f.title.trim()}"`, href: '/admin', actor: req.user.name })
+      sendMail({ to, subject: `Use case đã được chỉnh sửa, chờ duyệt lại: ${f.title.trim()}`, text: `${req.user.name} đã bổ sung theo yêu cầu và gửi lại use case "${f.title.trim()}".${row.admin_note ? `\n\nYêu cầu trước đó: ${row.admin_note}` : ''}\n\nDuyệt tại: ${appUrl(req)}/admin` }).catch(() => {})
+    }
+  }
+  res.json({ ok: true })
 })
 
 router.delete('/submissions/:id', requireAuth, (req, res) => {
@@ -157,20 +186,36 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
   if (!req.user.is_admin) return res.status(403).json({ error: 'admin_only' })
   const { id } = req.params
   const status = req.body?.status
-  const note = String(req.body?.note || '')
-  if (!['approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'invalid_status' })
-  db.prepare('UPDATE use_case_submissions SET review_status = ?, admin_note = ? WHERE id = ?').run(status, note, id)
+  const note = String(req.body?.note || '').trim().slice(0, 2000)
+  if (!['approved', 'rejected', 'changes_requested'].includes(status)) return res.status(400).json({ error: 'invalid_status' })
+  if (status !== 'approved' && !note) return res.status(400).json({ error: 'note_required' })
+  const before = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
+  if (!before) return res.status(404).json({ error: 'not_found' })
+  db.prepare(`UPDATE use_case_submissions SET review_status = ?, admin_note = ?, reviewed_at = datetime('now'),
+    published_at = CASE WHEN ? = 'approved' THEN COALESCE(published_at, datetime('now')) ELSE published_at END WHERE id = ?`).run(status, note, status, id)
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
-  const author = row ? db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id) : null
+  const author = db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id)
   if (author) {
-    notify(author.email, status === 'approved'
-      ? { kind: 'approved', text: `Use case "${row.title}" của bạn đã được duyệt và hiển thị công khai`, href: '/profile#usecase' }
-      : { kind: 'rejected', text: `Use case "${row.title}" của bạn bị từ chối${note ? ': ' + note : ''}`, href: '/profile#usecase' })
-    const subject = status === 'approved' ? 'Use case của bạn đã được duyệt' : 'Use case của bạn bị từ chối'
-    const text = status === 'approved'
-      ? `Use case "${row.title}" đã được duyệt và hiển thị công khai.\n\nXem tại: ${appUrl(req)}/profile#usecase`
-      : `Use case "${row.title}" bị từ chối.${note ? ' Lý do: ' + note : ''}\n\nXem tại: ${appUrl(req)}/profile#usecase`
-    sendMail({ to: author.email, subject, text }).catch(() => {})
+    const link = `${appUrl(req)}${status === 'approved' ? `/use-cases/${encodeURIComponent(row.id)}` : '/profile#usecase'}`
+    const msg = {
+      approved: {
+        n: { kind: 'approved', text: `Use case "${row.title}" của bạn đã được duyệt và đăng lên Thư viện${note ? ` — Admin: ${note}` : ''}`, href: `/use-cases/${encodeURIComponent(row.id)}` },
+        subject: 'Use case của bạn đã được duyệt',
+        text: `Chúc mừng! Use case "${row.title}" đã được duyệt và hiển thị trong Thư viện Use Case.${note ? `\n\nLời nhắn của Admin: ${note}` : ''}\n\nXem tại: ${link}`,
+      },
+      rejected: {
+        n: { kind: 'rejected', text: `Use case "${row.title}" của bạn bị từ chối: ${note}`, href: '/profile#usecase' },
+        subject: 'Use case của bạn bị từ chối',
+        text: `Use case "${row.title}" chưa được duyệt.\n\nLý do: ${note}\n\nXem tại: ${link}`,
+      },
+      changes_requested: {
+        n: { kind: 'changes', text: `Use case "${row.title}" cần bổ sung trước khi duyệt: ${note}`, href: '/profile#usecase' },
+        subject: 'Use case của bạn cần chỉnh sửa / bổ sung',
+        text: `Admin đã xem use case "${row.title}" và cần bạn chỉnh sửa / bổ sung trước khi duyệt:\n\n${note}\n\nVào "Use case của tôi", bấm "Chỉnh sửa & gửi lại" để cập nhật: ${link}`,
+      },
+    }[status]
+    notify(author.email, msg.n)
+    sendMail({ to: author.email, subject: msg.subject, text: msg.text }).catch(() => {})
   }
   res.json({ ok: true })
 })

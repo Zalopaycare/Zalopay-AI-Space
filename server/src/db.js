@@ -168,6 +168,13 @@ for (const table of ['question_answers', 'answer_comments', 'use_case_comments']
   if (!cols.includes('edited_at')) db.exec(`ALTER TABLE ${table} ADD COLUMN edited_at TEXT`)
 }
 
+{
+  const cols = db.prepare('PRAGMA table_info(use_case_submissions)').all().map((c) => c.name)
+  if (!cols.includes('published_at')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN published_at TEXT')
+  if (!cols.includes('reviewed_at')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN reviewed_at TEXT')
+  db.exec("UPDATE use_case_submissions SET published_at = created_at WHERE review_status = 'approved' AND published_at IS NULL")
+}
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

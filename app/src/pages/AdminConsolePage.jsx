@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
-import { allCases, prdMeta } from '../data/useCases.js'
+import { builtinCases as allCases, prdMeta } from '../data/useCases.js'
 import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import logo from '../assets/zalopay-ai-space-logo.png'
@@ -17,6 +17,7 @@ const card = 'background:#fff; border:1px solid #E6EBF3; border-radius:20px; box
 const UC_STATUS = {
   pending: { label: 'Chờ duyệt', bg: '#FFF1E0', fg: '#B45300' },
   approved: { label: 'Đã đăng', bg: '#E7F9F0', fg: '#00893F' },
+  changes_requested: { label: 'Cần chỉnh sửa', bg: '#FFF4E3', fg: '#9A5B00' },
   rejected: { label: 'Từ chối', bg: '#FFECEC', fg: '#D8232A' },
 }
 const toDate = (t) => new Date(String(t || '').replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(t)) ? '' : 'Z'))
@@ -24,7 +25,7 @@ const fmtDate = (t) => { const d = toDate(t); return isNaN(d) ? '—' : d.toLoca
 const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
 
 const btn = (kind) => {
-  const k = { approve: ['#E7F9F0', '#BEE9D3', '#00893F'], reject: ['#FFECEC', '#F5C9CB', '#D8232A'], plain: ['#fff', '#DDE3EC', '#3A4757'] }[kind]
+  const k = { approve: ['#E7F9F0', '#BEE9D3', '#00893F'], reject: ['#FFECEC', '#F5C9CB', '#D8232A'], changes: ['#FFF4E3', '#F3DCB4', '#9A5B00'], plain: ['#fff', '#DDE3EC', '#3A4757'] }[kind]
   return `height:32px; padding:0 12px; border:1px solid ${k[1]}; border-radius:9px; background:${k[0]}; color:${k[2]}; ${font(700, 12)}; cursor:pointer; white-space:nowrap;`
 }
 const pill = (bg, fg) => `display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${bg}; color:${fg}; ${font(700, 11.5)}; white-space:nowrap;`
@@ -99,8 +100,9 @@ export default function AdminConsolePage() {
   const [qQuery, setQQuery] = useState('')
   const [userQuery, setUserQuery] = useState('')
   const [detailId, setDetailId] = useState(null)
-  const [rejectId, setRejectId] = useState(null)
-  const [rejectReason, setRejectReason] = useState('')
+  const [review, setReview] = useState(null) // { id, action: 'approved' | 'rejected' | 'changes_requested' }
+  const [reviewNote, setReviewNote] = useState('')
+  const askReview = (id, action) => { setReview({ id, action }); setReviewNote('') }
   const [confirm, setConfirm] = useState(null) // { text, run }
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
@@ -200,7 +202,12 @@ export default function AdminConsolePage() {
   const ucq = fold(ucQuery.trim())
   const ucRows = submissions.filter((s) => (ucStatus === 'all' || s.reviewStatus === ucStatus) && (!ucq || fold(s.title + ' ' + s.author + ' ' + s.team).includes(ucq)))
   const detail = submissions.find((s) => s.id === detailId)
-  const approve = (id) => api.reviewSubmission(id, 'approved').then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {})
+  const submitReview = () => {
+    const note = reviewNote.trim()
+    if (!review || (review.action !== 'approved' && !note)) return
+    api.reviewSubmission(review.id, review.action, note).then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {})
+    setReview(null); setReviewNote('')
+  }
   const remove = (s) => setConfirm({ text: `Xoá vĩnh viễn use case "${s.title}"?`, run: () => api.deleteSubmission(s.id).then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {}) })
 
   // ---- questions ----
@@ -224,7 +231,7 @@ export default function AdminConsolePage() {
   const headRow = (cols) => css(grid(cols) + 'padding:14px 22px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
   const bodyRow = (cols) => css(grid(cols) + 'padding:16px 22px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
-  const UC_COLS = 'minmax(0,1fr) 170px 110px 230px'
+  const UC_COLS = 'minmax(0,1fr) 140px 120px 330px'
   const Q_COLS = 'minmax(0,1fr) 150px 80px 80px 130px 150px'
   const U_COLS = 'minmax(0,1fr) 110px 120px 80px 80px 80px'
   const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
@@ -399,7 +406,7 @@ export default function AdminConsolePage() {
               <Heading title="Duyệt use case" sub="Use case người dùng gửi phải được duyệt trước khi đăng. Từ chối cần kèm lý do để tác giả sửa." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px; flex-wrap:wrap;')}>
                 <Search value={ucQuery} onChange={setUcQuery} placeholder="Tìm theo tên use case, tác giả, team..." />
-                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Chờ duyệt', pending.length], ['approved', 'Đã đăng', approved.length], ['rejected', 'Từ chối', submissions.length - pending.length - approved.length], ['all', 'Tất cả', submissions.length]]} />
+                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Chờ duyệt', pending.length], ['approved', 'Đã đăng', approved.length], ['changes_requested', 'Cần chỉnh sửa', submissions.filter((x) => x.reviewStatus === 'changes_requested').length], ['rejected', 'Từ chối', submissions.filter((x) => x.reviewStatus === 'rejected').length], ['all', 'Tất cả', submissions.length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
                 <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
@@ -411,14 +418,16 @@ export default function AdminConsolePage() {
                         <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a;')}>{s.title}</div>
                         <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0], relativeTime(s.time)].filter(Boolean).join(' · ')}</div>
                         {s.reviewStatus === 'rejected' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFECEC;' + font(600, 12, 1.5) + ';color:#B4232A;')}>Lý do từ chối: {s.adminNote}</div>}
+                        {s.reviewStatus === 'changes_requested' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF4E3;' + font(600, 12, 1.5) + ';color:#7A4700; white-space:pre-wrap;')}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div>}
                       </div>
                       <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis;')}>{s.author}</div>
                       <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
                       <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
                         <button onClick={() => setDetailId(s.id)} style={css(btn('plain'))}>Xem</button>
-                        {s.reviewStatus === 'pending' && <button onClick={() => approve(s.id)} style={css(btn('approve'))}>Duyệt</button>}
-                        {s.reviewStatus === 'pending' && <button onClick={() => { setRejectId(s.id); setRejectReason('') }} style={css(btn('reject'))}>Từ chối</button>}
-                        {s.reviewStatus !== 'pending' && <button onClick={() => remove(s)} style={css(btn('reject'))}>Xoá</button>}
+                        {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'approved')} style={css(btn('approve'))}>Duyệt</button>}
+                        {s.reviewStatus === 'pending' && <button onClick={() => askReview(s.id, 'changes_requested')} style={css(btn('changes'))}>Yêu cầu sửa</button>}
+                        {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'rejected')} style={css(btn('reject'))}>Từ chối</button>}
+                        {['approved', 'rejected'].includes(s.reviewStatus) && <button onClick={() => remove(s)} style={css(btn('reject'))}>Xoá</button>}
                       </div>
                     </div>
                   )
@@ -563,11 +572,13 @@ export default function AdminConsolePage() {
             <Field label="Người liên hệ" value={detail.contact} />
             <Field label="Link" value={detail.link} />
             {detail.reviewStatus === 'rejected' && <Field label="Lý do từ chối" value={detail.adminNote} />}
+            {detail.reviewStatus === 'changes_requested' && <Field label="Đã yêu cầu bổ sung" value={detail.adminNote} />}
             <div style={css('display:flex; justify-content:flex-end; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
-              {detail.reviewStatus === 'pending' ? (
+              {['pending', 'changes_requested'].includes(detail.reviewStatus) ? (
                 <>
-                  <button onClick={() => { setRejectId(detail.id); setRejectReason('') }} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Từ chối</button>
-                  <button onClick={() => approve(detail.id)} style={css('height:42px; padding:0 22px; border:none; border-radius:999px; background:#00A352; color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}>Duyệt & đăng</button>
+                  <button onClick={() => askReview(detail.id, 'rejected')} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Từ chối</button>
+                  {detail.reviewStatus === 'pending' && <button onClick={() => askReview(detail.id, 'changes_requested')} style={css('height:42px; padding:0 20px; border:1px solid #F3DCB4; border-radius:999px; background:#FFF4E3; color:#9A5B00;' + font(700, 13.5) + ';cursor:pointer;')}>Yêu cầu chỉnh sửa</button>}
+                  <button onClick={() => askReview(detail.id, 'approved')} style={css('height:42px; padding:0 22px; border:none; border-radius:999px; background:#00A352; color:#fff;' + font(700, 13.5) + ';cursor:pointer;')}>Duyệt & đăng</button>
                 </>
               ) : (
                 <button onClick={() => remove(detail)} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá use case</button>
@@ -577,31 +588,30 @@ export default function AdminConsolePage() {
         </div>
       )}
 
-      {rejectId && (
-        <div style={css('position:fixed; inset:0; z-index:950; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:40px;')}>
-          <div style={css('width:520px; max-width:100%; background:#fff; border-radius:22px; padding:28px 30px; box-shadow:0 40px 90px rgba(6,14,40,.5); box-sizing:border-box;')}>
-            <div style={css(font(800, 19) + ';color:#0f172a;')}>Từ chối use case</div>
-            <div style={css('margin-top:8px;' + font(400, 13.5, 1.6) + ';color:#64748b;')}>{(submissions.find((s) => s.id === rejectId) || {}).title}</div>
-            <div style={css('margin-top:20px;' + font(800, 13) + ';color:#0f172a;')}>Lý do từ chối <span style={{ color: '#E0353F' }}>*</span></div>
-            <textarea autoFocus value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={4} placeholder="Nêu rõ điểm cần bổ sung để tác giả sửa và gửi lại. Lý do này sẽ được gửi qua email cho tác giả." style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.6; color:#0f172a; outline:none; resize:vertical; display:block; box-sizing:border-box; font-family:inherit;')}></textarea>
-            <div style={css('display:flex; justify-content:flex-end; gap:12px; margin-top:20px;')}>
-              <button onClick={() => { setRejectId(null); setRejectReason('') }} style={css('height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757;' + font(700, 13.5) + ';cursor:pointer;')}>Huỷ</button>
-              <button
-                disabled={!rejectReason.trim()}
-                onClick={() => {
-                  const reason = rejectReason.trim()
-                  if (!reason) return
-                  api.reviewSubmission(rejectId, 'rejected', reason).then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {})
-                  setRejectId(null); setRejectReason('')
-                }}
-                style={css(`height:44px; padding:0 22px; border:none; border-radius:999px; background:#D8232A; color:#fff;` + font(700, 13.5) + `;cursor:pointer; opacity:${rejectReason.trim() ? 1 : 0.5};`)}
-              >
-                Từ chối & gửi lý do
-              </button>
+      {review && (() => {
+        const target = submissions.find((x) => x.id === review.id) || {}
+        const cfg = {
+          approved: { title: 'Duyệt & đăng use case này?', desc: 'Use case sẽ hiện ngay trong Thư viện và ở Home. Người gửi nhận email + thông báo.', label: 'Lời nhắn cho người gửi', required: false, placeholder: 'Không bắt buộc, ví dụ: Cảm ơn bạn, use case rất hữu ích!', cta: 'Duyệt & đăng', color: '#00A352' },
+          changes_requested: { title: 'Yêu cầu chỉnh sửa / bổ sung', desc: 'Người gửi nhận email + thông báo kèm ghi chú này, sửa ngay trên bài cũ rồi gửi lại để bạn duyệt.', label: 'Use case còn thiếu gì, cần bổ sung gì?', required: true, placeholder: 'Ví dụ: Bổ sung prompt mẫu đầy đủ, ghi rõ kết quả đo được (tiết kiệm bao nhiêu thời gian), thêm người liên hệ...', cta: 'Gửi yêu cầu chỉnh sửa', color: '#D98200' },
+          rejected: { title: 'Từ chối use case này?', desc: 'Use case sẽ không được đăng. Người gửi nhận email + thông báo kèm lý do.', label: 'Lý do từ chối', required: true, placeholder: 'Nêu rõ lý do, ví dụ: trùng với use case đã có, chứa thông tin nội bộ nhạy cảm...', cta: 'Từ chối & gửi lý do', color: '#D8232A' },
+        }[review.action]
+        const ok = !cfg.required || reviewNote.trim()
+        return (
+          <div onClick={() => setReview(null)} style={css('position:fixed; inset:0; z-index:950; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:40px;')}>
+            <div onClick={(e) => e.stopPropagation()} style={css('width:540px; max-width:100%; background:#fff; border-radius:22px; padding:28px 30px; box-shadow:0 40px 90px rgba(6,14,40,.5); box-sizing:border-box;' + `border-top:5px solid ${cfg.color};`)}>
+              <div style={css(font(800, 19) + ';color:#0f172a;')}>{cfg.title}</div>
+              <div style={css('margin-top:6px;' + font(700, 14, 1.5) + ';color:#334155;')}>"{target.title}" <span style={css(font(500, 13) + ';color:#94a3b8;')}>· {target.author}</span></div>
+              <div style={css('margin-top:6px;' + font(400, 13, 1.6) + ';color:#64748b;')}>{cfg.desc}</div>
+              <div style={css('margin-top:18px;' + font(800, 13) + ';color:#0f172a;')}>{cfg.label} {cfg.required ? <span style={{ color: '#E0353F' }}>*</span> : <span style={css(font(500, 12) + ';color:#94a3b8;')}>(không bắt buộc)</span>}</div>
+              <textarea autoFocus value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={review.action === 'approved' ? 2 : 5} placeholder={cfg.placeholder} style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.6; color:#0f172a; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box; font-family:inherit;')}></textarea>
+              <div style={css('display:flex; justify-content:flex-end; gap:12px; margin-top:20px;')}>
+                <button onClick={() => setReview(null)} style={css('height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757;' + font(700, 13.5) + ';cursor:pointer;')}>Huỷ</button>
+                <button disabled={!ok} onClick={submitReview} style={css(`height:44px; padding:0 22px; border:none; border-radius:999px; background:${cfg.color}; color:#fff;` + font(700, 13.5) + `;cursor:${ok ? 'pointer' : 'not-allowed'}; opacity:${ok ? 1 : 0.5};`)}>{cfg.cta}</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {confirm && (
         <div style={css('position:fixed; inset:0; z-index:960; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:40px;')}>
