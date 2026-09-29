@@ -3,7 +3,7 @@ import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, handleOf } from '../mentions.js'
-import { notify } from '../notifications.js'
+import { notify, notifyUpvotes } from '../notifications.js'
 
 const router = express.Router()
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
@@ -40,6 +40,13 @@ router.post('/:id/react', requireAuth, (req, res) => {
   if (exists) db.prepare('DELETE FROM use_case_reactions WHERE use_case_id = ? AND user_id = ?').run(id, req.user.id)
   else db.prepare('INSERT INTO use_case_reactions (use_case_id, user_id) VALUES (?, ?)').run(id, req.user.id)
   const helpful = db.prepare('SELECT COUNT(*) n FROM use_case_reactions WHERE use_case_id = ?').get(id).n
+  const sub = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
+  const owner = sub && db.prepare('SELECT * FROM users WHERE id = ?').get(sub.author_id)
+  if (owner && owner.id !== req.user.id) {
+    const voters = db.prepare('SELECT u.email, u.name FROM use_case_reactions x JOIN users u ON u.id = x.user_id WHERE x.use_case_id = ? AND x.user_id != ?').all(id, owner.id)
+    const one = voters.length === 1 ? voters[0] : req.user
+    notifyUpvotes(owner.email, { ref: 'uc:' + id, count: voters.length, lastVoter: domainName(one.email, one.name), title: sub.title, href: `/use-cases/${id}` })
+  }
   res.json({ helpful, iHelped: !exists })
 })
 

@@ -16,6 +16,7 @@ import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
 import UseCaseGuide from '../components/UseCaseGuide.jsx'
+import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
@@ -65,6 +66,8 @@ export default function UseCaseLibraryPage() {
   const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('q') || '')
   const [ucMeta, setUcMeta] = useState({}) // id -> { helpful, iHelped, saved, comments: [] }
   const [dDraft, setDDraft] = useState('')
+  const dBoxRef = useRef(null)
+  const replyBoxRef = useRef(null)
   const [replyTarget, setReplyTarget] = useState(null) // { parentId, authorName } | null
   const [replyDraft, setReplyDraft] = useState('')
   const [editingCmt, setEditingCmt] = useState(null) // comment id being edited
@@ -191,7 +194,7 @@ export default function UseCaseLibraryPage() {
   const startReply = (topId, authorName, replyToId) => { setReplyTarget({ parentId: topId, authorName, replyToId }); setReplyDraft(''); setExpandedThreads((s) => new Set(s).add(topId)) }
   const cancelReply = () => { setReplyTarget(null); setReplyDraft('') }
   const submitReply = (ucId) => {
-    const text = replyDraft.trim()
+    const text = (replyBoxRef.current ? replyBoxRef.current.expand(replyDraft) : replyDraft).trim()
     if (!text || !replyTarget) return
     requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title, { replyToId: replyTarget.replyToId, ownerHandle: (allCases.find((x) => x.id === ucId) || {}).author }).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
   }
@@ -441,6 +444,10 @@ export default function UseCaseLibraryPage() {
     const base = live ? live.helpful : (prdMeta[dsel.id] || {}).helpful || 0
     const voted = live ? live.iHelped : false
     const commentsList = live ? live.comments : []
+    const postDComment = () => {
+      const text = (dBoxRef.current ? dBoxRef.current.expand(dDraft) : dDraft).trim()
+      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
+    }
 
     return (
       <div>
@@ -696,26 +703,20 @@ export default function UseCaseLibraryPage() {
               <div style={css('display:flex; gap:12px; margin-top:20px; align-items:flex-start;')}>
                 <span style={css('width:36px; height:36px; border-radius:50%; flex:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;')}>{user?.initials || '?'}</span>
                 <div style={{ flex: 1 }}>
-                  <textarea
-                    value={dDraft}
-                    onChange={(e) => setDDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
-                      e.preventDefault()
-                      const text = dDraft.trim()
-                      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
-                    }}
+                  <MentionInput
+                    ref={dBoxRef}
+                    multiline
                     rows={2}
-                    placeholder={t('Viết bình luận về use case này...')}
-                    style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; line-height:1.6; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block;')}
+                    popupWidth={340}
+                    value={dDraft}
+                    onChange={setDDraft}
+                    onEnter={postDComment}
+                    placeholder={t('Viết bình luận về use case này... Gõ @ để mention đồng nghiệp.')}
+                    style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; line-height:1.6; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                   />
                   <div style={css('display:flex; justify-content:flex-end; margin-top:10px;')}>
                     <button
-                      onClick={() => {
-                        const text = dDraft.trim()
-                        if (!text) return
-                        requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
-                      }}
+                      onClick={postDComment}
                       style={css(`height:38px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
                     >
                       {t('Gửi bình luận')}
@@ -771,13 +772,16 @@ export default function UseCaseLibraryPage() {
                         <div style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
                           <span style={css('width:30px; height:30px; border-radius:50%; flex:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;')}>{user?.initials || '?'}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <textarea
+                            <MentionInput
+                              ref={replyBoxRef}
                               autoFocus
-                              value={replyDraft}
-                              onChange={(e) => setReplyDraft(e.target.value)}
+                              multiline
                               rows={1}
-                              placeholder={t('Reply comment của') + ' ' + replyTarget.authorName + '...'}
-                              onKeyDown={(e) => { if (e.key === 'Escape') cancelReply(); else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submitReply(dsel.id) } }}
+                              value={replyDraft}
+                              onChange={setReplyDraft}
+                              onEnter={() => submitReply(dsel.id)}
+                              onKeyDown={(e) => { if (e.key === 'Escape') cancelReply() }}
+                              placeholder={t('Reply comment của') + ' ' + replyTarget.authorName + ', ' + t('gõ @ để mention...')}
                               style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font-family:inherit; font-size:13px; line-height:1.5; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                             />
                             <div style={css('display:flex; justify-content:flex-end; gap:8px; margin-top:8px;')}>

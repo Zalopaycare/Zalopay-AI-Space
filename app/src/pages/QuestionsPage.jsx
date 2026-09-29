@@ -10,6 +10,7 @@ import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useNavigate } from 'react-router-dom'
 import Avatar from '../components/Avatar.jsx'
+import MentionInput from '../components/MentionInput.jsx'
 import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
@@ -88,6 +89,7 @@ export default function QuestionsPage() {
   const [askTopicOtherText, setAskTopicOtherText] = useState('')
   const [editQId, setEditQId] = useState(null) // question being edited in the composer (null = asking a new one)
   const askBodyRef = useRef(null)
+  const askBoxRef = useRef(null)
   const askImageInputRef = useRef(null)
   const askDocInputRef = useRef(null)
 
@@ -264,7 +266,7 @@ export default function QuestionsPage() {
   }
 
   const postQuestion = () => {
-    const tt = askTitle.trim(), bb = askBody.trim()
+    const tt = askTitle.trim(), bb = (askBoxRef.current ? askBoxRef.current.expand(askBody) : askBody).trim()
     if (!bb) { setAskError('Cần có nội dung câu hỏi trước khi đăng.'); return }
     requireLogin(() => {
       const docNote = askFiles.length ? '\n\n📎 ' + askFiles.join(', ') : ''
@@ -787,7 +789,7 @@ export default function QuestionsPage() {
                       <div style={css('font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{user ? `${user.domain || user.name}${user.team ? ' · ' + user.team : ''}` : t('Chưa đăng nhập')}</div>
 
 
-                      <textarea ref={askBodyRef} value={askBody} onChange={(e) => { setAskBody(e.target.value); setAskError('') }} rows={5} placeholder={t('Bạn đang vướng ở đâu với AI? Mô tả bối cảnh, cách bạn đã thử và kết quả mong đợi...')} style={css('width:100%; margin-top:6px; border:none; outline:none; background:transparent; padding:0; font:400 15px/1.65 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
+                      <div style={{ marginTop: 6 }}><MentionInput ref={askBoxRef} inputRef={askBodyRef} multiline rows={5} popupWidth={340} placement="below" value={askBody} onChange={(v) => { setAskBody(v); setAskError('') }} placeholder={t('Bạn đang vướng ở đâu với AI? Mô tả bối cảnh, cách bạn đã thử và kết quả mong đợi... Gõ @ để nhờ đồng nghiệp.')} style={css('width:100%; border:none; outline:none; background:transparent; padding:0; font-size:15px; line-height:1.65; color:#0F172A; resize:vertical; display:block; box-sizing:border-box;')} /></div>
 
                       {(askImages.length > 0 || askFiles.length > 0) && (
                         <div style={css('display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;')}>

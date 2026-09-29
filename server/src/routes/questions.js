@@ -3,7 +3,7 @@ import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName } from '../mentions.js'
-import { notify } from '../notifications.js'
+import { notify, notifyUpvotes } from '../notifications.js'
 
 const router = express.Router()
 
@@ -122,6 +122,13 @@ router.post('/:id/react', requireAuth, (req, res) => {
   const exists = db.prepare('SELECT 1 FROM question_reactions WHERE question_id = ? AND user_id = ?').get(id, req.user.id)
   if (exists) db.prepare('DELETE FROM question_reactions WHERE question_id = ? AND user_id = ?').run(id, req.user.id)
   else db.prepare('INSERT INTO question_reactions (question_id, user_id) VALUES (?, ?)').run(id, req.user.id)
+  const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
+  const owner = q && db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
+  if (owner && owner.id !== req.user.id) {
+    const voters = db.prepare('SELECT u.email, u.name FROM question_reactions x JOIN users u ON u.id = x.user_id WHERE x.question_id = ? AND x.user_id != ?').all(id, owner.id)
+    const one = voters.length === 1 ? voters[0] : req.user
+    notifyUpvotes(owner.email, { ref: 'q:' + id, count: voters.length, lastVoter: domainName(one.email, one.name), title: qTitle(q), href: `/questions#q=${id}` })
+  }
   res.json({ question: loadQuestion(id, req.user.id) })
 })
 

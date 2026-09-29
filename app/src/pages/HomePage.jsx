@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { renderMentions } from '../components/MentionField.jsx'
+import MentionInput from '../components/MentionInput.jsx'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -85,6 +86,8 @@ export default function HomePage() {
   const [questions, setQuestions] = useState([])
   const [openQ, setOpenQ] = useState(null)
   const [modalDraft, setModalDraft] = useState('')
+  const modalBoxRef = useRef(null)
+  const modalReplyBoxRef = useRef(null)
   const [ucMeta, setUcMeta] = useState({})
   const [homeQuery, setHomeQuery] = useState('')
   // Height of the live search results, so the space backdrop's horizon moves down with the page.
@@ -203,7 +206,7 @@ export default function HomePage() {
   }
   const toggleModalThread = (cid) => setModalThreads((s) => { const n = new Set(s); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
   const submitModalReply = () => {
-    const body = modalReplyDraft.trim()
+    const body = (modalReplyBoxRef.current ? modalReplyBoxRef.current.expand(modalReplyDraft) : modalReplyDraft).trim()
     if (!body || !modalReply || !modalSrc) return
     const { answerId, parentId } = modalReply
     requireLogin(() => api.postAnswerComment(modalSrc.id, answerId, body, parentId).then((d) => { patch(modalSrc.id, d.question); setModalReply(null); setModalReplyDraft('') }).catch(() => {}))
@@ -211,20 +214,23 @@ export default function HomePage() {
   const renderModalReplyBox = (answerId, parentId) => (modalReply && modalReply.answerId === answerId && modalReply.parentId === parentId ? (
     <div style={css('display:flex; gap:9px; align-items:center; margin-top:10px;')}>
       <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{user?.initials || '?'}</span>
-      <input
-        autoFocus
-        value={modalReplyDraft}
-        onChange={(e) => setModalReplyDraft(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') submitModalReply() }}
-        placeholder={t('Reply comment của') + ' ' + modalReply.authorName + '...'}
-        style={css(`flex:1; min-width:0; border:1px solid #DDE3EC; border-radius:999px; padding:8px 14px; font:400 13px ${FONT}; color:#0F172A; background:#fff; outline:none;`)}
-      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <MentionInput
+          ref={modalReplyBoxRef}
+          autoFocus
+          value={modalReplyDraft}
+          onChange={setModalReplyDraft}
+          onEnter={submitModalReply}
+          placeholder={t('Reply comment của') + ' ' + modalReply.authorName + ', ' + t('gõ @ để mention...')}
+          style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:999px; padding:8px 14px; font:400 13px ${FONT}; color:#0F172A; background:#fff; outline:none;`)}
+        />
+      </div>
       <button onClick={() => { setModalReply(null); setModalReplyDraft('') }} style={css(`flex:none; height:32px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px ${FONT}; cursor:pointer;`)}>{t('Hủy')}</button>
       <button onClick={submitModalReply} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12px ${FONT}; cursor:pointer; opacity:${modalReplyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>
     </div>
   ) : null)
   const postModalReply = () => {
-    const body = modalDraft.trim()
+    const body = (modalBoxRef.current ? modalBoxRef.current.expand(modalDraft) : modalDraft).trim()
     if (!body || !modalSrc) return
     requireLogin(() => api.postAnswer(modalSrc.id, body).then((d) => { patch(modalSrc.id, d.question); setModalDraft('') }).catch(() => {}))
   }
@@ -528,7 +534,7 @@ export default function HomePage() {
                   <div style={css('display:flex; gap:12px; margin-top:16px;')}>
                     <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{user?.initials || '?'}</span>
                     <div style={{ flex: 1 }}>
-                      <textarea value={modalDraft} onChange={(e) => setModalDraft(e.target.value)} rows={3} placeholder={t('Viết comment của bạn...')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:12px 14px; font:400 14px/1.6 ${FONT}; color:#0F172A; background:#fff; outline:none; resize:vertical;`)}></textarea>
+                      <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết comment của bạn. Gõ @ để mention đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
                       <div style={css('display:flex; align-items:center; margin-top:10px;')}>
                         <button onClick={() => navigate(`/questions#q=${modalSrc.id}`)} style={css(`font:700 12.5px ${FONT}; color:#3366F0; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;`)}>{t('Mở trong Questions')}</button>
                         <button onClick={postModalReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; opacity:${modalDraft.trim() ? 1 : 0.5};`)}>
