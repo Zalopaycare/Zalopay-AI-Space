@@ -4,6 +4,7 @@ import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
+import logo from '../assets/zalopay-ai-space-logo.png'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/', match: (p) => p === '/' },
@@ -39,6 +40,9 @@ export default function TopNav() {
         })}
       </nav>
       <div style={css('flex:1; display:flex; align-items:center; justify-content:flex-end; gap:12px;')}>
+        <SoftLink to="/" title="Zalopay AI Space" style={css('display:flex; align-items:center; text-decoration:none;')}>
+          <img src={logo} alt="Zalopay AI Space" style={{ height: 16, width: 'auto', display: 'block' }} />
+        </SoftLink>
         {!user && (
           <button
             onClick={() => openLogin()}

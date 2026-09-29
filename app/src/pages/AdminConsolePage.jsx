@@ -246,7 +246,6 @@ export default function AdminConsolePage() {
       <header style={css('position:sticky; top:0; z-index:400; height:58px; box-sizing:border-box; background:linear-gradient(90deg, rgba(9,18,58,.86) 0%, rgba(5,9,28,.84) 50%, rgba(9,18,58,.86) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.12); box-shadow:0 8px 30px rgba(0,0,0,.35);')}>
         <div style={css('display:flex; align-items:center; justify-content:space-between; height:100%; padding:0 24px;')}>
           <div style={css('display:flex; align-items:center; gap:12px;')}>
-            <Link to="/" style={{ display: 'flex' }}><img src={logo} alt="Zalopay AI Space" style={{ height: 15, width: 'auto', display: 'block' }} /></Link>
             <span style={css(font(800, 10.5) + ';letter-spacing:.6px;padding:3px 9px;border-radius:999px;background:rgba(60,110,255,.22);border:1px solid rgba(130,175,255,.45);color:#dbe8ff;')}>ADMIN</span>
           </div>
           <div style={css('display:flex; align-items:center; gap:12px;')}>
@@ -279,6 +278,7 @@ export default function AdminConsolePage() {
               <span style={css(font(600, 13) + ';color:#fff; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>
               <button onClick={() => logout()} className={hoverClass('background:rgba(255,59,48,.28);')} style={css('height:30px; padding:0 12px; border:none; border-radius:999px; background:rgba(255,59,48,.16); color:#ffb4ae;' + font(700, 12) + ';cursor:pointer;')}>Đăng xuất</button>
             </div>
+            <Link to="/" title="Zalopay AI Space" style={{ display: 'flex', marginLeft: 6 }}><img src={logo} alt="Zalopay AI Space" style={{ height: 16, width: 'auto', display: 'block' }} /></Link>
           </div>
         </div>
       </header>
