@@ -553,19 +553,11 @@ export default function HomePage() {
             <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
               {featured.map((item) => (
                 <div key={item.id} onClick={item.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; display:flex; flex-direction:column; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:14px 16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
-                  <div style={css('display:flex; margin-bottom:8px;')}>
+                  <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;')}>
                     <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#E4ECFF; color:#2c5fff; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
                       {t('Use case')}
                     </span>
-                  </div>
-                  <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;')}>
-                    <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
-                      <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
-                      <div style={css('display:flex; flex-direction:column; min-width:0;')}>
-                        <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
-                      </div>
-                    </div>
                     <div style={css('position:relative; flex:none;')}>
                       <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === item.id ? null : item.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
@@ -599,8 +591,14 @@ export default function HomePage() {
                       <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
                     </div>
                   </div>
-                  <TagRow topics={(prdMeta[item.id] || {}).topics || []} tools={item.tools} style={{ marginTop: 10, marginBottom: 12 }} />
-                  <div style={css('display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:10px; border-top:1px solid #EEF1F7;')}>
+                  <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
+                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
+                    <div style={css('display:flex; flex-direction:column; min-width:0;')}>
+                      <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
+                    </div>
+                  </div>
+                  <TagRow topics={(prdMeta[item.id] || {}).topics || []} tools={item.tools} style={{ marginTop: 10 }} />
+                  <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
                     <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 12.5px ${FONT}; color:#2c5fff; white-space:nowrap; transition:gap .16s;`)}>
                       {t('Xem Use Case')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
