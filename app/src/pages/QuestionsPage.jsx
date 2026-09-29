@@ -709,7 +709,7 @@ export default function QuestionsPage() {
           <div style={css('position:relative; background:transparent; padding:22px 40px 0;')}>
             <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
               <h1 style={css('margin:0; text-align:center; font:800 50px/1.06 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('Câu hỏi')}</h1>
-              <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Hỏi nhanh, trả lời thẳng vào việc. Người đặt câu hỏi chọn câu trả lời đã giải quyết được vấn đề.')}</p>
+              <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Hỏi nhanh đáp gọn tất tần tật những câu hỏi về AI.')}</p>
             </div>
           </div>
 
