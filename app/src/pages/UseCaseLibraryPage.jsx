@@ -816,7 +816,7 @@ export default function UseCaseLibraryPage() {
               )}
 
               {libCards.length > 0 && (
-                <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;')}>
+                <div style={css('display:flex; flex-direction:column; gap:12px;')}>
                   {libCards.map((c) => (
                     <div
                       key={c.id}
@@ -824,6 +824,12 @@ export default function UseCaseLibraryPage() {
                       className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.28); border-color:#CFE0FF;')}
                       style={css('position:relative; display:flex; flex-direction:column; border:1px solid #E6EBF3; border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 10px 26px rgba(0,0,0,.16); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
+                      <div style={css('display:flex; margin-bottom:8px;')}>
+                        <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#E4ECFF; color:#2c5fff; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+                          {t('Use case')}
+                        </span>
+                      </div>
                       <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;')}>
                         <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
                           <span style={css(c.avStyle)}>{c.avInitial}</span>
@@ -860,7 +866,7 @@ export default function UseCaseLibraryPage() {
                           <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
                         </div>
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                          <h3 className="zp-card-title" style={css('margin:0; font-size:14.5px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
+                          <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
                           <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
                         </div>
                       </div>

@@ -402,7 +402,14 @@ export default function QuestionsPage() {
   // One question card; inModal adds the full comment thread (the popup opened by clicking a card).
   const renderQCard = (q, inModal) => (
                   <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : 'zp-card'} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; ${inModal ? '' : 'box-shadow:0 20px 46px rgba(0,0,0,.34); cursor:pointer;'} overflow:hidden;`)}>
-                    <div style={css('display:flex; align-items:center; gap:10px; padding:12px 16px 0;')}>
+                    <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
+                      <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
+                        {t('Câu hỏi')}
+                      </span>
+                      <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
+                    </div>
+                    <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
                       <div style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
@@ -412,7 +419,6 @@ export default function QuestionsPage() {
                           <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.time}</span>
                         </div>
                       </div>
-                      <span style={css(`flex:none; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setOpenMenuId((id) => (id === q.id ? null : q.id)) }}

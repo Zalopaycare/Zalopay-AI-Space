@@ -352,13 +352,19 @@ export default function HomePage() {
             <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
               {trending.map((q) => (
                 <div key={q.id} onClick={q.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 22px 48px rgba(0,0,0,.36); border-color:#CFE0FF;')} style={css('position:relative; display:flex; flex-direction:column; min-width:0; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; cursor:pointer; box-shadow:0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}>
-                  <div style={css('display:flex; align-items:center; gap:10px; padding:12px 16px 0;')}>
+                  <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
+                    <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px ${FONT};`)}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
+                      {t('Câu hỏi')}
+                    </span>
+                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#FFF1E0; color:#B45300; font:700 11.5px ${FONT};`)}>{t('Đang chờ trả lời')}</span>
+                  </div>
+                  <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
                     <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
                     <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
                       <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
                       <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
                     </div>
-                    <span style={css(`flex:none; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#FFF1E0; color:#B45300; font:700 11.5px ${FONT};`)}>{t('Đang chờ trả lời')}</span>
                     <div style={css('position:relative; flex:none;')}>
                       <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === 'q:' + q.id ? null : 'q:' + q.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
@@ -544,9 +550,15 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:16px;')}>
+            <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
               {featured.map((item) => (
                 <div key={item.id} onClick={item.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; display:flex; flex-direction:column; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:14px 16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
+                  <div style={css('display:flex; margin-bottom:8px;')}>
+                    <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#E4ECFF; color:#2c5fff; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+                      {t('Use case')}
+                    </span>
+                  </div>
                   <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;')}>
                     <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
                       <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
@@ -583,7 +595,7 @@ export default function HomePage() {
                       <ImageSlot id={'lib-' + item.id} shape="rect" placeholder="ảnh" />
                     </div>
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                      <h3 className="zp-card-title" style={css(`margin:0; font:800 14.5px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
+                      <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
                       <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
                     </div>
                   </div>
