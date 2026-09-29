@@ -16,7 +16,7 @@ export default function Layout({ active, children }) {
   return (
     <>
       <Sidebar active={active} />
-      <div style={{ marginLeft: collapsed ? 76 : 260, paddingTop: 72, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: '#04060d', transition: 'margin-left .16s ease' }}>
+      <div style={{ marginLeft: collapsed ? 68 : 224, paddingTop: 58, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: '#04060d', transition: 'margin-left .16s ease' }}>
         <TopNav />
         <main key={pathname} className={typeof document !== 'undefined' && document.documentElement.classList.contains('zp-vt') ? undefined : 'zp-page-in'} style={{ flex: 1, position: 'relative', overflow: 'clip' }}>
           {children}

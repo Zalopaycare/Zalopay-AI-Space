@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { label: 'Câu hỏi', to: '/questions', match: (p) => p.startsWith('/questions') },
 ]
 
-const navItemBase = 'font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;padding:6px 2px;transition:color .15s;background:none;border:none;text-decoration:none;white-space:nowrap;'
+const navItemBase = 'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:999px;transition:color .15s, background .15s, box-shadow .15s;border:1px solid transparent;text-decoration:none;white-space:nowrap;'
 
 /** The thin top bar, offset by the (collapsible) sidebar: page nav (+ login button when signed out); the profile chip lives at the bottom of the Sidebar. */
 export default function TopNav() {
@@ -21,16 +21,17 @@ export default function TopNav() {
   const [collapsed] = useSidebarCollapsed()
 
   return (
-    <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:${collapsed ? 76 : 260}px; right:0; height:72px; z-index:1900; display:flex; align-items:center; padding:0 32px; background:rgba(4,6,13,.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.08); font-family:inherit; transition:left .16s ease;`)}>
+    <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:${collapsed ? 68 : 224}px; right:0; height:58px; z-index:1900; display:flex; align-items:center; padding:0 28px; background:linear-gradient(90deg, rgba(14,30,90,.55) 0%, rgba(8,15,44,.42) 50%, rgba(14,30,90,.55) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.16); box-shadow:0 8px 30px rgba(10,30,110,.18); font-family:inherit; transition:left .16s ease;`)}>
       <div style={{ flex: 1 }}></div>
-      <nav style={css('display:flex; align-items:center; gap:34px;')}>
+      <nav style={css('display:flex; align-items:center; gap:6px;')}>
         {NAV_ITEMS.map((item) => {
           const active = item.match(location.pathname)
           return (
             <SoftLink
               key={item.to}
               to={item.to}
-              style={css(navItemBase + (active ? 'color:#fff;border-bottom:2px solid #fff;' : 'color:#c3d0f5;border-bottom:2px solid transparent;'))}
+              className={active ? undefined : hoverClass('color:#fff; background:rgba(60,110,255,.12);')}
+              style={css(navItemBase + (active ? 'color:#fff; background:rgba(60,110,255,.22); border-color:rgba(130,175,255,.45); box-shadow:0 0 16px rgba(44,95,255,.28);' : 'color:#b4c3e8;'))}
             >
               {t(item.label)}
             </SoftLink>
@@ -41,7 +42,7 @@ export default function TopNav() {
         {!user && (
           <button
             onClick={() => openLogin()}
-            style={css('display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 18px; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; border:none; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}
+            style={css('display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 16px; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; border:none; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}
           >
             {t('Đăng nhập')}
           </button>
