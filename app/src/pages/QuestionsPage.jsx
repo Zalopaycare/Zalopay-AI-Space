@@ -453,7 +453,7 @@ export default function QuestionsPage() {
                       <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(q.hasTitle !== false ? 'margin:5px 0 0; font:400 13.5px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;' : 'margin:2px 0 0; font:500 15px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:pre-wrap;')}>
                         {q.bodyShown}
                         {q.truncated && (
-                          <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3366F0; vertical-align:baseline;')}>{t('Xem thêm')}</button>
+                          <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#7C3AED; vertical-align:baseline;')}>{t('Xem thêm')} →</button>
                         )}
                       </p>
                       {q.hasImages && <ImageThumbs srcs={q.images} height={inModal ? 200 : 140} />}

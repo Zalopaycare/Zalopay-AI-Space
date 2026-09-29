@@ -54,13 +54,6 @@ export default function UseCaseLibraryPage() {
   const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
   const navigate = useNavigate()
   const [sidebarCollapsed] = useSidebarCollapsed()
-  // Detail view: once scrolled, the pinned back button shrinks to an arrow so it doesn't cover the content.
-  const [scrolled, setScrolled] = useState(false)
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 60)
-    on(); window.addEventListener('scroll', on, { passive: true })
-    return () => window.removeEventListener('scroll', on)
-  }, [])
   const location = useLocation()
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
@@ -452,16 +445,16 @@ export default function UseCaseLibraryPage() {
           <SpaceBackdrop arcTop={300} />
           <div style={css('position:relative; z-index:3; max-width:900px; margin:0 auto; padding:18px 40px 40px;')}>
             {/* Back button stays pinned top-left while scrolling; portalled so no transformed/clipped ancestor traps it. */}
-            <div style={{ height: 36, marginBottom: 18 }}></div>
+            <div style={{ height: 26, marginBottom: 16 }}></div>
             {createPortal(
               <button
                 onClick={() => navigate('/use-cases')}
                 title={t('Quay lại Use Case Library')}
-                className={hoverClass('color:#fff !important; background:rgba(60,110,255,.30) !important; border-color:rgba(130,175,255,.6) !important;')}
-                style={css(`position:fixed; top:72px; left:${sidebarCollapsed ? 68 + 24 : 224 + 24}px; z-index:1800; display:inline-flex; align-items:center; gap:8px; height:36px; ${scrolled ? 'width:36px; padding:0; justify-content:center;' : 'padding:0 16px 0 12px;'} border-radius:999px; background:rgba(10,20,60,.72); border:1px solid rgba(130,170,255,.28); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 8px 24px rgba(0,0,0,.35); color:#dbe6ff; font-size:13.5px; font-weight:600; font-family:inherit; cursor:pointer; transition:left .16s ease, background .15s, border-color .15s;`)}
+                className={hoverClass('color:#fff !important;')}
+                style={css(`position:fixed; top:74px; left:${sidebarCollapsed ? 68 + 24 : 224 + 24}px; z-index:1800; display:inline-flex; align-items:center; gap:7px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; text-shadow:0 1px 8px rgba(0,0,0,.8); transition:left .16s ease, color .15s;`)}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
-                {!scrolled && t('Quay lại Use Case Library')}
+                <svg style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.8))' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                {t('Quay lại')}
               </button>,
               document.body,
             )}

@@ -151,7 +151,7 @@ export default function HomePage() {
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   // Newest approved community use cases first, topped up with the built-in picks.
   const { version: pubV } = usePublishedUseCases()
-  const featuredCases = [...allCases.filter((c) => c.submitted), ...FEATURED_IDS.map((fid) => allCases.find((c) => c.id === fid)).filter(Boolean)].slice(0, 4)
+  const featuredCases = [...allCases.filter((c) => c.submitted), ...FEATURED_IDS.map((fid) => allCases.find((c) => c.id === fid)).filter(Boolean)].slice(0, 3)
   useEffect(() => { featuredCases.forEach((c) => refreshUcMeta(c.id)) }, [pubV]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- trending questions (top 3 unresolved by helpfulness, then recency) ----
@@ -338,7 +338,7 @@ export default function HomePage() {
         <section id="waiting" style={css('position:relative; z-index:1; padding:22px 40px 16px; background:transparent;')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
-              <h2 style={css(`margin:0; font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; background:linear-gradient(100deg,#ffffff 0%,#f1e4ff 35%,#d9b8ff 70%,#c89bff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(12,4,40,.75)) drop-shadow(0 0 16px rgba(176,108,255,.6));`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
+              <h2 style={css(`margin:0; font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; background:linear-gradient(100deg,#ffffff 0%,#f1e4ff 35%,#d9b8ff 70%,#c89bff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(12,4,40,.75)) drop-shadow(0 0 10px rgba(200,145,255,.75)) drop-shadow(0 0 26px rgba(170,100,255,.55));`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
               <button
                 onClick={() => navigate('/questions')}
                 className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}
@@ -392,7 +392,7 @@ export default function HomePage() {
                   <div style={css('flex:1; padding:6px 16px 0;')}>
                     {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
                     <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 13.5px' : '500 15px'}/1.55 ${FONT}; color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
-                    <button onClick={(e) => { e.stopPropagation(); navigate('/questions#q=' + encodeURIComponent(q.id)) }} className={hoverClass('color:#1741c9;')} style={css(`display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#2c5fff;`)}>
+                    <button onClick={(e) => { e.stopPropagation(); navigate('/questions#q=' + encodeURIComponent(q.id)) }} className={hoverClass('color:#5B21B6 !important;')} style={css(`display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#7C3AED;`)}>
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
@@ -539,7 +539,7 @@ export default function HomePage() {
         <section id="featured" style={css('position:relative; padding:24px 40px 36px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
-              <h2 style={css(`font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; margin:0; background:linear-gradient(100deg,#ffffff 0%,#dce9ff 35%,#9fc2ff 70%,#78a8ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(2,8,30,.75)) drop-shadow(0 0 16px rgba(70,130,255,.6));`)}>{t('Use case nổi bật')}</h2>
+              <h2 style={css(`font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; margin:0; background:linear-gradient(100deg,#ffffff 0%,#dce9ff 35%,#9fc2ff 70%,#78a8ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(2,8,30,.75)) drop-shadow(0 0 10px rgba(110,165,255,.75)) drop-shadow(0 0 26px rgba(70,130,255,.55));`)}>{t('Use case nổi bật')}</h2>
               <button
                 onClick={() => navigate('/use-cases')}
                 className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}

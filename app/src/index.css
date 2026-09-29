@@ -37,9 +37,8 @@ input, textarea, button { font-family: inherit; }
 .zp-card .zp-card-title { transition: color .16s ease; }
 .zp-card:hover .zp-card-title { color: #2c5fff !important; }
 .zp-card-dark:hover .zp-card-title { color: #7fb2ff !important; }
-/* Question cards: purple hover to match their tag and glow. */
-.zp-card-q:hover .zp-card-title, .zp-card-q:hover .zp-card-body { color: #7C3AED !important; }
-.zp-card-q .zp-card-body { transition: color .16s ease; }
+/* Question cards keep dark text on hover (only their "Xem thêm" link is purple). */
+.zp-card-q:hover .zp-card-title { color: #0F172A !important; }
 
 /* Home wordmark: UFO patrol, plus a one-time intro (fly in, sweep the beam to reveal the logo, "ting"). */
 .zp-ufo { position: absolute; left: 55.5%; top: 0; pointer-events: none; animation: ufopatrol 7s ease-in-out infinite; }
