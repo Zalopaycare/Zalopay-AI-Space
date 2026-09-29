@@ -248,10 +248,6 @@ export default function AdminConsolePage() {
           <div style={css('display:flex; align-items:center; gap:12px;')}>
             <Link to="/" style={{ display: 'flex' }}><img src={logo} alt="Zalopay AI Space" style={{ height: 15, width: 'auto', display: 'block' }} /></Link>
             <span style={css(font(800, 10.5) + ';letter-spacing:.6px;padding:3px 9px;border-radius:999px;background:rgba(60,110,255,.22);border:1px solid rgba(130,175,255,.45);color:#dbe8ff;')}>ADMIN</span>
-            <Link to="/" className={hoverClass('color:#fff !important; background:rgba(60,110,255,.22) !important; border-color:rgba(130,175,255,.45) !important;')} style={css('margin-left:8px; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:1px solid transparent; text-decoration:none; color:#b4c3e8;' + font(600, 13) + ';')}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
-              Về trang chính
-            </Link>
           </div>
           <div style={css('display:flex; align-items:center; gap:12px;')}>
             <div style={{ position: 'relative' }} ref={notifRef}>
