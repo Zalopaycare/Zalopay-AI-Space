@@ -15,6 +15,7 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
+import UseCaseGuide from '../components/UseCaseGuide.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
@@ -523,7 +524,8 @@ export default function UseCaseLibraryPage() {
                 </div>
               )}
             </div>
-            {tablesR.map((tb, ti) => (
+            {cd.guide && <UseCaseGuide guide={cd.guide} />}
+            {!cd.guide && tablesR.map((tb, ti) => (
               <div key={ti} style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:26px;')}>
                 <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:6px;')}>{tb.title}</div>
                 <div style={css('font-size:12.5px; color:#64748b; margin-bottom:16px;')}>{tb.note}</div>
@@ -548,6 +550,7 @@ export default function UseCaseLibraryPage() {
               </div>
             ))}
 
+            {!cd.guide && (<>
             <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
               <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Deep dive</h2>
               <span style={css('font-size:13px; color:#8b98b8;')}>Chuẩn bị trước › Các bước cài đặt › Lỗi phổ biến › Bảo mật</span>
@@ -635,6 +638,8 @@ export default function UseCaseLibraryPage() {
                 </div>
               </div>
             )}
+
+            </>)}
 
             {!!dsel.repoHref && (
               <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:20px 24px; margin-bottom:26px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;')}>

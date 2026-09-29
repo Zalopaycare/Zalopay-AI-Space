@@ -1,3 +1,4 @@
+import { agentBaseGuide } from './guides/agentBase.js'
 // Ported near-verbatim from Zalopay Use Case Library v2.dc.html's Logic class
 // (prdMeta / caseDetail / allCases / teamsData getters) — the 5 real use cases,
 // sourced from the PDFs in project/uploads, exactly as the design session wrote them.
@@ -261,82 +262,31 @@ export const caseDetail = {
     ],
   },
   c4: {
-    summary: 'Agent Base là hệ thống nội bộ dùng để đưa ứng dụng lên chạy thật trên internet và trả về một đường link chia sẻ được. Bộ Zalopay Agent Base Skills cài thêm vào Claude Code, Codex hoặc Cursor giúp AI làm phần kỹ thuật thay bạn, dành cho người chưa rành kỹ thuật.',
-    tables: [
-      { title: 'Chuẩn bị trước khi cài', note: 'Kiểm tra đủ 6 mục trước khi bắt đầu.', cols: ['Cần có', 'Ghi chú'], rows: [
-        ['macOS hoặc Linux, Windows', 'Bộ skill chạy trên các hệ điều hành này'],
-        ['Một công cụ AI', 'Chọn một trong ba: Claude Code, Codex hoặc Cursor'],
-        ['Node.js (bản LTS)', 'Dùng để chạy MCP Server Agentbase'],
-        ['python3 và git', 'Dùng cho các script của Agentbase'],
-        ['File cấu hình <tên_bạn>_zlpagentbase.env', 'Do SRE cấp riêng cho bạn — liên hệ SRE nếu chưa có'],
-        ['Bộ skill ZLP_AgentBase_Skills_V2', '5 thư mục con bắt đầu bằng zlp-agentbase-, tải và giải nén từ link đính kèm'],
-      ] },
-      { title: 'Đọc kết quả sau khi cài', note: 'AI sẽ báo lại một bảng kết quả.', cols: ['Dòng kết quả', 'Ý nghĩa'], rows: [
-        ['API check: PASS', 'Kết nối thành công, dùng được.'],
-        ['API check: FAIL', 'Chưa dùng được — xem mục 7 (Lỗi hay gặp) của tài liệu.'],
-        ['ALREADY OK (unchanged)', 'Không cần khởi động lại công cụ.'],
-      ] },
-    ],
-    code: [
-      { title: 'PROMPT — KIỂM TRA MÁY', code: 'Kiểm tra giúp tôi máy đã cài Node.js, python3, git và Docker chưa.\nCái nào chưa có thì chỉ tôi cách cài nhé.' },
-      { title: 'PROMPT — CÀI VÀO CLAUDE CODE', code: 'Tôi cần cài bộ skill ZLP Agent Base vào Claude Code.\n- Thư mục skill sau khi giải nén: ~/Downloads/ZLP_AgentBase_Skills_V2\n- File cấu hình SRE cấp cho tôi: ~/Downloads/luanpd_zlpagentbase.env\n\nHãy làm giúp tôi theo đúng thứ tự:\n1. Tạo thư mục ~/.claude/skills nếu chưa có, rồi copy 5 thư mục bắt đầu bằng zlp-agentbase- vào đó.\n2. Copy file cấu hình thành ~/.claude/zlpagentbase.env rồi đặt quyền chmod 600.\n3. Chạy skill zlp-agentbase-init để kết nối máy tôi với Agent Base.\n4. Báo lại kết quả và cho tôi biết có cần khởi động lại Claude Code không.' },
-    ],
-    gallery: [
-      { id: 'uc-c4-result', placeholder: 'bảng kết quả AI báo sau khi cài', caption: 'Bảng kết quả với dòng API check.' },
-      { id: 'uc-c4-link', placeholder: 'ảnh app đã deploy và link chạy thật', caption: 'Ứng dụng sau khi đưa lên Agent Base.' },
-    ],
-    level: 'ready',
-    howto: {
-      prep: [
-        'macOS, Linux hoặc Windows.',
-        'Một công cụ AI: Claude Code, Codex hoặc Cursor.',
-        'Node.js bản LTS — dùng để chạy MCP Server Agentbase.',
-        'python3 và git — dùng cho các script của Agentbase.',
-        'File cấu hình <tên_bạn>_zlpagentbase.env do SRE cấp riêng; chưa có thì liên hệ SRE.',
-        'Bộ ZLP_AgentBase_Skills_V2 đã tải và giải nén (5 thư mục bắt đầu bằng zlp-agentbase-).',
-      ],
-      steps: [
-        'Nhờ AI kiểm tra máy: "Kiểm tra giúp tôi máy đã cài Node.js, python3, git và Docker chưa. Cái nào chưa có thì chỉ tôi cách cài nhé."',
-        'Dán prompt cài đặt ở khối PROMPT bên dưới: AI tạo thư mục skills, copy 5 thư mục zlp-agentbase-, đặt file cấu hình và chmod 600.',
-        'AI chạy skill zlp-agentbase-init để nối máy bạn với Agent Base.',
-        'Đọc bảng kết quả AI báo lại, nhìn dòng API check.',
-        '※ API check PASS thì ra lệnh tiếp bằng tiếng Việt, ví dụ: "Deploy app trong thư mục này lên Agent Base và cho tôi link."',
-      ],
-      success: [
-        'Bảng kết quả hiện dòng API check: PASS.',
-        'Dòng ALREADY OK (unchanged) nghĩa là không cần khởi động lại công cụ.',
-        '※ Mở link Agent Base trả về bằng trình duyệt thấy app chạy, gửi link cho người khác cũng mở được.',
-      ],
-      pitfalls: [
-        'API check: FAIL → xem mục 7 (Lỗi hay gặp) trong tài liệu trước khi hỏi ai.',
-        '※ File cấu hình sau khi copy phải đúng tên zlpagentbase.env; để nguyên tên có tiền tố thì init không tìm thấy.',
-        'Mỗi app giới hạn 2 CPU / 4 GB RAM nên chưa chạy được model local như ollama hay vllm.',
-        'Hiện mới triển khai ở môi trường dev và bộ skill mới test trên macOS.',
-      ],
-      contact: [
-        'SRE (HienLQ) — cấp file cấu hình .env và xử lý khi cần thêm tài nguyên.',
-      ],
-    },
+    summary: 'Agent Base là hệ thống nội bộ để đưa ứng dụng lên chạy thật và trả về một đường link chia sẻ được. Bộ Zalopay Agent Base Skills cài vào Claude Code, Codex hoặc Cursor để AI tự làm toàn bộ phần kỹ thuật — bạn chỉ cần ra lệnh bằng tiếng Việt.',
+    problem: 'Người không rành kỹ thuật muốn đưa trợ lý AI của mình lên chạy thật, nhưng việc này thường phải nhờ người kỹ thuật: cần biết server, đóng gói, cấu hình tên miền và mật khẩu.',
     audience: 'Người không rành kỹ thuật muốn tự deploy agent',
     pain: [
       'Đưa ứng dụng lên chạy thật bình thường cần người kỹ thuật làm.',
       'Người mới không biết lập trình, không biết server, không muốn gõ lệnh phức tạp.',
     ],
     solution: [
-      'Agent Base là hệ thống nội bộ để đưa ứng dụng lên chạy thật và trả về link mở bằng trình duyệt.',
-      'Bộ Zalopay Agent Base Skills cài thêm vào Claude Code, Codex hoặc Cursor để AI biết cách làm phần kỹ thuật.',
-      'Người dùng ra lệnh bằng tiếng Việt; AI thực hiện theo hướng dẫn trong bộ skill rồi tự thao tác trên Agent Base.',
-      'Cài bằng cách nhờ AI copy 5 thư mục skill vào client, đặt file cấu hình SRE cấp, rồi chạy skill init và đọc kết quả API check.',
+      'Cài bộ Zalopay Agent Base Skills vào công cụ AI bạn đang dùng (Claude Code, Codex hoặc Cursor) bằng một prompt có sẵn.',
+      'Mở AI ngay trong thư mục code và gõ "Deploy ứng dụng này lên Zalopay agent base dùm nhé" — AI hỏi vài câu rồi tự làm phần còn lại.',
+      'Kiểm tra trạng thái, đổi tên miền, tạm dừng hay xoá ứng dụng đều bằng một câu tiếng Việt.',
     ],
     result: [
-      'Người non-tech tự đưa agent lên chạy thật mà không cần biết lập trình hay server.',
-      'Quy trình cài đặt gói thành prompt sẵn cho Claude Code, Codex và Cursor.',
+      'Nhận về một đường link chạy thật (có thể đặt mật khẩu bảo vệ) để mở bằng trình duyệt và gửi cho người khác.',
+      'Toàn bộ quy trình — cài đặt, deploy, cập nhật, kiểm tra, xử lý lỗi — đều có prompt copy sẵn bên dưới.',
     ],
     next: [
-      'Hiện chỉ triển khai ở môi trường dev; bộ skill mới test trên macOS.',
-      'Mỗi ứng dụng bị giới hạn 2 CPU / 4 GB RAM nên chưa chạy được model local như ollama, vllm — cần liên hệ SRE nếu có nhu cầu.',
-      'Cần Node.js LTS, python3, git và file cấu hình <tên>_zlpagentbase.env do SRE cấp.',
+      'Hiện mới triển khai ở môi trường dev; bộ skill mới test trên macOS.',
+      'Mỗi ứng dụng giới hạn 2 CPU / 4 GB RAM — chưa chạy được model local như ollama, vllm (liên hệ SRE HienLQ nếu cần).',
     ],
+    guide: agentBaseGuide,
+    level: 'ready',
+    howto: {
+      contact: ['SRE (HienLQ) — cấp file cấu hình zlpagentbase.env, kiểm tra key và hỗ trợ khi cần thêm tài nguyên.'],
+    },
   },
   c5: {
     summary: 'Trang quản trị cũ và khó dùng, còn kinh doanh phải thuê agency viết bài: hơn 300 nghìn đồng một bài, mất 2–3 ngày. Dự án làm bộ kết nối để trợ lý AI (Claude hoặc ChatGPT) tự viết và xuất bản bài lên website, người vận hành chỉ ra yêu cầu và duyệt.',
@@ -424,7 +374,7 @@ export const allCases = [
   { id: 'c1', title: 'Tự động chạy lại toàn bộ kịch bản kiểm thử trên máy Android, giảm thao tác lặp cho QC', desc: 'Ghi lại thao tác của QC một lần rồi cho máy tự bấm lại trên điện thoại thật, có so ảnh màn hình trước mỗi bước để không bấm sai.', author: 'Chưa rõ', team: 'Tài liệu không ghi PIC', category: 'Engineering', tools: [], repo: '', repoHref: '', audience: ['tech'] },
   { id: 'c2', title: 'Bộ agent dùng chung cho Claude Code, Cursor và Codex, giúp cả team làm việc với AI theo một chuẩn', desc: 'Cài một lần là cả team có cùng bộ trợ lý AI, cùng bộ lệnh và cùng tiêu chuẩn kỹ thuật, thay vì mỗi người tự dựng một kiểu.', author: 'NamNTH', team: 'Utility Solutions', category: 'Engineering', tools: ['Claude', 'Cursor', 'Codex'], repo: 'GitLab · aqr/bill/us-hive', repoHref: 'https://gitlab.zalopay.vn/aqr/bill/us-hive', audience: ['tech'] },
   { id: 'c3', title: 'Giảm lỗi cấu hình campaign trong CRM tool, chặn sai sót trước khi campaign chạy', desc: 'Rà 1.881 yêu cầu hỗ trợ về khuyến mãi (01–07/2026) để tìm những chỗ hay nhập sai khi thiết lập chiến dịch và cách chặn lỗi trước khi chạy.', author: 'KietTT', team: 'Promotion · CRM', category: 'Operations', tools: [], repo: '', repoHref: '', audience: ['nontech'] },
-  { id: 'c4', title: 'Giúp người không rành kỹ thuật tự đưa AI agent lên chạy thật bằng lệnh tiếng Việt', desc: 'Hướng dẫn người không rành kỹ thuật tự đưa trợ lý AI lên chạy thật: ra lệnh bằng tiếng Việt, AI lo phần kỹ thuật và trả về một đường link dùng được.', author: 'Chưa rõ', team: 'Hỗ trợ: SRE (HienLQ)', category: 'People Enablement', tools: ['Claude', 'Codex', 'Cursor'], repo: '', repoHref: '', audience: ['nontech'] },
+  { id: 'c4', title: 'Giúp người không rành kỹ thuật tự đưa AI agent lên chạy thật bằng lệnh tiếng Việt', desc: 'Hướng dẫn từng bước dùng Zalopay Agent Base: cài bộ skill vào Claude Code / Codex / Cursor, rồi chỉ cần ra lệnh bằng tiếng Việt để AI deploy, cập nhật, kiểm tra và đổi tên miền cho ứng dụng — prompt copy sẵn cho mọi bước.', author: 'Chưa rõ', team: 'Hỗ trợ: SRE (HienLQ)', category: 'People Enablement', tools: ['Claude', 'Codex', 'Cursor'], repo: '', repoHref: '', audience: ['nontech'] },
   { id: 'c5', title: 'Để AI agent tự viết và đăng bài trên website, giảm chi phí thuê Agency', desc: 'Bộ kết nối cho trợ lý AI tự viết và đăng bài tin tức lên website, giữ văn phong giống người viết và giảm chi phí thuê agency.', author: 'LuanNA', team: 'CMS · Website', category: 'Marketing', tools: ['Claude', 'GPT'], repo: 'GitLab · zlpws-admin-mcp', repoHref: 'https://gitlab.zalopay.vn/cms/zlp-website/zlpws-admin-mcp', audience: ['tech', 'nontech'] },
 ]
 
