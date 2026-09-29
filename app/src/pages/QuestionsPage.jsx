@@ -12,6 +12,7 @@ import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
 import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../components/CommentMenu.jsx'
+import MentionField, { MENTION_SPLIT, shortMention, expandMentions } from '../components/MentionField.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Khác']
@@ -32,7 +33,7 @@ const chip = (on) => ({ bg: on ? '#E7ECFB' : '#ffffff', border: on ? '#B9CCF8' :
 const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase()
 const mentionScan = (v) => { const m = /(?:^|\s)@([\p{L}\w.-]*)$/u.exec(v); return m ? m[1].toLowerCase() : null }
 const insertMention = (v, handle) => v.replace(/@([\p{L}\w.-]*)$/u, '@' + handle + ' ')
-const renderBody = (text) => String(text).split(/(@[A-Za-z0-9._-]+(?:@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)?)/g).map((p, i) => (p.charAt(0) === '@' ? <span key={i} style={{ color: '#2c5fff', fontWeight: 700 }}>{p}</span> : p))
+const renderBody = (text) => String(text).split(MENTION_SPLIT).map((p, i) => (p.charAt(0) === '@' && p.length > 1 ? <span key={i} title={p.slice(1)} style={{ color: '#2c5fff', fontWeight: 700 }}>{shortMention(p)}</span> : p))
 
 export default function QuestionsPage() {
   const { t } = useI18n()
@@ -52,6 +53,10 @@ export default function QuestionsPage() {
   const [commentDrafts, setCommentDrafts] = useState({})
   const [commentReplyTarget, setCommentReplyTarget] = useState(null) // { answerId, parentId, authorName } | null
   const [editing, setEditing] = useState(null) // { kind: 'answer' | 'comment', id }
+  // Per-field map of short @handle → full email for people picked from the directory.
+  const [mentionMap, setMentionMap] = useState({})
+  const rememberMention = (field, tok) => { const h = tok.split('@')[0]; if (tok.includes('@')) setMentionMap((m) => ({ ...m, [field]: { ...(m[field] || {}), [h.toLowerCase()]: tok } })); return h }
+  const takeMentions = (field, text) => { const out = expandMentions(text, mentionMap[field]); setMentionMap((m) => { const n = { ...m }; delete n[field]; return n }); return out }
   const cmodals = useCommentModals(api)
   const [commentReplyDraft, setCommentReplyDraft] = useState('')
   const [expandedCommentThreads, setExpandedCommentThreads] = useState(() => new Set())
@@ -305,11 +310,12 @@ export default function QuestionsPage() {
         comments: a.comments.map((c, j) => ({ ...c, time: relativeTime(c.time), bodyEl: renderBody(c.body), avatarBg: c.avatarColor || AV[(c.author.charCodeAt(0) + j) % AV.length] })),
         commentDraft: cd,
         mentionOpen: cm !== null && mentionList(cm, () => {}).length > 0,
-        mentions: mentionList(cm, (name) => { setCommentDrafts((s) => ({ ...s, [a.id]: insertMention(s[a.id] || '', name) })); setCommentMention(null); focusEnd('cmt-in-' + a.id) }),
+        mentions: mentionList(cm, (tok) => { const name = rememberMention('c:' + a.id, tok); setCommentDrafts((s) => ({ ...s, [a.id]: insertMention(s[a.id] || '', name) })); setCommentMention(null); focusEnd('cmt-in-' + a.id) }),
         onCommentChange: (e) => { const v = e.target.value, mq = mentionScan(v); setCommentDrafts((s) => ({ ...s, [a.id]: v })); setCommentMention(mq === null ? null : { id: a.id, query: mq }) },
         onPostComment: () => {
-          const body = (commentDrafts[a.id] || '').trim()
-          if (!body) return
+          const raw = (commentDrafts[a.id] || '').trim()
+          if (!raw) return
+          const body = takeMentions('c:' + a.id, raw)
           requireLogin(() => api.postAnswerComment(q.id, a.id, body).then((d) => { patch(q.id, d.question); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(() => {}))
           setCommentDrafts((s) => ({ ...s, [a.id]: '' })); setCommentMention(null)
         },
@@ -348,11 +354,12 @@ export default function QuestionsPage() {
       replyDraft: draft,
       onReplyChange: (e) => { const v = e.target.value, mq = mentionScan(v); setReplyDrafts((s) => ({ ...s, [q.id]: v })); setReplyMention(mq === null ? null : { id: q.id, query: mq }) },
       replyMentionOpen: rm !== null && mentionList(rm, () => {}).length > 0,
-      replyMentions: mentionList(rm, (name) => { setReplyDrafts((s) => ({ ...s, [q.id]: insertMention(s[q.id] || '', name) })); setReplyMention(null); focusEnd('ans-in-' + q.id) }),
+      replyMentions: mentionList(rm, (tok) => { const name = rememberMention('q:' + q.id, tok); setReplyDrafts((s) => ({ ...s, [q.id]: insertMention(s[q.id] || '', name) })); setReplyMention(null); focusEnd('ans-in-' + q.id) }),
       replyOpacity: draft.trim() ? 1 : 0.5,
       onPostReply: () => {
-        const body = (replyDrafts[q.id] || '').trim()
-        if (!body) return
+        const raw = (replyDrafts[q.id] || '').trim()
+        if (!raw) return
+        const body = takeMentions('q:' + q.id, raw)
         requireLogin(() => api.postAnswer(q.id, body).then((d) => patch(q.id, d.question)).catch(() => {}))
         setReplyDrafts((s) => ({ ...s, [q.id]: '' })); setReplyMention(null)
       },
@@ -590,7 +597,7 @@ export default function QuestionsPage() {
                                     <div style={css('display:flex; gap:10px; align-items:center;')}>
                                       <div style={css('flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
                                       <div style={css('flex:1; position:relative;')}>
-                                        <input id={'cmt-in-' + a.id} value={a.commentDraft} onChange={a.onCommentChange} onKeyDown={enterSends(a.onPostComment, () => { if (a.mentionOpen && a.mentions[0]) { a.mentions[0].onPick(); return true } return false })} placeholder={t('Reply comment của') + ' ' + a.author + ', ' + t('gõ @ để mention...')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
+                                        <MentionField id={'cmt-in-' + a.id} value={a.commentDraft} onChange={a.onCommentChange} onKeyDown={enterSends(a.onPostComment, () => { if (a.mentionOpen && a.mentions[0]) { a.mentions[0].onPick(); return true } return false })} placeholder={t('Reply comment của') + ' ' + a.author + ', ' + t('gõ @ để mention...')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
                                         {a.mentionOpen && (
                                           <div style={css('position:absolute; left:0; bottom:42px; width:320px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                             {a.mentions.map((m) => (
@@ -621,7 +628,7 @@ export default function QuestionsPage() {
                         <div style={css('display:flex; gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid #E6EBF3;')}>
                           <div style={css('flex:none; width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
                           <div style={{ flex: 1, position: 'relative' }}>
-                            <textarea id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onKeyDown={enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false })} rows={3} placeholder={t('Viết comment của bạn. Gõ @ để mention đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:16px; padding:12px 15px; font-size:14.5px; line-height:1.7; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}></textarea>
+                            <MentionField multiline id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onKeyDown={enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false })} rows={3} placeholder={t('Viết comment của bạn. Gõ @ để mention đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:16px; padding:12px 15px; font-size:14.5px; line-height:1.7; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')} />
                             {q.replyMentionOpen && (
                               <div style={css('position:absolute; left:0; bottom:58px; width:340px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                 {q.replyMentions.map((m) => (
