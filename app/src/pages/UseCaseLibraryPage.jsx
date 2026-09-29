@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { createPortal } from 'react-dom'
+import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
 import { css, cx, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -51,6 +53,14 @@ export default function UseCaseLibraryPage() {
   const { id } = useParams()
   const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
   const navigate = useNavigate()
+  const [sidebarCollapsed] = useSidebarCollapsed()
+  // Detail view: once scrolled, the pinned back button shrinks to an arrow so it doesn't cover the content.
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 60)
+    on(); window.addEventListener('scroll', on, { passive: true })
+    return () => window.removeEventListener('scroll', on)
+  }, [])
   const location = useLocation()
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
@@ -441,14 +451,20 @@ export default function UseCaseLibraryPage() {
         <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
           <SpaceBackdrop arcTop={300} />
           <div style={css('position:relative; z-index:3; max-width:900px; margin:0 auto; padding:18px 40px 40px;')}>
-            <button
-              onClick={() => navigate('/use-cases')}
-              className={hoverClass('color:#fff;')}
-              style={css('display:inline-flex; align-items:center; gap:9px; background:none; border:none; color:#c3c3d4; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:22px; padding:0;')}
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
-              {t('Quay lại Use Case Library')}
-            </button>
+            {/* Back button stays pinned top-left while scrolling; portalled so no transformed/clipped ancestor traps it. */}
+            <div style={{ height: 36, marginBottom: 18 }}></div>
+            {createPortal(
+              <button
+                onClick={() => navigate('/use-cases')}
+                title={t('Quay lại Use Case Library')}
+                className={hoverClass('color:#fff !important; background:rgba(60,110,255,.30) !important; border-color:rgba(130,175,255,.6) !important;')}
+                style={css(`position:fixed; top:72px; left:${sidebarCollapsed ? 68 + 24 : 224 + 24}px; z-index:1800; display:inline-flex; align-items:center; gap:8px; height:36px; ${scrolled ? 'width:36px; padding:0; justify-content:center;' : 'padding:0 16px 0 12px;'} border-radius:999px; background:rgba(10,20,60,.72); border:1px solid rgba(130,170,255,.28); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 8px 24px rgba(0,0,0,.35); color:#dbe6ff; font-size:13.5px; font-weight:600; font-family:inherit; cursor:pointer; transition:left .16s ease, background .15s, border-color .15s;`)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                {!scrolled && t('Quay lại Use Case Library')}
+              </button>,
+              document.body,
+            )}
             <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;')}>
               {dTopics.map((tp) => (
                 <span key={'t-' + tp} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:12.5px; font-weight:700;')}>{tp}</span>

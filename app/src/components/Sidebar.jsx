@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import SoftLink from './SoftLink.jsx'
 import { useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -58,9 +59,11 @@ export default function Sidebar({ active }) {
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const popRef = useRef(null)
+  const [menuPos, setMenuPos] = useState(null) // { left, bottom } of the popup, from the chip's position
   useEffect(() => {
     if (!menuOpen) return
-    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false) }
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target) && !(popRef.current && popRef.current.contains(e.target))) setMenuOpen(false) }
     document.addEventListener('click', close)
     return () => document.removeEventListener('click', close)
   }, [menuOpen])
@@ -138,8 +141,9 @@ export default function Sidebar({ active }) {
       <div style={{ flex: 1 }}></div>
       {user && (
         <div ref={menuRef} style={css('position:relative; margin-top:16px;')}>
-          {menuOpen && (
-            <div style={css(`position:absolute; left:0; ${collapsed ? 'width:210px;' : 'right:0;'} bottom:calc(100% + 8px); background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:5;`)}>
+          {menuOpen && menuPos && createPortal(
+            // Portalled to <body>: the sidebar clips its overflow, so a popup inside it would be cut off when collapsed.
+            <div ref={popRef} style={css(`position:fixed; left:${menuPos.left}px; bottom:${menuPos.bottom}px; width:${menuPos.width}px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:2100;`)}>
               {user.isAdmin && (
                 <SoftLink
                   to="/admin"
@@ -153,9 +157,10 @@ export default function Sidebar({ active }) {
               )}
               <button onClick={() => { setMenuOpen(false); logout() }} style={css('display:block; width:100%; text-align:left; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{t('Đăng xuất')}</button>
             </div>
+            ,document.body,
           )}
           <button
-            onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o) }}
+            onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setMenuPos({ left: r.left, bottom: window.innerHeight - r.top + 8, width: collapsed ? 220 : r.width }); setMenuOpen((o) => !o) }}
             title={collapsed ? user.name : undefined}
             className={hoverClass('background:rgba(255,255,255,.1);')}
             style={css(`display:flex; align-items:center; gap:10px; width:100%; padding:5px ${collapsed ? '5px' : '10px 5px 5px'}; border-radius:14px; background:rgba(80,130,255,.10); border:1px solid rgba(130,170,255,.22); cursor:pointer; font-family:inherit; ${collapsed ? 'justify-content:center;' : ''}`)}
