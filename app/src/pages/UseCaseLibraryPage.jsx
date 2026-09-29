@@ -67,6 +67,7 @@ export default function UseCaseLibraryPage() {
   const [ucMeta, setUcMeta] = useState({}) // id -> { helpful, iHelped, saved, comments: [] }
   const [dDraft, setDDraft] = useState('')
   const dBoxRef = useRef(null)
+  const [hoverStar, setHoverStar] = useState(0)
   const replyBoxRef = useRef(null)
   const [replyTarget, setReplyTarget] = useState(null) // { parentId, authorName } | null
   const [replyDraft, setReplyDraft] = useState('')
@@ -444,6 +445,77 @@ export default function UseCaseLibraryPage() {
     const base = live ? live.helpful : (prdMeta[dsel.id] || {}).helpful || 0
     const voted = live ? live.iHelped : false
     const commentsList = live ? live.comments : []
+    // At-a-glance facts shown right under the title: who built it, category, audience,
+    // complexity, star rating (click to rate) and the AI tools used.
+    const DIFF = { 'Dễ': ['#4ADE80', 1], 'Trung bình': ['#FBBF24', 2], 'Khó': ['#F87171', 3] }
+    const diff = cd.difficulty && DIFF[cd.difficulty] ? cd.difficulty : ''
+    const rating = (live && live.rating) || { avg: 0, count: 0, mine: 0 }
+    const shown = hoverStar || rating.mine || 0
+    const rate = (n) => requireLogin(() => api.rateUseCase(dsel.id, n).then((d) => setUcMeta((m) => ({ ...m, [dsel.id]: { ...(m[dsel.id] || {}), rating: d.rating } }))).catch(() => {}))
+    const factLabel = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:7px;')}>{text}</div>
+    const renderFacts = () => (
+      <div style={css('margin-top:22px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.24); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); overflow:hidden;')}>
+        <div style={css('display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); border-bottom:1px solid rgba(130,170,255,.16);')}>
+          <div style={css('padding:16px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
+            {factLabel(t('Người / team thực hiện'))}
+            <div style={css('display:flex; align-items:center; gap:12px;')}>
+              <span style={css(`width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex:none;background:${avatarColor(dsel.author)}`)}>{dsel.author.slice(0, 1).toUpperCase()}</span>
+              <div style={css('min-width:0;')}>
+                <div style={css('font-size:14.5px; font-weight:700; color:#fff;')}>{dinfo.name}</div>
+                <div style={css('font-size:12.5px; color:#a9b8dc;')}>{dsel.team || dinfo.role}</div>
+              </div>
+            </div>
+            {contactR.length > 0 && <div style={css('margin-top:10px; font-size:12.5px; line-height:1.55; color:#c3d0f0;')}><span style={css('font-weight:800; color:#8fb4ff;')}>{t('Liên hệ')}: </span>{contactR.map((c) => c.text).join(' · ')}</div>}
+          </div>
+          <div style={css('padding:16px 18px;')}>
+            {factLabel(t('Đánh giá'))}
+            <div style={css('display:flex; align-items:center; gap:10px; flex-wrap:wrap;')}>
+              <div onMouseLeave={() => setHoverStar(0)} style={css('display:flex; gap:2px;')}>
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const fill = shown ? n <= shown : n <= Math.round(rating.avg)
+                  return (
+                    <button key={n} onClick={() => rate(n)} onMouseEnter={() => setHoverStar(n)} title={`${n}/5`} style={css('border:none; background:none; padding:1px; cursor:pointer; line-height:0;')}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill={fill ? '#FBBF24' : 'none'} stroke={fill ? '#FBBF24' : '#5d6f9c'} strokeWidth="1.8" strokeLinejoin="round" style={fill ? { filter: 'drop-shadow(0 0 6px rgba(251,191,36,.55))' } : undefined}><path d="m12 2.8 2.8 5.7 6.3.9-4.6 4.4 1.1 6.3L12 17.1l-5.6 3 1.1-6.3L2.9 9.4l6.3-.9z"></path></svg>
+                    </button>
+                  )
+                })}
+              </div>
+              <span style={css('font-size:15px; font-weight:800; color:#fff;')}>{rating.count ? rating.avg.toFixed(1) : '—'}<span style={css('font-weight:600; color:#8fa6d8;')}>/5</span></span>
+            </div>
+            <div style={css('margin-top:5px; font-size:12px; color:#a9b8dc;')}>
+              {rating.count ? rating.count + ' ' + t('lượt đánh giá') : t('Chưa có đánh giá')}{rating.mine ? ' · ' + t('bạn chấm') + ' ' + rating.mine + '★' : ' · ' + t('bấm sao để đánh giá')}
+            </div>
+          </div>
+        </div>
+        <div style={css('display:grid; grid-template-columns:repeat(4,minmax(0,1fr));')}>
+          <div style={css('padding:14px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
+            {factLabel(t('Category'))}
+            <div style={css('font-size:13.5px; font-weight:700; color:#fff;')}>{dsel.category || '—'}</div>
+          </div>
+          <div style={css('padding:14px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
+            {factLabel(t('Dành cho ai'))}
+            <div style={css('font-size:13.5px; font-weight:600; line-height:1.45; color:#fff;')}>{cd.audience || '—'}</div>
+          </div>
+          <div style={css('padding:14px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
+            {factLabel(t('Mức độ phức tạp'))}
+            {diff ? (
+              <div style={css('display:flex; align-items:center; gap:8px;')}>
+                <span style={css('display:flex; gap:3px;')}>
+                  {[1, 2, 3].map((n) => <span key={n} style={css(`width:7px; height:14px; border-radius:3px; background:${n <= DIFF[diff][1] ? DIFF[diff][0] : 'rgba(255,255,255,.16)'}; ${n <= DIFF[diff][1] ? `box-shadow:0 0 6px ${DIFF[diff][0]};` : ''}`)}></span>)}
+                </span>
+                <span style={css(`font-size:13.5px; font-weight:800; color:${DIFF[diff][0]};`)}>{t(diff)}</span>
+              </div>
+            ) : <div style={css('font-size:13.5px; color:#fff;')}>—</div>}
+          </div>
+          <div style={css('padding:14px 18px;')}>
+            {factLabel(t('AI sử dụng'))}
+            <div style={css('display:flex; flex-wrap:wrap; gap:5px;')}>
+              {dsel.tools.length ? dsel.tools.map((name) => <span key={name} style={css('display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; font-size:12px; font-weight:700;')}>{name}</span>) : <span style={css('font-size:13.5px; color:#fff;')}>—</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
     const postDComment = () => {
       const text = (dBoxRef.current ? dBoxRef.current.expand(dDraft) : dDraft).trim()
       if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
@@ -472,12 +544,10 @@ export default function UseCaseLibraryPage() {
               {dTopics.map((tp) => (
                 <span key={'t-' + tp} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:12.5px; font-weight:700;')}>{tp}</span>
               ))}
-              {dsel.tools.map((name) => (
-                <span key={'a-' + name} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); color:#fff; font-size:12.5px; font-weight:700;')}>{name}</span>
-              ))}
             </div>
             <h1 style={css('margin:0 0 14px; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{dsel.title}</h1>
             <p style={css('margin:0; font-size:15.5px; line-height:1.68; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{dsel.desc}</p>
+            {renderFacts()}
           </div>
         </section>
 
@@ -660,29 +730,6 @@ export default function UseCaseLibraryPage() {
                 </a>
               </div>
             )}
-
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Team thực hiện')}</div>
-              <div style={css('display:flex; align-items:center; gap:14px;')}>
-                <span style={css(`width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex:none;background:${avatarColor(dsel.author)}`)}>{dsel.author.slice(0, 1).toUpperCase()}</span>
-                <div style={css('min-width:0;')}>
-                  <div style={css('font-size:14px; font-weight:600; color:#0F172A;')}>{dinfo.name}</div>
-                  <div style={css('font-size:13px; color:#64748b;')}>{dsel.team || dinfo.role}</div>
-                </div>
-              </div>
-              {contactR.length > 0 && (
-                <div style={css('margin-top:16px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
-                  <div style={css('font-size:12.5px; font-weight:800; color:#2c5fff; margin-bottom:8px;')}>{t('Liên hệ')}</div>
-                  <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {contactR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#2c5fff;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-                </div>
-              )}
-            </div>
 
             <div id="comments" style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin-bottom:36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}

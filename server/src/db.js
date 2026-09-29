@@ -202,3 +202,14 @@ CREATE TABLE IF NOT EXISTS user_days (
 export function nextId(prefix) {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 }
+
+// 1–5 star ratings on use cases (one per person, changeable).
+db.exec(`
+CREATE TABLE IF NOT EXISTS use_case_ratings (
+  use_case_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  stars INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (use_case_id, user_id)
+);
+`)

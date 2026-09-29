@@ -13,6 +13,7 @@ export const prdMeta = {
 
 export const caseDetail = {
   c1: {
+    difficulty: 'Khó',
     summary: 'Sau mỗi lần sửa app, QC phải bấm tay lại cùng một chuỗi thao tác trên điện thoại. Giải pháp cho phép bấm mẫu một lần, máy ghi lại rồi tự bấm lại y như vậy trên điện thoại thật, có so ảnh màn hình trước mỗi bước để chắc chắn đang đi đúng luồng. Bản thử nghiệm đã chạy nhiều kịch bản liên tiếp, quay video và xuất báo cáo khi có lỗi.',
     tables: [
       { title: 'Công việc của QC và phần hệ thống hỗ trợ', note: 'Effort nằm ở cả chuẩn bị trạng thái, thao tác lặp lại, thời gian chờ và thu thập bằng chứng.', cols: ['Công việc của QC', 'Hệ thống hỗ trợ'], rows: [
@@ -89,6 +90,7 @@ export const caseDetail = {
     ],
   },
   c2: {
+    difficulty: 'Trung bình',
     summary: 'Mỗi người tự cài công cụ và tự đặt cách làm việc với AI, nên cùng một yêu cầu lại ra chất lượng khác nhau. us-hive gom lại thành một bộ trợ lý cài sẵn cho Claude Code, Cursor và Codex: cài một lần là có cùng bộ lệnh, cùng cách kết nối hệ thống nội bộ và cùng tiêu chuẩn kỹ thuật của Zalopay.',
     tables: [
       { title: 'Danh sách trợ lý', note: 'Mỗi trợ lý gọi bằng đúng một câu lệnh giống nhau trên mọi công cụ.', cols: ['Agent / Command', 'Mục đích'], rows: [
@@ -169,6 +171,7 @@ export const caseDetail = {
     ],
   },
   c3: {
+    difficulty: 'Trung bình',
     summary: 'Từ tháng 01 đến 07/2026 có khoảng 1.900 yêu cầu hỗ trợ liên quan đến khuyến mãi, trong đó nhóm nguyên nhân lớn nhất là người cấu hình sai: 289 yêu cầu, 15,4%. Phần lớn do nhập sai thiết lập chiến dịch trong CRM tool, khiến Product và Tech phải điều tra và trả lời lại những câu hỏi giống nhau.',
     tables: [
       { title: 'Tóm tắt nhanh', note: 'Dữ liệu trong khoảng tháng 01 – 07/2026.', cols: ['Mục', 'Nội dung'], rows: [
@@ -262,6 +265,7 @@ export const caseDetail = {
     ],
   },
   c4: {
+    difficulty: 'Dễ',
     summary: 'Agent Base là hệ thống nội bộ để đưa ứng dụng lên chạy thật và trả về một đường link chia sẻ được. Bộ Zalopay Agent Base Skills cài vào Claude Code, Codex hoặc Cursor để AI tự làm toàn bộ phần kỹ thuật — bạn chỉ cần ra lệnh bằng tiếng Việt.',
     problem: 'Người không rành kỹ thuật muốn đưa trợ lý AI của mình lên chạy thật, nhưng việc này thường phải nhờ người kỹ thuật: cần biết server, đóng gói, cấu hình tên miền và mật khẩu.',
     audience: 'Người không rành kỹ thuật muốn tự deploy agent',
@@ -289,6 +293,7 @@ export const caseDetail = {
     },
   },
   c5: {
+    difficulty: 'Khó',
     summary: 'Trang quản trị cũ và khó dùng, còn kinh doanh phải thuê agency viết bài: hơn 300 nghìn đồng một bài, mất 2–3 ngày. Dự án làm bộ kết nối để trợ lý AI (Claude hoặc ChatGPT) tự viết và xuất bản bài lên website, người vận hành chỉ ra yêu cầu và duyệt.',
     tables: [
       { title: 'Vì sao cần làm', note: 'Phụ trách: Luân. Nguyễn Anh · Trạng thái: đã xong.', cols: ['Chỉ số', 'Hiện trạng'], rows: [
@@ -477,6 +482,8 @@ export function registerPublished(subs) {
     authorInfo[author] = { name: s.author || author, role: 'Zalopay' + (s.team ? ' · ' + s.team : '') }
     prdMeta[s.id] = { problem: s.problem, result: s.result, topics: s.topics || [], helpful: 0, comments: 0 }
     caseDetail[s.id] = {
+      difficulty: s.level || '',
+      audience: s.audience || '',
       summary: s.problem,
       problem: s.problem,
       solution: lines(s.solution),

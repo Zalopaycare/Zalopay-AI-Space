@@ -18,7 +18,25 @@ router.get('/:id/meta', requireAuth, (req, res) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
     return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
   })
-  res.json({ helpful, iHelped, saved, comments })
+  res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id) })
+})
+
+const ratingOf = (id, userId) => {
+  const r = db.prepare('SELECT AVG(stars) avg, COUNT(*) n FROM use_case_ratings WHERE use_case_id = ?').get(id)
+  const mine = userId ? db.prepare('SELECT stars FROM use_case_ratings WHERE use_case_id = ? AND user_id = ?').get(id, userId) : null
+  return { avg: r.n ? Math.round(r.avg * 10) / 10 : 0, count: r.n, mine: mine ? mine.stars : 0 }
+}
+
+// Rate a use case 1–5; sending the same number again clears your rating.
+router.post('/:id/rate', requireAuth, (req, res) => {
+  const { id } = req.params
+  const stars = Math.round(Number(req.body?.stars))
+  if (!(stars >= 1 && stars <= 5)) return res.status(400).json({ error: 'invalid_stars' })
+  const prev = db.prepare('SELECT stars FROM use_case_ratings WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id)
+  if (prev && prev.stars === stars) db.prepare('DELETE FROM use_case_ratings WHERE use_case_id = ? AND user_id = ?').run(id, req.user.id)
+  else db.prepare(`INSERT INTO use_case_ratings (use_case_id, user_id, stars) VALUES (?, ?, ?)
+    ON CONFLICT(use_case_id, user_id) DO UPDATE SET stars = excluded.stars, updated_at = datetime('now')`).run(id, req.user.id, stars)
+  res.json({ rating: ratingOf(id, req.user.id) })
 })
 
 router.get('/saved/mine', requireAuth, (req, res) => {
@@ -58,6 +76,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM use_case_comments WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_reactions WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_saves WHERE use_case_id = ?').run(id)
+  db.prepare('DELETE FROM use_case_ratings WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_submissions WHERE id = ?').run(id)
   res.json({ ok: true })
 })
