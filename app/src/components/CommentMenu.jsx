@@ -124,3 +124,8 @@ export function useCommentModals(api) {
   ), document.body)
   return { askDelete: (run) => setDel({ run }), askReport: (type, id) => { setReason(''); setRep({ type, id }) }, modals }
 }
+
+/** Small ⌄ / ⌃ arrow for "Xem thêm N replies" toggles. */
+export const Chevron = ({ up }) => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ transform: up ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><path d="m6 9 6 6 6-6"></path></svg>
+)

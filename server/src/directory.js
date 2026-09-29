@@ -41,8 +41,10 @@ export async function searchDirectory(q, limit = 8) {
     url.searchParams.set('$top', String(limit))
     const r = await fetch(url, { headers: { authorization: `Bearer ${await graphToken()}`, ConsistencyLevel: 'eventual' } })
     if (r.status === 401 || r.status === 403) {
-      // Permission not granted yet — stop hammering Graph for a while.
-      disabledUntil = Date.now() + 10 * 60_000
+      // Permission not granted yet — stop hammering Graph for a while, and drop the token:
+      // one issued before admin consent never gains the new role, so fetch a fresh one next time.
+      token = null
+      disabledUntil = Date.now() + 5 * 60_000
       console.error(`[directory] Graph refused people search (${r.status}); grant User.Read.All application permission with admin consent to enable it.`)
       return []
     }
@@ -55,5 +57,34 @@ export async function searchDirectory(q, limit = 8) {
   } catch (e) {
     console.error('[directory] search failed:', e.message)
     return []
+  }
+}
+
+/**
+ * Admin diagnostic: can the app search the company directory right now?
+ * state: ok | no_sso | token_error | forbidden | error. Always uses a fresh token and
+ * clears the back-off, so it reflects permissions granted a moment ago.
+ */
+export async function directoryStatus() {
+  if (!ssoConfigured) return { state: 'no_sso', detail: 'SSO (AZURE_*) chưa được cấu hình.' }
+  token = null
+  disabledUntil = 0
+  let bearer
+  try { bearer = await graphToken() } catch (e) { return { state: 'token_error', detail: e.message } }
+  let roles = []
+  try { roles = JSON.parse(Buffer.from(bearer.split('.')[1], 'base64url').toString()).roles || [] } catch { /* opaque token */ }
+  const url = new URL('https://graph.microsoft.com/v1.0/users')
+  url.searchParams.set('$select', 'displayName,mail')
+  url.searchParams.set('$top', '1')
+  try {
+    const r = await fetch(url, { headers: { authorization: `Bearer ${bearer}` } })
+    if (r.status === 401 || r.status === 403) {
+      const d = await r.json().catch(() => ({}))
+      return { state: 'forbidden', roles, detail: `${r.status} ${d.error?.code || ''} ${d.error?.message || ''}`.trim() }
+    }
+    if (!r.ok) return { state: 'error', roles, detail: `HTTP ${r.status}` }
+    return { state: 'ok', roles }
+  } catch (e) {
+    return { state: 'error', roles, detail: e.message }
   }
 }

@@ -131,7 +131,7 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
-    notify(qAuthor.email, { kind: 'answer', text: `${domainName(req.user.email, req.user.name)} đã trả lời câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions#q=${id}`, actor: req.user.name })
+    notify(qAuthor.email, { kind: 'answer', text: `${domainName(req.user.email, req.user.name)} đã comment vào câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions#q=${id}`, actor: req.user.name })
     sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
   notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email] })
@@ -162,19 +162,34 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const { id, answerId } = req.params
   const body = String(req.body?.body || '').trim()
   const parentId = req.body?.parentId ? String(req.body.parentId) : null
+  const replyToId = req.body?.replyToId ? String(req.body.replyToId) : parentId
   if (!body) return res.status(400).json({ error: 'empty_body' })
+  const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
+  const answer = db.prepare('SELECT * FROM question_answers WHERE id = ? AND question_id = ?').get(answerId, id)
+  if (!q || !answer) return res.status(404).json({ error: 'not_found' })
   const cid = nextId('c')
   db.prepare('INSERT INTO answer_comments (id, answer_id, author_id, body, parent_id) VALUES (?,?,?,?,?)').run(cid, answerId, req.user.id, body, parentId)
 
-  const answer = db.prepare('SELECT * FROM question_answers WHERE id = ?').get(answerId)
-  const aAuthor = answer ? db.prepare('SELECT * FROM users WHERE id = ?').get(answer.author_id) : null
-  if (aAuthor && aAuthor.id !== req.user.id) {
-    const qr = db.prepare('SELECT title, body FROM questions WHERE id = ?').get(id)
-    notify(aAuthor.email, { kind: 'comment', text: `${domainName(req.user.email, req.user.name)} đã bình luận câu trả lời của bạn${qr ? ` trong "${qTitle(qr)}"` : ''}`, href: `/questions#q=${id}`, actor: req.user.name })
-    sendMail({ to: aAuthor.email, subject: 'Có bình luận mới cho câu trả lời của bạn', text: `${req.user.name} đã bình luận: "${body}"\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
+  // Who hears about it, most specific first; each person once, never the author themself.
+  const who = domainName(req.user.email, req.user.name)
+  const label = qTitle(q)
+  const href = `/questions#q=${id}`
+  const userById = (uid) => (uid ? db.prepare('SELECT * FROM users WHERE id = ?').get(uid) : null)
+  const commentAuthor = (cId) => { const c = cId ? db.prepare('SELECT author_id FROM answer_comments WHERE id = ?').get(cId) : null; return c ? userById(c.author_id) : null }
+  const targets = [
+    [commentAuthor(replyToId), `${who} đã reply comment của bạn trong "${label}"`],
+    [commentAuthor(parentId), `${who} đã reply trong một thread bạn tham gia ở "${label}"`],
+    [userById(answer.author_id), parentId ? `${who} đã reply trong thread comment của bạn ở "${label}"` : `${who} đã reply comment của bạn trong "${label}"`],
+    [userById(q.author_id), `${who} đã comment trong câu hỏi của bạn: "${label}"`],
+  ]
+  const told = new Set([req.user.email.toLowerCase()])
+  for (const [u, text] of targets) {
+    if (!u || told.has(u.email.toLowerCase())) continue
+    told.add(u.email.toLowerCase())
+    notify(u.email, { kind: 'comment', text, href, actor: req.user.name })
+    sendMail({ to: u.email, subject: text, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
-  const qRow = db.prepare('SELECT title, body FROM questions WHERE id = ?').get(id)
-  notifyMentions(req, { text: body, where: qRow ? `câu hỏi "${qTitle(qRow)}"` : 'một câu hỏi', path: `/questions#q=${id}`, skip: [aAuthor?.email] })
+  notifyMentions(req, { text: body, where: `câu hỏi "${label}"`, path: href, skip: [...told] })
 
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
 })

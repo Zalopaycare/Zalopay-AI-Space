@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
-import CommentMenu, { InlineEdit, useCommentModals } from '../components/CommentMenu.jsx'
+import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../components/CommentMenu.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Khác']
@@ -150,8 +150,8 @@ export default function QuestionsPage() {
     }).catch(() => setConfirmDeleteId(null))
   }
 
-  const startCommentReply = (answerId, parentId, authorName) => {
-    setCommentReplyTarget({ answerId, parentId, authorName })
+  const startCommentReply = (answerId, parentId, authorName, replyToId) => {
+    setCommentReplyTarget({ answerId, parentId, authorName, replyToId })
     setCommentReplyDraft('')
     setExpandedCommentThreads((s) => new Set(s).add(parentId))
   }
@@ -160,7 +160,7 @@ export default function QuestionsPage() {
     if (!commentReplyTarget) return
     const body = commentReplyDraft.trim()
     if (!body) return
-    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId).then((d) => patch(qId, d.question)).catch(() => {}))
+    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId).then((d) => patch(qId, d.question)).catch(() => {}))
     cancelCommentReply()
   }
   // Put the caret back at the end of a field after picking a mention, so typing just continues.
@@ -305,7 +305,7 @@ export default function QuestionsPage() {
         onPostComment: () => {
           const body = (commentDrafts[a.id] || '').trim()
           if (!body) return
-          requireLogin(() => api.postAnswerComment(q.id, a.id, body).then((d) => patch(q.id, d.question)).catch(() => {}))
+          requireLogin(() => api.postAnswerComment(q.id, a.id, body).then((d) => { patch(q.id, d.question); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(() => {}))
           setCommentDrafts((s) => ({ ...s, [a.id]: '' })); setCommentMention(null)
         },
         onReply: () => setOpenComments((s) => ({ ...s, [a.id]: !s[a.id] })),
@@ -511,9 +511,15 @@ export default function QuestionsPage() {
 
                                 {a.showComments && (
                                   <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:12px; padding-left:14px; border-left:2px solid #E2E8F5;')}>
-                                    {a.comments.filter((c) => !c.parentId).map((c) => {
+                                    {a.comments.filter((c) => !c.parentId).length > 1 && (
+                                      <button onClick={() => toggleCommentThread('a:' + a.id)} style={css('align-self:flex-start; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
+                                        <Chevron up={expandedCommentThreads.has('a:' + a.id)} />
+                                        {expandedCommentThreads.has('a:' + a.id) ? t('Ẩn replies') : t('Xem thêm') + ' ' + a.comments.filter((c) => !c.parentId).length + ' ' + t('replies')}
+                                      </button>
+                                    )}
+                                    {a.comments.filter((c) => !c.parentId).filter((c, i, arr) => arr.length <= 1 || expandedCommentThreads.has('a:' + a.id)).map((c) => {
                                       const replies = a.comments.filter((r) => r.parentId === c.id)
-                                      const expanded = expandedCommentThreads.has(c.id)
+                                      const expanded = replies.length <= 1 || expandedCommentThreads.has(c.id)
                                       return (
                                         <div key={c.id}>
                                           <div style={css('display:flex; gap:10px;')}>
@@ -528,14 +534,14 @@ export default function QuestionsPage() {
                                               {editing?.kind === 'comment' && editing.id === c.id
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
                                                 : <div style={css('margin-top:5px; font:400 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{c.bodyEl}</div>}
-                                              <button onClick={() => startCommentReply(a.id, c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
+                                              <button onClick={() => startCommentReply(a.id, c.id, c.author, c.id)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                                             </div>
                                           </div>
 
-                                          {replies.length > 0 && (
+                                          {replies.length > 1 && (
                                             <button onClick={() => toggleCommentThread(c.id)} style={css('margin:8px 0 0 36px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
-                                              <span style={css('width:20px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
-                                              {expanded ? t('Ẩn comment') : t('Xem') + ' ' + replies.length + ' ' + t('comment')}
+                                              <Chevron up={expanded} />
+                                              {expanded ? t('Ẩn replies') : t('Xem thêm') + ' ' + replies.length + ' ' + t('replies')}
                                             </button>
                                           )}
 
@@ -551,7 +557,7 @@ export default function QuestionsPage() {
                                                 {editing?.kind === 'comment' && editing.id === r.id
                                                   ? <InlineEdit initial={r.body} onSave={(b) => saveCommentEdit(q.id, a.id, r.id, b)} onCancel={() => setEditing(null)} />
                                                   : <div style={css('margin-top:4px; font:400 13px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{r.bodyEl}</div>}
-                                                <button onClick={() => startCommentReply(a.id, c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
+                                                <button onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                                               </div>
                                             </div>
                                           ))}

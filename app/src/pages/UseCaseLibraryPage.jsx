@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { css, cx, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import CommentMenu, { InlineEdit, useCommentModals } from '../components/CommentMenu.jsx'
+import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../components/CommentMenu.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
@@ -156,12 +156,12 @@ export default function UseCaseLibraryPage() {
   }
 
   const toggleThread = (pid) => setExpandedThreads((s) => { const n = new Set(s); if (n.has(pid)) n.delete(pid); else n.add(pid); return n })
-  const startReply = (topId, authorName) => { setReplyTarget({ parentId: topId, authorName }); setReplyDraft(''); setExpandedThreads((s) => new Set(s).add(topId)) }
+  const startReply = (topId, authorName, replyToId) => { setReplyTarget({ parentId: topId, authorName, replyToId }); setReplyDraft(''); setExpandedThreads((s) => new Set(s).add(topId)) }
   const cancelReply = () => { setReplyTarget(null); setReplyDraft('') }
   const submitReply = (ucId) => {
     const text = replyDraft.trim()
     if (!text || !replyTarget) return
-    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
+    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title, { replyToId: replyTarget.replyToId, ownerHandle: (allCases.find((x) => x.id === ucId) || {}).author }).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
   }
 
   // ---- draft restore + autosave ----
@@ -653,7 +653,7 @@ export default function UseCaseLibraryPage() {
                       if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
                       e.preventDefault()
                       const text = dDraft.trim()
-                      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
+                      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
                     }}
                     rows={2}
                     placeholder={t('Viết bình luận về use case này...')}
@@ -664,7 +664,7 @@ export default function UseCaseLibraryPage() {
                       onClick={() => {
                         const text = dDraft.trim()
                         if (!text) return
-                        requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
+                        requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
                       }}
                       style={css(`height:38px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
                     >
@@ -677,7 +677,7 @@ export default function UseCaseLibraryPage() {
               <div style={css('display:flex; flex-direction:column; gap:14px; margin-top:8px;')}>
                 {commentsList.filter((c) => !c.parentId).map((c) => {
                   const replies = commentsList.filter((r) => r.parentId === c.id)
-                  const expanded = expandedThreads.has(c.id)
+                  const expanded = replies.length <= 1 || expandedThreads.has(c.id)
                   return (
                     <div key={c.id} style={css('padding-top:14px; border-top:1px solid #EEF1F7;')}>
                       <div className="zp-cmt" style={css('display:flex; gap:12px;')}>
@@ -690,14 +690,14 @@ export default function UseCaseLibraryPage() {
                           {editingCmt === c.id
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
                             : <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{c.body}</div>}
-                          <button onClick={() => startReply(c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
+                          <button onClick={() => startReply(c.id, c.author, c.id)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                         </div>
                       </div>
 
-                      {replies.length > 0 && (
+                      {replies.length > 1 && (
                         <button onClick={() => toggleThread(c.id)} style={css('margin:10px 0 0 48px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
-                          <span style={css('width:22px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
-                          {expanded ? t('Ẩn comment') : t('Xem') + ' ' + replies.length + ' ' + t('comment')}
+                          <Chevron up={expanded} />
+                          {expanded ? t('Ẩn replies') : t('Xem thêm') + ' ' + replies.length + ' ' + t('replies')}
                         </button>
                       )}
 
@@ -712,7 +712,7 @@ export default function UseCaseLibraryPage() {
                             {editingCmt === r.id
                               ? <InlineEdit initial={r.body} onSave={(b) => api.editUseCaseComment(dsel.id, r.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
                               : <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{r.body}</div>}
-                            <button onClick={() => startReply(c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
+                            <button onClick={() => startReply(c.id, r.author, r.id)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                           </div>
                         </div>
                       ))}

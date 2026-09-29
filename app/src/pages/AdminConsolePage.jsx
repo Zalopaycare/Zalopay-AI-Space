@@ -86,6 +86,7 @@ export default function AdminConsolePage() {
   const isAdmin = !!user?.isAdmin
   const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
   const [reports, setReports] = useState([])
+  const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [repStatus, setRepStatus] = useState('open')
   const [submissions, setSubmissions] = useState([])
   const [questions, setQuestions] = useState([])
@@ -106,8 +107,9 @@ export default function AdminConsolePage() {
   const reloadSubmissions = () => api.listSubmissions().then((d) => setSubmissions(d.submissions || [])).catch(() => {})
   const reloadQuestions = () => api.listQuestions().then((d) => setQuestions(d.questions || [])).catch(() => {})
   const reloadUsers = () => api.adminUsers().then((d) => setUsers(d.users || [])).catch(() => {})
+  const checkDirectory = () => { setDirStatus(null); api.directoryStatus().then(setDirStatus).catch(() => setDirStatus({ state: 'error', detail: 'Không gọi được server.' })) }
   const reloadReports = () => api.adminReports().then((d) => setReports(d.reports || [])).catch(() => {})
-  useEffect(() => { if (isAdmin) { reloadSubmissions(); reloadQuestions(); reloadUsers(); reloadReports() } }, [isAdmin])
+  useEffect(() => { if (isAdmin) { reloadSubmissions(); reloadQuestions(); reloadUsers(); reloadReports(); checkDirectory() } }, [isAdmin])
   useEffect(() => {
     if (!notifOpen) return
     const close = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false) }
@@ -409,6 +411,22 @@ export default function AdminConsolePage() {
               <Heading title="Thành viên" sub="Những người đã đăng nhập vào Zalopay AI Space. Quyền Admin được cấu hình qua biến ADMIN_EMAILS." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px;')}>
                 <Search value={userQuery} onChange={setUserQuery} placeholder="Tìm theo tên hoặc email..." />
+              </div>
+              <div style={css('display:flex; align-items:flex-start; gap:14px; margin-top:18px; padding:16px 18px;' + card + (dirStatus?.state === 'ok' ? 'border-color:#BEE9D3;' : dirStatus ? 'border-color:#F5C9CB;' : ''))}>
+                <span style={css(`flex:none; width:10px; height:10px; margin-top:5px; border-radius:50%; background:${!dirStatus ? '#94a3b8' : dirStatus.state === 'ok' ? '#00A352' : '#D8232A'};`)}></span>
+                <div style={css('flex:1; min-width:0;')}>
+                  <div style={css(font(800, 14) + ';color:#0f172a;')}>
+                    Gợi ý @mention từ danh bạ công ty (Microsoft Graph): {!dirStatus ? 'đang kiểm tra…' : dirStatus.state === 'ok' ? 'đang hoạt động' : 'chưa hoạt động'}
+                  </div>
+                  <div style={css('margin-top:4px;' + font(400, 12.5, 1.6) + ';color:#64748b;')}>
+                    {!dirStatus ? 'Đang thử tra danh bạ bằng quyền của app SSO…'
+                      : dirStatus.state === 'ok' ? `Gõ @ + tên là tìm được mọi người trong công ty, kể cả người chưa từng đăng nhập.${dirStatus.roles?.length ? ' Quyền đang có: ' + dirStatus.roles.join(', ') + '.' : ''}`
+                      : dirStatus.state === 'forbidden' ? `Microsoft từ chối tra danh bạ (${dirStatus.detail}). IT cần cấp Application permission User.Read.All (hoặc User.ReadBasic.All) cho đúng App Registration SSO của trang và bấm Grant admin consent.${dirStatus.roles?.length ? ' Quyền app đang có: ' + dirStatus.roles.join(', ') + '.' : ' App hiện chưa có quyền Application nào.'}`
+                      : dirStatus.state === 'no_sso' ? dirStatus.detail
+                      : `Không kiểm tra được: ${dirStatus.detail}`}
+                  </div>
+                </div>
+                <button onClick={checkDirectory} style={css(btn('plain'))}>Kiểm tra lại</button>
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
                 <div style={headRow(U_COLS)}><span>THÀNH VIÊN</span><span>VAI TRÒ</span><span>THAM GIA</span><span>CÂU HỎI</span><span>TRẢ LỜI</span><span>USE CASE</span></div>

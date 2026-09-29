@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -85,6 +85,16 @@ export default function HomePage() {
   const [modalDraft, setModalDraft] = useState('')
   const [ucMeta, setUcMeta] = useState({})
   const [homeQuery, setHomeQuery] = useState('')
+  // Height of the live search results, so the space backdrop's horizon moves down with the page.
+  const resultsRef = useRef(null)
+  const [resultsH, setResultsH] = useState(0)
+  useEffect(() => {
+    const el = resultsRef.current
+    if (!el) { setResultsH(0); return }
+    const ro = new ResizeObserver(() => setResultsH(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
   const [playIntro] = useState(() => !introPlayed)
   useEffect(() => { introPlayed = true }, [])
   const [openMenuId, setOpenMenuId] = useState(null)
@@ -244,7 +254,7 @@ export default function HomePage() {
   return (
     <Layout active="home">
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
-        <SpaceBackdrop arcTop={240} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
+        <SpaceBackdrop arcTop={240 + resultsH} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 
         {/* ============ WORDMARK ============ */}
         <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:14px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
@@ -285,7 +295,7 @@ export default function HomePage() {
 
         <PageActionBar searchOnly maxWidth={560} query={homeQuery} onQuery={setHomeQuery} onSubmit={() => {}} placeholder="Tìm use case, câu hỏi, tác giả, công cụ..." />
         {searchNeedle && (
-          <div style={css('position:relative; z-index:5; padding:14px 40px 0;')}>
+          <div ref={resultsRef} style={css('position:relative; z-index:5; padding:14px 40px 0;')}>
             <div style={css('max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 18px 44px rgba(0,0,0,.3); padding:8px 8px 10px;')}>
               {searchUc.length === 0 && searchQ.length === 0 ? (
                 <div style={css(`padding:26px 16px; text-align:center; font:600 14px ${FONT}; color:#64748b;`)}>

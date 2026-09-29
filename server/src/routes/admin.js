@@ -3,6 +3,7 @@ import { db } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { domainName } from '../mentions.js'
 import { adminReportRoutes } from '../reports.js'
+import { directoryStatus } from '../directory.js'
 
 const router = express.Router()
 
@@ -22,6 +23,8 @@ router.get('/users', (req, res) => {
   }))
   res.json({ users })
 })
+
+router.get('/directory-status', async (req, res) => res.json(await directoryStatus()))
 
 router.use('/reports', adminReportRoutes)
 

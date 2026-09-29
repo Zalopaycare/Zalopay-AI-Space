@@ -2,7 +2,7 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
-import { notifyMentions, appUrl, domainName } from '../mentions.js'
+import { notifyMentions, appUrl, domainName, handleOf } from '../mentions.js'
 import { notify } from '../notifications.js'
 
 const router = express.Router()
@@ -63,10 +63,34 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   const cid = nextId('ucc')
   db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body, parent_id) VALUES (?,?,?,?,?)').run(cid, id, req.user.id, body, parentId)
   // Built-in use cases live in the frontend bundle, so the client passes the title along for the email.
-  const sub = db.prepare('SELECT title FROM use_case_submissions WHERE id = ?').get(id)
+  const sub = db.prepare('SELECT title, author_id FROM use_case_submissions WHERE id = ?').get(id)
   const ucTitle = sub?.title || String(req.body?.title || '').trim().slice(0, 200)
-  notifyMentions(req, { text: body, where: ucTitle ? `use case "${ucTitle}"` : 'một use case', path: `/use-cases/${encodeURIComponent(id)}#comments` })
-  res.status(201).json({ id: cid, author: req.user.name, initials: req.user.initials, avatarColor: req.user.avatar_color || null, time: new Date().toISOString(), body, parentId })
+  const where = ucTitle ? `use case "${ucTitle}"` : 'một use case'
+  const href = `/use-cases/${encodeURIComponent(id)}#comments`
+
+  // Notify, most specific first and each person once: whoever was replied to, the thread
+  // starter, then the use case's owner. Built-in use cases name their owner by domain account
+  // (e.g. "NamNTH"), matched only against people who have actually signed in.
+  const who = domainName(req.user.email, req.user.name)
+  const userById = (uid) => (uid ? db.prepare('SELECT * FROM users WHERE id = ?').get(uid) : null)
+  const commentAuthor = (cId) => { const c = cId ? db.prepare('SELECT author_id FROM use_case_comments WHERE id = ? AND use_case_id = ?').get(cId, id) : null; return c ? userById(c.author_id) : null }
+  const ownerHandle = String(req.body?.ownerHandle || '').trim().toLowerCase()
+  const owner = sub ? userById(sub.author_id) : (ownerHandle ? db.prepare('SELECT * FROM users').all().find((u) => handleOf(u.email) === ownerHandle) : null)
+  const replyToId = req.body?.replyToId ? String(req.body.replyToId) : parentId
+  const targets = [
+    [commentAuthor(replyToId), `${who} đã reply comment của bạn trong ${where}`],
+    [commentAuthor(parentId), `${who} đã reply trong một thread bạn tham gia ở ${where}`],
+    [owner, `${who} đã comment vào ${where} của bạn`],
+  ]
+  const told = new Set([req.user.email.toLowerCase()])
+  for (const [u, text] of targets) {
+    if (!u || told.has(u.email.toLowerCase())) continue
+    told.add(u.email.toLowerCase())
+    notify(u.email, { kind: 'comment', text, href, actor: req.user.name })
+    sendMail({ to: u.email, subject: text, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
+  }
+  notifyMentions(req, { text: body, where, path: href, skip: [...told] })
+  res.status(201).json({ id: cid, authorId: req.user.id, author: domainName(req.user.email, req.user.name), initials: req.user.initials, avatarColor: req.user.avatar_color || null, time: new Date().toISOString(), body, parentId })
 })
 
 // Share-a-use-case submissions (pending admin review).
