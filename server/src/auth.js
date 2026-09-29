@@ -16,7 +16,7 @@ export function isCompanyEmail(email) {
 }
 
 export function initialsFor(name) {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean)
+  const parts = String(name).trim().split(/\s+/).filter((w) => /^\p{L}/u.test(w))
   if (!parts.length) return '??'
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()

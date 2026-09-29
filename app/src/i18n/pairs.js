@@ -187,6 +187,8 @@ export const PAIRS = [
   ['Tiếp tục', 'Continue'],
   ['Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc.', 'A space for Zalopay Starters to share knowledge and discover how to use AI at work.'],
   ['Upvote', 'Upvote'],
+  ['Đăng nhập lại để tìm cả công ty', 'Sign in again to search the whole company'],
+  ['Cần đăng nhập lại 1 lần để gợi ý tên từ danh bạ công ty', 'One more sign-in enables company directory suggestions'],
   ['Ẩn replies', 'Hide replies'],
   ['replies', 'replies'],
   ['Like', 'Like'],

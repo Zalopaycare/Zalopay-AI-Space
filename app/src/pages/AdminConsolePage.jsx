@@ -413,15 +413,16 @@ export default function AdminConsolePage() {
                 <Search value={userQuery} onChange={setUserQuery} placeholder="Tìm theo tên hoặc email..." />
               </div>
               <div style={css('display:flex; align-items:flex-start; gap:14px; margin-top:18px; padding:16px 18px;' + card + (dirStatus?.state === 'ok' ? 'border-color:#BEE9D3;' : dirStatus ? 'border-color:#F5C9CB;' : ''))}>
-                <span style={css(`flex:none; width:10px; height:10px; margin-top:5px; border-radius:50%; background:${!dirStatus ? '#94a3b8' : dirStatus.state === 'ok' ? '#00A352' : '#D8232A'};`)}></span>
+                <span style={css(`flex:none; width:10px; height:10px; margin-top:5px; border-radius:50%; background:${!dirStatus ? '#94a3b8' : dirStatus.state === 'ok' ? '#00A352' : dirStatus.state === 'needs_login' ? '#FF8D00' : '#D8232A'};`)}></span>
                 <div style={css('flex:1; min-width:0;')}>
                   <div style={css(font(800, 14) + ';color:#0f172a;')}>
-                    Gợi ý @mention từ danh bạ công ty (Microsoft Graph): {!dirStatus ? 'đang kiểm tra…' : dirStatus.state === 'ok' ? 'đang hoạt động' : 'chưa hoạt động'}
+                    Gợi ý @mention từ danh bạ công ty (Microsoft Graph): {!dirStatus ? 'đang kiểm tra…' : dirStatus.state === 'ok' ? 'đang hoạt động' : dirStatus.state === 'needs_login' ? 'cần đăng nhập lại' : 'chưa hoạt động'}
                   </div>
                   <div style={css('margin-top:4px;' + font(400, 12.5, 1.6) + ';color:#64748b;')}>
-                    {!dirStatus ? 'Đang thử tra danh bạ bằng quyền của app SSO…'
-                      : dirStatus.state === 'ok' ? `Gõ @ + tên là tìm được mọi người trong công ty, kể cả người chưa từng đăng nhập.${dirStatus.roles?.length ? ' Quyền đang có: ' + dirStatus.roles.join(', ') + '.' : ''}`
-                      : dirStatus.state === 'forbidden' ? `Microsoft từ chối tra danh bạ (${dirStatus.detail}). IT cần cấp Application permission User.Read.All (hoặc User.ReadBasic.All) cho đúng App Registration SSO của trang và bấm Grant admin consent.${dirStatus.roles?.length ? ' Quyền app đang có: ' + dirStatus.roles.join(', ') + '.' : ' App hiện chưa có quyền Application nào.'}`
+                    {!dirStatus ? 'Đang thử tra danh bạ bằng quyền Delegated của tài khoản bạn…'
+                      : dirStatus.state === 'ok' ? `Gõ @ + tên là tìm được mọi người trong công ty, kể cả người chưa từng đăng nhập. Mỗi người cần đăng nhập lại 1 lần sau khi bật tính năng này.${dirStatus.scopes ? ' Quyền: ' + dirStatus.scopes + '.' : ''}`
+                      : dirStatus.state === 'needs_login' ? 'Tài khoản của bạn chưa cấp quyền danh bạ cho trang. Bấm "Đăng xuất" rồi đăng nhập lại bằng Microsoft, sau đó bấm "Kiểm tra lại".'
+                      : dirStatus.state === 'forbidden' ? `Microsoft từ chối tra danh bạ (${dirStatus.detail}). IT cần cấp Delegated permission User.Read.All cho App Registration SSO và bấm Grant admin consent.${dirStatus.scopes ? ' Quyền token đang có: ' + dirStatus.scopes + '.' : ''}`
                       : dirStatus.state === 'no_sso' ? dirStatus.detail
                       : `Không kiểm tra được: ${dirStatus.detail}`}
                   </div>

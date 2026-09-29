@@ -3,11 +3,12 @@ import * as client from 'openid-client'
 import { db } from '../db.js'
 import { isCompanyEmail, getOrCreateUser, issueSession, clearSession, publicUser } from '../auth.js'
 import { sendMail, devLoginCodeAllowed } from '../mailer.js'
-import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_REDIRECT_URI } from '../sso.js'
+import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_SCOPE_BASE, SSO_REDIRECT_URI } from '../sso.js'
+import { saveGraphTokens, dropGraphTokens } from '../graphTokens.js'
 import { AVATAR_COLORS } from '../avatarColors.js'
 import { requireAuth } from '../auth.js'
 import { handleOf } from '../mentions.js'
-import { searchDirectory, directoryEnabled } from '../directory.js'
+import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
 import { companyDomains } from '../auth.js'
 
 const router = express.Router()
@@ -69,14 +70,16 @@ router.get('/sso/login', async (req, res) => {
     const state = client.randomState()
     const rawNext = String(req.query.next || '/')
     const next = /^\/(?![\/\\])/.test(rawNext) && !rawNext.startsWith('/api/') ? rawNext : '/'
+    // ?basic=1 is the retry after Microsoft refused the directory permission: plain sign-in only.
+    const graph = req.query.basic !== '1' && SSO_SCOPE !== SSO_SCOPE_BASE
 
-    res.cookie(SSO_COOKIE, JSON.stringify({ state, codeVerifier, next }), {
+    res.cookie(SSO_COOKIE, JSON.stringify({ state, codeVerifier, next, graph }), {
       httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 5 * 60 * 1000,
     })
 
     const authUrl = client.buildAuthorizationUrl(config, {
       redirect_uri: SSO_REDIRECT_URI,
-      scope: SSO_SCOPE,
+      scope: graph ? SSO_SCOPE : SSO_SCOPE_BASE,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       state,
@@ -95,7 +98,13 @@ router.get('/sso/callback', async (req, res) => {
   if (!pendingRaw) return res.status(400).send('Phiên đăng nhập đã hết hạn, vui lòng thử lại.')
 
   try {
-    const { state, codeVerifier, next } = JSON.parse(pendingRaw)
+    const { state, codeVerifier, next, graph } = JSON.parse(pendingRaw)
+    // Directory permission not consented (e.g. AADSTS65001): never block sign-in over it —
+    // start over asking only for the basic scopes.
+    if (graph && req.query.error) {
+      console.error('[sso] directory scope refused, retrying basic sign-in:', req.query.error, String(req.query.error_description || '').slice(0, 200))
+      return res.redirect('/api/auth/sso/login?basic=1&next=' + encodeURIComponent(typeof next === 'string' ? next : '/'))
+    }
     const config = await getOidcConfig()
     const currentUrl = new URL(req.originalUrl, SSO_REDIRECT_URI)
     const tokens = await client.authorizationCodeGrant(config, currentUrl, {
@@ -111,6 +120,7 @@ router.get('/sso/callback', async (req, res) => {
     if (claims.name && user.name !== claims.name) {
       db.prepare('UPDATE users SET name = ? WHERE id = ?').run(claims.name, user.id)
     }
+    if (graph) saveGraphTokens(user.id, tokens)
     issueSession(res, db.prepare('SELECT * FROM users WHERE id = ?').get(user.id))
     res.redirect(typeof next === 'string' && /^\/(?![\/\\])/.test(next) ? next : '/')
   } catch (err) {
@@ -120,6 +130,7 @@ router.get('/sso/callback', async (req, res) => {
 })
 
 router.post('/logout', (req, res) => {
+  if (req.user) dropGraphTokens(req.user.id)
   clearSession(res)
   res.json({ ok: true })
 })
@@ -161,8 +172,8 @@ router.get('/users', requireAuth, async (req, res) => {
     .slice(0, 8)
     .map((u) => ({ key: u.email.toLowerCase(), name: u.name, mention: handleOf(u.email), sub: '@' + handleOf(u.email) + (u.team ? ' · ' + u.team : ''), initials: u.initials, avatarColor: u.avatar_color || null }))
   const seen = new Set([me, ...known.map((u) => u.key)])
-  const dir = q ? (await searchDirectory(q)).filter((u) => !seen.has(u.email)).map((u) => ({ key: u.email, name: u.name, mention: u.email, sub: u.email + (u.title ? ' · ' + u.title : ''), initials: u.initials, avatarColor: null })) : []
-  res.json({ users: [...known, ...dir].slice(0, 10), domains: companyDomains(), directory: directoryEnabled() })
+  const dir = q ? (await searchDirectory(q, req.user.id)).filter((u) => !seen.has(u.email)).map((u) => ({ key: u.email, name: u.name, mention: u.email, sub: u.email + (u.title ? ' · ' + u.title : ''), initials: u.initials, avatarColor: null })) : []
+  res.json({ users: [...known, ...dir].slice(0, 10), domains: companyDomains(), directory: directoryEnabled(), relogin: needsRelogin(req.user.id) })
 })
 
 export default router

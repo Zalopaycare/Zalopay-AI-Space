@@ -24,7 +24,7 @@ router.get('/users', (req, res) => {
   res.json({ users })
 })
 
-router.get('/directory-status', async (req, res) => res.json(await directoryStatus()))
+router.get('/directory-status', async (req, res) => res.json(await directoryStatus(req.user.id)))
 
 router.use('/reports', adminReportRoutes)
 

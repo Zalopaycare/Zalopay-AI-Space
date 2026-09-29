@@ -1,56 +1,39 @@
-import { ssoConfigured } from './sso.js'
+import { ssoConfigured, GRAPH_DELEGATED_SCOPE } from './sso.js'
 import { isCompanyEmail, initialsFor } from './auth.js'
+import { graphTokenFor, hasGraphTokens } from './graphTokens.js'
 
-// Company-wide people search through Microsoft Graph, using the SSO app's own credentials
-// (client credentials flow). Needs the *application* permission User.Read.All (or
-// User.ReadBasic.All) with admin consent on that app registration; without it every search
-// returns [] and the mention picker falls back to people who have signed in.
+// Company-wide people search through Microsoft Graph for the @mention picker, using the
+// *delegated* permission (User.Read.All / User.ReadBasic.All) of the person who is typing:
+// their token comes from SSO sign-in (see graphTokens.js). People who signed in before the
+// permission existed get it on their next sign-in; until then they see signed-in users only.
 
-const { AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET } = process.env
-let token = null // { value, expiresAt }
-let disabledUntil = 0
+export const directoryEnabled = () => ssoConfigured && !!GRAPH_DELEGATED_SCOPE
 
-async function graphToken() {
-  if (token && token.expiresAt > Date.now() + 60_000) return token.value
-  const r = await fetch(`https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: AZURE_CLIENT_ID,
-      client_secret: AZURE_CLIENT_SECRET,
-      scope: 'https://graph.microsoft.com/.default',
-    }),
-  })
-  const d = await r.json().catch(() => ({}))
-  if (!r.ok || !d.access_token) throw new Error(`token ${r.status} ${d.error || ''}`)
-  token = { value: d.access_token, expiresAt: Date.now() + Number(d.expires_in || 3600) * 1000 }
-  return token.value
+const SELECT = 'displayName,mail,userPrincipalName,jobTitle,department'
+
+async function graph(userId, path, params) {
+  const bearer = await graphTokenFor(userId)
+  if (!bearer) return { status: 0 }
+  const url = new URL('https://graph.microsoft.com/v1.0' + path)
+  Object.entries(params || {}).forEach(([k, v]) => url.searchParams.set(k, v))
+  const r = await fetch(url, { headers: { authorization: `Bearer ${bearer}`, ConsistencyLevel: 'eventual' } })
+  const body = await r.json().catch(() => ({}))
+  return { status: r.status, body, bearer }
 }
 
-export const directoryEnabled = () => ssoConfigured && Date.now() > disabledUntil
-
-/** Up to `limit` company people whose name or email matches `q`: [{ email, name, title, initials }]. */
-export async function searchDirectory(q, limit = 8) {
+/** Up to `limit` company people whose name or email matches `q`, searched as `userId`: [{ email, name, title, initials }]. */
+export async function searchDirectory(q, userId, limit = 8) {
   const term = String(q || '').replace(/["\\]/g, '').trim()
-  if (term.length < 2 || !directoryEnabled()) return []
+  if (term.length < 2 || !directoryEnabled() || !userId) return []
   try {
-    const url = new URL('https://graph.microsoft.com/v1.0/users')
-    url.searchParams.set('$search', `"displayName:${term}" OR "mail:${term}"`)
-    url.searchParams.set('$select', 'displayName,mail,userPrincipalName,jobTitle,department')
-    url.searchParams.set('$top', String(limit))
-    const r = await fetch(url, { headers: { authorization: `Bearer ${await graphToken()}`, ConsistencyLevel: 'eventual' } })
-    if (r.status === 401 || r.status === 403) {
-      // Permission not granted yet — stop hammering Graph for a while, and drop the token:
-      // one issued before admin consent never gains the new role, so fetch a fresh one next time.
-      token = null
-      disabledUntil = Date.now() + 5 * 60_000
-      console.error(`[directory] Graph refused people search (${r.status}); grant User.Read.All application permission with admin consent to enable it.`)
+    const { status, body } = await graph(userId, '/users', { $search: `"displayName:${term}" OR "mail:${term}"`, $select: SELECT, $top: String(limit) })
+    if (!status) return []
+    if (status === 401 || status === 403) {
+      console.error(`[directory] Graph refused people search for user ${userId} (${status} ${body.error?.code || ''})`)
       return []
     }
-    if (!r.ok) throw new Error(`search ${r.status}`)
-    const d = await r.json()
-    return (d.value || [])
+    if (status !== 200) throw new Error(`search ${status}`)
+    return (body.value || [])
       .map((u) => ({ email: String(u.mail || u.userPrincipalName || '').toLowerCase(), name: u.displayName || '', title: [u.jobTitle, u.department].filter(Boolean).join(' · ') }))
       .filter((u) => u.email && isCompanyEmail(u.email))
       .map((u) => ({ ...u, initials: initialsFor(u.name || u.email) }))
@@ -60,31 +43,25 @@ export async function searchDirectory(q, limit = 8) {
   }
 }
 
+export const needsRelogin = (userId) => directoryEnabled() && !hasGraphTokens(userId)
+
 /**
- * Admin diagnostic: can the app search the company directory right now?
- * state: ok | no_sso | token_error | forbidden | error. Always uses a fresh token and
- * clears the back-off, so it reflects permissions granted a moment ago.
+ * Admin diagnostic, run with the admin's own delegated token.
+ * state: ok | no_sso | needs_login | forbidden | error.
  */
-export async function directoryStatus() {
+export async function directoryStatus(userId) {
   if (!ssoConfigured) return { state: 'no_sso', detail: 'SSO (AZURE_*) chưa được cấu hình.' }
-  token = null
-  disabledUntil = 0
-  let bearer
-  try { bearer = await graphToken() } catch (e) { return { state: 'token_error', detail: e.message } }
-  let roles = []
-  try { roles = JSON.parse(Buffer.from(bearer.split('.')[1], 'base64url').toString()).roles || [] } catch { /* opaque token */ }
-  const url = new URL('https://graph.microsoft.com/v1.0/users')
-  url.searchParams.set('$select', 'displayName,mail')
-  url.searchParams.set('$top', '1')
+  if (!GRAPH_DELEGATED_SCOPE) return { state: 'no_sso', detail: 'GRAPH_DELEGATED_SCOPE đang để trống nên đăng nhập không xin quyền danh bạ.' }
+  if (!hasGraphTokens(userId)) return { state: 'needs_login', scope: GRAPH_DELEGATED_SCOPE }
   try {
-    const r = await fetch(url, { headers: { authorization: `Bearer ${bearer}` } })
-    if (r.status === 401 || r.status === 403) {
-      const d = await r.json().catch(() => ({}))
-      return { state: 'forbidden', roles, detail: `${r.status} ${d.error?.code || ''} ${d.error?.message || ''}`.trim() }
-    }
-    if (!r.ok) return { state: 'error', roles, detail: `HTTP ${r.status}` }
-    return { state: 'ok', roles }
+    const { status, body, bearer } = await graph(userId, '/users', { $select: 'displayName,mail', $top: '1' })
+    if (!status) return { state: 'needs_login', scope: GRAPH_DELEGATED_SCOPE }
+    let scopes = ''
+    try { scopes = JSON.parse(Buffer.from(bearer.split('.')[1], 'base64url').toString()).scp || '' } catch { /* opaque */ }
+    if (status === 401 || status === 403) return { state: 'forbidden', scopes, detail: `${status} ${body.error?.code || ''} ${body.error?.message || ''}`.trim() }
+    if (status !== 200) return { state: 'error', scopes, detail: `HTTP ${status}` }
+    return { state: 'ok', scopes }
   } catch (e) {
-    return { state: 'error', roles, detail: e.message }
+    return { state: 'error', detail: e.message }
   }
 }

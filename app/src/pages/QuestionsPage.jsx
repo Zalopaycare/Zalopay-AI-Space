@@ -95,11 +95,11 @@ export default function QuestionsPage() {
 
   // People matching what's typed after "@": signed-in users plus the company directory (server side).
   // Picking inserts their mention token: an email handle (@thyndm) or a full company email.
-  const [people, setPeople] = useState({ q: null, users: [], domains: [] })
+  const [people, setPeople] = useState({ q: null, users: [], domains: [], relogin: false })
   const activeMentionQ = commentMention ? commentMention.query : replyMention ? replyMention.query : null
   useEffect(() => {
     if (!user || activeMentionQ === null) return
-    const h = setTimeout(() => { api.listUsers(activeMentionQ).then((d) => setPeople({ q: activeMentionQ, users: d.users || [], domains: d.domains || [] })).catch(() => {}) }, 180)
+    const h = setTimeout(() => { api.listUsers(activeMentionQ).then((d) => setPeople({ q: activeMentionQ, users: d.users || [], domains: d.domains || [], relogin: !!d.relogin })).catch(() => {}) }, 180)
     return () => clearTimeout(h)
   }, [user, activeMentionQ])
   const mentionList = (mq, apply) => {
@@ -108,7 +108,12 @@ export default function QuestionsPage() {
     if (mq && mq.length >= 2 && /^[a-z0-9._-]+$/.test(mq) && !list.some((p) => p.mention === mq)) {
       for (const d of people.domains) if (!list.some((p) => p.key === mq + '@' + d)) list.push({ key: mq + '@' + d, name: mq + '@' + d, mention: mq + '@' + d, sub: t('Gửi email tới địa chỉ này'), initials: '@', avatarColor: '#94a3b8' })
     }
-    return list.slice(0, 8).map((p, i) => ({ ...p, bg: p.avatarColor || AV[i % AV.length], onPick: () => apply(p.mention) }))
+    const items = list.slice(0, 8).map((p, i) => ({ ...p, bg: p.avatarColor || AV[i % AV.length], onPick: () => apply(p.mention) }))
+    // Signed in before directory search existed: one more sign-in grants it.
+    if (people.q === mq && people.relogin && mq && mq.length >= 2) {
+      items.push({ key: '__relogin', name: t('Đăng nhập lại để tìm cả công ty'), sub: t('Cần đăng nhập lại 1 lần để gợi ý tên từ danh bạ công ty'), initials: '↻', bg: '#2c5fff', onPick: () => { window.location.href = '/api/auth/sso/login?next=' + encodeURIComponent(window.location.pathname + window.location.hash) } })
+    }
+    return items
   }
 
   // deep-link: #q=<id> expands and scrolls to that question
