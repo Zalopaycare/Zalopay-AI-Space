@@ -106,3 +106,8 @@ input, textarea, button { font-family: inherit; }
 .zp-page-in { animation: pagein .32s cubic-bezier(.22,.61,.36,1) both; }
 @keyframes pagein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .zp-page-in { animation: none; } }
+
+/* comment ⋯ menu: shown while hovering its comment bubble (always on touch screens) */
+.zp-cmt-more { opacity: 0; transition: opacity .12s ease; }
+.zp-cmt:hover .zp-cmt-more, .zp-cmt-more[data-open], .zp-cmt-more:focus-within { opacity: 1; }
+@media (hover: none) { .zp-cmt-more { opacity: 1; } }

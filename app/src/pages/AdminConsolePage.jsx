@@ -84,7 +84,9 @@ const Field = ({ label, value }) => (value ? (
 export default function AdminConsolePage() {
   const { user, openLogin, logout } = useAuth()
   const isAdmin = !!user?.isAdmin
-  const [section, setSection] = useState('dashboard')
+  const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
+  const [reports, setReports] = useState([])
+  const [repStatus, setRepStatus] = useState('open')
   const [submissions, setSubmissions] = useState([])
   const [questions, setQuestions] = useState([])
   const [users, setUsers] = useState([])
@@ -104,7 +106,8 @@ export default function AdminConsolePage() {
   const reloadSubmissions = () => api.listSubmissions().then((d) => setSubmissions(d.submissions || [])).catch(() => {})
   const reloadQuestions = () => api.listQuestions().then((d) => setQuestions(d.questions || [])).catch(() => {})
   const reloadUsers = () => api.adminUsers().then((d) => setUsers(d.users || [])).catch(() => {})
-  useEffect(() => { if (isAdmin) { reloadSubmissions(); reloadQuestions(); reloadUsers() } }, [isAdmin])
+  const reloadReports = () => api.adminReports().then((d) => setReports(d.reports || [])).catch(() => {})
+  useEffect(() => { if (isAdmin) { reloadSubmissions(); reloadQuestions(); reloadUsers(); reloadReports() } }, [isAdmin])
   useEffect(() => {
     if (!notifOpen) return
     const close = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false) }
@@ -179,6 +182,7 @@ export default function AdminConsolePage() {
     ['dashboard', 'Tổng quan', '#2c5fff', 0],
     ['usecases', 'Duyệt use case', '#00A352', pending.length],
     ['questions', 'Câu hỏi', '#FF8D00', unanswered.length],
+    ['reports', 'Báo cáo', '#D8232A', reports.filter((r) => r.status === 'open').length],
     ['users', 'Thành viên', '#00B7FF', 0],
   ]
 
@@ -189,6 +193,10 @@ export default function AdminConsolePage() {
   const UC_COLS = 'minmax(0,1fr) 170px 110px 230px'
   const Q_COLS = 'minmax(0,1fr) 150px 80px 80px 130px 150px'
   const U_COLS = 'minmax(0,1fr) 110px 120px 80px 80px 80px'
+  const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
+  const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
+  const repRows = reports.filter((r) => repStatus === 'all' || (repStatus === 'open' ? r.status === 'open' : r.status !== 'open'))
+  const resolveReport = (r, action) => api.resolveReport(r.id, action).then(() => { reloadReports(); if (action === 'delete') reloadQuestions() }).catch(() => {})
 
   return (
     <div style={css('min-height:100vh; background:#eef1f9; color:#0f172a;')}>
@@ -212,7 +220,7 @@ export default function AdminConsolePage() {
                   </div>
                   {notif.items.length === 0 && <div style={css('padding:28px 18px; text-align:center;' + font(600, 13) + ';color:#94a3b8;')}>Chưa có thông báo nào.</div>}
                   {notif.items.map((n) => (
-                    <div key={n.id} onClick={() => { if (n.unread) markNotificationsRead([n.id]); if (n.kind === 'submission') { setSection('usecases'); setUcStatus('pending') } else if (n.href) window.open(n.href, '_blank'); setNotifOpen(false) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F3F5FA; cursor:pointer; background:${n.unread ? '#F3F7FF' : '#fff'};`)}>
+                    <div key={n.id} onClick={() => { if (n.unread) markNotificationsRead([n.id]); if (n.kind === 'submission') { setSection('usecases'); setUcStatus('pending') } else if (n.kind === 'report') { setSection('reports'); setRepStatus('open'); reloadReports() } else if (n.href) window.open(n.href, '_blank'); setNotifOpen(false) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F3F5FA; cursor:pointer; background:${n.unread ? '#F3F7FF' : '#fff'};`)}>
                       <span style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css(font(n.unread ? 800 : 500, 13, 1.5) + `;color:${n.unread ? '#1a5fff' : '#334155'};`)}>{n.text}</div>
@@ -360,6 +368,38 @@ export default function AdminConsolePage() {
                   </div>
                 ))}
                 {qRows.length === 0 && empty('Không có câu hỏi nào khớp bộ lọc.')}
+              </div>
+            </div>
+          )}
+
+          {section === 'reports' && (
+            <div>
+              <Heading title="Báo cáo" sub="Comment bị người dùng báo cáo. Xoá nội dung nếu vi phạm, hoặc bỏ qua nếu không có vấn đề." />
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:22px;')}>
+                <Tabs value={repStatus} onChange={setRepStatus} tabs={[['open', 'Chờ xử lý', reports.filter((r) => r.status === 'open').length], ['done', 'Đã xử lý', reports.filter((r) => r.status !== 'open').length], ['all', 'Tất cả', reports.length]]} />
+              </div>
+              <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                <div style={headRow(R_COLS)}><span>NỘI DUNG BỊ BÁO CÁO</span><span>NGƯỜI BÁO CÁO</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                {repRows.map((r) => {
+                  const st = REP_STATUS[r.status] || REP_STATUS.open
+                  return (
+                    <div key={r.id} style={bodyRow(R_COLS)}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={css(font(600, 13.5, 1.55) + ';color:#0f172a; white-space:pre-wrap; word-break:break-word;')}>"{r.excerpt}"</div>
+                        <div style={css('margin-top:5px;' + font(400, 12) + ';color:#94a3b8;')}>Viết bởi {r.author} · {r.type === 'uc_comment' ? 'comment ở use case' : r.type === 'answer' ? 'comment ở câu hỏi' : 'reply ở câu hỏi'}{r.exists ? '' : ' · nội dung đã bị xoá'}</div>
+                        {r.reason && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#F8FAFE; border:1px solid #EEF1F7;' + font(500, 12.5, 1.5) + ';color:#3A4757;')}>Lý do: {r.reason}</div>}
+                      </div>
+                      <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{r.reporter}<div style={css('margin-top:3px;' + font(400, 11.5) + ';color:#94a3b8;')}>{relativeTime(r.time)}</div></div>
+                      <div><span style={css(pill(st[1], st[2]))}>{st[0]}</span></div>
+                      <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                        {r.exists && <a href={r.path} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Xem</a>}
+                        {r.status === 'open' && r.exists && <button onClick={() => setConfirm({ text: 'Xoá comment bị báo cáo (và các reply bên dưới)?', run: () => resolveReport(r, 'delete') })} style={css(btn('reject'))}>Xoá nội dung</button>}
+                        {r.status === 'open' && <button onClick={() => resolveReport(r, 'dismiss')} style={css(btn('plain'))}>Bỏ qua</button>}
+                      </div>
+                    </div>
+                  )
+                })}
+                {repRows.length === 0 && empty(repStatus === 'open' ? 'Không có báo cáo nào đang chờ xử lý.' : 'Chưa có báo cáo nào.')}
               </div>
             </div>
           )}

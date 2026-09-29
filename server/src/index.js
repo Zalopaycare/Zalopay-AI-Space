@@ -8,6 +8,7 @@ import questionRoutes from './routes/questions.js'
 import useCaseRoutes from './routes/useCases.js'
 import notificationRoutes from './notifications.js'
 import adminRoutes from './routes/admin.js'
+import { reportRoutes } from './reports.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STATIC_DIR = process.env.STATIC_DIR || path.join(__dirname, '..', 'public')
@@ -24,6 +25,7 @@ app.use('/api/questions', questionRoutes)
 app.use('/api/use-cases', useCaseRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/reports', reportRoutes)
 
 app.use(express.static(STATIC_DIR))
 app.get('*', (req, res, next) => {

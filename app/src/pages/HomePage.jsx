@@ -201,7 +201,7 @@ export default function HomePage() {
         value={modalReplyDraft}
         onChange={(e) => setModalReplyDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') submitModalReply() }}
-        placeholder={t('Comment cho') + ' ' + modalReply.authorName + '...'}
+        placeholder={t('Reply comment của') + ' ' + modalReply.authorName + '...'}
         style={css(`flex:1; min-width:0; border:1px solid #DDE3EC; border-radius:999px; padding:8px 14px; font:400 13px ${FONT}; color:#0F172A; background:#fff; outline:none;`)}
       />
       <button onClick={() => { setModalReply(null); setModalReplyDraft('') }} style={css(`flex:none; height:32px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px ${FONT}; cursor:pointer;`)}>{t('Hủy')}</button>
@@ -449,11 +449,11 @@ export default function HomePage() {
                         <div style={css('display:flex; align-items:center; gap:16px; margin-top:9px;')}>
                           <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:${a.helpColor};`)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                            {t('Upvote')} · {a.helpful}
+                            {t('Like')} · {a.helpful}
                           </button>
                           <button onClick={() => startModalReply(a.id, null, a.author)} style={css(`display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#64748b;`)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            {t('Comment')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
+                            {t('Reply')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
                           </button>
                         </div>
                         {(a.comments || []).filter((c) => !c.parentId).map((c) => {
@@ -469,7 +469,7 @@ export default function HomePage() {
                                     <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
                                   </div>
                                   <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{c.body}</div>
-                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Comment')}</button>
+                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Reply')}</button>
                                 </div>
                               </div>
                               {replies.length > 0 && (
@@ -487,7 +487,7 @@ export default function HomePage() {
                                       <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
                                     </div>
                                     <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{r.body}</div>
-                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Comment')}</button>
+                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Reply')}</button>
                                   </div>
                                 </div>
                               ))}

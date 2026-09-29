@@ -2,6 +2,7 @@ import express from 'express'
 import { db } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { domainName } from '../mentions.js'
+import { adminReportRoutes } from '../reports.js'
 
 const router = express.Router()
 
@@ -21,5 +22,7 @@ router.get('/users', (req, res) => {
   }))
   res.json({ users })
 })
+
+router.use('/reports', adminReportRoutes)
 
 export default router

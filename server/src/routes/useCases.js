@@ -16,7 +16,7 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const saved = req.user ? !!db.prepare('SELECT 1 FROM use_case_saves WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
   const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at ASC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
-    return { id: c.id, author: u ? u.name : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null }
+    return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
   })
   res.json({ helpful, iHelped, saved, comments })
 })
@@ -148,6 +148,29 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
       : `Use case "${row.title}" bị từ chối.${note ? ' Lý do: ' + note : ''}\n\nXem tại: ${appUrl(req)}/profile#usecase`
     sendMail({ to: author.email, subject, text }).catch(() => {})
   }
+  res.json({ ok: true })
+})
+
+export const deleteUseCaseCommentTx = db.transaction((commentId) => {
+  db.prepare('DELETE FROM use_case_comments WHERE parent_id = ?').run(commentId)
+  db.prepare('DELETE FROM use_case_comments WHERE id = ?').run(commentId)
+})
+
+router.patch('/:id/comments/:commentId', requireAuth, (req, res) => {
+  const body = String(req.body?.body || '').trim()
+  if (!body) return res.status(400).json({ error: 'empty_body' })
+  const c = db.prepare('SELECT * FROM use_case_comments WHERE id = ? AND use_case_id = ?').get(req.params.commentId, req.params.id)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  if (c.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
+  db.prepare("UPDATE use_case_comments SET body = ?, edited_at = datetime('now') WHERE id = ?").run(body, c.id)
+  res.json({ ok: true })
+})
+
+router.delete('/:id/comments/:commentId', requireAuth, (req, res) => {
+  const c = db.prepare('SELECT * FROM use_case_comments WHERE id = ? AND use_case_id = ?').get(req.params.commentId, req.params.id)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  if (c.author_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'not_owner' })
+  deleteUseCaseCommentTx(c.id)
   res.json({ ok: true })
 })
 

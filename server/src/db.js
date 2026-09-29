@@ -162,6 +162,27 @@ if (!useCaseCommentColumns.includes('parent_id')) {
   db.exec('ALTER TABLE use_case_comments ADD COLUMN parent_id TEXT')
 }
 
+// "(đã sửa)" markers for edited answers and comments.
+for (const table of ['question_answers', 'answer_comments', 'use_case_comments']) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)
+  if (!cols.includes('edited_at')) db.exec(`ALTER TABLE ${table} ADD COLUMN edited_at TEXT`)
+}
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  path TEXT NOT NULL DEFAULT '',
+  excerpt TEXT NOT NULL DEFAULT '',
+  target_author_id INTEGER,
+  reporter_id INTEGER NOT NULL REFERENCES users(id),
+  reason TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`)
+
 export function nextId(prefix) {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 }

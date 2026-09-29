@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { css, cx, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
+import CommentMenu, { InlineEdit, useCommentModals } from '../components/CommentMenu.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
@@ -59,6 +60,8 @@ export default function UseCaseLibraryPage() {
   const [dDraft, setDDraft] = useState('')
   const [replyTarget, setReplyTarget] = useState(null) // { parentId, authorName } | null
   const [replyDraft, setReplyDraft] = useState('')
+  const [editingCmt, setEditingCmt] = useState(null) // comment id being edited
+  const ucModals = useCommentModals(api)
   const [expandedThreads, setExpandedThreads] = useState(() => new Set())
   const [copiedCode, setCopiedCode] = useState(null)
   const [copiedLabel, setCopiedLabel] = useState('')
@@ -625,6 +628,7 @@ export default function UseCaseLibraryPage() {
             </div>
 
             <div id="comments" style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin-bottom:36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
+              {ucModals.modals}
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap;')}>
                 <button
                   onClick={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
@@ -645,6 +649,12 @@ export default function UseCaseLibraryPage() {
                   <textarea
                     value={dDraft}
                     onChange={(e) => setDDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+                      e.preventDefault()
+                      const text = dDraft.trim()
+                      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
+                    }}
                     rows={2}
                     placeholder={t('Viết bình luận về use case này...')}
                     style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; line-height:1.6; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block;')}
@@ -670,12 +680,17 @@ export default function UseCaseLibraryPage() {
                   const expanded = expandedThreads.has(c.id)
                   return (
                     <div key={c.id} style={css('padding-top:14px; border-top:1px solid #EEF1F7;')}>
-                      <div style={css('display:flex; gap:12px;')}>
+                      <div className="zp-cmt" style={css('display:flex; gap:12px;')}>
                         <span style={css('width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;')}>{c.initials}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={css('font-size:13px; font-weight:700; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}</span></div>
-                          <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{c.body}</div>
-                          <button onClick={() => startReply(c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Comment')}</button>
+                          <div style={css('display:flex; align-items:center; gap:8px;')}>
+                            <div style={css('flex:1; min-width:0; font-size:13px; font-weight:700; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
+                            <CommentMenu isOwner={!!user && c.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(c.id)} onDelete={() => ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} onReport={() => ucModals.askReport('uc_comment', c.id)} />
+                          </div>
+                          {editingCmt === c.id
+                            ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
+                            : <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{c.body}</div>}
+                          <button onClick={() => startReply(c.id, c.author)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                         </div>
                       </div>
 
@@ -687,12 +702,17 @@ export default function UseCaseLibraryPage() {
                       )}
 
                       {expanded && replies.map((r) => (
-                        <div key={r.id} style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
+                        <div key={r.id} className="zp-cmt" style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
                           <span style={css('width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;')}>{r.initials}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={css('font-size:12.5px; font-weight:700; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}</span></div>
-                            <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{r.body}</div>
-                            <button onClick={() => startReply(c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Comment')}</button>
+                            <div style={css('display:flex; align-items:center; gap:8px;')}>
+                              <div style={css('flex:1; min-width:0; font-size:12.5px; font-weight:700; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
+                              <CommentMenu isOwner={!!user && r.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(r.id)} onDelete={() => ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} onReport={() => ucModals.askReport('uc_comment', r.id)} />
+                            </div>
+                            {editingCmt === r.id
+                              ? <InlineEdit initial={r.body} onSave={(b) => api.editUseCaseComment(dsel.id, r.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
+                              : <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{r.body}</div>}
+                            <button onClick={() => startReply(c.id, r.author)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                           </div>
                         </div>
                       ))}
@@ -706,7 +726,8 @@ export default function UseCaseLibraryPage() {
                               value={replyDraft}
                               onChange={(e) => setReplyDraft(e.target.value)}
                               rows={1}
-                              placeholder={t('Comment cho') + ' ' + replyTarget.authorName + '...'}
+                              placeholder={t('Reply comment của') + ' ' + replyTarget.authorName + '...'}
+                              onKeyDown={(e) => { if (e.key === 'Escape') cancelReply(); else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submitReply(dsel.id) } }}
                               style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font-family:inherit; font-size:13px; line-height:1.5; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                             />
                             <div style={css('display:flex; justify-content:flex-end; gap:8px; margin-top:8px;')}>

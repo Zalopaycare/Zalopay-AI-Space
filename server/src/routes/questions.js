@@ -24,11 +24,11 @@ function loadQuestion(id, userId) {
   const answers = db.prepare('SELECT * FROM question_answers WHERE question_id = ? ORDER BY created_at ASC').all(id).map((a) => {
     const aAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(a.author_id)
     const comments = db.prepare('SELECT * FROM answer_comments WHERE answer_id = ? ORDER BY created_at ASC').all(a.id).map((c) => ({
-      id: c.id, ...userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), time: c.created_at, body: c.body, parentId: c.parent_id || null,
+      id: c.id, ...userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at,
     }))
     const helpful = db.prepare('SELECT COUNT(*) n FROM answer_reactions WHERE answer_id = ?').get(a.id).n
     const iHelped = userId ? !!db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(a.id, userId) : false
-    return { id: a.id, ...userBrief(aAuthor), time: a.created_at, helpful, iHelped, accepted: !!a.accepted, body: a.body, comments }
+    return { id: a.id, ...userBrief(aAuthor), time: a.created_at, helpful, iHelped, accepted: !!a.accepted, body: a.body, edited: !!a.edited_at, comments }
   })
   const qHelpful = db.prepare('SELECT COUNT(*) n FROM question_reactions WHERE question_id = ?').get(id).n
   const iHelpedQ = userId ? !!db.prepare('SELECT 1 FROM question_reactions WHERE question_id = ? AND user_id = ?').get(id, userId) : false
@@ -177,6 +177,65 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   notifyMentions(req, { text: body, where: qRow ? `câu hỏi "${qTitle(qRow)}"` : 'một câu hỏi', path: `/questions#q=${id}`, skip: [aAuthor?.email] })
 
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
+})
+
+// ---- edit / delete answers and comments (author edits; author or admin deletes) ----
+const canEdit = (req, row) => row && row.author_id === req.user.id
+const canDelete = (req, row) => row && (row.author_id === req.user.id || req.user.is_admin)
+
+export const deleteAnswerTx = db.transaction((answerId) => {
+  const a = db.prepare('SELECT * FROM question_answers WHERE id = ?').get(answerId)
+  if (!a) return
+  db.prepare('DELETE FROM answer_comments WHERE answer_id = ?').run(answerId)
+  db.prepare('DELETE FROM answer_reactions WHERE answer_id = ?').run(answerId)
+  db.prepare('DELETE FROM question_answers WHERE id = ?').run(answerId)
+  if (a.accepted) db.prepare('UPDATE questions SET resolved = 0, accepted_answer_id = NULL WHERE id = ?').run(a.question_id)
+})
+export const deleteCommentTx = db.transaction((commentId) => {
+  db.prepare('DELETE FROM answer_comments WHERE parent_id = ?').run(commentId)
+  db.prepare('DELETE FROM answer_comments WHERE id = ?').run(commentId)
+})
+
+router.patch('/:id/answers/:answerId', requireAuth, (req, res) => {
+  const body = String(req.body?.body || '').trim()
+  if (!body) return res.status(400).json({ error: 'empty_body' })
+  const a = db.prepare('SELECT * FROM question_answers WHERE id = ? AND question_id = ?').get(req.params.answerId, req.params.id)
+  if (!a) return res.status(404).json({ error: 'not_found' })
+  if (!canEdit(req, a)) return res.status(403).json({ error: 'not_owner' })
+  db.prepare("UPDATE question_answers SET body = ?, edited_at = datetime('now') WHERE id = ?").run(body, a.id)
+  res.json({ question: loadQuestion(req.params.id, req.user.id) })
+})
+
+router.delete('/:id/answers/:answerId', requireAuth, (req, res) => {
+  const a = db.prepare('SELECT * FROM question_answers WHERE id = ? AND question_id = ?').get(req.params.answerId, req.params.id)
+  if (!a) return res.status(404).json({ error: 'not_found' })
+  if (!canDelete(req, a)) return res.status(403).json({ error: 'not_owner' })
+  deleteAnswerTx(a.id)
+  res.json({ question: loadQuestion(req.params.id, req.user.id) })
+})
+
+const findComment = (req) => {
+  const c = db.prepare('SELECT * FROM answer_comments WHERE id = ? AND answer_id = ?').get(req.params.commentId, req.params.answerId)
+  const a = c && db.prepare('SELECT 1 FROM question_answers WHERE id = ? AND question_id = ?').get(req.params.answerId, req.params.id)
+  return a ? c : null
+}
+
+router.patch('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, res) => {
+  const body = String(req.body?.body || '').trim()
+  if (!body) return res.status(400).json({ error: 'empty_body' })
+  const c = findComment(req)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  if (!canEdit(req, c)) return res.status(403).json({ error: 'not_owner' })
+  db.prepare("UPDATE answer_comments SET body = ?, edited_at = datetime('now') WHERE id = ?").run(body, c.id)
+  res.json({ question: loadQuestion(req.params.id, req.user.id) })
+})
+
+router.delete('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, res) => {
+  const c = findComment(req)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  if (!canDelete(req, c)) return res.status(403).json({ error: 'not_owner' })
+  deleteCommentTx(c.id)
+  res.json({ question: loadQuestion(req.params.id, req.user.id) })
 })
 
 export default router

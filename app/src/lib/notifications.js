@@ -49,4 +49,5 @@ export const NOTIF_STYLE = {
   approved: { iconBg: '#E7F9F0', iconFg: '#00893F' },
   rejected: { iconBg: '#FFECEC', iconFg: '#D8232A' },
   submission: { iconBg: '#FFF1E0', iconFg: '#B45300' },
+  report: { iconBg: '#FFECEC', iconFg: '#D8232A' },
 }
