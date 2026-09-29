@@ -120,7 +120,18 @@ router.get('/sso/callback', async (req, res) => {
     if (claims.name && user.name !== claims.name) {
       db.prepare('UPDATE users SET name = ? WHERE id = ?').run(claims.name, user.id)
     }
-    if (graph) saveGraphTokens(user.id, tokens)
+    if (graph) {
+      saveGraphTokens(user.id, tokens)
+      // Department for the admin "by team" stats; best effort, never blocks sign-in.
+      try {
+        const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=department,jobTitle', { headers: { authorization: `Bearer ${tokens.access_token}` } })
+        if (r.ok) {
+          const me = await r.json()
+          const team = String(me.department || '').trim().slice(0, 120)
+          if (team) db.prepare('UPDATE users SET team = ? WHERE id = ?').run(team, user.id)
+        }
+      } catch { /* ignore */ }
+    }
     issueSession(res, db.prepare('SELECT * FROM users WHERE id = ?').get(user.id))
     res.redirect(typeof next === 'string' && /^\/(?![\/\\])/.test(next) ? next : '/')
   } catch (err) {

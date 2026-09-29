@@ -26,6 +26,7 @@ export const api = {
   markNotificationsRead: (ids) => request('/notifications/read', { method: 'POST', body: JSON.stringify(ids ? { ids } : {}) }),
   adminUsers: () => request('/admin/users'),
   directoryStatus: () => request('/admin/directory-status'),
+  adminStats: () => request('/admin/stats'),
   listUsers: (q) => request('/auth/users?q=' + encodeURIComponent(q || '')),
 
   listQuestions: () => request('/questions'),

@@ -87,6 +87,8 @@ export default function AdminConsolePage() {
   const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
+  const [adminStats, setAdminStats] = useState(null)
+  const [lbPeriod, setLbPeriod] = useState('last30')
   const [repStatus, setRepStatus] = useState('open')
   const [submissions, setSubmissions] = useState([])
   const [questions, setQuestions] = useState([])
@@ -110,7 +112,8 @@ export default function AdminConsolePage() {
   const checkDirectory = () => { setDirStatus(null); api.directoryStatus().then(setDirStatus).catch(() => setDirStatus({ state: 'error', detail: 'Không gọi được server.' })) }
   const reloadReports = () => api.adminReports().then((d) => setReports(d.reports || [])).catch(() => {})
   const [updatedAt, setUpdatedAt] = useState(null)
-  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports()]).then(() => setUpdatedAt(new Date()))
+  const reloadStats = () => api.adminStats().then(setAdminStats).catch(() => {})
+  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports(), reloadStats()]).then(() => setUpdatedAt(new Date()))
   useEffect(() => { if (isAdmin) { reloadAll(); checkDirectory() } }, [isAdmin])
   // Keep the numbers live while the console is open.
   useEffect(() => { if (!isAdmin) return; const t = setInterval(reloadAll, 60_000); return () => clearInterval(t) }, [isAdmin])
@@ -171,6 +174,8 @@ export default function AdminConsolePage() {
     const before = list.length - today
     return { total: list.length, today, yesterday, pct: before > 0 ? Math.round((today / before) * 1000) / 10 : null }
   }
+  const act = adminStats?.activity
+  const dauPct = act && act.yesterday > 0 ? Math.round(((act.today - act.yesterday) / act.yesterday) * 1000) / 10 : null
   const stats = [
     { label: 'Câu hỏi', ...daily(questions, 'time'), go: () => setSection('questions') },
     { label: 'Use case gửi duyệt', ...daily(submissions, 'time'), go: () => { setSection('usecases'); setUcStatus('all') } },
@@ -222,6 +227,8 @@ export default function AdminConsolePage() {
   const Q_COLS = 'minmax(0,1fr) 150px 80px 80px 130px 150px'
   const U_COLS = 'minmax(0,1fr) 110px 120px 80px 80px 80px'
   const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
+  const LB_COLS = '34px minmax(0,1fr) 70px 80px 80px 70px 70px 60px'
+  const D_COLS = 'minmax(0,1fr) 100px 150px 90px 90px 90px'
   const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
   const repRows = reports.filter((r) => repStatus === 'all' || (repStatus === 'open' ? r.status === 'open' : r.status !== 'open'))
   const resolveReport = (r, action) => api.resolveReport(r.id, action).then(() => { reloadReports(); if (action === 'delete') reloadQuestions() }).catch(() => {})
@@ -316,7 +323,15 @@ export default function AdminConsolePage() {
                 )}
               </div>
 
-              <div style={css('display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:20px;')}>
+              <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin-top:20px;')}>
+                <div style={css('padding:18px 20px;' + card)}>
+                  <div style={css(font(700, 12.5) + ';color:#64748b;')}>Người dùng hoạt động hôm nay</div>
+                  <div style={css('display:flex; align-items:baseline; gap:10px; margin-top:10px; flex-wrap:wrap;')}>
+                    <span style={css(font(900, 32) + ';color:#0F172A;')}>{act ? act.today : '—'}</span>
+                    {act && <span style={css(dauPct == null ? pill('#EDF0FA', '#64748b') : dauPct >= 0 ? pill('#E7F9F0', '#00893F') : pill('#FFECEC', '#D8232A'))}>{dauPct == null ? 'Chưa có số hôm qua' : `${dauPct >= 0 ? '▲ +' : '▼ '}${dauPct}% so với hôm qua`}</span>}
+                  </div>
+                  <div style={css('margin-top:8px;' + font(500, 12) + ';color:#94a3b8;')}>{act ? `Hôm qua: ${act.yesterday} · 7 ngày: ${act.wau} người` : ''}</div>
+                </div>
                 {stats.map((k) => (
                   <button key={k.label} onClick={k.go} className={hoverClass('border-color:#B9CCF8;')} style={css('padding:18px 20px; text-align:left; cursor:pointer;' + card)}>
                     <div style={css(font(700, 12.5) + ';color:#64748b;')}>{k.label}</div>
@@ -355,6 +370,75 @@ export default function AdminConsolePage() {
                 </div>
                 <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:18px; margin-top:10px;')}>
                   {months.map((m) => <span key={m.key} style={css('text-align:center;' + font(600, 12) + ';color:#94a3b8;')}>{m.label}</span>)}
+                </div>
+              </div>
+
+              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
+                <div style={css('display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
+                  <div>
+                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Người dùng hoạt động 14 ngày gần đây</h2>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Số người vào trang mỗi ngày (giờ Việt Nam). 7 ngày qua: {act ? act.wau : '—'} người{act && act.prevWau ? ` (7 ngày trước đó: ${act.prevWau})` : ''}.</p>
+                  </div>
+                </div>
+                <div style={css('display:grid; grid-template-columns:repeat(14,1fr); gap:8px; margin-top:18px; height:140px; align-items:end; border-bottom:1px solid #EEF1F7;')}>
+                  {(act?.series || []).map((d) => {
+                    const max = Math.max(1, ...act.series.map((x) => x.n))
+                    return (
+                      <div key={d.day} title={`${d.day}: ${d.n} người`} style={css('height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;')}>
+                        <span style={css(font(700, 10.5) + ';color:#64748b; margin-bottom:3px;')}>{d.n || ''}</span>
+                        <div style={css(`width:100%; max-width:30px; height:${Math.max(d.n ? 4 : 0, Math.round((d.n / max) * 110))}px; border-radius:5px 5px 0 0; background:${d.day === act.series[act.series.length - 1].day ? '#2c5fff' : '#9DB8FF'};`)}></div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={css('display:grid; grid-template-columns:repeat(14,1fr); gap:8px; margin-top:8px;')}>
+                  {(act?.series || []).map((d) => <span key={d.day} style={css('text-align:center;' + font(600, 10.5) + ';color:#94a3b8;')}>{d.day.slice(8)}/{d.day.slice(5, 7)}</span>)}
+                </div>
+              </div>
+
+              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
+                <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
+                  <div>
+                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp</h2>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Điểm = trả lời ×3 + like nhận được ×2 + use case được duyệt ×5 + comment/reply ×1 + câu hỏi ×1.</p>
+                  </div>
+                  <Tabs value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} />
+                </div>
+                <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
+                  <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>CÂU HỎI</span><span>USE CASE</span><span>ĐIỂM</span></div>
+                  {(adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => (
+                    <div key={u.id} style={bodyRow(LB_COLS)}>
+                      <span style={css(font(900, 15) + `;color:${i < 3 ? ['#E0A100', '#8A99AD', '#B8733A'][i] : '#94a3b8'};`)}>{i + 1}</span>
+                      <div style={css('display:flex; align-items:center; gap:10px; min-width:0;')}>
+                        <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';')}>{u.initials}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={css(font(700, 13.5) + ';color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{u.domain}</div>
+                          <div style={css(font(400, 11.5) + ';color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{u.team || u.name}</div>
+                        </div>
+                      </div>
+                      {[u.answers, u.comments, u.likes, u.questions, u.useCases].map((v, j) => <span key={j} style={css(font(700, 13.5) + ';color:#3A4757;')}>{v}</span>)}
+                      <span style={css(font(900, 14.5) + ';color:#2c5fff;')}>{u.score}</span>
+                    </div>
+                  ))}
+                  {adminStats && !(adminStats.leaderboard?.[lbPeriod] || []).length && empty('Chưa có ai đóng góp trong khoảng thời gian này.')}
+                </div>
+              </div>
+
+              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
+                <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Theo phòng ban</h2>
+                <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Phòng ban lấy từ Microsoft khi mỗi người đăng nhập bằng SSO. Người chưa đăng nhập lại từ khi có tính năng này nằm ở "Chưa rõ phòng ban".</p>
+                <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
+                  <div style={headRow(D_COLS)}><span>PHÒNG BAN</span><span>THÀNH VIÊN</span><span>HOẠT ĐỘNG 7 NGÀY</span><span>CÂU HỎI</span><span>COMMENT</span><span>USE CASE</span></div>
+                  {(adminStats?.departments || []).map((d) => (
+                    <div key={d.team || '_'} style={bodyRow(D_COLS)}>
+                      <span style={css(font(700, 13.5) + `;color:${d.team ? '#0f172a' : '#94a3b8'};`)}>{d.team || 'Chưa rõ phòng ban'}</span>
+                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.members}</span>
+                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.active7}<span style={css(font(500, 11.5) + ';color:#94a3b8;')}> ({d.members ? Math.round((d.active7 / d.members) * 100) : 0}%)</span></span>
+                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.questions}</span>
+                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.comments}</span>
+                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.useCases}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -498,7 +582,7 @@ export default function AdminConsolePage() {
                       <span style={css(`flex:none; width:36px; height:36px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{u.initials}</span>
                       <div style={{ minWidth: 0 }}>
                         <div style={css(font(700, 14) + ';color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{u.name} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
-                        <div style={css('margin-top:3px;' + font(400, 12) + ';color:#64748b; overflow:hidden; text-overflow:ellipsis;')}>{u.email}</div>
+                        <div style={css('margin-top:3px;' + font(400, 12) + ';color:#64748b; overflow:hidden; text-overflow:ellipsis;')}>{u.email}{u.team ? ' · ' + u.team : ''}</div>
                       </div>
                     </div>
                     <div><span style={css(u.isAdmin ? pill('#EDE7FF', '#6F0CE2') : pill('#EDF0FA', '#3A4757'))}>{u.isAdmin ? 'Admin' : 'Thành viên'}</span></div>

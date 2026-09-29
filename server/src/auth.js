@@ -63,8 +63,19 @@ export function currentUser(req) {
   }
 }
 
+// Vietnam calendar day (UTC+7), e.g. "2026-09-29".
+export const vnDay = (t = Date.now()) => new Date(t + 7 * 3600_000).toISOString().slice(0, 10)
+const seenToday = new Map() // userId -> day already recorded (saves a write per request)
+function markActive(userId) {
+  const day = vnDay()
+  if (seenToday.get(userId) === day) return
+  seenToday.set(userId, day)
+  try { db.prepare('INSERT OR IGNORE INTO user_days (user_id, day) VALUES (?, ?)').run(userId, day) } catch { /* ignore */ }
+}
+
 export function attachUser(req, _res, next) {
   req.user = currentUser(req)
+  if (req.user) markActive(req.user.id)
   next()
 }
 

@@ -183,6 +183,15 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 `)
 
+// One row per person per (Vietnam-time) day they used the site: daily / weekly active users.
+db.exec(`
+CREATE TABLE IF NOT EXISTS user_days (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  day TEXT NOT NULL,
+  PRIMARY KEY (user_id, day)
+);
+`)
+
 export function nextId(prefix) {
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 }
