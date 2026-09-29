@@ -166,7 +166,7 @@ export default function HomePage() {
   const trending = questions
     .filter((q) => !q.resolved)
     .slice()
-    .sort((a, b) => helpfulTotal(b) - helpfulTotal(a) || tsNum(b.ts || b.time) - tsNum(a.ts || a.time))
+    .sort((a, b) => tsNum(b.ts || b.time) - tsNum(a.ts || a.time)) // newest first, matching the "mới nhất" heading
     .slice(0, 3)
     .map((q) => ({
       ...q,
