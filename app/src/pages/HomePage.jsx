@@ -8,7 +8,7 @@ import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
-import { usePublishedUseCases } from '../lib/publishedUseCases.js'
+import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import aiCloud from '../assets/ai-cloud.png'
@@ -140,7 +140,7 @@ export default function HomePage() {
       const qid = key.slice(2)
       api.deleteQuestion(qid).then(() => { setQuestions((qs) => qs.filter((x) => x.id !== qid)); done() }).catch(done)
     } else {
-      api.deleteUseCase(key).then(done).catch(done)
+      api.deleteUseCase(key).then(() => { loadPublishedUseCases(true); done() }).catch(done)
     }
   }
 
@@ -250,7 +250,7 @@ export default function HomePage() {
       onHelpful: (e) => { e.stopPropagation(); requireLogin(() => api.reactUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {})) },
       onOpen: () => navigate(`/use-cases/${c.id}`),
       helped: iHelped,
-      canDelete: c.author === (user?.name || ''),
+      canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
       commentCount: meta && meta.comments ? meta.comments.length : 0,
     }
   })
@@ -583,8 +583,8 @@ export default function HomePage() {
                       <ImageSlot id={'lib-' + item.id} shape="rect" placeholder="ảnh" />
                     </div>
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                      <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
-                      <p style={css('margin:5px 0 0; font-size:13.5px; line-height:1.55; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
+                      <h3 className="zp-card-title" style={css(`margin:0; font:800 14.5px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
+                      <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
                     </div>
                   </div>
                   <TagRow topics={(prdMeta[item.id] || {}).topics || []} tools={item.tools} style={{ marginTop: 10, marginBottom: 12 }} />

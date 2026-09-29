@@ -175,6 +175,8 @@ export default function UseCaseLibraryPage() {
 
   const deleteUseCase = (ucId) => {
     api.deleteUseCase(ucId).then(() => {
+      loadPublishedUseCases(true)
+      if (id === ucId) navigate('/use-cases')
       setUcMeta((m) => { const n = { ...m }; delete n[ucId]; return n })
       setConfirmDeleteId(null)
     }).catch(() => setConfirmDeleteId(null))
@@ -282,7 +284,7 @@ export default function UseCaseLibraryPage() {
       levelChipLight: levelChip(cd.level, false),
       levelChipDark: levelChip(cd.level, true),
       overview: c.desc || c.problem,
-      canDelete: c.author === (user?.name || ''),
+      canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
       onOpen: () => navigate(`/use-cases/${c.id}`),
@@ -858,8 +860,8 @@ export default function UseCaseLibraryPage() {
                           <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
                         </div>
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
-                          <h3 className="zp-card-title" style={css('margin:0; font-size:16px; font-weight:800; line-height:1.35; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
-                          <p style={css('margin:5px 0 0; font-size:13.5px; line-height:1.55; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
+                          <h3 className="zp-card-title" style={css('margin:0; font-size:14.5px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
+                          <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
                         </div>
                       </div>
                       <TagRow topics={c.topics || []} tools={c.tools} style={{ marginTop: 10, marginBottom: 12 }} />

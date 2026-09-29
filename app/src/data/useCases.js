@@ -540,7 +540,7 @@ export function registerPublished(subs) {
     return {
       id: s.id, title: s.title, desc: firstPara(lines(s.solution).join(' · ') || s.problem), author, team: s.team || '',
       category: [].concat(s.category)[0] || 'Khác', tools: s.tools || [], repo: '', repoHref: s.link || '',
-      audience: [], publishedAt: s.publishedAt || s.time, submitted: true,
+      audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId,
     }
   })
   allCases.unshift(...cases)
