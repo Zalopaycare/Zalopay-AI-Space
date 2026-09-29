@@ -1,4 +1,5 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import SoftLink from './SoftLink.jsx'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -20,19 +21,19 @@ export default function TopNav() {
   const [collapsed] = useSidebarCollapsed()
 
   return (
-    <div style={css(`position:fixed; top:0; left:${collapsed ? 76 : 260}px; right:0; height:72px; z-index:1900; display:flex; align-items:center; padding:0 32px; background:rgba(4,6,13,.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.08); font-family:inherit; transition:left .16s ease;`)}>
+    <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:${collapsed ? 76 : 260}px; right:0; height:72px; z-index:1900; display:flex; align-items:center; padding:0 32px; background:rgba(4,6,13,.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.08); font-family:inherit; transition:left .16s ease;`)}>
       <div style={{ flex: 1 }}></div>
       <nav style={css('display:flex; align-items:center; gap:34px;')}>
         {NAV_ITEMS.map((item) => {
           const active = item.match(location.pathname)
           return (
-            <Link
+            <SoftLink
               key={item.to}
               to={item.to}
               style={css(navItemBase + (active ? 'color:#fff;border-bottom:2px solid #fff;' : 'color:#c3d0f5;border-bottom:2px solid transparent;'))}
             >
               {t(item.label)}
-            </Link>
+            </SoftLink>
           )
         })}
       </nav>

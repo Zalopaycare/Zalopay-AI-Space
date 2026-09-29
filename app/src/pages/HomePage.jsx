@@ -293,10 +293,10 @@ export default function HomePage() {
           <p className="zp-tagline" style={css(`position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc.')}</p>
         </section>
 
-        <PageActionBar searchOnly maxWidth={560} query={homeQuery} onQuery={setHomeQuery} onSubmit={() => {}} placeholder="Tìm use case, câu hỏi, tác giả, công cụ..." />
+        <PageActionBar searchOnly query={homeQuery} onQuery={setHomeQuery} onSubmit={() => {}} placeholder="Tìm use case, câu hỏi, tác giả, công cụ..." />
         {searchNeedle && (
           <div ref={resultsRef} style={css('position:relative; z-index:5; padding:14px 40px 0;')}>
-            <div style={css('max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 18px 44px rgba(0,0,0,.3); padding:8px 8px 10px;')}>
+            <div style={css('max-width:760px; margin:0 auto; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 18px 44px rgba(0,0,0,.3); padding:8px 8px 10px;')}>
               {searchUc.length === 0 && searchQ.length === 0 ? (
                 <div style={css(`padding:26px 16px; text-align:center; font:600 14px ${FONT}; color:#64748b;`)}>
                   {t('Chưa có kết quả cho')} "<span style={css('color:#0F172A;')}>{homeQuery.trim()}</span>"
@@ -332,7 +332,7 @@ export default function HomePage() {
 
         {/* ============ TRENDING QUESTIONS ============ */}
         <section id="waiting" style={css('position:relative; z-index:1; padding:28px 40px 40px; background:transparent;')}>
-          <div style={css('max-width:1200px; margin:0 auto;')}>
+          <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
               <h2 style={css(`margin:0; font:900 30px ${FONT}; letter-spacing:-.01em; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
               <button
@@ -533,7 +533,7 @@ export default function HomePage() {
 
         {/* ============ FEATURED USE CASES ============ */}
         <section id="featured" style={css('position:relative; padding:24px 40px 36px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
-          <div style={css('max-width:1200px; margin:0 auto;')}>
+          <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
               <h2 style={css(`font:900 30px ${FONT}; letter-spacing:-.01em; margin:0; background:linear-gradient(100deg,#9fd0ff 0%,#6ea8ff 48%,#5ee7ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;`)}>{t('Use case nổi bật')}</h2>
               <button
@@ -546,7 +546,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:24px;')}>
+            <div style={css('display:flex; flex-direction:column; gap:14px; margin-top:24px;')}>
               {featured.map((item) => (
                 <div key={item.id} onClick={item.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
                   <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import SoftLink from './SoftLink.jsx'
+import { useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
@@ -13,26 +14,26 @@ const subItemBase = 'display:flex; align-items:center; gap:14px; height:42px; pa
 
 function NavLink({ to, active, icon, children, collapsed, title }) {
   return (
-    <Link
+    <SoftLink
       to={to}
       title={collapsed ? title : undefined}
       className={hoverClass('background:rgba(255,255,255,.07); color:#fff;')}
       style={css(itemBase + `background:${active ? 'rgba(255,255,255,.09)' : 'transparent'}; color:${active ? '#ffffff' : '#c3d0f5'}; font-weight:${active ? 700 : 500}; ${collapsed ? 'justify-content:center; padding:0;' : ''}`)}
     >
       {icon}{!collapsed && children}
-    </Link>
+    </SoftLink>
   )
 }
 
 function SubLink({ to, active, icon, children }) {
   return (
-    <Link
+    <SoftLink
       to={to}
       className={hoverClass('background:rgba(255,255,255,.07); color:#fff;')}
       style={css(subItemBase + `background:${active ? 'rgba(255,255,255,.09)' : 'transparent'}; color:${active ? '#ffffff' : '#c3d0f5'}; font-weight:${active ? 700 : 500};`)}
     >
       {icon}{children}
-    </Link>
+    </SoftLink>
   )
 }
 
@@ -64,12 +65,12 @@ export default function Sidebar({ active }) {
   const homeActive = active === 'home'
 
   return (
-    <div style={css(`position:fixed; left:0; top:0; bottom:0; width:${collapsed ? 76 : 260}px; z-index:2000; display:flex; flex-direction:column; padding:${collapsed ? '22px 10px 18px' : '22px 14px 18px'}; background:#04060d; border-right:1px solid rgba(255,255,255,.08); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
+    <div style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:0; bottom:0; width:${collapsed ? 76 : 260}px; z-index:2000; display:flex; flex-direction:column; padding:${collapsed ? '22px 10px 18px' : '22px 14px 18px'}; background:#04060d; border-right:1px solid rgba(255,255,255,.08); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
       <div style={css(`display:flex; align-items:center; gap:8px; margin-bottom:28px; ${collapsed ? 'justify-content:center;' : 'padding:4px 12px 0;'}`)}>
         {!collapsed && (
-          <Link to="/" style={css('display:flex; align-items:center; gap:10px; text-decoration:none; flex:1; min-width:0;')}>
+          <SoftLink to="/" style={css('display:flex; align-items:center; gap:10px; text-decoration:none; flex:1; min-width:0;')}>
             <img src={logo} alt="Zalopay AI Space" style={{ height: 14, width: 'auto', display: 'block' }} />
-          </Link>
+          </SoftLink>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

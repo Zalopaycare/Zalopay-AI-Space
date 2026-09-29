@@ -103,8 +103,13 @@ input, textarea, button { font-family: inherit; }
 @keyframes mascotfloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .zp-mascot { animation: none; } }
 
-.zp-page-in { animation: pagein .32s cubic-bezier(.22,.61,.36,1) both; }
-@keyframes pagein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.zp-page-in { animation: pagein .26s ease-out both; }
+@keyframes pagein { from { opacity: 0; } to { opacity: 1; } }
+/* Sidebar/top-bar navigation cross-fades old → new page (View Transitions); the fixed chrome is
+   captured on its own so it stays put, and the per-page fade-in is skipped to avoid a double fade. */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
+::view-transition-group(zp-sidebar), ::view-transition-group(zp-topnav) { animation-duration: .3s; }
+html.zp-vt .zp-page-in { animation: none; }
 @media (prefers-reduced-motion: reduce) { .zp-page-in { animation: none; } }
 
 /* comment ⋯ menu: shown while hovering its comment bubble (always on touch screens) */

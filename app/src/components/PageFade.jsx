@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
 /**
@@ -8,6 +8,7 @@ import { useLocation } from 'react-router-dom'
  */
 export default function PageFade({ children }) {
   const { pathname } = useLocation()
-  useEffect(() => { window.scrollTo({ top: 0 }) }, [pathname])
+  // Layout effect so the reset lands in the same commit a view transition snapshots.
+  useLayoutEffect(() => { window.scrollTo({ top: 0 }) }, [pathname])
   return children
 }
