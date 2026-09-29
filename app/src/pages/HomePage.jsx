@@ -341,8 +341,8 @@ export default function HomePage() {
               <h2 style={css(`margin:0; font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; background:linear-gradient(100deg,#ffffff 0%,#f1e4ff 35%,#d9b8ff 70%,#c89bff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(12,4,40,.75)) drop-shadow(0 0 10px rgba(200,145,255,.75)) drop-shadow(0 0 26px rgba(170,100,255,.55));`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
               <button
                 onClick={() => navigate('/questions')}
-                className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}
-                style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:8px; padding:6px 2px; border:none; background:transparent; color:#6ea8ff; font:800 15px ${FONT}; cursor:pointer; transition:color .16s;`)}
+                className={'zp-see-all ' + hoverClass('color:#e4ccff !important;')}
+                style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:8px; padding:6px 2px; border:none; background:transparent; color:#c89bff; font:800 15px ${FONT}; cursor:pointer; transition:color .16s;`)}
               >
                 {t('Xem tất cả')}
                 <svg className="zp-see-all-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
