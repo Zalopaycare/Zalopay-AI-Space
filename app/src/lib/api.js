@@ -31,6 +31,7 @@ export const api = {
 
   listQuestions: () => request('/questions'),
   deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
+  updateQuestion: (id, payload) => request(`/questions/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   postQuestion: (payload) => request('/questions', { method: 'POST', body: JSON.stringify(payload) }),
   reactQuestion: (id) => request(`/questions/${id}/react`, { method: 'POST' }),
   saveQuestion: (id) => request(`/questions/${id}/save`, { method: 'POST' }),

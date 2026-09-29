@@ -112,7 +112,7 @@ router.get('/submissions', requireAuth, (req, res) => {
         category: asArr(r.category), topics: asArr(r.topics), tools: asArr(r.tools),
         reviewStatus: r.review_status, adminNote: r.admin_note,
         author: author ? author.name : '—', authorDomain: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, time: r.created_at,
-        publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
+        publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null, edited: !!r.edited_at,
       }
     }),
   })
@@ -158,14 +158,20 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(req.params.id)
   if (!row) return res.status(404).json({ error: 'not_found' })
   if (row.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
-  if (!['changes_requested', 'pending'].includes(row.review_status)) return res.status(409).json({ error: 'not_editable' })
+  if (!['changes_requested', 'pending', 'approved'].includes(row.review_status)) return res.status(409).json({ error: 'not_editable' })
+  // A published use case stays published when its author edits it; admins get a heads-up to look it over.
+  const nextStatus = row.review_status === 'approved' ? 'approved' : 'pending'
   const f = req.body || {}
   if (!validSubmission(f)) return res.status(400).json({ error: 'missing_fields' })
   db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
-    limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = 'pending' WHERE id = ?`)
+    limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = ?, edited_at = datetime('now') WHERE id = ?`)
     .run(f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
       String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(), f.kind, f.status, f.level,
-      JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), row.id)
+      JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), nextStatus, row.id)
+  if (row.review_status === 'approved') {
+    const who = domainName(req.user.email, req.user.name)
+    for (const to of adminEmailsFor(req)) notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng: "${f.title.trim()}"`, href: `/use-cases/${row.id}`, actor: req.user.name })
+  }
   if (row.review_status === 'changes_requested') {
     const who = domainName(req.user.email, req.user.name)
     for (const to of adminEmailsFor(req)) {

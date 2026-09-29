@@ -36,7 +36,7 @@ function loadQuestion(id, userId) {
   return {
     id: q.id, title: qTitle(q), hasTitle: !!q.title, body: q.body, ...userBrief(author), time: q.created_at, ts: q.created_at,
     category: asArr(q.category), topics: asArr(q.topics), tools: asArr(q.tools),
-    resolved: !!q.resolved, saved, files: [],
+    resolved: !!q.resolved, saved, files: [], edited: !!q.edited_at,
     images: db.prepare('SELECT idx FROM question_images WHERE question_id = ? ORDER BY idx').all(id).map((r) => `/api/questions/${id}/images/${r.idx}`), qHelpful, iHelpedQ, answers,
   }
 }
@@ -93,6 +93,19 @@ router.post('/', requireAuth, (req, res) => {
   const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
   notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}` })
   res.status(201).json({ question: loadQuestion(id, req.user.id) })
+})
+
+// The author edits their own question (text, topic and tool tags; images stay as posted).
+router.patch('/:id', requireAuth, (req, res) => {
+  const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(req.params.id)
+  if (!q) return res.status(404).json({ error: 'not_found' })
+  if (q.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
+  const { title = '', body, topics = [], tools = [] } = req.body || {}
+  if (!String(body || '').trim()) return res.status(400).json({ error: 'missing_fields' })
+  const clean = (a) => (Array.isArray(a) ? a.map((x) => String(x).trim()).filter(Boolean).slice(0, 12) : [])
+  db.prepare("UPDATE questions SET title = ?, body = ?, topics = ?, tools = ?, edited_at = datetime('now') WHERE id = ?")
+    .run(String(title).trim(), String(body).trim(), JSON.stringify(clean(topics)), JSON.stringify(clean(tools)), q.id)
+  res.json({ question: loadQuestion(q.id, req.user.id) })
 })
 
 router.get('/:id/images/:idx', requireAuth, (req, res) => {

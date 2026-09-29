@@ -259,7 +259,7 @@ export default function UseCaseLibraryPage() {
         contact: shareForm.contact.trim(), link: shareForm.link.trim(),
         kind: shareKind, status: shareStatus, level: shareLevel,
         category: shareCategory, topics: previewTopics, tools: previewTools,
-      }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft() })
+      }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
         .catch(() => setShareError('Không gửi được use case, thử lại.'))
     })
   }
@@ -288,6 +288,7 @@ export default function UseCaseLibraryPage() {
       levelChipDark: levelChip(cd.level, true),
       overview: c.desc || c.problem,
       canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
+      canEdit: !!user && !!c.authorId && c.authorId === user.id,
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
       onOpen: () => navigate(`/use-cases/${c.id}`),
@@ -852,6 +853,12 @@ export default function UseCaseLibraryPage() {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                                 {c.saveFill === 'currentColor' ? t('Bỏ lưu') : t('Lưu use case')}
                               </button>
+                              {c.canEdit && (
+                                <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); navigate('/use-cases?edit=' + c.id) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+                                  {t('Chỉnh sửa')}
+                                </button>
+                              )}
                               {c.canDelete && (
                                 <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(c.id); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
@@ -926,10 +933,12 @@ export default function UseCaseLibraryPage() {
 
   // ================= SHARE MODAL =================
   function renderShareModal() {
-    const shareHeading = shareStage === 'submitted' ? (editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Preview use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
-    const shareSubhead = shareStage === 'submitted' ? 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
+    // Editing a published use case saves in place; editing one under review resubmits it.
+    const liveEdit = editing?.status === 'approved'
+    const shareHeading = shareStage === 'submitted' ? (liveEdit ? 'Đã lưu thay đổi' : editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Preview use case' : liveEdit ? 'Chỉnh sửa use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
+    const shareSubhead = shareStage === 'submitted' ? (liveEdit ? 'Use case đã được cập nhật trong Thư viện.' : 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.') : liveEdit ? 'Thay đổi được cập nhật ngay trong Thư viện.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
     const shareOpacity = valid ? 1 : 0.5
-    const shareHint = shareError || 'Sau khi gửi, bài ở trạng thái Pending Review và chưa hiển thị trong Library.'
+    const shareHint = shareError || (liveEdit ? 'Bài vẫn hiển thị trong Library sau khi lưu.' : 'Sau khi gửi, bài ở trạng thái Pending Review và chưa hiển thị trong Library.')
     const shareHintColor = shareError ? '#D8232A' : '#94a3b8'
 
     return (
@@ -947,7 +956,7 @@ export default function UseCaseLibraryPage() {
             <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
               <span style={css('display:inline-flex; align-items:center; gap:8px; height:30px; padding:0 13px; border-radius:999px; background:rgba(22,214,140,.14); border:1px solid rgba(22,214,140,.34); font-size:12px; font-weight:700; color:#6fe3aa;')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-                {editing ? 'Sửa xong bấm "Gửi lại để duyệt"' : hasDraft ? 'Nháp đã lưu lúc ' + draftSavedAt : 'Nháp tự lưu khi bạn gõ'}
+                {liveEdit ? 'Sửa xong bấm "Lưu thay đổi"' : editing ? 'Sửa xong bấm "Gửi lại để duyệt"' : hasDraft ? 'Nháp đã lưu lúc ' + draftSavedAt : 'Nháp tự lưu khi bạn gõ'}
               </span>
               {hasDraft && (
                 <button onClick={clearDraft} style={css('height:30px; padding:0 13px; border-radius:999px; border:1px solid rgba(255,255,255,.2); background:transparent; color:#c3d0f5; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;')}>{t('Xoá nháp')}</button>
@@ -1018,7 +1027,7 @@ export default function UseCaseLibraryPage() {
                       onClick={submitShare}
                       style={css('margin-left:auto; height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
                     >
-                      {editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
+                      {liveEdit ? 'Lưu thay đổi' : editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                     </button>
                   </div>
                 </div>
@@ -1126,7 +1135,7 @@ export default function UseCaseLibraryPage() {
                         onClick={submitShare}
                         style={css(`height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; opacity:${shareOpacity}; box-shadow:0 12px 26px rgba(44,95,255,.4);`)}
                       >
-                        {editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
+                        {liveEdit ? 'Lưu thay đổi' : editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                       </button>
                     </div>
                   </div>

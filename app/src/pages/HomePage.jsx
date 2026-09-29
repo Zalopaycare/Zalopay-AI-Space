@@ -251,6 +251,7 @@ export default function HomePage() {
       onOpen: () => navigate(`/use-cases/${c.id}`),
       helped: iHelped,
       canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
+      canEdit: !!user && !!c.authorId && c.authorId === user.id,
       commentCount: meta && meta.comments ? meta.comments.length : 0,
     }
   })
@@ -258,7 +259,7 @@ export default function HomePage() {
   return (
     <Layout active="home">
       <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
-        <SpaceBackdrop arcTop={240 + resultsH} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
+        <SpaceBackdrop arcTop={190 + resultsH} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 
         {/* ============ WORDMARK ============ */}
         <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:14px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
@@ -379,6 +380,12 @@ export default function HomePage() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saved ? '#00A352' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                             {q.saved ? t('Bỏ lưu') : t('Lưu câu hỏi')}
                           </button>
+                          {q.canDelete && (
+                            <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); navigate('/questions#edit=' + encodeURIComponent(q.id)) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+                              {t('Chỉnh sửa')}
+                            </button>
+                          )}
                           {q.canDelete && (
                             <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId('q:' + q.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
@@ -572,6 +579,12 @@ export default function HomePage() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                             {item.saveFill === 'currentColor' ? t('Bỏ lưu') : t('Lưu use case')}
                           </button>
+                          {item.canEdit && (
+                            <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); navigate('/use-cases?edit=' + item.id) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+                              {t('Chỉnh sửa')}
+                            </button>
+                          )}
                           {item.canDelete && (
                             <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
