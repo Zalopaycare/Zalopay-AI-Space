@@ -82,9 +82,9 @@ export default function Sidebar({ active }) {
       </div>
 
       <nav style={css('display:flex; flex-direction:column; gap:2px;')}>
-        <NavLink to="/" active={homeActive} collapsed={collapsed} title={t('Trang chủ')} icon={
+        <NavLink to="/" active={homeActive} collapsed={collapsed} title='Home' icon={
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
-        }>{t('Trang chủ')}</NavLink>
+        }>Home</NavLink>
       </nav>
 
       <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>

@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
 
 const NAV_ITEMS = [
-  { label: 'Trang chủ', to: '/', match: (p) => p === '/' },
+  { label: 'Home', to: '/', match: (p) => p === '/' },
   { label: 'Use Case', to: '/use-cases', match: (p) => p.startsWith('/use-cases') },
   { label: 'Câu hỏi', to: '/questions', match: (p) => p.startsWith('/questions') },
 ]

@@ -109,7 +109,11 @@ export default function AdminConsolePage() {
   const reloadUsers = () => api.adminUsers().then((d) => setUsers(d.users || [])).catch(() => {})
   const checkDirectory = () => { setDirStatus(null); api.directoryStatus().then(setDirStatus).catch(() => setDirStatus({ state: 'error', detail: 'Không gọi được server.' })) }
   const reloadReports = () => api.adminReports().then((d) => setReports(d.reports || [])).catch(() => {})
-  useEffect(() => { if (isAdmin) { reloadSubmissions(); reloadQuestions(); reloadUsers(); reloadReports(); checkDirectory() } }, [isAdmin])
+  const [updatedAt, setUpdatedAt] = useState(null)
+  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports()]).then(() => setUpdatedAt(new Date()))
+  useEffect(() => { if (isAdmin) { reloadAll(); checkDirectory() } }, [isAdmin])
+  // Keep the numbers live while the console is open.
+  useEffect(() => { if (!isAdmin) return; const t = setInterval(reloadAll, 60_000); return () => clearInterval(t) }, [isAdmin])
   useEffect(() => {
     if (!notifOpen) return
     const close = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false) }
@@ -156,13 +160,35 @@ export default function AdminConsolePage() {
   const topTopics = count([...questions.map((q) => q.topics || []), ...approved.map((s) => s.topics || []), ...allCases.map((c) => prdMeta[c.id]?.topics || [])])
   const topTools = count([...questions.map((q) => q.tools || []), ...approved.map((s) => s.tools || []), ...allCases.map((c) => c.tools || [])])
 
-  const kpis = [
-    { label: 'Thành viên', value: users.length, hint: 'Đã đăng nhập ít nhất 1 lần', color: '#0F172A' },
-    { label: 'Use case đã đăng', value: allCases.length + approved.length, hint: `${allCases.length} có sẵn · ${approved.length} được duyệt`, color: '#0F172A' },
-    { label: 'Use case chờ duyệt', value: pending.length, hint: 'Cần Admin xử lý', color: pending.length ? '#B45300' : '#0F172A' },
-    { label: 'Câu hỏi', value: questions.length, hint: `${commentsTotal} câu trả lời & comment`, color: '#0F172A' },
-    { label: 'Chưa có trả lời', value: unanswered.length, hint: 'Câu hỏi chưa ai trả lời', color: unanswered.length ? '#D8232A' : '#0F172A' },
+  // Daily movement: what was added today vs. how big the total was before today.
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const today0 = startOfDay(now), yesterday0 = today0 - 86_400_000
+  const allComments = questions.flatMap((q) => [...q.answers, ...q.answers.flatMap((a) => a.comments || [])])
+  const daily = (list, field) => {
+    const ts = list.map((x) => toDate(x[field]).getTime())
+    const today = ts.filter((t) => t >= today0).length
+    const yesterday = ts.filter((t) => t >= yesterday0 && t < today0).length
+    const before = list.length - today
+    return { total: list.length, today, yesterday, pct: before > 0 ? Math.round((today / before) * 1000) / 10 : null }
+  }
+  const stats = [
+    { label: 'Câu hỏi', ...daily(questions, 'time'), go: () => setSection('questions') },
+    { label: 'Use case gửi duyệt', ...daily(submissions, 'time'), go: () => { setSection('usecases'); setUcStatus('all') } },
+    { label: 'Thành viên', ...daily(users, 'joined'), go: () => setSection('users') },
+    { label: 'Comment & reply', ...daily(allComments, 'time'), go: () => setSection('questions') },
   ]
+
+  // Things an admin should act on, most urgent first.
+  const ageDays = (t) => Math.floor((now.getTime() - toDate(t).getTime()) / 86_400_000)
+  const openReports = reports.filter((r) => r.status === 'open')
+  const staleUnanswered = unanswered.filter((q) => ageDays(q.time) >= 2)
+  const oldestPending = pending.reduce((m, s) => Math.max(m, ageDays(s.time)), 0)
+  const todos = [
+    { n: openReports.length, color: '#D8232A', title: 'comment bị báo cáo', hint: 'Xem và xoá nội dung vi phạm hoặc bỏ qua.', cta: 'Xử lý báo cáo', go: () => { setSection('reports'); setRepStatus('open') } },
+    { n: pending.length, color: '#B45300', title: 'use case chờ duyệt', hint: pending.length ? (oldestPending ? `Bài chờ lâu nhất: ${oldestPending} ngày.` : 'Có bài mới gửi hôm nay.') : '', cta: 'Duyệt ngay', go: () => { setSection('usecases'); setUcStatus('pending') } },
+    { n: staleUnanswered.length, color: '#2c5fff', title: 'câu hỏi quá 2 ngày chưa ai trả lời', hint: 'Nhắc chuyên gia hoặc tag người phù hợp vào trả lời.', cta: 'Xem câu hỏi', go: () => { setSection('questions'); setQStatus('unanswered') } },
+    { n: notif.unread, color: '#6F0CE2', title: 'thông báo chưa đọc', hint: 'Mention, báo cáo và use case mới gửi đến bạn.', cta: 'Mở thông báo', go: () => setNotifOpen(true) },
+  ].filter((x) => x.n > 0)
 
   // ---- use case review ----
   const ucq = fold(ucQuery.trim())
@@ -259,14 +285,49 @@ export default function AdminConsolePage() {
         <main style={css('padding:30px 40px 80px; min-width:0;')}>
           {section === 'dashboard' && (
             <div>
-              <Heading title="Tổng quan" sub="Số liệu thật của cộng đồng, cập nhật mỗi khi mở trang." />
-              <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin-top:24px;')}>
-                {kpis.map((k) => (
-                  <div key={k.label} style={css('padding:18px 20px;' + card)}>
-                    <div style={css(font(700, 12.5) + ';color:#64748b;')}>{k.label}</div>
-                    <div style={css('margin-top:10px;' + font(900, 30) + `;color:${k.color};`)}>{k.value}</div>
-                    <div style={css('margin-top:4px;' + font(600, 11.5, 1.4) + ';color:#94a3b8;')}>{k.hint}</div>
+              <div style={css('display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
+                <div><Heading title="Tổng quan" sub="Số liệu thật, tự cập nhật mỗi phút. % tăng = phần mới hôm nay so với tổng trước hôm nay." /></div>
+                <div style={css('display:flex; align-items:center; gap:10px;')}>
+                  <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>{updatedAt ? 'Cập nhật lúc ' + updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Đang tải…'}</span>
+                  <button onClick={reloadAll} style={css(btn('plain'))}>Làm mới</button>
+                </div>
+              </div>
+
+              <div style={css('margin-top:22px; padding:20px 22px;' + card)}>
+                <div style={css(font(800, 16) + ';color:#0f172a;')}>Việc cần xử lý</div>
+                {todos.length === 0 ? (
+                  <div style={css('display:flex; align-items:center; gap:10px; margin-top:12px;' + font(600, 13.5) + ';color:#00893F;')}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                    Không có việc nào đang chờ. Mọi thứ đều ổn!
                   </div>
+                ) : (
+                  <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:14px;')}>
+                    {todos.map((x) => (
+                      <div key={x.title} style={css(`display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:14px; background:#F8FAFE; border:1px solid #EEF1F7; border-left:4px solid ${x.color};`)}>
+                        <span style={css(font(900, 24) + `;color:${x.color}; min-width:34px; text-align:center;`)}>{x.n}</span>
+                        <div style={css('flex:1; min-width:0;')}>
+                          <div style={css(font(700, 14) + ';color:#0f172a;')}>{x.n} {x.title}</div>
+                          {x.hint && <div style={css('margin-top:2px;' + font(400, 12.5) + ';color:#64748b;')}>{x.hint}</div>}
+                        </div>
+                        <button onClick={x.go} style={css(`height:34px; padding:0 14px; border:none; border-radius:999px; background:${x.color}; color:#fff; ${font(700, 12.5)}; cursor:pointer; white-space:nowrap;`)}>{x.cta} →</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={css('display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:20px;')}>
+                {stats.map((k) => (
+                  <button key={k.label} onClick={k.go} className={hoverClass('border-color:#B9CCF8;')} style={css('padding:18px 20px; text-align:left; cursor:pointer;' + card)}>
+                    <div style={css(font(700, 12.5) + ';color:#64748b;')}>{k.label}</div>
+                    <div style={css('display:flex; align-items:baseline; gap:10px; margin-top:10px; flex-wrap:wrap;')}>
+                      <span style={css(font(900, 32) + ';color:#0F172A;')}>{k.total}</span>
+                      <span style={css(pill(k.today ? '#E7F9F0' : '#EDF0FA', k.today ? '#00893F' : '#64748b'))}>
+                        {k.today ? `▲ +${k.today} hôm nay${k.pct != null ? ` · +${k.pct}%` : ''}` : 'Chưa có mới hôm nay'}
+                      </span>
+                    </div>
+                    <div style={css('margin-top:8px;' + font(500, 12) + ';color:#94a3b8;')}>Hôm qua: +{k.yesterday}</div>
+                  </button>
                 ))}
               </div>
 
