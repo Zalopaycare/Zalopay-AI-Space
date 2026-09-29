@@ -30,7 +30,7 @@ export default function TopNav() {
             <SoftLink
               key={item.to}
               to={item.to}
-              className={active ? undefined : hoverClass('color:#fff; background:rgba(60,110,255,.12);')}
+              className={active ? undefined : hoverClass('color:#fff !important; background:rgba(60,110,255,.22) !important; border-color:rgba(130,175,255,.45) !important; box-shadow:0 0 16px rgba(44,95,255,.28) !important;')}
               style={css(navItemBase + (active ? 'color:#fff; background:rgba(60,110,255,.22); border-color:rgba(130,175,255,.45); box-shadow:0 0 16px rgba(44,95,255,.28);' : 'color:#b4c3e8;'))}
             >
               {t(item.label)}

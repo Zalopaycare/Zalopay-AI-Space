@@ -546,7 +546,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div style={css('display:flex; flex-direction:column; gap:14px; margin-top:24px;')}>
+            <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:24px;')}>
               {featured.map((item) => (
                 <div key={item.id} onClick={item.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-3px); box-shadow:0 18px 40px rgba(0,0,0,.3);')} style={css('position:relative; background:#ffffff; border:1px solid #E6EBF3; border-radius:18px; padding:16px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease,box-shadow .18s ease;')}>
                   <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;')}>

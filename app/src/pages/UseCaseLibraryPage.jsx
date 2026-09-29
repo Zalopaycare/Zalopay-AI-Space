@@ -793,7 +793,7 @@ export default function UseCaseLibraryPage() {
               )}
 
               {libCards.length > 0 && (
-                <div style={css('display:flex; flex-direction:column; gap:14px;')}>
+                <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;')}>
                   {libCards.map((c) => (
                     <div
                       key={c.id}

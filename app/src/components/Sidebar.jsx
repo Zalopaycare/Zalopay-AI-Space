@@ -12,7 +12,8 @@ import logo from '../assets/zalopay-ai-space-logo.png'
 const itemBase = 'display:flex; align-items:center; gap:12px; height:40px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14px; cursor:pointer; text-align:left; font-family:inherit; width:100%; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 const subItemBase = 'display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:13.5px; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 // Blue glass pill: soft glow on hover, stronger when it's the current page.
-const HOVER = 'background:rgba(60,110,255,.13); border-color:rgba(130,170,255,.35); color:#fff;'
+// !important: the item's own inline style would otherwise win over :hover.
+const HOVER = 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)) !important; border-color:rgba(130,175,255,.55) !important; color:#dbe8ff !important; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10) !important;'
 const itemState = (active) => (active
   ? 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)); border:1px solid rgba(130,175,255,.55); color:#dbe8ff; font-weight:700; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10);'
   : 'background:transparent; border:1px solid transparent; color:#b4c3e8; font-weight:500;')
