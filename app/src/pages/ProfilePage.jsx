@@ -29,6 +29,15 @@ const UC_STATUS = {
   approved: { label: 'Đã đăng', bg: '#E7F9F0', color: '#00893F', accent: '#00CF6A' },
 }
 const UC_ORDER = ['draft', 'pending', 'changes_requested', 'rejected', 'approved']
+// Status tabs on "Use case của tôi": each has its own colour; tabs holding posts glow in it.
+const UC_TABS = [
+  { key: 'pending', label: 'Chờ duyệt', color: '#FFB020' },
+  { key: 'approved', label: 'Đã đăng', color: '#22C55E' },
+  { key: 'changes_requested', label: 'Cần chỉnh sửa', color: '#FF7A1A' },
+  { key: 'rejected', label: 'Từ chối', color: '#EF4444' },
+  { key: 'all', label: 'Tất cả', color: '#6EA8FF' },
+]
+const hexA = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`
 
 // Same bright gradient/glow text treatment as the Use Case Library hero title.
 const GRAD_TEXT = 'background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));'
@@ -41,7 +50,7 @@ const subHeading = css(`margin:0 0 20px; font:800 26px/1.2 ${FONT}; ${GRAD_TEXT_
 /** Compact "post" card shared by every column of the Use case board. */
 function BoardCard({ p }) {
   return (
-    <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:18px 22px; box-shadow:0 8px 22px rgba(30,50,90,.06);')}>
+    <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:14px 18px; box-shadow:0 10px 26px rgba(0,0,0,.18);')}>
       <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
         <span style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${p.statusBg}; color:${p.statusColor}; font:700 11.5px ${FONT};`)}>{p.statusLabel}</span>
         <span style={css(`margin-left:auto; margin-right:4px; font:400 12.5px ${FONT}; color:#94a3b8;`)}>{p.time}</span>
@@ -156,6 +165,7 @@ export default function ProfilePage() {
   // also listen for the native `hashchange` event as a fallback, per the known SPA gotcha.
   const [hash, setHash] = useState(location.hash)
   const [showAllNotif, setShowAllNotif] = useState(false)
+  const [ucTab, setUcTab] = useState(null) // null = first tab that has posts
   useEffect(() => { setHash(location.hash) }, [location.hash])
   useEffect(() => {
     const onHash = () => setHash(window.location.hash)
@@ -257,11 +267,12 @@ export default function ProfilePage() {
       onOpen: () => navigate(ucHref(c)),
     }
   })
-  const ucColumns = UC_ORDER.map((key) => {
-    const meta = UC_STATUS[key]
-    const items = ucPosts.filter((p) => p.statusKey === key)
-    return { key, label: t(meta.label), accent: meta.accent, count: items.length, items, empty: items.length === 0 }
+  const ucTabs = UC_TABS.map((tab) => {
+    const items = tab.key === 'all' ? ucPosts : ucPosts.filter((p) => p.statusKey === tab.key)
+    return { ...tab, label: t(tab.label), count: items.length, items }
   })
+  // Default: posts that need my action first, then whatever has posts, else "Tất cả".
+  const activeUcTab = ucTabs.find((x) => x.key === ucTab) || ucTabs.find((x) => x.key === 'changes_requested' && x.count > 0) || ucTabs.find((x) => x.key !== 'all' && x.count > 0) || ucTabs[ucTabs.length - 1]
 
   // ---- saved section ----
   const savedUseCaseCards = savedUseCaseIds
@@ -392,20 +403,37 @@ export default function ProfilePage() {
 
         {section === 'usecase' && (
           <section style={css('position:relative; padding:18px 40px 40px;')}>
-            <div style={css('max-width:760px; margin:0 auto; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;')}>
-              {ucColumns.map((col) => (
-                <div key={col.key} style={css('display:flex; flex-direction:column; gap:12px; min-width:0; padding:14px; border-radius:16px; background:#ffffff; border:1px solid #E6EBF3; box-shadow:0 10px 26px rgba(0,0,0,.18);')}>
-                  <div style={css('display:flex; align-items:center; gap:10px; padding:2px 4px;')}>
-                    <span style={css(`flex:none; width:9px; height:9px; border-radius:50%; background:${col.accent};`)}></span>
-                    <span style={css(`font:800 14.5px ${FONT}; color:#0F172A;`)}>{col.label}</span>
-                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:24px; padding:0 8px; border-radius:999px; background:#F1F4FA; color:#3A4757; font:700 12px ${FONT};`)}>{col.count}</span>
-                  </div>
-                  {col.items.map((p) => <BoardCard key={p.id} p={p} />)}
-                  {col.empty && (
-                    <div style={css(`padding:14px 12px; text-align:center; border:1px dashed #DDE3EC; border-radius:12px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có use case')}</div>
-                  )}
-                </div>
-              ))}
+            <div style={css('max-width:760px; margin:0 auto;')}>
+              <div style={css('display:flex; flex-wrap:wrap; gap:6px; padding:5px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.22); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); width:fit-content; max-width:100%;')}>
+                {ucTabs.map((tab) => {
+                  const on = tab.key === activeUcTab.key
+                  const lit = tab.count > 0
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setUcTab(tab.key)}
+                      className={on ? undefined : hoverClass(`background:${hexA(tab.color, .16)} !important;`)}
+                      style={css(`display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px 0 16px; border-radius:999px; cursor:pointer; white-space:nowrap; font:700 13.5px ${FONT}; transition:background .15s, box-shadow .15s; `
+                        + (on
+                          ? `background:#fff; border:1px solid #fff; color:${tab.key === 'all' ? '#2c5fff' : '#0F172A'}; box-shadow:0 0 0 1px ${hexA(tab.color, .5)}, 0 0 18px ${hexA(tab.color, .55)};`
+                          : lit
+                            ? `background:${hexA(tab.color, .1)}; border:1px solid ${hexA(tab.color, .55)}; color:${tab.color}; box-shadow:0 0 14px ${hexA(tab.color, .35)};`
+                            : 'background:transparent; border:1px solid transparent; color:#7C8AB0;'))}
+                    >
+                      <span style={css(`width:8px; height:8px; border-radius:50%; background:${lit || on ? tab.color : '#56607E'}; ${lit ? `box-shadow:0 0 8px ${tab.color};` : ''}`)}></span>
+                      {tab.label}
+                      <span style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; font:800 12px ${FONT}; `
+                        + (lit ? `background:${tab.color}; color:#fff;` : 'background:rgba(255,255,255,.08); color:#7C8AB0;'))}>{tab.count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
+                {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
+                {activeUcTab.items.length === 0 && (
+                  <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:36px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có use case')}</div>
+                )}
+              </div>
             </div>
           </section>
         )}
