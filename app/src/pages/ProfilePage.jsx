@@ -418,12 +418,12 @@ export default function ProfilePage() {
                           ? `background:#fff; border:1px solid #fff; color:${tab.key === 'all' ? '#2c5fff' : '#0F172A'}; box-shadow:0 0 0 1px ${hexA(tab.color, .5)}, 0 0 18px ${hexA(tab.color, .55)};`
                           : lit
                             ? `background:${hexA(tab.color, .1)}; border:1px solid ${hexA(tab.color, .55)}; color:${tab.color}; box-shadow:0 0 14px ${hexA(tab.color, .35)};`
-                            : 'background:transparent; border:1px solid transparent; color:#7C8AB0;'))}
+                            : `background:rgba(255,255,255,.05); border:1px solid ${hexA(tab.color, .35)}; color:#E4ECFF;`))}
                     >
-                      <span style={css(`width:8px; height:8px; border-radius:50%; background:${lit || on ? tab.color : '#56607E'}; ${lit ? `box-shadow:0 0 8px ${tab.color};` : ''}`)}></span>
+                      <span style={css(`width:8px; height:8px; border-radius:50%; background:${tab.color}; ${lit ? `box-shadow:0 0 8px ${tab.color};` : ''}`)}></span>
                       {tab.label}
                       <span style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; font:800 12px ${FONT}; `
-                        + (lit ? `background:${tab.color}; color:#fff;` : 'background:rgba(255,255,255,.08); color:#7C8AB0;'))}>{tab.count}</span>
+                        + (lit ? `background:${tab.color}; color:#fff;` : on ? `background:${hexA(tab.color, .16)}; color:#0F172A;` : `background:${hexA(tab.color, .22)}; color:#fff;`))}>{tab.count}</span>
                     </button>
                   )
                 })}
