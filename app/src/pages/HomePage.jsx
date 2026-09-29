@@ -338,7 +338,7 @@ export default function HomePage() {
         <section id="waiting" style={css('position:relative; z-index:1; padding:22px 40px 16px; background:transparent;')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
-              <h2 style={css(`margin:0; font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; background:linear-gradient(100deg,#f3e8ff 0%,#d8b4fe 40%,#a855f7 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 14px rgba(168,85,247,.45));`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
+              <h2 style={css(`margin:0; font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; background:linear-gradient(100deg,#ffffff 0%,#f1e4ff 35%,#d9b8ff 70%,#c89bff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(12,4,40,.75)) drop-shadow(0 0 16px rgba(176,108,255,.6));`)}>{t('Câu hỏi về AI đang thịnh hành')}</h2>
               <button
                 onClick={() => navigate('/questions')}
                 className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}
@@ -539,7 +539,7 @@ export default function HomePage() {
         <section id="featured" style={css('position:relative; padding:24px 40px 36px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
-              <h2 style={css(`font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; margin:0; background:linear-gradient(100deg,#e0ecff 0%,#8fb8ff 40%,#3d7bff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 14px rgba(60,120,255,.5));`)}>{t('Use case nổi bật')}</h2>
+              <h2 style={css(`font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; margin:0; background:linear-gradient(100deg,#ffffff 0%,#dce9ff 35%,#9fc2ff 70%,#78a8ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(2,8,30,.75)) drop-shadow(0 0 16px rgba(70,130,255,.6));`)}>{t('Use case nổi bật')}</h2>
               <button
                 onClick={() => navigate('/use-cases')}
                 className={'zp-see-all ' + hoverClass('color:#9fd0ff;')}
