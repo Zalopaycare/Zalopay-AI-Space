@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { renderMentions } from '../components/MentionField.jsx'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -398,7 +399,7 @@ export default function HomePage() {
                   </div>
                   <div style={css('flex:1; padding:6px 16px 0;')}>
                     {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
-                    <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 13.5px' : '500 15px'}/1.55 ${FONT}; color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{q.body}</p>
+                    <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 13.5px' : '500 15px'}/1.55 ${FONT}; color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{renderMentions(q.body)}</p>
                     <button onClick={(e) => { e.stopPropagation(); navigate('/questions#q=' + encodeURIComponent(q.id)) }} className={hoverClass('color:#5B21B6 !important;')} style={css(`display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#7C3AED;`)}>
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
@@ -439,7 +440,7 @@ export default function HomePage() {
 
                 <div style={css('padding:16px 26px 0;')}>
                   {modalSrc.hasTitle !== false && <h3 style={css(`margin:0; font:800 21px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{modalSrc.title}</h3>}
-                  <p style={css(`margin:${modalSrc.hasTitle !== false ? 11 : 0}px 0 0; font:400 15px/1.65 ${FONT}; color:#3A4757; white-space:pre-wrap;`)}>{modalSrc.body}</p>
+                  <p style={css(`margin:${modalSrc.hasTitle !== false ? 11 : 0}px 0 0; font:400 15px/1.65 ${FONT}; color:#3A4757; white-space:pre-wrap;`)}>{renderMentions(modalSrc.body)}</p>
                   <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px; flex-wrap:wrap;')}>
                     {[].concat(modalSrc.category).filter(Boolean).map((c) => (
                       <span key={c} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:8px; background:#EAF0FF; color:#2c5fff; font:700 12px ${FONT};`)}>{c}</span>
@@ -466,7 +467,7 @@ export default function HomePage() {
                           <span style={css(`font:600 12.5px ${FONT}; color:#0F172A;`)}>{a.author}</span>
                           <span style={css(`font:400 12px ${FONT}; color:#94a3b8;`)}>{a.timeLabel}</span>
                         </div>
-                        <p style={css(`margin:7px 0 0; font:400 14px/1.6 ${FONT}; color:#3A4757;`)}>{a.body}</p>
+                        <p style={css(`margin:7px 0 0; font:400 14px/1.6 ${FONT}; color:#3A4757;`)}>{renderMentions(a.body)}</p>
                         <div style={css('display:flex; align-items:center; gap:16px; margin-top:9px;')}>
                           <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:${a.helpColor};`)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
@@ -489,7 +490,7 @@ export default function HomePage() {
                                     <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{c.author}</span>
                                     <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
                                   </div>
-                                  <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{c.body}</div>
+                                  <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(c.body)}</div>
                                   <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Reply')}</button>
                                 </div>
                               </div>
@@ -507,7 +508,7 @@ export default function HomePage() {
                                       <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{r.author}</span>
                                       <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
                                     </div>
-                                    <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{r.body}</div>
+                                    <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(r.body)}</div>
                                     <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Reply')}</button>
                                   </div>
                                 </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { renderMentions } from '../components/MentionField.jsx'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
@@ -733,7 +734,7 @@ export default function UseCaseLibraryPage() {
                           </div>
                           {editingCmt === c.id
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
-                            : <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{c.body}</div>}
+                            : <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{renderMentions(c.body)}</div>}
                           <button onClick={() => startReply(c.id, c.author, c.id)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                         </div>
                       </div>
@@ -755,7 +756,7 @@ export default function UseCaseLibraryPage() {
                             </div>
                             {editingCmt === r.id
                               ? <InlineEdit initial={r.body} onSave={(b) => api.editUseCaseComment(dsel.id, r.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
-                              : <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{r.body}</div>}
+                              : <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{renderMentions(r.body)}</div>}
                             <button onClick={() => startReply(c.id, r.author, r.id)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Reply')}</button>
                           </div>
                         </div>

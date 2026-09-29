@@ -15,7 +15,7 @@ import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
 import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../components/CommentMenu.jsx'
-import MentionField, { MENTION_SPLIT, shortMention, expandMentions } from '../components/MentionField.jsx'
+import MentionField, { MENTION_SPLIT, shortMention, expandMentions, renderMentions } from '../components/MentionField.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Magnify', 'Khác']
@@ -36,7 +36,7 @@ const chip = (on) => ({ bg: on ? '#E7ECFB' : '#ffffff', border: on ? '#B9CCF8' :
 const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase()
 const mentionScan = (v) => { const m = /(?:^|\s)@([\p{L}\w.-]*)$/u.exec(v); return m ? m[1].toLowerCase() : null }
 const insertMention = (v, handle) => v.replace(/@([\p{L}\w.-]*)$/u, '@' + handle + ' ')
-const renderBody = (text) => String(text).split(MENTION_SPLIT).map((p, i) => (p.charAt(0) === '@' && p.length > 1 ? <span key={i} title={p.slice(1)} style={{ color: '#2c5fff', fontWeight: 700 }}>{shortMention(p)}</span> : p))
+const renderBody = renderMentions
 
 export default function QuestionsPage() {
   const { t } = useI18n()
@@ -497,7 +497,7 @@ export default function QuestionsPage() {
                     <div style={css('padding:6px 16px 0;')}>
                       {q.hasTitle !== false && <h3 className="zp-card-title" style={css('margin:0; font:800 16px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>}
                       <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(q.hasTitle !== false ? 'margin:5px 0 0; font:400 13.5px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;' : 'margin:2px 0 0; font:500 15px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:pre-wrap;')}>
-                        {q.bodyShown}
+                        {renderMentions(q.bodyShown)}
                         {q.truncated && (
                           <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#7C3AED; vertical-align:baseline;')}>{t('Xem thêm')} →</button>
                         )}

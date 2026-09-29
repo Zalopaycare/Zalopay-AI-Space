@@ -6,6 +6,13 @@ export const MENTION_SPLIT = /(@[A-Za-z0-9._-]+(?:@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-
 /** "@nhanltp@vng.com.vn" → "@nhanltp": show the domain account, keep the full address stored. */
 export const shortMention = (tok) => '@' + tok.slice(1).split('@')[0]
 
+/** Body text with @mentions shown as bold blue "@handle" (full address on hover). */
+export function renderMentions(text) {
+  return String(text || '').split(MENTION_SPLIT).map((p, i) => (p.charAt(0) === '@' && p.length > 1
+    ? <span key={i} title={p.slice(1)} style={{ color: '#2c5fff', fontWeight: 700 }}>{shortMention(p)}</span>
+    : p))
+}
+
 /**
  * Replace short "@handle" tokens the picker inserted with the full address it stood for
  * (map: handle → email), so the server can notify people who have never signed in.
