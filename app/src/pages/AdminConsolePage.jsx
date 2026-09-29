@@ -147,22 +147,12 @@ export default function AdminConsolePage() {
   const unanswered = questions.filter((q) => !q.answers.length)
   const commentsTotal = questions.reduce((n, q) => n + q.answers.length + q.answers.reduce((m, a) => m + (a.comments || []).length, 0), 0)
 
-  // last 6 calendar months: questions posted, use cases submitted, new members
-  const now = new Date()
-  const months = Array.from({ length: 6 }, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1); return { key: d.getFullYear() * 12 + d.getMonth(), label: 'T' + (d.getMonth() + 1) } })
-  const monthOf = (t) => { const d = toDate(t); return d.getFullYear() * 12 + d.getMonth() }
-  const tally = (list, field) => months.map((m) => list.filter((x) => monthOf(x[field]) === m.key).length)
-  const series = [
-    { label: 'Câu hỏi', color: '#2c5fff', values: tally(questions, 'time') },
-    { label: 'Use case gửi duyệt', color: '#00A352', values: tally(submissions, 'time') },
-    { label: 'Thành viên mới', color: '#FF8D00', values: tally(users, 'joined') },
-  ]
-  const chartMax = Math.max(1, ...series.flatMap((s) => s.values))
 
   const count = (lists) => { const t = {}; lists.forEach((l) => l.forEach((x) => { if (x) t[x] = (t[x] || 0) + 1 })); return Object.entries(t).sort((a, b) => b[1] - a[1]).slice(0, 8) }
   const topTopics = count([...questions.map((q) => q.topics || []), ...approved.map((s) => s.topics || []), ...allCases.map((c) => prdMeta[c.id]?.topics || [])])
   const topTools = count([...questions.map((q) => q.tools || []), ...approved.map((s) => s.tools || []), ...allCases.map((c) => c.tools || [])])
 
+  const now = new Date()
   // Daily movement: what was added today vs. how big the total was before today.
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const today0 = startOfDay(now), yesterday0 = today0 - 86_400_000
@@ -181,6 +171,17 @@ export default function AdminConsolePage() {
     { label: 'Use case gửi duyệt', ...daily(submissions, 'time'), go: () => { setSection('usecases'); setUcStatus('all') } },
     { label: 'Thành viên', ...daily(users, 'joined'), go: () => setSection('users') },
     { label: 'Comment & reply', ...daily(allComments, 'time'), go: () => setSection('questions') },
+  ]
+
+  const statCards = [
+    { label: 'Hoạt động hôm nay', color: '#2c5fff', value: act ? act.today : '—',
+      up: dauPct == null ? null : dauPct >= 0, badge: dauPct == null ? 'Chưa có số hôm qua' : `${dauPct >= 0 ? '▲ +' : '▼ '}${dauPct}% so với hôm qua`,
+      foot: act ? `Hôm qua: ${act.yesterday} · 7 ngày: ${act.wau}` : '', go: () => setSection('users') },
+    ...stats.map((k, i) => ({
+      label: k.label, color: ['#6F0CE2', '#00A352', '#FF8D00', '#00A3C4'][i], value: k.total, go: k.go,
+      up: k.today ? true : null, badge: k.today ? `▲ +${k.today} hôm nay${k.pct != null ? ` · +${k.pct}%` : ''}` : 'Chưa có mới hôm nay',
+      foot: `Hôm qua: +${k.yesterday}`,
+    })),
   ]
 
   // Things an admin should act on, most urgent first.
@@ -324,76 +325,14 @@ export default function AdminConsolePage() {
               </div>
 
               <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin-top:20px;')}>
-                <div style={css('padding:18px 20px;' + card)}>
-                  <div style={css(font(700, 12.5) + ';color:#64748b;')}>Người dùng hoạt động hôm nay</div>
-                  <div style={css('display:flex; align-items:baseline; gap:10px; margin-top:10px; flex-wrap:wrap;')}>
-                    <span style={css(font(900, 32) + ';color:#0F172A;')}>{act ? act.today : '—'}</span>
-                    {act && <span style={css(dauPct == null ? pill('#EDF0FA', '#64748b') : dauPct >= 0 ? pill('#E7F9F0', '#00893F') : pill('#FFECEC', '#D8232A'))}>{dauPct == null ? 'Chưa có số hôm qua' : `${dauPct >= 0 ? '▲ +' : '▼ '}${dauPct}% so với hôm qua`}</span>}
-                  </div>
-                  <div style={css('margin-top:8px;' + font(500, 12) + ';color:#94a3b8;')}>{act ? `Hôm qua: ${act.yesterday} · 7 ngày: ${act.wau} người` : ''}</div>
-                </div>
-                {stats.map((k) => (
-                  <button key={k.label} onClick={k.go} className={hoverClass('border-color:#B9CCF8;')} style={css('padding:18px 20px; text-align:left; cursor:pointer;' + card)}>
-                    <div style={css(font(700, 12.5) + ';color:#64748b;')}>{k.label}</div>
-                    <div style={css('display:flex; align-items:baseline; gap:10px; margin-top:10px; flex-wrap:wrap;')}>
-                      <span style={css(font(900, 32) + ';color:#0F172A;')}>{k.total}</span>
-                      <span style={css(pill(k.today ? '#E7F9F0' : '#EDF0FA', k.today ? '#00893F' : '#64748b'))}>
-                        {k.today ? `▲ +${k.today} hôm nay${k.pct != null ? ` · +${k.pct}%` : ''}` : 'Chưa có mới hôm nay'}
-                      </span>
-                    </div>
-                    <div style={css('margin-top:8px;' + font(500, 12) + ';color:#94a3b8;')}>Hôm qua: +{k.yesterday}</div>
+                {statCards.map((k) => (
+                  <button key={k.label} onClick={k.go} className={hoverClass(`border-color:${k.color}; transform:translateY(-2px);`)} style={css(`display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:16px 18px; text-align:left; cursor:${k.go ? 'pointer' : 'default'}; transition:transform .15s, border-color .15s; ${card} border-top:4px solid ${k.color};`)}>
+                    <span style={css(font(700, 12.5) + ';color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;')}>{k.label}</span>
+                    <span style={css(font(900, 30, 1.1) + `;color:${k.color};`)}>{k.value}</span>
+                    <span style={css(k.up == null ? pill('#EDF0FA', '#64748b') : k.up ? pill('#E7F9F0', '#00893F') : pill('#FFECEC', '#D8232A'))}>{k.badge}</span>
+                    <span style={css(font(500, 11.5) + ';color:#94a3b8; white-space:nowrap;')}>{k.foot}</span>
                   </button>
                 ))}
-              </div>
-
-              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
-                <div style={css('display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
-                  <div>
-                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Hoạt động 6 tháng gần đây</h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Đếm theo tháng tạo.</p>
-                  </div>
-                  <div style={css('display:flex; gap:16px; flex-wrap:wrap;')}>
-                    {series.map((s) => <span key={s.label} style={css('display:inline-flex; align-items:center; gap:7px;' + font(700, 12.5) + ';color:#3A4757;')}><span style={css(`width:10px; height:10px; border-radius:3px; background:${s.color};`)}></span>{s.label}</span>)}
-                  </div>
-                </div>
-                <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:18px; margin-top:22px; height:220px; align-items:end; border-bottom:1px solid #EEF1F7;')}>
-                  {months.map((m, i) => (
-                    <div key={m.key} style={css('height:100%; display:flex; align-items:flex-end; justify-content:center; gap:6px;')}>
-                      {series.map((s) => (
-                        <div key={s.label} title={`${s.label}: ${s.values[i]}`} style={css('flex:1; max-width:26px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;')}>
-                          <span style={css(font(700, 11) + ';color:#64748b; margin-bottom:4px;')}>{s.values[i] || ''}</span>
-                          <div style={css(`width:100%; height:${Math.max(s.values[i] ? 4 : 0, Math.round((s.values[i] / chartMax) * 180))}px; border-radius:6px 6px 0 0; background:${s.color};`)}></div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-                <div style={css('display:grid; grid-template-columns:repeat(6,1fr); gap:18px; margin-top:10px;')}>
-                  {months.map((m) => <span key={m.key} style={css('text-align:center;' + font(600, 12) + ';color:#94a3b8;')}>{m.label}</span>)}
-                </div>
-              </div>
-
-              <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
-                <div style={css('display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
-                  <div>
-                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Người dùng hoạt động 14 ngày gần đây</h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Số người vào trang mỗi ngày (giờ Việt Nam). 7 ngày qua: {act ? act.wau : '—'} người{act && act.prevWau ? ` (7 ngày trước đó: ${act.prevWau})` : ''}.</p>
-                  </div>
-                </div>
-                <div style={css('display:grid; grid-template-columns:repeat(14,1fr); gap:8px; margin-top:18px; height:140px; align-items:end; border-bottom:1px solid #EEF1F7;')}>
-                  {(act?.series || []).map((d) => {
-                    const max = Math.max(1, ...act.series.map((x) => x.n))
-                    return (
-                      <div key={d.day} title={`${d.day}: ${d.n} người`} style={css('height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;')}>
-                        <span style={css(font(700, 10.5) + ';color:#64748b; margin-bottom:3px;')}>{d.n || ''}</span>
-                        <div style={css(`width:100%; max-width:30px; height:${Math.max(d.n ? 4 : 0, Math.round((d.n / max) * 110))}px; border-radius:5px 5px 0 0; background:${d.day === act.series[act.series.length - 1].day ? '#2c5fff' : '#9DB8FF'};`)}></div>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div style={css('display:grid; grid-template-columns:repeat(14,1fr); gap:8px; margin-top:8px;')}>
-                  {(act?.series || []).map((d) => <span key={d.day} style={css('text-align:center;' + font(600, 10.5) + ';color:#94a3b8;')}>{d.day.slice(8)}/{d.day.slice(5, 7)}</span>)}
-                </div>
               </div>
 
               <div style={css('padding:24px 26px; margin-top:20px;' + card)}>
