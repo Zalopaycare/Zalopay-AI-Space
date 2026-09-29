@@ -68,7 +68,7 @@ function QuestionCard({ q }) {
   return (
     <div
       onClick={q.onOpen}
-      className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(168,85,247,.75); box-shadow:0 0 0 1px rgba(168,85,247,.18), 0 0 22px rgba(168,85,247,.34), 0 22px 48px rgba(0,0,0,.36);')}
+      className={'zp-card zp-card-q ' + hoverClass('transform:translateY(-3px); border-color:rgba(168,85,247,.75); box-shadow:0 0 0 1px rgba(168,85,247,.18), 0 0 22px rgba(168,85,247,.34), 0 22px 48px rgba(0,0,0,.36);')}
       style={css('position:relative; background:#ffffff; border:1px solid rgba(168,85,247,.45); border-radius:20px; cursor:pointer; box-shadow:0 0 0 1px rgba(168,85,247,.10), 0 0 16px rgba(168,85,247,.22), 0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
     >
       <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
