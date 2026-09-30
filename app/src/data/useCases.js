@@ -426,6 +426,7 @@ const STATUS_META = {
   pilot: { label: 'Pilot', up: 'PILOT', color: '#2563eb' },
   planning: { label: 'Planning', up: 'PLANNING', color: '#f59e0b' },
   prototype: { label: 'Prototype', up: 'PROTOTYPE', color: '#f59e0b' },
+  building: { label: 'Implementing', up: 'IMPLEMENTING', color: '#8b5cf6' },
 }
 export function statusMeta(s) {
   return STATUS_META[s] || STATUS_META.inuse
@@ -468,6 +469,25 @@ export function hlList(arr) {
 // The built-in cases above ship with the app; use cases people submit and admins approve
 // come from the API and are merged into the same structures (allCases, prdMeta, caseDetail,
 // kind/status/author lookups) so every page renders them exactly like the built-ins.
+
+// Use cases written straight in the 9-part template shape (one file each in ./cases/, from the
+// teams' own docs). Registered here like the ones above so every page lists and renders them.
+const templateCases = Object.values(import.meta.glob('./cases/*.js', { eager: true }))
+  .map((mod) => mod.default)
+  .filter(Boolean)
+  .sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)))
+for (const m of templateCases) {
+  KIND_BY_ID[m.id] = m.kind || 'tech'
+  STATUS_BY_ID[m.id] = m.status || 'inuse'
+  authorInfo[m.author] = { name: m.ownerName || m.author, role: m.ownerTeam || 'Zalopay' }
+  prdMeta[m.id] = { problem: m.problem?.text || (m.tldr?.[0]?.[1] || ''), result: m.tldr?.[2]?.[1] || '', topics: m.topics || [], helpful: 0, comments: 0 }
+  caseDetail[m.id] = { tpl: m, difficulty: m.difficulty || '', audience: m.audience || '', level: m.level || 'ready', summary: m.desc }
+  allCases.push({
+    id: m.id, title: m.title, desc: m.desc, author: m.author, team: m.ownerTeam || '', category: m.category || 'Other',
+    tools: normalizeTools(m.tools || []), repo: m.tech?.repo?.label || '', repoHref: m.tech?.repo?.href || '',
+    audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null,
+  })
+}
 
 export const builtinCases = allCases.slice()
 

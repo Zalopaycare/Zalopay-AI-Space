@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
+import Fill from './Fill.jsx'
 
 // Renders a use case's step-by-step guide (data/guides/*.js): a flow diagram, a jump-to index,
 // then numbered sections built from blocks — prompts with Copy, mock AI result windows, tables,
@@ -114,7 +115,7 @@ function Table({ b }) {
                           <CopyButton text={cell} small />
                         </div>
                       )
-                      : String(cell).replace(/^— /, '')}
+                      : <Fill text={String(cell).replace(/^— /, '')} />}
                   </td>
                 ))}
               </tr>
@@ -133,7 +134,7 @@ function Note({ b }) {
       <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${tn.title}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT}; margin-top:1px;`)}>{tn.icon}</span>
       <div style={css(`font:400 13.5px/1.6 ${FONT}; color:${tn.text};`)}>
         {b.title && <div style={css(`font:800 13.5px ${FONT}; color:${tn.title}; margin-bottom:2px;`)}>{b.title}</div>}
-        {b.text}
+        <Fill text={b.text} />
       </div>
     </div>
   )
@@ -161,7 +162,7 @@ function Block({ b }) {
       return (
         <div>
           {b.title && <SubTitle>{b.title}</SubTitle>}
-          <p style={css(`margin:0; font:400 14px/1.7 ${FONT}; color:#3A4757; text-wrap:pretty;`)}>{b.text}</p>
+          <p style={css(`margin:0; font:400 14px/1.7 ${FONT}; color:#3A4757; text-wrap:pretty; white-space:pre-line;`)}><Fill text={b.text} /></p>
         </div>
       )
     case 'bullets':
@@ -169,7 +170,7 @@ function Block({ b }) {
         <div style={css('display:flex; flex-direction:column; gap:9px;')}>
           {b.items.map((it, i) => (
             <div key={i} style={css(`display:flex; gap:10px; font:400 14px/1.65 ${FONT}; color:#3A4757;`)}>
-              <span style={css(`flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:${b.tone === 'danger' ? '#E0353F' : '#2c5fff'};`)}></span>{it}
+              <span style={css(`flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:${b.tone === 'danger' ? '#E0353F' : '#2c5fff'};`)}></span><span><Fill text={it} /></span>
             </div>
           ))}
         </div>
@@ -182,7 +183,7 @@ function Block({ b }) {
             {b.items.map((it, i) => (
               <div key={i} style={css('display:flex; gap:12px; align-items:flex-start;')}>
                 <span style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{i + 1}</span>
-                <span style={css(`font:400 14px/1.65 ${FONT}; color:#3A4757; text-wrap:pretty;`)}>{it}</span>
+                <span style={css(`font:400 14px/1.65 ${FONT}; color:#3A4757; text-wrap:pretty;`)}><Fill text={it} /></span>
               </div>
             ))}
           </div>
@@ -200,6 +201,7 @@ function Block({ b }) {
           </div>
         </div>
       )
+    case 'image': return <Figure img={b} />
     case 'prompt': return <Prompt b={b} />
     case 'result': return <Result b={b} />
     case 'table': return <Table b={b} />
@@ -207,6 +209,18 @@ function Block({ b }) {
     case 'tabs': return <Tabs b={b} />
     default: return null
   }
+}
+
+/** An original screenshot/diagram from the source doc, full width, opens full size on click. */
+export function Figure({ img }) {
+  return (
+    <figure style={{ margin: 0 }}>
+      <a href={img.src} target="_blank" rel="noopener" title="Mở ảnh gốc" style={{ display: 'block' }}>
+        <img src={img.src} alt={img.caption || ''} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 12, border: '1px solid #E6EBF3', background: '#F7F9FD' }} />
+      </a>
+      {img.caption && <figcaption style={css(`margin-top:8px; font:400 12.5px/1.5 ${FONT}; color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
+    </figure>
+  )
 }
 
 export function Blocks({ blocks }) {

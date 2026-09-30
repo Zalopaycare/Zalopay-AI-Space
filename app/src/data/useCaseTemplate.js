@@ -130,7 +130,44 @@ function pitfallRow(text) {
   return i > 0 ? { meet: text.slice(i + 3).replace(/\.$/, ''), why: text.slice(0, i) } : { meet: text, why: '' }
 }
 
+const arr = (v) => (Array.isArray(v) ? v : [])
+
+/** Cases written directly in the template shape (data/cases/*.js) — fill defaults so every field exists. */
+function fromTpl(c, m) {
+  const p = m.problem || {}, so = m.solution || {}, r = m.result || {}, a = m.apply || {}, sa = m.safety || {}, te = m.tech || {}, n = m.next || {}
+  // The template asks every tool/guide for these; if the source doc has none, say so rather than hide it.
+  const pit = arr(a.pitfalls).map((x) => (typeof x === 'string' ? pitfallRow(x) : x))
+  if (!pit.length && m.type !== 'proposal') pit.push({ meet: '[cần bổ sung]', why: '' })
+  const apply = {
+    title: m.type === 'case' ? 'Mang ý tưởng về team bạn' : m.type === 'proposal' ? 'Muốn thử nghiệm cùng?' : 'Tự áp dụng',
+    intro: a.intro || '', fit: { yes: arr(a.fit?.yes), no: arr(a.fit?.no) },
+    prep: arr(a.prep), prepPrompt: a.prepPrompt || null,
+    steps: arr(a.steps), stepSections: [], blocks: arr(a.blocks), code: arr(a.code), refTables: arr(a.refTables),
+    success: arr(a.success), samples: arr(a.samples), images: arr(a.images),
+    pitfalls: pit, pitfallTable: null,
+  }
+  apply.empty = !apply.intro && !apply.fit.yes.length && !apply.fit.no.length && !apply.prep.length && !apply.steps.length && !apply.blocks.length && !apply.code.length && !apply.refTables.length && !apply.success.length && !apply.images.length && !pit.length
+  return {
+    hero: {
+      type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
+      toolName: m.toolName || '', audience: m.audience || '', difficulty: m.difficulty || '', access: m.access || '',
+      tools: c.tools || [], owner: m.ownerName || c.author, ownerTeam: m.ownerTeam || '', updated: m.updated || '[cần bổ sung]',
+    },
+    stats: arr(m.stats).slice(0, 3),
+    tldr: arr(m.tldr).filter((row) => row && row[1]),
+    problem: { text: p.text || '', bullets: arr(p.bullets), tables: arr(p.tables), images: arr(p.images) },
+    solution: { analogy: so.analogy || '', steps: arr(so.steps), images: arr(so.images) },
+    result: { bullets: arr(r.bullets), beforeAfter: r.beforeAfter && arr(r.beforeAfter.rows).length ? r.beforeAfter : null, tables: arr(r.tables), note: r.note || '', images: arr(r.images) },
+    apply,
+    safety: { rules: arr(sa.rules), limits: arr(sa.limits), tables: arr(sa.tables) },
+    demo: arr(m.demo).filter((g) => g && g.src),
+    tech: { bullets: arr(te.bullets), tables: arr(te.tables), code: arr(te.code), images: arr(te.images), repo: te.repo && te.repo.label ? te.repo : null },
+    next: { steps: arr(n.steps), contact: arr(n.contact), link: n.link || '' },
+  }
+}
+
 export function buildTemplate(c, cd, info) {
+  if (cd.tpl) return fromTpl(c, cd.tpl)
   const x = EXTRA[c.id] || {}
   const howto = cd.howto || {}
   const guide = cd.guide || null
@@ -202,14 +239,14 @@ export function buildTemplate(c, cd, info) {
       ['Giải pháp', firstLine(cd.solution)],
       ['Kết quả', firstLine(cd.result)],
     ].filter((r) => r[1]) : []),
-    problem: { text: cd.problem || '', bullets: cd.pain || [], tables: byRole('problem') },
-    solution: { analogy: x.analogy || (guide && guide.sections[0]?.blocks.find((b) => b.type === 'note' && b.title === 'Hiểu đơn giản')?.text) || '', steps: cd.solution || [] },
-    result: { bullets: cd.result || [], beforeAfter: ba, tables: byRole('result'), note: x.measureNote || '' },
-    apply,
+    problem: { text: cd.problem || '', bullets: cd.pain || [], tables: byRole('problem'), images: [] },
+    solution: { analogy: x.analogy || (guide && guide.sections[0]?.blocks.find((b) => b.type === 'note' && b.title === 'Hiểu đơn giản')?.text) || '', steps: cd.solution || [], images: [] },
+    result: { bullets: cd.result || [], beforeAfter: ba, tables: byRole('result'), note: x.measureNote || '', images: [] },
+    apply: { ...apply, blocks: [], images: [] },
     safety: { rules: sec ? sec.blocks[0].items : texts(howto.security), limits, tables: byRole('safety') },
     demo: (cd.gallery || []).filter((g) => g.src),
     // Built-ins link a code repo (dev detail); a submission's link is the author's source document.
-    tech: { tables: byRole('tech'), repo: c.repoHref && !c.submitted ? { label: c.repo || c.repoHref, href: c.repoHref } : null },
+    tech: { bullets: [], code: [], images: [], tables: byRole('tech'), repo: c.repoHref && !c.submitted ? { label: c.repo || c.repoHref, href: c.repoHref } : null },
     next: { steps: roadmap ? roadmap.blocks[0].items : nextSteps, contact: texts(howto.contact), link: c.submitted && c.repoHref ? c.repoHref : '' },
   }
 }

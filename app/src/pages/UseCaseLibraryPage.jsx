@@ -19,7 +19,7 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
-import { DETAIL_COL, DetailHero, StatTiles, Section, Tldr, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId } from '../components/UseCaseDetailParts.jsx'
+import { DETAIL_COL, DetailHero, StatTiles, Section, Tldr, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId, Images } from '../components/UseCaseDetailParts.jsx'
 import { buildTemplate } from '../data/useCaseTemplate.js'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
@@ -456,11 +456,11 @@ export default function UseCaseLibraryPage() {
     const has = {
       tldr: tp.tldr.length > 0,
       ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.steps.length),
-      result: !!(tp.result.bullets.length || tp.result.beforeAfter || tp.result.tables.length || tp.result.note),
+      result: !!(tp.result.bullets.length || tp.result.beforeAfter || tp.result.tables.length || tp.result.note || tp.result.images.length),
       apply: !tp.apply.empty,
       safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),
       demo: tp.demo.length > 0,
-      tech: !!(tp.tech.tables.length || tp.tech.repo),
+      tech: !!(tp.tech.tables.length || tp.tech.repo || tp.tech.bullets.length || tp.tech.code.length || tp.tech.images.length),
       next: !!(tp.next.steps.length || tp.next.contact.length || tp.next.link),
     }
     const toc = [
@@ -515,7 +515,7 @@ export default function UseCaseLibraryPage() {
             )}
             {has.demo && (
               <Section id="uc-demo" num="7" title="Demo">
-                <div className="zp-bars">{tp.demo.map((g, i) => <figure key={i} style={{ margin: 0 }}><img src={g.src} alt={g.caption || ''} style={{ width: '100%', borderRadius: 12, display: 'block' }} /><figcaption style={css('margin-top:8px; font-size:12.5px; color:#64748b;')}>{g.caption}</figcaption></figure>)}</div>
+                <Images images={tp.demo} style={{ marginTop: 0 }} />
               </Section>
             )}
             {has.tech && <TechSection tech={tp.tech} t={t} />}

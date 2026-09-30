@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { css, hoverClass } from '../lib/style.js'
-import { Blocks, CopyButton, Placeholders, Prompt } from './UseCaseGuide.jsx'
+import { Blocks, CopyButton, Figure, Placeholders, Prompt } from './UseCaseGuide.jsx'
+import Fill from './Fill.jsx'
 
 // Building blocks of the use case detail page, laid out as the 9-part template:
 // hero + info row + "Bắt đầu dùng →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp · 4 Kết quả ·
@@ -22,11 +23,11 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
       {items.map((text, i) => numbered ? (
         <div key={i} style={css('display:flex; gap:12px; align-items:flex-start;')}>
           <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;')}>{i + 1}</span>
-          <span style={css(`font-size:14px; line-height:1.65; color:${color}; text-wrap:pretty;`)}>{text}</span>
+          <span style={css(`font-size:14px; line-height:1.65; color:${color}; text-wrap:pretty;`)}><Fill text={text} /></span>
         </div>
       ) : (
         <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${color}; text-wrap:pretty;`)}>
-          <span style={css(`flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:${dot};`)}></span>{text}
+          <span style={css(`flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:${dot};`)}></span><span><Fill text={text} /></span>
         </div>
       ))}
     </div>
@@ -41,7 +42,7 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
   const value = 'font-size:13.5px; font-weight:700; line-height:1.45; color:#fff;'
   const diff = DIFF[h.difficulty]
   const cells = [
-    h.audience && <div key="aud">{label(t('Ai dùng được'))}<div style={css(value + 'font-weight:600;')}>{h.audience}</div></div>,
+    h.audience && <div key="aud">{label(t('Ai dùng được'))}<div style={css(value + 'font-weight:600;')}><Fill text={h.audience} /></div></div>,
     diff && (
       <div key="diff">
         {label(t('Độ khó'))}
@@ -53,7 +54,7 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
         </div>
       </div>
     ),
-    h.access && <div key="acc">{label(t('Cách tiếp cận'))}<div style={css(value + 'font-weight:600;')}>{h.access}</div></div>,
+    h.access && <div key="acc">{label(t('Cách tiếp cận'))}<div style={css(value + 'font-weight:600;')}><Fill text={h.access} /></div></div>,
     h.tools.length > 0 && (
       <div key="tools">
         {label(t('Công cụ AI'))}
@@ -67,8 +68,8 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
       <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
         <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
         <div style={css('min-width:0;')}>
-          <div style={css(value)}>{h.owner}</div>
-          <div style={css('font-size:12px; line-height:1.4; color:#a9b8dc;')}>{h.ownerTeam}{h.updated ? ' · ' + t('Cập nhật') + ' ' + h.updated : ''}</div>
+          <div style={css(value)}><Fill text={h.owner} /></div>
+          <div style={css('font-size:12px; line-height:1.4; color:#a9b8dc;')}><Fill text={h.ownerTeam} />{h.updated ? ' · ' + t('Cập nhật') + ' ' + h.updated : ''}</div>
         </div>
       </div>
     </div>,
@@ -117,6 +118,16 @@ export function StatTiles({ stats }) {
   )
 }
 
+/** Original images from the source doc: one full width, several two by two (one column on phones). */
+export function Images({ images, style }) {
+  if (!images || !images.length) return null
+  return (
+    <div className={images.length > 1 ? 'zp-bars' : ''} style={{ marginTop: 16, ...style }}>
+      {images.map((img, i) => <Figure key={i} img={img} />)}
+    </div>
+  )
+}
+
 /** Numbered section heading + white card. */
 export function Section({ id, num, title, sub, children, bare = false }) {
   return (
@@ -137,7 +148,7 @@ export function Tldr({ rows }) {
       {rows.map(([k, v]) => (
         <div key={k} style={css('display:contents;')}>
           <div style={css('font-size:12px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#2c5fff; padding-top:2px;')}>{k}</div>
-          <div style={css('font-size:14.5px; line-height:1.6; color:#1E293B; text-wrap:pretty;')}>{v}</div>
+          <div style={css('font-size:14.5px; line-height:1.6; color:#1E293B; text-wrap:pretty;')}><Fill text={v} /></div>
         </div>
       ))}
     </div>
@@ -152,14 +163,16 @@ export function ProblemSolution({ problem, solution, t }) {
         {[
           ['2', t('Bài toán'), '#E0353F', (
             <>
-              {problem.text && <p style={css('margin:0 0 14px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}>{problem.text}</p>}
+              {problem.text && <p style={css('margin:0 0 14px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}><Fill text={problem.text} /></p>}
               {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
+              <Images images={problem.images} />
             </>
           )],
           ['3', t('Giải pháp'), '#00A352', (
             <>
-              {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:13.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> {solution.analogy}</div>}
+              {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:13.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={solution.analogy} /></div>}
               <BulletList items={solution.steps} numbered />
+              <Images images={solution.images} />
             </>
           )],
         ].map(([num, title, dot, body], i) => (
@@ -231,7 +244,7 @@ export function PlainTable({ table, flat = false }) {
           </thead>
           <tbody>
             {table.rows.map((row, ri) => (
-              <tr key={ri}>{row.map((cell, ci) => <td key={ci} style={css(`padding:11px 12px; border-top:${ri ? '1px solid #F1F4FA' : 'none'}; font-size:13px; line-height:1.55; color:${ci === 0 ? '#0F172A' : '#3A4757'}; font-weight:${ci === 0 ? 600 : 400}; vertical-align:top;`)}>{cell}</td>)}</tr>
+              <tr key={ri}>{row.map((cell, ci) => <td key={ci} style={css(`padding:11px 12px; border-top:${ri ? '1px solid #F1F4FA' : 'none'}; font-size:13px; line-height:1.55; color:${ci === 0 ? '#0F172A' : '#3A4757'}; font-weight:${ci === 0 ? 600 : 400}; vertical-align:top; white-space:pre-line;`)}><Fill text={cell} /></td>)}</tr>
             ))}
           </tbody>
         </table>
@@ -250,7 +263,8 @@ export function ResultBody({ r, t }) {
       {r.bullets.length > 0 && <BulletList items={r.bullets} dot="#00A352" color="#2F4A3C" />}
       {bars.length > 0 && <div className={bars.length > 1 ? 'zp-bars' : ''}>{bars.map((tb, i) => <BarTable key={i} table={tb} t={t} />)}</div>}
       {plain.map((tb, i) => <PlainTable flat key={i} table={tb} />)}
-      {r.note && <div style={css('padding:11px 14px; border-radius:12px; background:#F4F7FE; border:1px solid #DCE6FB; font-size:13px; line-height:1.55; color:#2A3A57;')}><b>{t('Số đo')}:</b> {r.note}</div>}
+      {r.images && r.images.length > 0 && <Images images={r.images} style={{ marginTop: 0 }} />}
+      {r.note && <div style={css('padding:11px 14px; border-radius:12px; background:#F4F7FE; border:1px solid #DCE6FB; font-size:13px; line-height:1.55; color:#2A3A57;')}><b>{t('Số đo')}:</b> <Fill text={r.note} /></div>}
     </div>
   )
 }
@@ -302,7 +316,7 @@ function CodeBlock({ cb }) {
         <span style={css('font-size:12px; font-weight:800; letter-spacing:.07em; color:#2c5fff;')}>{cb.title}</span>
         <CopyButton text={cb.code} />
       </div>
-      {cb.note && <div style={css('margin:-2px 0 8px; font-size:12.5px; color:#64748b;')}>{cb.note}</div>}
+      {cb.note && <div style={css('margin:-2px 0 8px; font-size:12.5px; color:#64748b;')}><Fill text={cb.note} /></div>}
       <pre style={css('margin:0; padding:14px 16px; border:1px solid #DDE3EC; border-radius:12px; background:#F7F9FD; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; line-height:1.7; color:#0F172A; white-space:pre-wrap; word-break:break-word;')}><Placeholders text={cb.code} /></pre>
     </div>
   )
@@ -312,7 +326,7 @@ function CodeBlock({ cb }) {
  *  looks like, and the common-errors table (collapsed). */
 export function ApplySection({ id, a, t }) {
   const parts = []
-  if (a.intro) parts.push(<p key="intro" style={css('margin:0; font-size:14.5px; line-height:1.65; color:#1E293B;')}>{a.intro}</p>)
+  if (a.intro) parts.push(<p key="intro" style={css('margin:0; font-size:14.5px; line-height:1.65; color:#1E293B;')}><Fill text={a.intro} /></p>)
   if (a.fit.yes.length || a.fit.no.length) parts.push(
     <div key="fit" className="zp-fit">
       {a.fit.yes.length > 0 && <div style={css('padding:14px 16px; border-radius:14px; background:#F2FBF6; border:1px solid #CFEEDE;')}><div style={css(SUB + 'color:#00723C;')}>✓ {t('Phù hợp với bạn nếu')}</div><BulletList items={a.fit.yes} dot="#00A352" /></div>}
@@ -325,7 +339,7 @@ export function ApplySection({ id, a, t }) {
       {a.prepPrompt && <div style={{ marginTop: 12 }}><Prompt b={a.prepPrompt} /></div>}
     </div>,
   )
-  if (a.steps.length || a.stepSections.length || a.code.length || a.refTables.length) parts.push(
+  if (a.steps.length || a.stepSections.length || a.blocks.length || a.code.length || a.refTables.length) parts.push(
     <div key="steps">
       <div style={css(SUB)}>{t('Các bước')}</div>
       <div style={css('display:flex; flex-direction:column; gap:16px;')}>
@@ -336,23 +350,27 @@ export function ApplySection({ id, a, t }) {
             <Blocks blocks={s.blocks} />
           </Collapsible>
         ))}
+        {a.blocks.length > 0 && <Blocks blocks={a.blocks} />}
         {a.code.map((cb, i) => <CodeBlock key={i} cb={cb} />)}
         {a.refTables.map((tb, i) => <PlainTable flat key={i} table={tb} />)}
       </div>
     </div>,
   )
-  if (a.success.length || a.samples.length) parts.push(
+  if (a.success.length || a.samples.length || a.images.length) parts.push(
     <div key="success" style={css('padding:14px 16px; border-radius:14px; background:#F2FBF6; border:1px solid #CFEEDE;')}>
       <div style={css(SUB + 'color:#00723C;')}>{t('Kết quả bạn sẽ thấy')}</div>
       {a.success.length > 0 && <BulletList items={a.success} dot="#00A352" />}
       {a.samples.map((cb, i) => <div key={i} style={{ marginTop: 12 }}><CodeBlock cb={cb} /></div>)}
+      <Images images={a.images} />
     </div>,
   )
   if (a.pitfalls.length || a.pitfallTable) parts.push(
     <Collapsible key="errors" title={t('Lỗi hay gặp')} count={a.pitfallTable ? null : a.pitfalls.length}>
       {a.pitfallTable
         ? <Blocks blocks={a.pitfallTable} />
-        : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—']) }} />}
+        : a.pitfalls.some((p) => p.fix)
+          ? <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao'), t('Nói gì với AI / làm gì')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—', p.fix || '—']) }} />
+          : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—']) }} />}
     </Collapsible>,
   )
   return (
@@ -376,8 +394,12 @@ export function TechSection({ tech, t }) {
     <section id="uc-tech" data-toc style={css('scroll-margin-top:84px; margin-top:26px;')}>
       <Collapsible dark title={<><span style={css('color:#8fb4ff; margin-right:8px;')}>8</span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
         <div style={css('display:flex; flex-direction:column; gap:14px; padding-top:8px;')}>
+          {tech.bullets && tech.bullets.length > 0 && <div style={css('padding:16px 18px; border-radius:14px; background:#fff;')}><BulletList items={tech.bullets} dot="#2c5fff" /></div>}
           {tech.tables.map((tb, i) => <div key={i} style={css('padding:16px; border-radius:14px; background:#fff;')}><PlainTable flat table={tb} /></div>)}
-          {tech.repo && (
+          {tech.code && tech.code.map((cb, i) => <div key={'c' + i} style={css('padding:16px; border-radius:14px; background:#fff;')}><CodeBlock cb={cb} /></div>)}
+          {tech.images && tech.images.length > 0 && <div style={css('padding:16px; border-radius:14px; background:#fff;')}><Images images={tech.images} style={{ marginTop: 0 }} /></div>}
+          {tech.repo && !tech.repo.href && <div style={css('font-size:13px; color:#cfe0ff;')}>Repo: <b>{tech.repo.label}</b></div>}
+          {tech.repo && tech.repo.href && (
             <a href={tech.repo.href} target="_blank" rel="noopener" className={hoverClass('background:rgba(255,255,255,.14) !important;')} style={css('align-self:flex-start; display:inline-flex; align-items:center; gap:9px; padding:10px 16px; border:1px solid rgba(130,170,255,.4); border-radius:999px; color:#fff; text-decoration:none; font-size:13px; font-weight:700;')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
               {t('Mở repo')} · {tech.repo.label}
