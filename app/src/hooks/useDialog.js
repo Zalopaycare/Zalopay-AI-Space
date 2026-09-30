@@ -27,7 +27,8 @@ export function useDialog(open, onClose, label, { escInFields = true, focusField
     // Focus the first field (or the box itself) unless something inside already asked for focus.
     requestAnimationFrame(() => {
       if (!box || box.contains(document.activeElement)) return
-      const first = focusField ? box.querySelector('input:not([type="hidden"]), textarea, select') || box.querySelector(FOCUSABLE) : null
+      const visible = (el) => el.offsetParent !== null && !el.hidden
+      const first = focusField ? Array.from(box.querySelectorAll('input:not([type="hidden"]):not([type="file"]), textarea, select')).find(visible) || Array.from(box.querySelectorAll(FOCUSABLE)).find(visible) : null
       ;(first || box).focus({ preventScroll: true })
     })
     const onKey = (e) => {

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { I18nProvider } from './i18n/I18nContext.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 import LoginModal from './components/LoginModal.jsx'
+import Toaster from './components/Toaster.jsx'
 import PageFade from './components/PageFade.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
 import HomePage from './pages/HomePage.jsx'
@@ -27,6 +28,7 @@ export default function App() {
             </Routes>
           </PageFade>
           <LoginModal />
+          <Toaster />
         </BrowserRouter>
       </AuthProvider>
     </I18nProvider>

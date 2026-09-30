@@ -29,7 +29,7 @@ router.post('/request-code', async (req, res) => {
 
   const { sent } = await sendMail({
     to: email,
-    subject: 'Mã đăng nhập Zalopay AI Community',
+    subject: 'Mã đăng nhập Zalopay AI Space',
     text: `Mã đăng nhập của bạn là: ${code}\nMã có hiệu lực trong 10 phút. Nếu không phải bạn yêu cầu, hãy bỏ qua email này.`,
   })
 

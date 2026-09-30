@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { copyWithToast } from '../lib/clipboard.js'
+import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
 import MentionInput from '../components/MentionInput.jsx'
@@ -79,6 +81,7 @@ const tsNum = (v) => new Date(String(v).includes('T') ? v : String(v).replace(' 
 const helpfulTotal = (q) => (q.answers || []).reduce((n, a) => n + (a.helpful || 0), 0) + (q.qHelpful || 0)
 
 export default function HomePage() {
+  useTitle('')
   const navigate = useNavigate()
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
@@ -114,7 +117,6 @@ export default function HomePage() {
   const [playIntro] = useState(() => !introPlayed)
   useEffect(() => { introPlayed = true }, [])
   const [openMenuId, setOpenMenuId] = useState(null)
-  const [copiedCardId, setCopiedCardId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [modalReply, setModalReply] = useState(null) // { answerId, parentId, authorName } | null
   const [modalReplyDraft, setModalReplyDraft] = useState('')
@@ -132,19 +134,13 @@ export default function HomePage() {
   const copyCardLink = (e, ucId) => {
     e.stopPropagation()
     const url = window.location.origin + '/use-cases/' + ucId
-    navigator.clipboard?.writeText(url).then(() => {
-      setCopiedCardId(ucId)
-      setTimeout(() => setCopiedCardId((c) => (c === ucId ? null : c)), 1500)
-    }).catch(() => {})
+    copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
   }
 
   const copyLink = (e, path, key) => {
     e.stopPropagation()
-    navigator.clipboard?.writeText(window.location.origin + path).then(() => {
-      setCopiedCardId(key)
-      setTimeout(() => setCopiedCardId((c) => (c === key ? null : c)), 1500)
-    }).catch(() => {})
+    copyWithToast(window.location.origin + path, 'Đã sao chép link ✓')
     setOpenMenuId(null)
   }
 
@@ -419,14 +415,14 @@ export default function HomePage() {
                       <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
                     </div>
                     <div style={css('position:relative; flex:none;')}>
-                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === 'q:' + q.id ? null : 'q:' + q.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
+                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === 'q:' + q.id ? null : 'q:' + q.id)) }} title={t('Thêm')} aria-label={t('Tuỳ chọn khác')} aria-haspopup="menu" style={css('width:32px; height:32px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
                       </button>
                       {openMenuId === 'q:' + q.id && (
                         <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
                           <button onClick={(e) => copyLink(e, '/questions#q=' + encodeURIComponent(q.id), 'q:' + q.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
-                            {copiedCardId === 'q:' + q.id ? t('Đã copy!') : t('Sao chép link')}
+                            {t('Sao chép link')}
                           </button>
                           <button onClick={(e) => { q.onSave(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saved ? '#00A352' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -618,14 +614,14 @@ export default function HomePage() {
                       {t('Use case')}
                     </span>
                     <div style={css('position:relative; flex:none;')}>
-                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === item.id ? null : item.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
+                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === item.id ? null : item.id)) }} title={t('Thêm')} aria-label={t('Tuỳ chọn khác')} aria-haspopup="menu" style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
                       </button>
                       {openMenuId === item.id && (
                         <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:190px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
                           <button onClick={(e) => copyCardLink(e, item.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
-                            {copiedCardId === item.id ? t('Đã copy!') : t('Sao chép link')}
+                            {t('Sao chép link')}
                           </button>
                           <button onClick={(e) => { item.onSaveToggle(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>

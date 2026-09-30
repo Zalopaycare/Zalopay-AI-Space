@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTitle } from '../hooks/useTitle.js'
 import { Link } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -83,6 +84,7 @@ const Field = ({ label, value }) => (value ? (
 ) : null)
 
 export default function AdminConsolePage() {
+  useTitle('Admin')
   const { user, openLogin, logout } = useAuth()
   const isAdmin = !!user?.isAdmin
   const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
@@ -251,7 +253,7 @@ export default function AdminConsolePage() {
           </div>
           <div style={css('display:flex; align-items:center; gap:12px;')}>
             <div style={{ position: 'relative' }} ref={notifRef}>
-              <button onClick={() => setNotifOpen((o) => !o)} title="Thông báo" style={css(`position:relative; display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:${notifOpen ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.06)'}; border:1px solid rgba(255,255,255,.14); cursor:pointer;`)}>
+              <button onClick={() => setNotifOpen((o) => !o)} title="Thông báo" aria-label="Thông báo" style={css(`position:relative; display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:${notifOpen ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.06)'}; border:1px solid rgba(255,255,255,.14); cursor:pointer;`)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dbe6ff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
                 {notif.unread > 0 && <span style={css('position:absolute; top:-3px; right:-3px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#FF3B30; color:#fff;' + font(800, 10.5) + ';display:flex; align-items:center; justify-content:center; box-sizing:border-box;')}>{notif.unread}</span>}
               </button>

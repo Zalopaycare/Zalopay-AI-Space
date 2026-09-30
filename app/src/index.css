@@ -131,3 +131,15 @@ html.zp-vt .zp-page-in { animation: none; }
 /* Our own × clear button replaces the browser's search-field cancel icon. */
 .zp-search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 [role="dialog"]:focus { outline: none; }
+.zp-toast { animation: toastin .18s ease-out; }
+@keyframes toastin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Phones: search box on its own line with the filter pills below; fact panels stack. */
+@media (max-width: 699px) {
+  .zp-search-row { flex-wrap: wrap; }
+  .zp-search-row > form { flex: 1 1 100% !important; }
+  .zp-facts-top { grid-template-columns: minmax(0, 1fr) !important; }
+  .zp-facts-top > div { border-right: none !important; border-bottom: 1px solid rgba(130,170,255,.16); }
+  .zp-facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .zp-facts-grid > div { border-right: none !important; border-bottom: 1px solid rgba(130,170,255,.12); }
+}

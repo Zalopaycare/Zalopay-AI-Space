@@ -25,7 +25,7 @@ const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose
           <span style={css(`flex:none; display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 18px; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 14px ${FONT}; box-shadow:0 10px 22px rgba(44,95,255,.4);`)}>{t(cta)}</span>
         </div>
         )}
-        <div style={css(`display:flex; align-items:center; gap:10px; ${searchOnly ? '' : 'margin-top:12px;'}`)}>
+        <div className="zp-search-row" style={css(`display:flex; align-items:center; gap:10px; ${searchOnly ? '' : 'margin-top:12px;'}`)}>
           <form
             onSubmit={(e) => { e.preventDefault(); if (onSubmit) onSubmit(query) }}
             style={searchOnly ? css('flex:1; min-width:0; display:flex; align-items:center; gap:11px; height:46px; box-sizing:border-box; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:0 18px; box-shadow:0 10px 26px rgba(0,0,0,.25);') : css('flex:1; min-width:0; display:flex; align-items:center; gap:11px; height:46px; box-sizing:border-box; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:0 18px; box-shadow:0 10px 26px rgba(0,0,0,.25);')}

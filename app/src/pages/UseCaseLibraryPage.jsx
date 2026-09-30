@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { copyWithToast } from '../lib/clipboard.js'
+import { useUrlFilters } from '../hooks/useUrlFilters.js'
+import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { AI_TOOLS, OTHER } from '../lib/taxonomy.js'
 import { renderMentions } from '../components/MentionField.jsx'
@@ -37,28 +40,12 @@ const EMPTY_SHARE_FORM = { title: '', audience: '', problem: '', solution: '', p
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
 
-function copyTextToClipboard(text) {
-  try {
-    const ta = document.createElement('textarea')
-    ta.value = text
-    ta.style.position = 'fixed'
-    ta.style.top = '-1000px'
-    ta.style.opacity = '0'
-    document.body.appendChild(ta)
-    ta.focus()
-    ta.select()
-    let ok = false
-    try { ok = document.execCommand('copy') } catch { /* ignore */ }
-    document.body.removeChild(ta)
-    if (ok) return Promise.resolve()
-  } catch { /* ignore */ }
-  return navigator.clipboard?.writeText ? navigator.clipboard.writeText(text) : Promise.reject()
-}
 
 
 export default function UseCaseLibraryPage() {
   const { id } = useParams()
   const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
+  useTitle(id ? (allCases.find((x) => x.id === id) || {}).title || 'Use case' : 'Thư viện Use Case')
   const navigate = useNavigate()
   const { offset: sidebarOffset } = useSidebarLayout()
   const location = useLocation()
@@ -81,15 +68,16 @@ export default function UseCaseLibraryPage() {
   const [copiedCode, setCopiedCode] = useState(null)
   const [copiedLabel, setCopiedLabel] = useState('')
   const [openMenuId, setOpenMenuId] = useState(null)
-  const [copiedCardId, setCopiedCardId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
-  const [libCat, setLibCat] = useState(null)
+  const [libCat, setLibCat] = useState(() => new URLSearchParams(window.location.search).get('cat'))
   const [libTopic, setLibTopic] = useState(null)
   const [libGroup, setLibGroup] = useState(null)
-  const [libTool, setLibTool] = useState(null)
+  const [libTool, setLibTool] = useState(() => new URLSearchParams(window.location.search).get('tool'))
   const [libKind, setLibKind] = useState(null)
-  const [libSort, setLibSort] = useState('new')
+  const [libSort, setLibSort] = useState(() => new URLSearchParams(window.location.search).get('sort') || 'new')
+  // Filters, sort and search live in the URL (?q=&cat=&tool=&sort=) so a view can be shared and Back restores it.
+  useUrlFilters({ q: [query, setQuery, ''], cat: [libCat, setLibCat, null], tool: [libTool, setLibTool, null], sort: [libSort, setLibSort, 'new'] }, !id)
   const [libPage, setLibPage] = useState(1)
   const [openDrop, setOpenDrop] = useState(null)
 
@@ -213,10 +201,7 @@ export default function UseCaseLibraryPage() {
   const copyCardLink = (e, ucId) => {
     e.stopPropagation()
     const url = window.location.origin + '/use-cases/' + ucId
-    navigator.clipboard?.writeText(url).then(() => {
-      setCopiedCardId(ucId)
-      setTimeout(() => setCopiedCardId((c) => (c === ucId ? null : c)), 1500)
-    }).catch(() => {})
+    copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
   }
 
@@ -294,7 +279,7 @@ export default function UseCaseLibraryPage() {
   }
 
   const submitShare = () => {
-    if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Required trước khi gửi duyệt.'); return }
+    if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Bắt buộc trước khi gửi duyệt.'); return }
     requireLogin(() => {
       (editing ? (p) => api.updateSubmission(editing.id, p) : api.submitUseCase)({
         title: shareForm.title.trim(), audience: shareForm.audience.trim(), team: shareForm.team.trim(),
@@ -477,7 +462,7 @@ export default function UseCaseLibraryPage() {
       onCopy: (e) => {
         e.stopPropagation()
         const mark = (label) => { setCopiedCode(dsel.id + '-' + i); setCopiedLabel(label); clearTimeout(renderDetail._t); renderDetail._t = setTimeout(() => { setCopiedCode(null); setCopiedLabel('') }, 1800) }
-        copyTextToClipboard(cb.code).then(() => mark('Đã copy')).catch(() => mark('Copy lỗi'))
+        copyWithToast(cb.code).then(() => mark('Đã copy ✓'))
       },
     }))
     const galleryR = cd.gallery || []
@@ -495,7 +480,7 @@ export default function UseCaseLibraryPage() {
     const factLabel = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:7px;')}>{text}</div>
     const renderFacts = () => (
       <div style={css('margin-top:22px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.24); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); overflow:hidden;')}>
-        <div style={css('display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); border-bottom:1px solid rgba(130,170,255,.16);')}>
+        <div className="zp-facts-top" style={css('display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); border-bottom:1px solid rgba(130,170,255,.16);')}>
           <div style={css('padding:16px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
             {factLabel(t('Người / team thực hiện'))}
             <div style={css('display:flex; align-items:center; gap:12px;')}>
@@ -527,7 +512,7 @@ export default function UseCaseLibraryPage() {
             </div>
           </div>
         </div>
-        <div style={css('display:grid; grid-template-columns:repeat(4,minmax(0,1fr));')}>
+        <div className="zp-facts-grid" style={css('display:grid; grid-template-columns:repeat(4,minmax(0,1fr));')}>
           <div style={css('padding:14px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
             {factLabel(t('Category'))}
             <div style={css('font-size:13.5px; font-weight:700; color:#fff;')}>{dsel.category || '—'}</div>
@@ -938,14 +923,14 @@ export default function UseCaseLibraryPage() {
                           {t('Use case')}
                         </span>
                         <div style={css('position:relative; flex:none;')}>
-                          <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === c.id ? null : c.id)) }} title={t('Thêm')} style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
+                          <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === c.id ? null : c.id)) }} title={t('Thêm')} aria-label={t('Tuỳ chọn khác')} aria-haspopup="menu" style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
                           </button>
                           {openMenuId === c.id && (
                             <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:190px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
                               <button onClick={(e) => copyCardLink(e, c.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
-                                {copiedCardId === c.id ? t('Đã copy!') : t('Sao chép link')}
+                                {t('Sao chép link')}
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); c.onSave(e); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -1118,10 +1103,10 @@ export default function UseCaseLibraryPage() {
                     ))}
                   </div>
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
-                    <button onClick={() => setShareStage('form')} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;')}>{t('Quay lại chỉnh sửa')}</button>
+                    <button onClick={() => setShareStage('form')} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Quay lại chỉnh sửa')}</button>
                     <button
                       onClick={submitShare}
-                      style={css('margin-left:auto; height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
+                      style={css('margin-left:auto; height:48px; padding:0 26px; white-space:nowrap; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; white-space:nowrap; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
                     >
                       {liveEdit ? 'Lưu thay đổi' : editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                     </button>
@@ -1176,13 +1161,13 @@ export default function UseCaseLibraryPage() {
                       </div>
                     ))}
 
-                    <ChipGroup title="Người thực hiện" required="Required · chọn một" options={shareKinds} />
-                    <ChipGroup title="Trạng thái" required="Required · chọn một" options={shareStatuses} />
-                    <ChipGroup title="Độ khó khi làm lại" required="Required · chọn một" options={shareLevels} last />
+                    <ChipGroup title="Người thực hiện" required="Bắt buộc · chọn một" options={shareKinds} />
+                    <ChipGroup title="Trạng thái" required="Bắt buộc · chọn một" options={shareStatuses} />
+                    <ChipGroup title="Độ khó khi làm lại" required="Bắt buộc · chọn một" options={shareLevels} last />
 
                     <div style={css('display:flex; align-items:center; gap:8px;')}>
                       <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>Category</label>
-                      <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Required · được chọn nhiều')}</span>
+                      <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · chọn được nhiều')}</span>
                     </div>
                     <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                       {shareCategories.map((c) => (
@@ -1192,7 +1177,7 @@ export default function UseCaseLibraryPage() {
 
                     <div style={css('display:flex; align-items:center; gap:8px; margin-top:24px;')}>
                       <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Chủ đề')}</label>
-                      <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>Optional · tối đa 3 · {shareTopicSel.length}/3</span>
+                      <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>Không bắt buộc · tối đa 3 · {shareTopicSel.length}/3</span>
                     </div>
                     <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                       {shareTopics.map((tp) => (
@@ -1233,13 +1218,13 @@ export default function UseCaseLibraryPage() {
                     </div>
                   </div>
 
-                  <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
-                    <span style={css('font-size:12.5px; font-weight:600; color:#94a3b8;')}>{t('Điền đủ các mục Required để người đọc hiểu và làm lại được. Admin duyệt trước khi publish.')}</span>
-                    <div style={css('margin-left:auto; display:flex; gap:12px;')}>
-                      <button onClick={() => { setHasDraft(true); localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })); closeShare() }} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;')}>{t('Lưu nháp & đóng')}</button>
+                  <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
+                    <span style={css('flex:1 1 260px; font-size:12.5px; font-weight:600; color:#94a3b8;')}>{t('Điền đủ các mục Bắt buộc để người đọc hiểu và làm lại được. Admin duyệt trước khi publish.')}</span>
+                    <div style={css('margin-left:auto; display:flex; gap:12px; flex:none;')}>
+                      <button onClick={() => { setHasDraft(true); localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })); closeShare() }} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu nháp & đóng')}</button>
                       <button
                         onClick={() => {
-                          if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Required để người khác đọc là làm lại được.'); return }
+                          if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Bắt buộc để người khác đọc là làm lại được.'); return }
                           setShareStage('preview'); setShareError('')
                         }}
                         style={css(`height:48px; padding:0 22px; border:1px solid #B9CCF8; border-radius:999px; background:#E7ECFB; color:#2c5fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; opacity:${shareOpacity};`)}
@@ -1248,7 +1233,7 @@ export default function UseCaseLibraryPage() {
                       </button>
                       <button
                         onClick={submitShare}
-                        style={css(`height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; opacity:${shareOpacity}; box-shadow:0 12px 26px rgba(44,95,255,.4);`)}
+                        style={css(`height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; white-space:nowrap; cursor:pointer; opacity:${shareOpacity}; box-shadow:0 12px 26px rgba(44,95,255,.4);`)}
                       >
                         {liveEdit ? 'Lưu thay đổi' : editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                       </button>

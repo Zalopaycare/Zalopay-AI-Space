@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -172,6 +173,7 @@ export default function ProfilePage() {
   }, [])
   const notif = useNotifications(!!user)
   const section = /#(activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'activity'
+  useTitle({ activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -429,7 +431,14 @@ export default function ProfilePage() {
               <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
                 {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
                 {activeUcTab.items.length === 0 && (
-                  <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:36px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có use case')}</div>
+                  <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>
+                    {activeUcTab.key === 'all' ? t('Bạn chưa chia sẻ use case nào.') : t('Chưa có use case ở mục này.')}
+                    {ucPosts.length === 0 && (
+                      <div style={{ marginTop: 14 }}>
+                        <button onClick={() => navigate('/use-cases?share=1')} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; box-shadow:0 10px 22px rgba(44,95,255,.35);`)}>{t('Chia sẻ use case đầu tiên')}</button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

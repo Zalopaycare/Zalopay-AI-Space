@@ -21,7 +21,7 @@ export default function CommentMenu({ isOwner, isAdmin, onEdit, onDelete, onRepo
   const pick = (fn) => (e) => { e.stopPropagation(); setOpen(false); fn && fn() }
   return (
     <div ref={ref} className="zp-cmt-more" data-open={open || undefined} style={css('position:relative; flex:none;')}>
-      <button onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }} title="Tuỳ chọn" className={hoverClass('background:#EEF2F9;')} style={css('width:28px; height:28px; border:none; border-radius:8px; background:transparent; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
+      <button onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }} title="Tuỳ chọn" aria-label="Tuỳ chọn" aria-haspopup="menu" className={hoverClass('background:#EEF2F9;')} style={css('width:28px; height:28px; border:none; border-radius:8px; background:transparent; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg>
       </button>
       {open && (

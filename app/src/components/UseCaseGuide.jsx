@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
 
 // Renders a use case's step-by-step guide (data/guides/*.js): a flow diagram, a jump-to index,
@@ -15,26 +16,13 @@ const TONES = {
   ok: { bg: '#F2FBF6', border: '#CFEEDE', title: '#00893F', text: '#1F4B33', icon: '✓' },
 }
 
-function copyText(text) {
-  try {
-    const ta = document.createElement('textarea')
-    ta.value = text
-    ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0'
-    document.body.appendChild(ta); ta.focus(); ta.select()
-    let ok = false
-    try { ok = document.execCommand('copy') } catch { /* ignore */ }
-    document.body.removeChild(ta)
-    if (ok) return Promise.resolve()
-  } catch { /* ignore */ }
-  return navigator.clipboard?.writeText ? navigator.clipboard.writeText(text) : Promise.reject()
-}
 
 function CopyButton({ text, small }) {
   const [state, setState] = useState('')
   const done = (s) => { setState(s); setTimeout(() => setState(''), 1600) }
   return (
     <button
-      onClick={(e) => { e.stopPropagation(); copyText(text).then(() => done('Đã copy')).catch(() => done('Copy lỗi')) }}
+      onClick={(e) => { e.stopPropagation(); copyWithToast(text).then(() => done('Đã copy')) }}
       className={hoverClass('background:#EEF3FF !important; border-color:#B9CCF8 !important;')}
       style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:${small ? 26 : 30}px; padding:0 ${small ? 10 : 12}px; border:1px solid ${state === 'Đã copy' ? '#BEE9D3' : '#DDE3EC'}; border-radius:999px; background:${state === 'Đã copy' ? '#E7F9F0' : '#fff'}; color:${state === 'Đã copy' ? '#00893F' : '#3A4757'}; font:700 ${small ? 11.5 : 12}px ${FONT}; cursor:pointer;`)}
     >

@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { copyWithToast } from '../lib/clipboard.js'
+import { useUrlFilters } from '../hooks/useUrlFilters.js'
+import { useTitle } from '../hooks/useTitle.js'
 import { AI_TOOLS, OTHER as TOOL_OTHER, normalizeTool } from '../lib/taxonomy.js'
 import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -42,6 +45,7 @@ const insertMention = (v, handle) => v.replace(/@([\p{L}\w.-]*)$/u, '@' + handle
 const renderBody = renderMentions
 
 export default function QuestionsPage() {
+  useTitle('Câu hỏi')
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
   const navigate = useNavigate()
@@ -51,8 +55,8 @@ export default function QuestionsPage() {
   const [questions, setQuestions] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [view, setView] = useState('feed') // 'feed' | 'ask'
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState('latest')
+  const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('q') || '')
+  const [sort, setSort] = useState(() => new URLSearchParams(window.location.search).get('sort') || 'latest')
   const [openDrop, setOpenDrop] = useState(null)
   useEffect(() => {
     if (!openDrop) return
@@ -60,7 +64,7 @@ export default function QuestionsPage() {
     document.addEventListener('click', close)
     return () => document.removeEventListener('click', close)
   }, [openDrop])
-  const [quick, setQuick] = useState('all')
+  const [quick, setQuick] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'all')
   const [expanded, setExpanded] = useState({})
   const [fullBody, setFullBody] = useState({})
   const [replyDrafts, setReplyDrafts] = useState({})
@@ -79,7 +83,6 @@ export default function QuestionsPage() {
   const [commentMention, setCommentMention] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
-  const [copiedId, setCopiedId] = useState(null)
 
   const [askTitle, setAskTitle] = useState('')
   const [askBody, setAskBody] = useState('')
@@ -175,10 +178,7 @@ export default function QuestionsPage() {
 
   const copyLink = (id) => {
     const url = window.location.origin + '/questions#q=' + encodeURIComponent(id)
-    navigator.clipboard?.writeText(url).then(() => {
-      setCopiedId(id)
-      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500)
-    }).catch(() => {})
+    copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
   }
   const deleteQuestion = (id) => {
@@ -333,11 +333,8 @@ export default function QuestionsPage() {
     navigate({ pathname: location.pathname, search: location.search }, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, location.hash])
-  // ?q=<từ khoá> (from Home's search) pre-fills the search box.
-  useEffect(() => {
-    const q0 = new URLSearchParams(location.search).get('q')
-    if (q0 != null) setQuery(q0)
-  }, [location.search])
+  // Search, status tab and sort live in the URL (?q=&tab=&sort=) — shareable, restored by Back.
+  useUrlFilters({ q: [query, setQuery, ''], tab: [quick, setQuick, 'all'], sort: [sort, setSort, 'latest'] })
   // Closing the composer / a question popup drops its #ask / #q= hash (only on an open → closed change).
   const wasOpen = useRef({ ask: false, q: false })
   const anyExpanded = Object.values(expanded).some(Boolean)
@@ -485,7 +482,7 @@ export default function QuestionsPage() {
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setOpenMenuId((id) => (id === q.id ? null : q.id)) }}
-                          title={t('Thêm')}
+                          title={t('Thêm')} aria-label={t('Tuỳ chọn khác')} aria-haspopup="menu"
                           style={css('width:32px; height:32px; border:1px solid #E6EBF3; border-radius:10px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}
                         >
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
@@ -494,7 +491,7 @@ export default function QuestionsPage() {
                           <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
                             <button onClick={() => copyLink(q.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
-                              {copiedId === q.id ? t('Đã copy!') : t('Sao chép link')}
+                              {t('Sao chép link')}
                             </button>
                             <button onClick={() => { q.onSave(); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -837,20 +834,20 @@ export default function QuestionsPage() {
                       <div style={css('display:flex; align-items:center; gap:2px; margin-top:16px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
                         <input ref={askImageInputRef} type="file" accept="image/*" multiple hidden onChange={(e) => { onPickImages(e.target.files); e.target.value = '' }} />
                         {!editQId && (
-                          <button onClick={() => askImageInputRef.current?.click()} title={t('Thêm hình ảnh')} disabled={askImages.length >= MAX_ASK_IMAGES} className={hoverClass('background:#F1F4FA;')} style={css(`width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center; opacity:${askImages.length >= MAX_ASK_IMAGES ? .4 : 1};`)}>
+                          <button onClick={() => askImageInputRef.current?.click()} title={t('Thêm hình ảnh')} aria-label={t('Thêm hình ảnh')} disabled={askImages.length >= MAX_ASK_IMAGES} className={hoverClass('background:#F1F4FA;')} style={css(`width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center; opacity:${askImages.length >= MAX_ASK_IMAGES ? .4 : 1};`)}>
                             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-4.5-4.5L7 20"></path></svg>
                           </button>
                         )}
 
                         <input ref={askDocInputRef} type="file" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) setAskFiles((s) => [...s, f.name]); e.target.value = '' }} />
                         {!editQId && (
-                          <button onClick={() => askDocInputRef.current?.click()} title={t('Thêm tài liệu')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
+                          <button onClick={() => askDocInputRef.current?.click()} title={t('Thêm tài liệu')} aria-label={t('Thêm tài liệu')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
                             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L10.13 17.1a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                           </button>
                         )}
 
                         <div style={{ position: 'relative' }}>
-                          <button onClick={() => setAskEmojiOpen((o) => !o)} title={t('Chèn emoji')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
+                          <button onClick={() => setAskEmojiOpen((o) => !o)} title={t('Chèn emoji')} aria-label={t('Chèn emoji')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
                             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9.5"></circle><path d="M8.5 14s1.5 2 3.5 2 3.5-2 3.5-2"></path><path d="M9 9h.01"></path><path d="M15 9h.01"></path></svg>
                           </button>
                           {askEmojiOpen && (
