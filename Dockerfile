@@ -10,6 +10,7 @@ WORKDIR /srv
 COPY server/package*.json ./
 RUN npm install --omit=dev
 COPY server/src ./src
+COPY server/showcase ./showcase
 COPY --from=webbuild /app/dist ./public
 
 ENV NODE_ENV=production

@@ -51,6 +51,7 @@ export const api = {
 
   useCaseMeta: (id) => request(`/use-cases/${id}/meta`),
   reactUseCase: (id) => request(`/use-cases/${id}/react`, { method: 'POST' }),
+  showcase: () => request('/showcase'),
   toggleApplied: (id) => request(`/use-cases/${id}/applied`, { method: 'POST' }),
   rateUseCase: (id, stars) => request(`/use-cases/${id}/rate`, { method: 'POST', body: JSON.stringify({ stars }) }),
   saveUseCase: (id) => request(`/use-cases/${id}/save`, { method: 'POST' }),

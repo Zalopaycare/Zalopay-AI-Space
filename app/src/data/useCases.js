@@ -470,26 +470,31 @@ export function hlList(arr) {
 // come from the API and are merged into the same structures (allCases, prdMeta, caseDetail,
 // kind/status/author lookups) so every page renders them exactly like the built-ins.
 
-// Use cases written straight in the 9-part template shape (one file each in ./cases/, from the
-// teams' own docs). Registered here like the ones above so every page lists and renders them.
-const templateCases = Object.values(import.meta.glob('./cases/*.js', { eager: true }))
-  .map((mod) => mod.default)
-  .filter(Boolean)
-  .sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)))
-for (const m of templateCases) {
-  KIND_BY_ID[m.id] = m.kind || 'tech'
-  STATUS_BY_ID[m.id] = m.status || 'inuse'
-  authorInfo[m.author] = { name: m.ownerName || m.author, role: m.ownerTeam || 'Zalopay' }
-  prdMeta[m.id] = { problem: m.problem?.text || (m.tldr?.[0]?.[1] || ''), result: m.tldr?.[2]?.[1] || '', topics: m.topics || [], helpful: 0, comments: 0 }
-  caseDetail[m.id] = { tpl: m, difficulty: m.difficulty || '', audience: m.audience || '', level: m.level || 'ready', summary: m.desc }
-  allCases.push({
-    id: m.id, title: m.title, desc: m.desc, author: m.author, team: m.ownerTeam || '', category: m.category || 'Other',
-    tools: normalizeTools(m.tools || []), repo: m.tech?.repo?.label || '', repoHref: m.tech?.repo?.href || '',
-    audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null,
-  })
-}
-
 export const builtinCases = allCases.slice()
+
+// Showcase use cases written in the 9-part template shape from the teams' own docs. They live on the
+// server (login only) and arrive through /api/showcase after sign-in; registered here like the
+// built-ins above so every page lists and renders them. Safe to call again (replaces by id).
+export function registerTemplateCases(list) {
+  for (const m of list) {
+    for (const arr of [allCases, builtinCases]) { const i = arr.findIndex((c) => c.id === m.id); if (i >= 0) arr.splice(i, 1) }
+    KIND_BY_ID[m.id] = m.kind || 'tech'
+    STATUS_BY_ID[m.id] = m.status || 'inuse'
+    authorInfo[m.author] = { name: m.ownerName || m.author, role: m.ownerTeam || 'Zalopay' }
+    prdMeta[m.id] = { problem: m.problem?.text || (m.tldr?.[0]?.[1] || ''), result: m.tldr?.[2]?.[1] || '', topics: m.topics || [], helpful: 0, comments: 0 }
+    caseDetail[m.id] = { tpl: m, difficulty: m.difficulty || '', audience: m.audience || '', level: m.level || 'ready', summary: m.desc }
+    const card = {
+      id: m.id, title: m.title, desc: m.desc, author: m.author, team: m.ownerTeam || '', category: m.category || 'Other',
+      tools: normalizeTools(m.tools || []), repo: m.tech?.repo?.label || '', repoHref: m.tech?.repo?.href || '',
+      audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null,
+    }
+    // keep built-ins in id order (c1…c5, c6…) so "Mới nhất" puts the newest showcase first
+    const at = allCases.findIndex((c) => !c.submitted && Number(c.id.slice(1)) > Number(m.id.slice(1)))
+    allCases.splice(at < 0 ? allCases.length : at, 0, card)
+    const bt = builtinCases.findIndex((c) => Number(c.id.slice(1)) > Number(m.id.slice(1)))
+    builtinCases.splice(bt < 0 ? builtinCases.length : bt, 0, card)
+  }
+}
 
 const KIND_MAP = { 'By tech': 'tech', 'By non-tech': 'nontech' }
 const STATUS_MAP = { 'Ý tưởng': 'planning', Prototype: 'prototype', 'Đang dùng thật': 'inuse' }
