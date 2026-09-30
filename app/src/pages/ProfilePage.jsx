@@ -1,3 +1,4 @@
+import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { useEffect, useState } from 'react'
 import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
@@ -156,7 +157,8 @@ export default function ProfilePage() {
   const { t } = useI18n()
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
-  usePublishedUseCases() // approved submissions appear in "Đã lưu" too
+  const { version: pubV, loaded: pubLoaded } = usePublishedUseCases() // approved submissions appear in "Đã lưu" too
+  useScrollReturn(pubLoaded ? pubV + 1 : false)
   const location = useLocation()
 
   // Section is driven by the Sidebar's "Của tôi" sub-links (/profile#usecase|#question|#saved).
@@ -290,9 +292,9 @@ export default function ProfilePage() {
       helped: !!(ucMeta[c.id] && ucMeta[c.id].iHelped),
       comments: ucMeta[c.id] ? ucMeta[c.id].comments.length : 0,
       onHelpful: () => api.reactUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {}),
-      onOpenComments: () => navigate(`/use-cases/${c.id}#comments`),
+      onOpenComments: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}#comments`) },
       toolsR: c.tools.map((name) => ({ name })),
-      onOpen: () => navigate(`/use-cases/${c.id}`),
+      onOpen: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}`) },
     }))
 
   let qDraft = null

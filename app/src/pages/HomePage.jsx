@@ -1,3 +1,4 @@
+import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useTitle } from '../hooks/useTitle.js'
@@ -161,7 +162,8 @@ export default function HomePage() {
 
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   // Newest approved community use cases first, topped up with the built-in picks.
-  const { version: pubV } = usePublishedUseCases()
+  const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
+  useScrollReturn(pubLoaded ? pubV + 1 : false)
   const featuredCases = newestFirst(allCases).slice(0, 3) // same order as the Library's "Mới nhất"
   useEffect(() => { featuredCases.forEach((c) => refreshUcMeta(c.id)) }, [pubV]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -280,7 +282,7 @@ export default function HomePage() {
       helpFill: iHelped ? 'currentColor' : 'none',
       onSaveToggle: (e) => { e.stopPropagation(); requireLogin(() => api.saveUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {})) },
       onHelpful: (e) => { e.stopPropagation(); requireLogin(() => api.reactUseCase(c.id).then(() => refreshUcMeta(c.id)).catch(() => {})) },
-      onOpen: () => navigate(`/use-cases/${c.id}`),
+      onOpen: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}`) },
       helped: iHelped,
       canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
       canEdit: !!user && !!c.authorId && c.authorId === user.id,
@@ -662,7 +664,7 @@ export default function HomePage() {
                       {t('Xem Use Case')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
-                    <CardActions compact helpful={item.helpful} helped={item.helped} onHelpful={item.onHelpful} replies={item.commentCount} onReply={() => navigate(`/use-cases/${item.id}#comments`)} />
+                    <CardActions compact helpful={item.helpful} helped={item.helped} onHelpful={item.onHelpful} replies={item.commentCount} onReply={() => { rememberReturn(item.id); navigate(`/use-cases/${item.id}#comments`) }} />
                   </div>
                 </div>
               ))}

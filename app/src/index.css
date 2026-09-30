@@ -135,9 +135,13 @@ html.zp-vt .zp-page-in { animation: none; }
 @keyframes toastin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* Use case detail (9-part template): info row, numbers, TL;DR, problem | solution, bars, fit, TOC. */
-.zp-info-row { display: grid; grid-template-columns: repeat(var(--zp-cells, 5), minmax(0, 1fr)); border-radius: 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(130,170,255,.24); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); overflow: hidden; }
+.zp-overview { border-radius: 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(130,170,255,.24); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); overflow: hidden; }
+.zp-info-row { display: grid; grid-template-columns: repeat(var(--zp-cells, 5), minmax(0, 1fr)); }
+.zp-overview-tldr { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 9px 16px; padding: 14px 18px 16px; border-top: 1px solid rgba(130,170,255,.16); }
 .zp-info-row > div { padding: 14px 18px; min-width: 0; }
 .zp-info-row > div + div { border-left: 1px solid rgba(130,170,255,.16); }
+/* 'Phụ trách' is a byline row across the whole box, so the other facts get room on one line */
+.zp-info-row > .zp-info-owner { grid-column: 1 / -1; border-left: none !important; border-top: 1px solid rgba(130,170,255,.16); padding-top: 11px; padding-bottom: 12px; }
 .zp-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .zp-tldr { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px 18px; }
 .zp-ps { display: grid; grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr); column-gap: 22px; align-items: stretch; }
@@ -153,7 +157,7 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-toc { position: sticky; top: 84px; margin-top: 26px; max-height: calc(100vh - 110px); overflow-y: auto; }
 @container (max-width: 899px) {
   .zp-detail-grid { grid-template-columns: minmax(0, 1fr); }
-  .zp-toc { display: none; }
+  .zp-toc, .zp-toc-space { display: none; }
 }
 @media (max-width: 999px) {
   .zp-info-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -172,7 +176,8 @@ html.zp-vt .zp-page-in { animation: none; }
   .zp-info-row { grid-template-columns: minmax(0, 1fr); }
   .zp-info-row > div:nth-child(even) { border-left: none; }
   .zp-info-row > div:nth-child(2) { border-top: 1px solid rgba(130,170,255,.14); }
-  .zp-tldr { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .zp-tldr, .zp-overview-tldr { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .zp-overview-tldr > div > div:nth-child(2) { margin-bottom: 10px; }
   .zp-tldr > div > div:nth-child(2) { margin-bottom: 10px; }
   .zp-ps { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 0 auto; row-gap: 22px; }
   .zp-ps-arrow > span { transform: rotate(90deg); }

@@ -43,7 +43,7 @@ function fromTpl(c, m) {
     hero: {
       type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
       toolName: m.toolName || '', audience: m.audience || '', difficulty: m.difficulty || '', access: m.access || '',
-      tools: c.tools || [], owner: m.ownerName || c.author, ownerTeam: m.ownerTeam || '', updated: m.updated || '[cần bổ sung]',
+      tools: c.tools || [], owner: String(m.ownerName || c.author).replace(/\s*\(\d+\)/g, ''), // drop Microsoft's "(8)" counters, ownerTeam: m.ownerTeam || '', updated: m.updated || '[cần bổ sung]',
     },
     stats: arr(m.stats).slice(0, 3),
     tldr: arr(m.tldr).filter((row) => row && row[1]),

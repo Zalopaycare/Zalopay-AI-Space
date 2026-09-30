@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
+import { rememberReturn, hasReturn, pendingReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
@@ -19,7 +20,7 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
-import { DETAIL_COL, DetailHero, Section, Tldr, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId, Images } from '../components/UseCaseDetailParts.jsx'
+import { DETAIL_COL, DetailHero, Section, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId, Images } from '../components/UseCaseDetailParts.jsx'
 import { buildTemplate } from '../data/useCaseTemplate.js'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
@@ -44,6 +45,7 @@ const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#
 export default function UseCaseLibraryPage() {
   const { id } = useParams()
   const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
+  useScrollReturn(!id && pubLoaded ? pubV + 1 : false) // back from a use case -> same place in the list
   useTitle(id ? (allCases.find((x) => x.id === id) || {}).title || 'Use case' : 'Thư viện Use Case')
   const navigate = useNavigate()
   const location = useLocation()
@@ -73,7 +75,7 @@ export default function UseCaseLibraryPage() {
   const [libSort, setLibSort] = useState(() => new URLSearchParams(window.location.search).get('sort') || 'new')
   // Filters, sort and search live in the URL (?q=&cat=&tool=&sort=) so a view can be shared and Back restores it.
   useUrlFilters({ q: [query, setQuery, ''], cat: [libCat, setLibCat, null], tool: [libTool, setLibTool, null], sort: [libSort, setLibSort, 'new'] }, !id)
-  const [libPage, setLibPage] = useState(1)
+  const [libPage, setLibPage] = useState(() => pendingReturn()?.page || 1)
   const [openDrop, setOpenDrop] = useState(null)
 
   const [shareOpen, setShareOpen] = useState(false)
@@ -318,8 +320,8 @@ export default function UseCaseLibraryPage() {
       canEdit: !!user && !!c.authorId && c.authorId === user.id,
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
-      onOpen: () => navigate(`/use-cases/${c.id}`),
-      onOpenComments: () => navigate(`/use-cases/${c.id}#comments`),
+      onOpen: () => { rememberReturn(c.id, { page: libPage }); navigate(`/use-cases/${c.id}`) },
+      onOpenComments: () => { rememberReturn(c.id, { page: libPage }); navigate(`/use-cases/${c.id}#comments`) },
       saveFill: saved ? 'currentColor' : 'none',
       saveColor: saved ? '#2c5fff' : '#59667A',
       saveColorD: saved ? '#9fd0ff' : '#c3c3d4',
@@ -465,7 +467,7 @@ export default function UseCaseLibraryPage() {
       next: !!(tp.next.steps.length || tp.next.contact.length || tp.next.link),
     }
     const toc = [
-      has.tldr && { id: 'uc-tldr', label: '1. ' + t('Tóm tắt 30 giây') },
+      has.tldr && { id: 'uc-tldr', label: '1. ' + t('Tóm tắt') },
       has.ps && { id: 'uc-problem', label: '2–3. ' + t('Bài toán & giải pháp') },
       has.result && { id: 'uc-result', label: '4. ' + t('Kết quả') },
       has.apply && { id: 'uc-apply', label: '5. ' + t(tp.apply.title), hot: true },
@@ -481,17 +483,24 @@ export default function UseCaseLibraryPage() {
         <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
           <SpaceBackdrop arcTop={300} />
           <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 30px;')}>
-            <div style={css(DETAIL_COL)}>
+            {/* same grid as the body below, so the overview box is exactly as wide as the white cards */}
+            <div className="zp-detail-wrap" style={css(DETAIL_COL)}>
+            <div className="zp-detail-grid">
+            <div style={{ minWidth: 0 }}>
               <DetailHero
+                tldr={tp.tldr}
                 t={t}
                 c={dsel}
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
                 topics={dTopics}
                 avatarBg={avatarColor(dsel.author)}
-                onBack={() => navigate('/use-cases')}
+                onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Bắt đầu dùng')}
               />
+            </div>
+            <div className="zp-toc-space" aria-hidden="true"></div>
+            </div>
             </div>
           </div>
         </section>
@@ -500,7 +509,6 @@ export default function UseCaseLibraryPage() {
           <div className="zp-detail-wrap" style={css(DETAIL_COL)}>
             <div className="zp-detail-grid">
             <div style={{ minWidth: 0 }}>
-            {has.tldr && <Section id="uc-tldr" num="1" title={t('Tóm tắt 30 giây')} sub={t('Đọc 4 dòng này để biết có nên đọc tiếp')}><Tldr rows={tp.tldr} /></Section>}
             {has.ps && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} />}
             {has.result && <Section id="uc-result" num="4" title={t('Kết quả')}><ResultBody r={tp.result} t={t} /></Section>}
             {has.apply && <ApplySection id={dsel.id} a={tp.apply} t={t} />}
@@ -698,6 +706,7 @@ export default function UseCaseLibraryPage() {
                   {libCards.map((c) => (
                     <div
                       key={c.id}
+                      data-card-id={c.id}
                       onClick={c.onOpen}
                       className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
                       style={css('position:relative; display:flex; flex-direction:column; border:1px solid rgba(60,120,255,.45); border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 0 0 1px rgba(60,120,255,.10), 0 0 16px rgba(60,120,255,.22), 0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}

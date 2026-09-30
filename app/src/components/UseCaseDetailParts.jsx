@@ -36,7 +36,7 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
 
 /** Title block on the dark hero: Loại + Trạng thái chips, title, tool name, one-line description,
  *  one horizontal info row and the "Bắt đầu dùng →" button that jumps to part 5. */
-export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel, t }) {
+export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel, tldr = [], t }) {
   const chip = 'display:inline-flex; align-items:center; gap:7px; height:28px; padding:0 12px; border-radius:999px; font-size:12.5px; font-weight:700;'
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:13.5px; font-weight:700; line-height:1.45; color:#fff;'
@@ -63,13 +63,13 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
         </div>
       </div>
     ),
-    <div key="owner">
+    <div key="owner" className="zp-info-owner">
       {label(t('Phụ trách'))}
-      <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
+      <div style={css('display:flex; align-items:center; gap:9px; min-width:0; flex-wrap:wrap;')}>
         <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
         <div style={css('min-width:0;')}>
-          <div style={css(value)}><Fill text={h.owner} /></div>
-          <div style={css('font-size:12px; line-height:1.4; color:#a9b8dc;')}><Fill text={h.ownerTeam} />{h.posted ? ' · ' + t('Đăng') + ' ' + h.posted : ''}{h.updated && !/cần bổ sung/.test(h.updated) ? ' · ' + t('Cập nhật') + ' ' + h.updated : ''}</div>
+          <span style={css(value + 'margin-right:8px;')}><Fill text={h.owner} /></span>
+          <span style={css('font-size:12.5px; line-height:1.4; color:#a9b8dc;')}><Fill text={h.ownerTeam} />{h.posted ? ' · ' + t('Đăng') + ' ' + h.posted : ''}{h.updated && !/cần bổ sung/.test(h.updated) ? ' · ' + t('Cập nhật') + ' ' + h.updated : ''}</span>
         </div>
       </div>
     </div>,
@@ -89,7 +89,20 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
       <h1 className="zp-detail-title" style={css('margin:0; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
       {h.toolName && <div style={css('margin-top:10px; font-size:13.5px; font-weight:600; color:#8fb4ff;')}>{t('Tên công cụ')}: <span style={css('color:#fff; font-weight:800;')}>{h.toolName}</span></div>}
       <p style={css('margin:12px 0 0; max-width:820px; font-size:15.5px; line-height:1.65; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>
-      <div className="zp-info-row" style={{ '--zp-cells': cells.length, marginTop: 22 }}>{cells}</div>
+      {/* One overview box: the info row, then the 30-second summary (part 1) right under it. */}
+      <div className="zp-overview" style={{ marginTop: 22 }}>
+        <div className="zp-info-row" style={{ '--zp-cells': Math.max(1, cells.length - 1) }}>{cells}</div>
+        {tldr.length > 0 && (
+          <div id="uc-tldr" className="zp-overview-tldr">
+            {tldr.map(([k, v]) => (
+              <div key={k} style={{ display: 'contents' }}>
+                <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; padding-top:3px;')}>{t(k)}</div>
+                <div style={css('font-size:14px; line-height:1.55; color:#e6ecfa; text-wrap:pretty;')}><Fill text={v} /></div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       {h.statusNote && <div style={css('margin-top:8px; font-size:12.5px; color:#a9b8dc;')}>{h.statusNote}</div>}
       {onStart && (
         <button onClick={onStart} className={hoverClass('filter:brightness(1.08) !important; transform:translateY(-1px);')} style={css('margin-top:20px; display:inline-flex; align-items:center; gap:10px; height:48px; padding:0 24px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:15px; font-weight:800; cursor:pointer; box-shadow:0 10px 30px rgba(44,95,255,.45); transition:transform .15s;')}>
