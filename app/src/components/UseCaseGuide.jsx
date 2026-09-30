@@ -174,20 +174,25 @@ function Block({ b }) {
           ))}
         </div>
       )
-    case 'steps':
+    case 'steps': {
+      // A block titled "Bước 2 · …" details step 2 of the overview list above it: number its items
+      // 2.1, 2.2… so they don't read as the same steps starting over at 1.
+      const parent = /^Bước\s*(\d+)/i.exec(b.title || '')
+      const num = (i) => (parent ? `${parent[1]}.${i + 1}` : i + 1)
       return (
         <div>
           {b.title && <SubTitle>{b.title}</SubTitle>}
           <div style={css('display:flex; flex-direction:column; gap:10px;')}>
             {b.items.map((it, i) => (
               <div key={i} style={css('display:flex; gap:12px; align-items:flex-start;')}>
-                <span style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{i + 1}</span>
+                <span style={css(`flex:none; min-width:24px; height:24px; padding:0 ${parent ? 6 : 0}px; box-sizing:border-box; border-radius:999px; background:${parent ? '#F4F7FE' : '#E7ECFB'}; border:1px solid ${parent ? '#DCE6FB' : '#B9CCF8'}; color:#2c5fff; display:flex; align-items:center; justify-content:center; font:800 ${parent ? 11 : 12}px ${FONT};`)}>{num(i)}</span>
                 <span style={css(`font:400 14px/1.65 ${FONT}; color:#3A4757; text-wrap:pretty;`)}><Fill text={it} /></span>
               </div>
             ))}
           </div>
         </div>
       )
+    }
     case 'file':
       return (
         <div style={css('display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px dashed #B9CCF8; border-radius:14px; background:#F7F9FF;')}>

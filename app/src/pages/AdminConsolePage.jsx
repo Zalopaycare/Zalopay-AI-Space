@@ -375,12 +375,13 @@ export default function AdminConsolePage() {
                   <div style={css('display:flex; flex-direction:column; gap:8px; margin-top:12px;')}>
                     {todos.map((x) => (
                       <div key={x.title} style={css('display:flex; align-items:center; gap:14px; padding:9px 12px; border-radius:14px; background:#F8FAFE; border:1px solid #EEF1F7;')}>
-                        <span style={css(font(900, 24) + `;color:${x.color}; min-width:34px; text-align:center;`)}>{x.n}</span>
+                        <span style={css(font(900, 24) + ';color:#00A352; min-width:34px; text-align:center;')}>{x.n}</span>
                         <div style={css('flex:1; min-width:0;')}>
                           <div style={css(font(700, 14) + ';color:#0f172a;')}>{x.n} {x.title}</div>
                           {x.hint && <div style={css('margin-top:2px;' + font(400, 12.5) + ';color:#64748b;')}>{x.hint}</div>}
                         </div>
-                        <button onClick={x.go} style={css(`height:34px; padding:0 14px; border:none; border-radius:999px; background:${x.color}; color:#fff; ${font(700, 12.5)}; cursor:pointer; white-space:nowrap;`)}>{x.cta} →</button>
+                        {/* still to do: green button that gives a little shake every few seconds so it isn't missed */}
+                        <button onClick={x.go} className="zp-nudge" style={css(`height:34px; padding:0 14px; border:none; border-radius:999px; background:#00A352; color:#fff; ${font(700, 12.5)}; cursor:pointer; white-space:nowrap; box-shadow:0 6px 16px rgba(0,163,82,.35);`)}>{x.cta} →</button>
                       </div>
                     ))}
                   </div>

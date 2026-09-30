@@ -187,3 +187,9 @@ html.zp-vt .zp-page-in { animation: none; }
 /* Original images: small thumbnails, several per row; click opens them large. */
 .zp-thumbs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: start; }
 @media (max-width: 699px) { .zp-thumbs { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
+
+/* Admin "Việc cần xử lý": a short wiggle every 3.5 s on things still to do. */
+@keyframes zp-nudge { 0%, 82%, 100% { transform: rotate(0); } 85% { transform: rotate(-4deg) scale(1.04); } 88% { transform: rotate(4deg) scale(1.04); } 91% { transform: rotate(-3deg); } 94% { transform: rotate(2deg); } 97% { transform: rotate(0); } }
+.zp-nudge { animation: zp-nudge 3.5s ease-in-out infinite; transform-origin: center; }
+.zp-nudge:hover { animation-play-state: paused; filter: brightness(1.06); }
+@media (prefers-reduced-motion: reduce) { .zp-nudge { animation: none; } }
