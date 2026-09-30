@@ -109,7 +109,25 @@ router.get('/stats', (req, res) => {
     departments[key] = Object.values(depts).sort((x, y) => (y.questions + y.comments + y.useCases) - (x.questions + x.comments + x.useCases) || y.members - x.members)
   }
 
-  res.json({ activity, kpis, leaderboard, departments })
+  // Weekly trend, 8 weeks ending with the current one (weeks start Monday, Vietnam time).
+  const vnMs = (ms) => ms + 7 * 3600_000
+  const mondayOf = (ms) => { const d = new Date(vnMs(ms)); const wd = (d.getUTCDay() + 6) % 7; return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - wd) }
+  const thisMonday = mondayOf(Date.now())
+  const starts = Array.from({ length: 8 }, (_, i) => thisMonday - (7 - i) * 7 * DAY)
+  const bucket = (list) => {
+    const n = starts.map(() => 0)
+    for (const c of list) { const i = starts.indexOf(mondayOf(tsOf(c))); if (i >= 0) n[i]++ }
+    return n
+  }
+  const weeks = {
+    starts: starts.map((ms) => new Date(ms).toISOString().slice(0, 10)),
+    members: bucket(times('users')),
+    questions: bucket(times('questions')),
+    useCases: bucket(times('use_case_submissions')),
+    comments: bucket(COMMENT_SOURCES.flatMap(times)),
+  }
+
+  res.json({ activity, kpis, leaderboard, departments, weeks })
 })
 
 router.get('/directory-status', async (req, res) => res.json(await directoryStatus(req.user.id)))

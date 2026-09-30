@@ -8,6 +8,8 @@ import { builtinCases as allCases, prdMeta } from '../data/useCases.js'
 import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import logo from '../assets/zalopay-ai-space-logo.png'
+import WeeklyChart from '../components/WeeklyChart.jsx'
+import { downloadCsv } from '../lib/csv.js'
 
 // Admin console: review use case submissions and look at the community's real numbers.
 // Everything here comes from the API — no sample data.
@@ -206,6 +208,9 @@ export default function AdminConsolePage() {
   const ageDays = (t) => Math.floor((now.getTime() - toDate(t).getTime()) / 86_400_000)
   const openReports = reports.filter((r) => r.status === 'open')
   const staleUnanswered = unanswered.filter((q) => ageDays(q.time) >= 2)
+  // Waiting for the asker to pick an answer for more than 3 days, counted from the first answer.
+  const firstAnswerAge = (q) => ageDays(q.answers.reduce((m, a) => (toDate(a.time) < toDate(m) ? a.time : m), q.answers[0].time))
+  const waitingOld = questions.filter((q) => q.answers.length && !q.resolved && firstAnswerAge(q) > 3)
   const oldestPending = pending.reduce((m, s) => Math.max(m, ageDays(s.time)), 0)
   const todos = [
     { n: openReports.length, color: '#D8232A', title: 'comment bị báo cáo', hint: 'Xem và xoá nội dung vi phạm hoặc bỏ qua.', cta: 'Xử lý báo cáo', go: () => { setSection('reports'); setRepStatus('open') } },
@@ -231,7 +236,7 @@ export default function AdminConsolePage() {
 
   // ---- questions ----
   const qq = fold(qQuery.trim())
-  const qRows = questions.filter((q) => (qStatus === 'all' || (qStatus === 'resolved' ? q.resolved : qStatus === 'unanswered' ? !q.answers.length : !!q.answers.length && !q.resolved)) && (!qq || fold(q.title + ' ' + q.body + ' ' + q.author + ' ' + (q.fullName || '')).includes(qq)))
+  const qRows = questions.filter((q) => (qStatus === 'all' || (qStatus === 'waiting_old' ? waitingOld.includes(q) : qStatus === 'resolved' ? q.resolved : qStatus === 'unanswered' ? !q.answers.length : !!q.answers.length && !q.resolved)) && (!qq || fold(q.title + ' ' + q.body + ' ' + q.author + ' ' + (q.fullName || '')).includes(qq)))
   const helpful = (q) => (q.qHelpful || 0) + q.answers.reduce((n, a) => n + (a.helpful || 0), 0)
 
   // ---- users ----
@@ -240,6 +245,16 @@ export default function AdminConsolePage() {
   const userRows = users.filter((u) => (!uq || fold(u.name + ' ' + u.email + ' ' + u.domain + ' ' + (u.team || '')).includes(uq))
     && (userRole === 'all' || (userRole === 'admin') === !!u.isAdmin)
     && (userTeam === '__all' || (u.team || '') === userTeam))
+
+  const periodName = lbPeriod === 'last30' ? '30-ngay' : 'tat-ca'
+  const csvDate = new Date().toISOString().slice(0, 10)
+  const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Câu hỏi', 'Use case được duyệt', 'Điểm'],
+    (adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => [i + 1, u.domain, cleanName(u.name), u.team, u.answers, u.comments, u.likes, u.questions, u.useCases, u.score]))
+  const exportDepartments = () => downloadCsv(`theo-phong-ban_${periodName}_${csvDate}.csv`, ['Phòng ban', 'Thành viên', 'Hoạt động 7 ngày', '% thành viên đã đăng nhập hoạt động', 'Câu hỏi', 'Comment', 'Use case'],
+    (adminStats?.departments?.[lbPeriod] || []).map((d) => [d.team || 'Chưa rõ phòng ban', d.members, d.active7, d.members ? Math.round((d.active7 / d.members) * 100) : 0, d.questions, d.comments, d.useCases]))
+  const exportUsers = () => downloadCsv(`thanh-vien_${csvDate}.csv`, ['Tên', 'Tên hiển thị', 'Email', 'Phòng ban', 'Vai trò', 'Tham gia', 'Hoạt động gần nhất', 'Câu hỏi', 'Trả lời', 'Use case'],
+    userRows.map((u) => [cleanName(u.name), u.domain, u.email, u.team, u.isAdmin ? 'Admin' : 'Thành viên', fmtDate(u.joined), fmtDay(u.lastActive), u.questions, u.answers, u.useCases]))
+  const csvBtn = (onClick) => <button onClick={onClick} title="Tải bảng này dưới dạng CSV (mở bằng Excel)" style={css(btn('plain') + 'display:inline-flex; align-items:center; gap:6px; height:36px;')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>Xuất CSV</button>
 
   const menu = [
     ['dashboard', 'Tổng quan', '#2c5fff', 0],
@@ -365,13 +380,35 @@ export default function AdminConsolePage() {
                 ))}
               </div>
 
+              <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;')}>
+                {[
+                  { n: unanswered.length, title: 'Câu hỏi chưa có trả lời', hint: 'Tính đến lúc này, mọi thời gian.', color: '#B45300', bg: '#FFF7ED', go: () => { setSection('questions'); setQStatus('unanswered') } },
+                  { n: waitingOld.length, title: 'Câu hỏi chờ chọn đáp án quá 3 ngày', hint: 'Đã có trả lời hơn 3 ngày nhưng người hỏi chưa chọn đáp án.', color: '#2c5fff', bg: '#F3F7FF', go: () => { setSection('questions'); setQStatus('waiting_old') } },
+                ].map((a) => (
+                  <button key={a.title} onClick={a.go} className={hoverClass(`border-color:${a.color} !important; transform:translateY(-2px);`)} style={css(`display:flex; align-items:center; gap:14px; padding:14px 18px; text-align:left; cursor:pointer; transition:transform .15s, border-color .15s; ${card} border-left:5px solid ${a.color}; background:${a.n ? a.bg : '#fff'};`)}>
+                    <span style={css(font(900, 28, 1) + `;color:${a.n ? a.color : '#94a3b8'}; min-width:38px; text-align:center;`)}>{a.n}</span>
+                    <span style={css('flex:1; min-width:0;')}>
+                      <span style={css('display:block;' + font(800, 14) + ';color:#0f172a;')}>{a.n ? '⚠ ' : '✓ '}{a.title}</span>
+                      <span style={css('display:block; margin-top:3px;' + font(400, 12.5) + ';color:#64748b;')}>{a.hint}</span>
+                    </span>
+                    <span style={css(font(700, 12.5) + `;color:${a.color}; white-space:nowrap;`)}>Xem danh sách →</span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
+                <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Xu hướng theo tuần <span style={css(font(600, 13) + ';color:#64748b;')}>· 8 tuần gần nhất</span></h2>
+                <p style={css('margin:6px 0 14px;' + font(400, 12.5) + ';color:#94a3b8;')}>Số mới trong mỗi tuần (thứ Hai → Chủ nhật, giờ Việt Nam). Tuần cuối là tuần đang diễn ra. Comment = trả lời + reply + comment ở use case.</p>
+                <WeeklyChart weeks={adminStats?.weeks} />
+              </div>
+
               <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
                     <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp <span style={css(font(600, 13) + ';color:#64748b;')}>· {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
                     <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Điểm = trả lời ×3 + like nhận được ×2 + use case được duyệt ×5 + reply/comment ×1 + câu hỏi ×1. Trả lời + Comment ở đây = cột Comment ở bảng phòng ban.</p>
                   </div>
-                  <Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} />
+                  <div style={css('display:flex; align-items:center; gap:10px;')}>{csvBtn(exportLeaderboard)}<Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} /></div>
                 </div>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
                   <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>CÂU HỎI</span><span>USE CASE</span><span>ĐIỂM</span></div>
@@ -399,7 +436,7 @@ export default function AdminConsolePage() {
                     <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Theo phòng ban <span style={css(font(600, 13) + ';color:#64748b;')}>· câu hỏi, comment, use case trong {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
                     <p style={css('margin:6px 0 0;' + font(400, 12.5, 1.55) + ';color:#94a3b8;')}>Cùng khoảng thời gian với "Top người đóng góp". Cột Hoạt động luôn là 7 ngày gần nhất. Comment = trả lời + reply + comment ở use case (cùng cách đếm với thẻ "Comment &amp; reply"). Use case = số bài đã gửi, mọi trạng thái. Phòng ban lấy từ Microsoft khi đăng nhập bằng SSO; người chưa đăng nhập lại nằm ở "Chưa rõ phòng ban".</p>
                   </div>
-                  <Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} />
+                  <div style={css('display:flex; align-items:center; gap:10px;')}>{csvBtn(exportDepartments)}<Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} /></div>
                 </div>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
                   <div style={headRow(D_COLS)}><span>PHÒNG BAN</span><span>THÀNH VIÊN</span><span title="Số thành viên có hoạt động trong 7 ngày qua; % tính trên số thành viên đã đăng nhập của phòng ban (chưa có số nhân sự thật)">HOẠT ĐỘNG 7 NGÀY<br /><span style={{ fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>% thành viên đã đăng nhập hoạt động</span></span><span>CÂU HỎI</span><span>COMMENT</span><span>USE CASE</span></div>
@@ -476,7 +513,7 @@ export default function AdminConsolePage() {
               <Heading title="Câu hỏi" sub="Câu hỏi được đăng trực tiếp. Admin có thể xem và xoá bài không phù hợp." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={qQuery} onChange={setQQuery} placeholder="Tìm theo nội dung hoặc tác giả..." />
-                <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['waiting', 'Chờ chọn đáp án', questions.filter((q) => q.answers.length && !q.resolved).length], ['resolved', 'Đã giải quyết', questions.filter((q) => q.resolved).length]]} />
+                <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['waiting', 'Chờ chọn đáp án', questions.filter((q) => q.answers.length && !q.resolved).length], ['waiting_old', 'Chờ chọn đáp án > 3 ngày', waitingOld.length], ['resolved', 'Đã giải quyết', questions.filter((q) => q.resolved).length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
                 <div style={headRow(Q_COLS)}><span>CÂU HỎI</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>UPVOTE</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
@@ -542,6 +579,7 @@ export default function AdminConsolePage() {
                   <option value="__all">Tất cả phòng ban</option>
                   {teams.map((tm) => <option key={tm || '_'} value={tm}>{tm || 'Chưa rõ phòng ban'}</option>)}
                 </select>
+                {csvBtn(exportUsers)}
                 <Tabs value={userRole} onChange={setUserRole} tabs={[['all', 'Tất cả', users.length], ['admin', 'Admin', users.filter((u) => u.isAdmin).length], ['member', 'Thành viên', users.filter((u) => !u.isAdmin).length]]} />
               </div>
               <div style={css('display:flex; align-items:flex-start; gap:14px; margin-top:18px; padding:16px 18px;' + card + (dirStatus?.state === 'ok' ? 'border-color:#BEE9D3;' : dirStatus ? 'border-color:#F5C9CB;' : ''))}>
