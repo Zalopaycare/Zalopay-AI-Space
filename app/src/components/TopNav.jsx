@@ -14,17 +14,30 @@ const NAV_ITEMS = [
 
 const navItemBase = 'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:999px;transition:color .15s, background .15s, box-shadow .15s;border:1px solid transparent;text-decoration:none;white-space:nowrap;'
 
-/** The thin top bar, offset by the (collapsible) sidebar: page nav (+ login button when signed out); the profile chip lives at the bottom of the Sidebar. */
+/** Full-width top bar above the (collapsible) sidebar: menu toggle + logo pinned left, page nav centred,
+ *  login button right when signed out. The profile chip lives at the bottom of the Sidebar. */
 export default function TopNav() {
   const location = useLocation()
   const { t } = useI18n()
   const { user, openLogin } = useAuth()
-  const [collapsed] = useSidebarCollapsed()
+  const [collapsed, setCollapsed] = useSidebarCollapsed()
 
   return (
-    <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:${collapsed ? 68 : 224}px; right:0; height:58px; z-index:1900; display:flex; align-items:center; padding:0 28px; background:linear-gradient(90deg, rgba(9,18,58,.86) 0%, rgba(5,9,28,.84) 50%, rgba(9,18,58,.86) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.12); box-shadow:0 8px 30px rgba(0,0,0,.35); font-family:inherit; transition:left .16s ease;`)}>
-      <div style={{ flex: 1 }}></div>
-      <nav style={css('display:flex; align-items:center; gap:6px;')}>
+    <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:0; right:0; height:58px; z-index:2100; display:flex; align-items:center; padding:0 24px 0 16px; background:linear-gradient(90deg, rgba(9,18,58,.86) 0%, rgba(5,9,28,.84) 50%, rgba(9,18,58,.86) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.12); box-shadow:0 8px 30px rgba(0,0,0,.35); font-family:inherit;`)}>
+      <div style={css('flex:1; display:flex; align-items:center; gap:10px; min-width:0;')}>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? t('Mở rộng menu') : t('Thu gọn menu')}
+          className={hoverClass('background:rgba(255,255,255,.09) !important; color:#fff !important;')}
+          style={css('flex:none; width:36px; height:36px; border:none; border-radius:10px; background:transparent; color:#b4c3e8; cursor:pointer; display:flex; align-items:center; justify-content:center;')}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
+        </button>
+        <SoftLink to="/" title="Zalopay AI Space" style={css('display:flex; align-items:center; text-decoration:none;')}>
+          <img src={logo} alt="Zalopay AI Space" style={{ height: 17, width: 'auto', display: 'block' }} />
+        </SoftLink>
+      </div>
+      <nav style={css('position:absolute; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;')}>
         {NAV_ITEMS.map((item) => {
           const active = item.match(location.pathname)
           return (
@@ -40,9 +53,6 @@ export default function TopNav() {
         })}
       </nav>
       <div style={css('flex:1; display:flex; align-items:center; justify-content:flex-end; gap:12px;')}>
-        <SoftLink to="/" title="Zalopay AI Space" style={css('display:flex; align-items:center; text-decoration:none;')}>
-          <img src={logo} alt="Zalopay AI Space" style={{ height: 16, width: 'auto', display: 'block' }} />
-        </SoftLink>
         {!user && (
           <button
             onClick={() => openLogin()}

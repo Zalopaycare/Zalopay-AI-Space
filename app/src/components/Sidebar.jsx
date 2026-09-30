@@ -8,7 +8,6 @@ import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
 import { useNotifications } from '../lib/notifications.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import Avatar from './Avatar.jsx'
-import logo from '../assets/zalopay-ai-space-logo.png'
 
 const itemBase = 'display:flex; align-items:center; gap:12px; height:40px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14px; cursor:pointer; text-align:left; font-family:inherit; width:100%; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 const subItemBase = 'display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:13.5px; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
@@ -55,7 +54,7 @@ export default function Sidebar({ active }) {
   const { t } = useI18n()
   const location = useLocation()
   const [hash, setHash] = useState(location.hash)
-  const [collapsed, setCollapsed] = useSidebarCollapsed()
+  const [collapsed] = useSidebarCollapsed()
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
@@ -74,23 +73,7 @@ export default function Sidebar({ active }) {
   const homeActive = active === 'home'
 
   return (
-    <div style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:0; bottom:0; width:${collapsed ? 68 : 224}px; z-index:2000; display:flex; flex-direction:column; padding:${collapsed ? '18px 9px 16px' : '18px 12px 16px'}; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.30), transparent 70%), radial-gradient(90% 35% at 100% 100%, rgba(60,110,255,.16), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.72) 0%, rgba(9,16,46,.80) 50%, rgba(5,9,26,.88) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16); box-shadow:1px 0 24px rgba(20,50,160,.18); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
-      <div style={css(`display:flex; align-items:center; gap:8px; margin-bottom:22px; ${collapsed ? 'justify-content:center;' : 'padding:4px 10px 0;'}`)}>
-        {!collapsed && (
-          <SoftLink to="/" style={css('display:flex; align-items:center; gap:10px; text-decoration:none; flex:1; min-width:0;')}>
-            <img src={logo} alt="Zalopay AI Space" style={{ height: 14, width: 'auto', display: 'block' }} />
-          </SoftLink>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? t('Mở rộng menu') : t('Thu gọn menu')}
-          className={hoverClass('background:rgba(255,255,255,.09); color:#fff;')}
-          style={css('flex:none; width:34px; height:34px; border:none; border-radius:10px; background:transparent; color:#8b98b8; cursor:pointer; display:flex; align-items:center; justify-content:center;')}
-        >
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"></rect><path d="M9.5 4v16"></path></svg>
-        </button>
-      </div>
-
+    <div style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:58px; bottom:0; width:${collapsed ? 68 : 224}px; z-index:2000; display:flex; flex-direction:column; padding:${collapsed ? '16px 9px 16px' : '16px 12px 16px'}; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.30), transparent 70%), radial-gradient(90% 35% at 100% 100%, rgba(60,110,255,.16), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.72) 0%, rgba(9,16,46,.80) 50%, rgba(5,9,26,.88) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16); box-shadow:1px 0 24px rgba(20,50,160,.18); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
       <nav style={css('display:flex; flex-direction:column; gap:2px;')}>
         <NavLink to="/" active={homeActive} collapsed={collapsed} title='Home' icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
