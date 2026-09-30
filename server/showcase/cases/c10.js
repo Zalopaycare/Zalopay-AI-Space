@@ -20,9 +20,9 @@ export default {
   updated: '',
   cover: '/use-cases/c10/landing.png',
   stats: [
-    { value: '0', extra: '', label: 'mật khẩu PROD SRE phải đưa cho dev' },
-    { value: '1 key', extra: '', label: 'dùng chung cho mọi tài nguyên dev chọn' },
-    { value: '171', extra: '+ 1.811 service', label: 'tài nguyên đã tự dò thấy trên màn hình admin' },
+    { value: '0', extra: '', label: 'mật khẩu PROD dev phải cầm — theo thiết kế, chưa đo thực tế' },
+    { value: '1 key', extra: '', label: 'dùng chung cho mọi tài nguyên dev chọn — theo thiết kế' },
+    { value: '171', extra: '+ 1.811 service', label: 'tài nguyên bản MVP tự dò được (Redis 107, Percona 63, Kafka 1) — số trên ảnh chụp màn hình admin' },
   ],
 
   tldr: [
