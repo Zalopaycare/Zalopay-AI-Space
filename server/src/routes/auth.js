@@ -1,3 +1,4 @@
+import { touch } from '../presence.js'
 import express from 'express'
 import * as client from 'openid-client'
 import { db } from '../db.js'
@@ -143,6 +144,13 @@ router.get('/sso/callback', async (req, res) => {
 router.post('/logout', (req, res) => {
   if (req.user) dropGraphTokens(req.user.id)
   clearSession(res)
+  res.json({ ok: true })
+})
+
+// Heartbeat from the web app: which page this person has open (for the admin "đang online" list).
+router.post('/presence', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'login_required' })
+  touch(req.user.id, req.body?.path)
   res.json({ ok: true })
 })
 

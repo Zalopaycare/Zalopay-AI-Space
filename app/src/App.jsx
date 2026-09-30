@@ -3,6 +3,7 @@ import { I18nProvider } from './i18n/I18nContext.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
 import LoginModal from './components/LoginModal.jsx'
 import Toaster from './components/Toaster.jsx'
+import PresenceBeat from './components/PresenceBeat.jsx'
 import PageFade from './components/PageFade.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
 import HomePage from './pages/HomePage.jsx'
@@ -29,6 +30,7 @@ export default function App() {
           </PageFade>
           <LoginModal />
           <Toaster />
+          <PresenceBeat />
         </BrowserRouter>
       </AuthProvider>
     </I18nProvider>

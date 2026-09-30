@@ -5,10 +5,10 @@ import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import { builtinCases as allCases, prdMeta } from '../data/useCases.js'
+import { usePublishedUseCases } from '../lib/publishedUseCases.js'
 import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import logo from '../assets/zalopay-ai-space-logo.png'
-import WeeklyChart from '../components/WeeklyChart.jsx'
 import { downloadCsv } from '../lib/csv.js'
 
 // Admin console: review use case submissions and look at the community's real numbers.
@@ -28,6 +28,9 @@ const fmtDate = (t) => { const d = toDate(t); return isNaN(d) ? '—' : d.toLoca
 // Microsoft display names look like "Hải. Trần Thanh (5)": drop the "(5)" suffix and the dot after the given name.
 const cleanName = (n) => String(n || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^([^\s.]+)\.\s+/, '$1 ').trim()
 const fmtDay = (d) => (d ? d.split('-').reverse().join('/') : '—') // "2026-09-30" -> "30/09/2026"
+// "/use-cases/c7" -> "Đang xem use case: Chuẩn bị pentest…" for the online list.
+const PAGE_NAMES = { '/': 'Trang chủ', '/use-cases': 'Thư viện use case', '/questions': 'Câu hỏi', '/profile': 'Trang cá nhân', '/admin': 'Trang Admin' }
+const agoLabel = (now, at) => { const m = Math.max(0, Math.round((now - at) / 60_000)); return m < 1 ? 'vừa xong' : m < 60 ? `${m} phút trước` : `${Math.floor(m / 60)} giờ trước` }
 const clamp2 = 'display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;'
 const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
 
@@ -91,6 +94,7 @@ const Field = ({ label, value }) => (value ? (
 
 export default function AdminConsolePage() {
   useTitle('Admin')
+  usePublishedUseCases() // loads the showcase use cases so topic / AI tool counts include them
   const { user, openLogin, logout } = useAuth()
   const isAdmin = !!user?.isAdmin
   const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
@@ -111,6 +115,8 @@ export default function AdminConsolePage() {
   const [userTeam, setUserTeam] = useState('__all')
   const [ucSort, setUcSort] = useState('newest') // newest | waiting (lâu nhất trước)
   const [qDetailId, setQDetailId] = useState(null)
+  const [live, setLive] = useState(null) // { online, today, now }
+  const [published, setPublished] = useState([])
   const [detailId, setDetailId] = useState(null)
   const [review, setReview] = useState(null) // { id, action: 'approved' | 'rejected' | 'changes_requested' }
   const [reviewNote, setReviewNote] = useState('')
@@ -127,10 +133,14 @@ export default function AdminConsolePage() {
   const reloadReports = () => api.adminReports().then((d) => setReports(d.reports || [])).catch(() => {})
   const [updatedAt, setUpdatedAt] = useState(null)
   const reloadStats = () => api.adminStats().then(setAdminStats).catch(() => {})
-  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports(), reloadStats()]).then(() => setUpdatedAt(new Date()))
+  const reloadLive = () => api.adminLive().then(setLive).catch(() => {})
+  const reloadPublished = () => api.adminPublished().then((d) => setPublished(d.useCases || [])).catch(() => {})
+  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports(), reloadStats(), reloadLive(), reloadPublished()]).then(() => setUpdatedAt(new Date()))
   useEffect(() => { if (isAdmin) { reloadAll(); checkDirectory() } }, [isAdmin])
   // Keep the numbers live while the console is open.
   useEffect(() => { if (!isAdmin) return; const t = setInterval(reloadAll, 60_000); return () => clearInterval(t) }, [isAdmin])
+  // "Đang online" changes quickly: refresh it every 20 s.
+  useEffect(() => { if (!isAdmin) return; const t = setInterval(reloadLive, 20_000); return () => clearInterval(t) }, [isAdmin])
   useEffect(() => {
     if (!notifOpen) return
     const close = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false) }
@@ -188,7 +198,7 @@ export default function AdminConsolePage() {
   const dauPct = act && act.yesterday > 0 ? Math.round(((act.today - act.yesterday) / act.yesterday) * 1000) / 10 : null
   const stats = [
     { label: 'Câu hỏi', ...(fromServer(K.questions) || daily(questions, 'time')), go: () => setSection('questions') },
-    { label: 'Use case gửi duyệt', ...(fromServer(K.submissions) || daily(submissions, 'time')), go: () => { setSection('usecases'); setUcStatus('all') } },
+    { label: 'Use case gửi duyệt', ...(fromServer(K.submissions) || daily(submissions, 'time')), go: () => { setSection('usecases'); setUcStatus('pending') } },
     { label: 'Thành viên', ...(fromServer(K.users) || daily(users, 'joined')), go: () => setSection('users') },
     { label: 'Comment & reply', ...(fromServer(K.comments) || { total: '—', today: 0, yesterday: 0, pct: null }), go: () => setSection('questions') },
   ]
@@ -225,14 +235,15 @@ export default function AdminConsolePage() {
     .sort((a, b) => (ucSort === 'waiting' ? toDate(a.time) - toDate(b.time) : toDate(b.time) - toDate(a.time)))
   const waitHours = (s) => (now.getTime() - toDate(s.time).getTime()) / 3_600_000
   const waitLabel = (h) => (h >= 48 ? `Chờ ${Math.floor(h / 24)} ngày` : h >= 1 ? `Chờ ${Math.floor(h)} giờ` : 'Vừa gửi')
+  const pubRows = published.filter((c) => !ucq || fold(c.title + ' ' + c.author + ' ' + c.team).includes(ucq))
   const detail = submissions.find((s) => s.id === detailId)
   const submitReview = () => {
     const note = reviewNote.trim()
     if (!review || (review.action !== 'approved' && !note)) return
-    api.reviewSubmission(review.id, review.action, note).then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {})
+    api.reviewSubmission(review.id, review.action, note).then(() => { reloadSubmissions(); reloadPublished(); setDetailId(null) }).catch(() => {})
     setReview(null); setReviewNote('')
   }
-  const remove = (s) => setConfirm({ text: `Xoá vĩnh viễn use case "${s.title}"?`, run: () => api.deleteSubmission(s.id).then(() => { reloadSubmissions(); setDetailId(null) }).catch(() => {}) })
+  const remove = (s) => setConfirm({ text: `Xoá vĩnh viễn use case "${s.title}"?`, run: () => api.deleteSubmission(s.id).then(() => { reloadSubmissions(); reloadPublished(); setDetailId(null) }).catch(() => {}) })
 
   // ---- questions ----
   const qq = fold(qQuery.trim())
@@ -248,13 +259,20 @@ export default function AdminConsolePage() {
 
   const periodName = lbPeriod === 'last30' ? '30-ngay' : 'tat-ca'
   const csvDate = new Date().toISOString().slice(0, 10)
-  const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Câu hỏi', 'Use case được duyệt', 'Điểm'],
-    (adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => [i + 1, u.domain, cleanName(u.name), u.team, u.answers, u.comments, u.likes, u.questions, u.useCases, u.score]))
+  const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Câu hỏi', 'Use case được duyệt'],
+    (adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => [i + 1, u.domain, cleanName(u.name), u.team, u.answers, u.comments, u.likes, u.questions, u.useCases]))
   const exportDepartments = () => downloadCsv(`theo-phong-ban_${periodName}_${csvDate}.csv`, ['Phòng ban', 'Thành viên', 'Hoạt động 7 ngày', '% thành viên đã đăng nhập hoạt động', 'Câu hỏi', 'Comment', 'Use case'],
     (adminStats?.departments?.[lbPeriod] || []).map((d) => [d.team || 'Chưa rõ phòng ban', d.members, d.active7, d.members ? Math.round((d.active7 / d.members) * 100) : 0, d.questions, d.comments, d.useCases]))
   const exportUsers = () => downloadCsv(`thanh-vien_${csvDate}.csv`, ['Tên', 'Tên hiển thị', 'Email', 'Phòng ban', 'Vai trò', 'Tham gia', 'Hoạt động gần nhất', 'Câu hỏi', 'Trả lời', 'Use case'],
     userRows.map((u) => [cleanName(u.name), u.domain, u.email, u.team, u.isAdmin ? 'Admin' : 'Thành viên', fmtDate(u.joined), fmtDay(u.lastActive), u.questions, u.answers, u.useCases]))
   const csvBtn = (onClick) => <button onClick={onClick} title="Tải bảng này dưới dạng CSV (mở bằng Excel)" style={css(btn('plain') + 'display:inline-flex; align-items:center; gap:6px; height:36px;')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>Xuất CSV</button>
+
+  const pageLabel = (path) => {
+    if (!path) return 'Đang mở trang'
+    const m = /^\/use-cases\/([^/?#]+)/.exec(path)
+    if (m) { const c = published.find((x) => x.id === decodeURIComponent(m[1])); return 'Đang xem use case' + (c ? ': ' + c.title : '') }
+    return 'Đang xem: ' + (PAGE_NAMES[path] || path)
+  }
 
   const menu = [
     ['dashboard', 'Tổng quan', '#2c5fff', 0],
@@ -269,10 +287,11 @@ export default function AdminConsolePage() {
   const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
   const UC_COLS = 'minmax(0,1fr) 140px 120px 330px'
+  const P_COLS = 'minmax(0,1fr) 70px 80px 56px 90px 130px'
   const Q_COLS = 'minmax(0,1fr) 110px 58px 62px 128px 118px'
   const U_COLS = 'minmax(0,1fr) 100px 96px 118px 64px 64px 72px'
   const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
-  const LB_COLS = '34px minmax(0,1fr) 70px 80px 80px 70px 70px 60px'
+  const LB_COLS = '34px minmax(0,1fr) 80px 90px 90px 80px 80px'
   const D_COLS = 'minmax(0,1fr) 100px 190px 90px 90px 90px'
   const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
   const repRows = reports.filter((r) => repStatus === 'all' || (repStatus === 'open' ? r.status === 'open' : r.status !== 'open'))
@@ -355,7 +374,7 @@ export default function AdminConsolePage() {
                 ) : (
                   <div style={css('display:flex; flex-direction:column; gap:8px; margin-top:12px;')}>
                     {todos.map((x) => (
-                      <div key={x.title} style={css(`display:flex; align-items:center; gap:14px; padding:9px 12px; border-radius:14px; background:#F8FAFE; border:1px solid #EEF1F7; border-left:4px solid ${x.color};`)}>
+                      <div key={x.title} style={css('display:flex; align-items:center; gap:14px; padding:9px 12px; border-radius:14px; background:#F8FAFE; border:1px solid #EEF1F7;')}>
                         <span style={css(font(900, 24) + `;color:${x.color}; min-width:34px; text-align:center;`)}>{x.n}</span>
                         <div style={css('flex:1; min-width:0;')}>
                           <div style={css(font(700, 14) + ';color:#0f172a;')}>{x.n} {x.title}</div>
@@ -371,7 +390,7 @@ export default function AdminConsolePage() {
               <div style={css('margin-top:16px;' + font(700, 12) + ';letter-spacing:.03em;color:#8fa6d8;')}>CHỈ SỐ CHÍNH · <span style={css(font(500, 12) + ';letter-spacing:0;')}>"Hoạt động hôm nay" tính theo ngày; các thẻ còn lại là tổng từ trước đến nay, kèm số mới hôm nay (giờ Việt Nam)</span></div>
               <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-top:8px;')}>
                 {statCards.map((k) => (
-                  <button key={k.label} onClick={k.go} className={hoverClass(`border-color:${k.color}; transform:translateY(-2px);`)} style={css(`display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:14px 16px; text-align:left; cursor:${k.go ? 'pointer' : 'default'}; transition:transform .15s, border-color .15s; ${card} border-top:4px solid ${k.color};`)}>
+                  <button key={k.label} onClick={k.go} className={hoverClass(`border-color:${k.color}; transform:translateY(-2px);`)} style={css(`display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:14px 16px; text-align:left; cursor:${k.go ? 'pointer' : 'default'}; transition:transform .15s, border-color .15s; ${card}`)}>
                     <span style={css(font(700, 12.5) + ';color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;')}>{k.label}</span>
                     <span style={css(font(900, 26, 1.1) + `;color:${k.color};`)}>{k.value}</span>
                     <span style={css(k.up == null ? pill('#EDF0FA', '#64748b') : k.up ? pill('#E7F9F0', '#00893F') : pill('#FFECEC', '#D8232A'))}>{k.badge}</span>
@@ -380,38 +399,50 @@ export default function AdminConsolePage() {
                 ))}
               </div>
 
-              <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;')}>
+              <div style={css('display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; margin-top:14px;')}>
                 {[
-                  { n: unanswered.length, title: 'Câu hỏi chưa có trả lời', hint: 'Tính đến lúc này, mọi thời gian.', color: '#B45300', bg: '#FFF7ED', go: () => { setSection('questions'); setQStatus('unanswered') } },
-                  { n: waitingOld.length, title: 'Câu hỏi chờ chọn đáp án quá 3 ngày', hint: 'Đã có trả lời hơn 3 ngày nhưng người hỏi chưa chọn đáp án.', color: '#2c5fff', bg: '#F3F7FF', go: () => { setSection('questions'); setQStatus('waiting_old') } },
-                ].map((a) => (
-                  <button key={a.title} onClick={a.go} className={hoverClass(`border-color:${a.color} !important; transform:translateY(-2px);`)} style={css(`display:flex; align-items:center; gap:14px; padding:14px 18px; text-align:left; cursor:pointer; transition:transform .15s, border-color .15s; ${card} border-left:5px solid ${a.color}; background:${a.n ? a.bg : '#fff'};`)}>
-                    <span style={css(font(900, 28, 1) + `;color:${a.n ? a.color : '#94a3b8'}; min-width:38px; text-align:center;`)}>{a.n}</span>
-                    <span style={css('flex:1; min-width:0;')}>
-                      <span style={css('display:block;' + font(800, 14) + ';color:#0f172a;')}>{a.n ? '⚠ ' : '✓ '}{a.title}</span>
-                      <span style={css('display:block; margin-top:3px;' + font(400, 12.5) + ';color:#64748b;')}>{a.hint}</span>
-                    </span>
-                    <span style={css(font(700, 12.5) + `;color:${a.color}; white-space:nowrap;`)}>Xem danh sách →</span>
-                  </button>
+                  { title: 'Đang online', sub: 'Có mở trang trong 2 phút gần nhất · tự cập nhật 20 giây/lần', rows: live?.online || [], empty: 'Chưa có ai đang online.', online: true },
+                  { title: 'Đăng nhập hôm nay', sub: 'Mọi người đã vào trang hôm nay (giờ Việt Nam)', rows: live?.today || [], empty: 'Hôm nay chưa có ai đăng nhập.', online: false },
+                ].map((box) => (
+                  <div key={box.title} style={css('padding:16px 18px; min-width:0;' + card)}>
+                    <div style={css('display:flex; align-items:baseline; justify-content:space-between; gap:10px;')}>
+                      <h2 style={css('margin:0;' + font(800, 16) + ';color:#0f172a;')}>{box.title} <span style={css(font(700, 14) + ';color:#2c5fff;')}>· {live ? box.rows.length : '…'}</span></h2>
+                    </div>
+                    <p style={css('margin:4px 0 12px;' + font(400, 12) + ';color:#94a3b8;')}>{box.sub}</p>
+                    {live && box.rows.length === 0 && <div style={css('padding:14px 0;' + font(600, 13) + ';color:#94a3b8;')}>{box.empty}</div>}
+                    <div style={css('display:flex; flex-direction:column; max-height:300px; overflow-y:auto;')}>
+                      {box.rows.map((u, i) => {
+                        const on = (live?.online || []).some((o) => o.id === u.id)
+                        const at = box.online ? u.at : u.lastAt
+                        return (
+                          <div key={u.id} style={css('display:flex; align-items:center; gap:10px; padding:8px 0;' + (i ? 'border-top:1px solid #F3F5FA;' : ''))}>
+                            <span style={css('position:relative; flex:none;')}>
+                              <span style={css(`width:30px; height:30px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11) + ';')}>{u.initials}</span>
+                              {on && <span title="Đang online" style={css('position:absolute; right:-1px; bottom:-1px; width:10px; height:10px; border-radius:50%; background:#00A352; border:2px solid #fff;')}></span>}
+                            </span>
+                            <div style={css('flex:1; min-width:0;')}>
+                              <div title={u.email} style={css(font(700, 13) + ';color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{cleanName(u.name)} <span style={css(font(500, 12) + ';color:#94a3b8;')}>· {u.domain}</span></div>
+                              <div style={css(font(400, 11.5) + ';color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{box.online ? pageLabel(u.path) : (u.team || 'Chưa rõ phòng ban')}</div>
+                            </div>
+                            <span style={css('flex:none;' + font(500, 11.5) + ';color:#94a3b8;')}>{at ? agoLabel(live.now, at) : ''}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 ))}
-              </div>
-
-              <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
-                <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Xu hướng theo tuần <span style={css(font(600, 13) + ';color:#64748b;')}>· 8 tuần gần nhất</span></h2>
-                <p style={css('margin:6px 0 14px;' + font(400, 12.5) + ';color:#94a3b8;')}>Số mới trong mỗi tuần (thứ Hai → Chủ nhật, giờ Việt Nam). Tuần cuối là tuần đang diễn ra. Comment = trả lời + reply + comment ở use case.</p>
-                <WeeklyChart weeks={adminStats?.weeks} />
               </div>
 
               <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
                     <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp <span style={css(font(600, 13) + ';color:#64748b;')}>· {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Điểm = trả lời ×3 + like nhận được ×2 + use case được duyệt ×5 + reply/comment ×1 + câu hỏi ×1. Trả lời + Comment ở đây = cột Comment ở bảng phòng ban.</p>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Xếp theo tổng số đóng góp. Trả lời + Comment ở đây = cột Comment ở bảng phòng ban.</p>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px;')}>{csvBtn(exportLeaderboard)}<Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} /></div>
                 </div>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
-                  <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>CÂU HỎI</span><span>USE CASE</span><span>ĐIỂM</span></div>
+                  <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>CÂU HỎI</span><span>USE CASE</span></div>
                   {(adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => (
                     <div key={u.id} style={bodyRow(LB_COLS)}>
                       <span style={css(font(900, 15) + `;color:${i < 3 ? ['#E0A100', '#8A99AD', '#B8733A'][i] : '#94a3b8'};`)}>{i + 1}</span>
@@ -423,7 +454,6 @@ export default function AdminConsolePage() {
                         </div>
                       </div>
                       {[u.answers, u.comments, u.likes, u.questions, u.useCases].map((v, j) => <span key={j} style={css(font(700, 13.5) + ';color:#3A4757;')}>{v}</span>)}
-                      <span style={css(font(900, 14.5) + ';color:#2c5fff;')}>{u.score}</span>
                     </div>
                   ))}
                   {adminStats && !(adminStats.leaderboard?.[lbPeriod] || []).length && empty('Chưa có ai đóng góp trong khoảng thời gian này.')}
@@ -471,9 +501,34 @@ export default function AdminConsolePage() {
               <Heading title="Duyệt use case" sub="Use case người dùng gửi phải được duyệt trước khi đăng. Từ chối cần kèm lý do để tác giả sửa." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={ucQuery} onChange={setUcQuery} placeholder="Tìm theo tên use case, tác giả, team..." />
-                <Tabs value={ucSort} onChange={setUcSort} tabs={[['newest', 'Mới gửi trước'], ['waiting', 'Chờ lâu nhất trước']]} />
-                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Chờ duyệt', pending.length], ['approved', 'Đã đăng', approved.length], ['changes_requested', 'Cần chỉnh sửa', submissions.filter((x) => x.reviewStatus === 'changes_requested').length], ['rejected', 'Từ chối', submissions.filter((x) => x.reviewStatus === 'rejected').length], ['all', 'Tất cả', submissions.length]]} />
+                {ucStatus !== 'published' && <Tabs value={ucSort} onChange={setUcSort} tabs={[['newest', 'Mới gửi trước'], ['waiting', 'Chờ lâu nhất trước']]} />}
+                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Đang đợi duyệt', pending.length], ['changes_requested', 'Đang đợi chỉnh sửa', submissions.filter((x) => x.reviewStatus === 'changes_requested').length], ['published', 'Đã đăng', published.length]]} />
               </div>
+              {ucStatus === 'published' ? (
+              <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                <div style={headRow(P_COLS)}><span>USE CASE ĐANG HIỆN TRÊN THƯ VIỆN</span><span>UPVOTE</span><span>BÌNH LUẬN</span><span>LƯU</span><span>ĐÃ ÁP DỤNG</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                {pubRows.map((c) => {
+                  const sub = c.source === 'community' ? submissions.find((x) => x.id === c.id) : null
+                  return (
+                    <div key={c.id} style={bodyRow(P_COLS)}>
+                      <div style={{ minWidth: 0 }}>
+                        <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; text-decoration:none;' + clamp2)}>{c.title}</a>
+                        <div style={css('margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;' + font(400, 12) + ';color:#94a3b8;')}>
+                          <span style={css(c.source === 'showcase' ? pill('#EEF3FF', '#2c5fff') : pill('#F1F4FA', '#3A4757'))}>{c.source === 'showcase' ? 'Showcase' : 'Cộng đồng gửi'}</span>
+                          {[c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : ''].filter(Boolean).join(' · ')}
+                        </div>
+                      </div>
+                      {[c.upvotes, c.comments, c.saves, c.applied].map((v, j) => <span key={j} style={css(font(800, 14) + ';color:#3A4757;')}>{v}</span>)}
+                      <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                        <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Mở ↗</a>
+                        {sub && <button onClick={() => remove(sub)} style={css(btn('reject'))}>Xoá</button>}
+                      </div>
+                    </div>
+                  )
+                })}
+                {pubRows.length === 0 && empty('Không có use case nào khớp bộ lọc.')}
+              </div>
+              ) : (
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
                 <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {ucRows.map((s) => {
@@ -503,8 +558,9 @@ export default function AdminConsolePage() {
                     </div>
                   )
                 })}
-                {ucRows.length === 0 && empty(ucStatus === 'pending' && !ucq ? 'Không có use case nào đang chờ duyệt.' : 'Không có use case nào khớp bộ lọc.')}
+                {ucRows.length === 0 && empty(ucStatus === 'pending' && !ucq ? 'Không có use case nào đang chờ duyệt.' : ucStatus === 'changes_requested' && !ucq ? 'Không có use case nào đang đợi tác giả chỉnh sửa.' : 'Không có use case nào khớp bộ lọc.')}
               </div>
+              )}
             </div>
           )}
 

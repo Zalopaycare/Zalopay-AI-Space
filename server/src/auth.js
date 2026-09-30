@@ -1,3 +1,4 @@
+import { touch } from './presence.js'
 import jwt from 'jsonwebtoken'
 import { db } from './db.js'
 import { domainName } from './mentions.js'
@@ -76,7 +77,7 @@ function markActive(userId) {
 
 export function attachUser(req, _res, next) {
   req.user = currentUser(req)
-  if (req.user) markActive(req.user.id)
+  if (req.user) { markActive(req.user.id); touch(req.user.id) }
   next()
 }
 

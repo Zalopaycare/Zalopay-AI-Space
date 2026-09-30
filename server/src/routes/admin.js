@@ -5,6 +5,8 @@ import { domainName } from '../mentions.js'
 import { adminReportRoutes } from '../reports.js'
 import { directoryStatus } from '../directory.js'
 import { vnDay } from '../auth.js'
+import { onlineNow, lastSeen } from '../presence.js'
+import { showcaseCases } from '../showcase.js'
 
 const router = express.Router()
 
@@ -93,8 +95,8 @@ router.get('/stats', (req, res) => {
     leaderboard[key] = users.map((u) => {
       const row = { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: u.initials, avatarColor: u.avatar_color || null, team: u.team || '',
         questions: c.questions[u.id] || 0, answers: c.answers[u.id] || 0, comments: c.replies[u.id] || 0, likes: likes[u.id] || 0, useCases: c.approvedUseCases[u.id] || 0 }
-      // Weighting: helping others counts most; approved use cases are the biggest single contribution.
-      row.score = row.answers * 3 + row.comments + row.likes * 2 + row.questions + row.useCases * 5
+      // Ranked by the plain total of contributions (no weighted score shown any more).
+      row.score = row.answers + row.comments + row.likes + row.questions + row.useCases
       return row
     }).filter((r) => r.score > 0).sort((x, y) => y.score - x.score).slice(0, 10)
 
@@ -128,6 +130,35 @@ router.get('/stats', (req, res) => {
   }
 
   res.json({ activity, kpis, leaderboard, departments, weeks })
+})
+
+// People online right now + everyone who has used the site today (Vietnam time).
+router.get('/live', (req, res) => {
+  const brief = (u) => ({ id: u.id, name: u.name, domain: domainName(u.email, u.name), email: u.email, initials: u.initials, avatarColor: u.avatar_color || null, team: u.team || '', isAdmin: !!u.is_admin })
+  const byId = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id)
+  const online = onlineNow().map((p) => { const u = byId(p.id); return u ? { ...brief(u), at: p.at, path: p.path } : null }).filter(Boolean).sort((a, b) => b.at - a.at)
+  const today = db.prepare('SELECT u.* FROM user_days d JOIN users u ON u.id = d.user_id WHERE d.day = ?').all(vnDay())
+    .map((u) => ({ ...brief(u), lastAt: lastSeen(u.id)?.at || null }))
+    .sort((a, b) => (b.lastAt || 0) - (a.lastAt || 0) || a.domain.localeCompare(b.domain))
+  res.json({ online, today, now: Date.now() })
+})
+
+// Every use case that is live on the site (same list as the Use Case library): the showcase cases
+// plus approved community posts, with their upvotes, comments, saves and "Tôi đã áp dụng".
+router.get('/published', (req, res) => {
+  const n = (sql, id) => db.prepare(sql).get(id).n
+  const stats = (id) => ({
+    upvotes: n('SELECT COUNT(*) n FROM use_case_reactions WHERE use_case_id = ?', id),
+    comments: n('SELECT COUNT(*) n FROM use_case_comments WHERE use_case_id = ?', id),
+    saves: n('SELECT COUNT(*) n FROM use_case_saves WHERE use_case_id = ?', id),
+    applied: n('SELECT COUNT(*) n FROM use_case_applied WHERE use_case_id = ?', id),
+  })
+  const showcase = showcaseCases.map((c) => ({ id: c.id, source: 'showcase', title: c.title, author: c.ownerName && !/cần bổ sung/.test(c.ownerName) ? c.ownerName : c.author, team: /cần bổ sung/.test(c.ownerTeam || '') ? '' : c.ownerTeam || '', type: c.type || '', status: c.status || '', postedAt: c.postedAt || null, ...stats(c.id) }))
+  const subs = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved'").all().map((r) => {
+    const u = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
+    return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, ...stats(r.id) }
+  })
+  res.json({ useCases: [...subs, ...showcase].sort((a, b) => String(b.postedAt || '').localeCompare(String(a.postedAt || '')) || b.id.localeCompare(a.id, undefined, { numeric: true })) })
 })
 
 router.get('/directory-status', async (req, res) => res.json(await directoryStatus(req.user.id)))
