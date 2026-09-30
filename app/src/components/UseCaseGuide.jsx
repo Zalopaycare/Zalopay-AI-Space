@@ -17,7 +17,7 @@ const TONES = {
 }
 
 
-function CopyButton({ text, small }) {
+export function CopyButton({ text, small }) {
   const [state, setState] = useState('')
   const done = (s) => { setState(s); setTimeout(() => setState(''), 1600) }
   return (
@@ -37,7 +37,14 @@ function CopyButton({ text, small }) {
 const Label = ({ children }) => <div style={css(`font:700 12.5px ${FONT}; color:#64748b; margin-bottom:8px;`)}>{children}</div>
 const SubTitle = ({ children }) => <div style={css(`font:800 14.5px ${FONT}; color:#0F172A; margin-bottom:8px;`)}>{children}</div>
 
-function Prompt({ b }) {
+/** Marks the parts of a prompt the reader has to change: [ngoặc vuông] and <tên_bạn>. */
+export function Placeholders({ text }) {
+  return String(text).split(/(\[[^\]\n]+\]|<[^>\n]+>)/).map((part, i) => (i % 2
+    ? <mark key={i} title="Sửa chỗ này cho đúng với bạn" style={{ background: '#FFF1BF', color: '#7A4B00', borderRadius: 4, padding: '0 2px' }}>{part}</mark>
+    : part))
+}
+
+export function Prompt({ b }) {
   return (
     <div>
       {b.label && <Label>{b.label}</Label>}
@@ -51,7 +58,7 @@ function Prompt({ b }) {
           <span style={{ flex: 1 }}></span>
           <CopyButton text={b.text} />
         </div>
-        <pre style={css(`margin:0; padding:14px 16px; font:500 13px/1.7 ${MONO}; color:#0F172A; white-space:pre-wrap; word-break:break-word;`)}>{b.text}</pre>
+        <pre style={css(`margin:0; padding:14px 16px; font:500 13px/1.7 ${MONO}; color:#0F172A; white-space:pre-wrap; word-break:break-word;`)}><Placeholders text={b.text} /></pre>
       </div>
     </div>
   )
@@ -202,7 +209,7 @@ function Block({ b }) {
   }
 }
 
-function Blocks({ blocks }) {
+export function Blocks({ blocks }) {
   return <div style={css('display:flex; flex-direction:column; gap:14px;')}>{blocks.map((b, i) => <Block key={i} b={b} />)}</div>
 }
 

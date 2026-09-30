@@ -18,7 +18,21 @@ router.get('/:id/meta', requireAuth, (req, res) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
     return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
   })
-  res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id) })
+  res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
+})
+
+const appliedOf = (id, userId) => ({
+  applied: db.prepare('SELECT COUNT(*) n FROM use_case_applied WHERE use_case_id = ?').get(id).n,
+  iApplied: userId ? !!db.prepare('SELECT 1 FROM use_case_applied WHERE use_case_id = ? AND user_id = ?').get(id, userId) : false,
+})
+
+// "Tôi đã áp dụng" toggle — counts real adoption, separate from upvotes.
+router.post('/:id/applied', requireAuth, (req, res) => {
+  const { id } = req.params
+  const exists = db.prepare('SELECT 1 FROM use_case_applied WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id)
+  if (exists) db.prepare('DELETE FROM use_case_applied WHERE use_case_id = ? AND user_id = ?').run(id, req.user.id)
+  else db.prepare('INSERT INTO use_case_applied (use_case_id, user_id) VALUES (?, ?)').run(id, req.user.id)
+  res.json(appliedOf(id, req.user.id))
 })
 
 const ratingOf = (id, userId) => {

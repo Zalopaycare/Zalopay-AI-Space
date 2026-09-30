@@ -19,13 +19,13 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
-import UseCaseGuide from '../components/UseCaseGuide.jsx'
-import { DETAIL_COL, InfoRow, StatTiles, ProblemSolution, ResultCard, DetailTables, DeepDive } from '../components/UseCaseDetailParts.jsx'
+import { DETAIL_COL, DetailHero, StatTiles, Section, Tldr, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId } from '../components/UseCaseDetailParts.jsx'
+import { buildTemplate } from '../data/useCaseTemplate.js'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
-  avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
+  avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip,
   newestFirst,
 } from '../data/useCases.js'
 
@@ -62,8 +62,6 @@ export default function UseCaseLibraryPage() {
   const [editingCmt, setEditingCmt] = useState(null) // comment id being edited
   const ucModals = useCommentModals(api)
   const [expandedThreads, setExpandedThreads] = useState(() => new Set())
-  const [copiedCode, setCopiedCode] = useState(null)
-  const [copiedLabel, setCopiedLabel] = useState('')
   const [openMenuId, setOpenMenuId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
@@ -440,126 +438,116 @@ export default function UseCaseLibraryPage() {
     if (!dsel) return <div style={css('min-height:60vh; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;')}>Đang tải use case…</div>
     const dinfo = authorInfoFor(dsel.author)
     const cd = caseDetail[dsel.id] || {}
-    const howto = cd.howto || {}
-    const painR = (cd.pain || []).map((text) => ({ text }))
-    const solutionR = (cd.solution || []).map((text, i) => ({ text, num: i + 1 }))
-    const resultR = (cd.result || []).map((text) => ({ text }))
-    const nextR = (cd.next || []).map((text) => ({ text }))
-    const prepR = hlList(howto.prep)
-    const stepsR = hlList(howto.steps).map((it, i) => ({ ...it, num: i + 1 }))
-    const successR = hlList(howto.success)
-    const pitfallR = hlList(howto.pitfalls)
-    const contactR = hlList(howto.contact)
-    const securityR = hlList(howto.security)
     const dTopics = (prdMeta[dsel.id] || {}).topics || []
-    const tablesR = (cd.tables || []).map((tb) => ({ title: tb.title, note: tb.note || '', cols: tb.cols, rows: tb.rows }))
-    const codeR = (cd.code || []).map((cb, i) => ({
-      ...cb,
-      copyLabel: copiedCode === dsel.id + '-' + i ? copiedLabel || 'Đã copy' : 'Copy',
-      onCopy: (e) => {
-        e.stopPropagation()
-        const mark = (label) => { setCopiedCode(dsel.id + '-' + i); setCopiedLabel(label); clearTimeout(renderDetail._t); renderDetail._t = setTimeout(() => { setCopiedCode(null); setCopiedLabel('') }, 1800) }
-        copyWithToast(cb.code).then(() => mark('Đã copy ✓'))
-      },
-    }))
-    const galleryR = cd.gallery || []
+    const tp = buildTemplate(dsel, cd, dinfo)
     const live = ucMeta[dsel.id]
     const base = live ? live.helpful : (prdMeta[dsel.id] || {}).helpful || 0
     const voted = live ? live.iHelped : false
+    const applied = live ? live.applied || 0 : 0
+    const iApplied = live ? !!live.iApplied : false
     const commentsList = live ? live.comments : []
     const postDComment = () => {
       const text = (dBoxRef.current ? dBoxRef.current.expand(dDraft) : dDraft).trim()
       if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
     }
+    const toggleApplied = () => requireLogin(() => api.toggleApplied(dsel.id).then((d) => setUcMeta((m) => ({ ...m, [dsel.id]: { ...(m[dsel.id] || {}), ...d } }))).catch(() => {}))
 
-    const contactText = contactR.map((c) => c.text.replace(/\.\s*$/, '')).join(' · ')
-    const limitsR = nextR
+    // Which of the 9 parts have data — the rest are hidden, and the TOC lists only what's shown.
+    const has = {
+      tldr: tp.tldr.length > 0,
+      ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.steps.length),
+      result: !!(tp.result.bullets.length || tp.result.beforeAfter || tp.result.tables.length || tp.result.note),
+      apply: !tp.apply.empty,
+      safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),
+      demo: tp.demo.length > 0,
+      tech: !!(tp.tech.tables.length || tp.tech.repo),
+      next: !!(tp.next.steps.length || tp.next.contact.length || tp.next.link),
+    }
+    const toc = [
+      has.tldr && { id: 'uc-tldr', label: '1. ' + t('Tóm tắt 30 giây') },
+      has.ps && { id: 'uc-problem', label: '2–3. ' + t('Bài toán & giải pháp') },
+      has.result && { id: 'uc-result', label: '4. ' + t('Kết quả') },
+      has.apply && { id: 'uc-apply', label: '5. ' + t(tp.apply.title), hot: true },
+      has.safety && { id: 'uc-safety', label: '6. ' + t('An toàn & giới hạn') },
+      has.demo && { id: 'uc-demo', label: '7. Demo' },
+      has.tech && { id: 'uc-tech', label: '8. ' + t('Chi tiết kỹ thuật') },
+      has.next && { id: 'uc-next', label: '9. ' + t('Tiếp theo & liên hệ') },
+      { id: 'comments', label: t('Upvote & bình luận') },
+    ].filter(Boolean)
 
     return (
       <div>
         <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
           <SpaceBackdrop arcTop={300} />
-          <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 34px;')}>
+          <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 30px;')}>
             <div style={css(DETAIL_COL)}>
-              {/* Scrolls with the page (it used to be pinned and slid over the white cards). */}
-              <button
-                onClick={() => navigate('/use-cases')}
-                title={t('Quay lại Use Case Library')}
-                className={hoverClass('color:#fff !important;')}
-                style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 18px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:color .15s;')}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
-                {t('Quay lại')}
-              </button>
-              <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;')}>
-                {dTopics.map((tp) => (
-                  <span key={'t-' + tp} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:12.5px; font-weight:700;')}>{tp}</span>
-                ))}
-                {dsel.tools.map((name) => (
-                  <span key={'a-' + name} title={t('AI sử dụng')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.24); color:#fff; font-size:12.5px; font-weight:700;')}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M6.3 17.7l2.5-2.5M15.2 8.8l2.5-2.5"></path></svg>
-                    {name}
-                  </span>
-                ))}
-              </div>
-              <h1 className="zp-detail-title" style={css('margin:0 0 14px; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{dsel.title}</h1>
-              <p style={css('margin:0; font-size:15.5px; line-height:1.68; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{dsel.desc}</p>
-              <InfoRow
+              <DetailHero
                 t={t}
-                author={dsel.author}
+                c={dsel}
+                h={tp.hero}
+                topics={dTopics}
                 avatarBg={avatarColor(dsel.author)}
-                name={dinfo.name}
-                team={dsel.team || dinfo.role}
-                category={dsel.category}
-                audience={cd.audience}
-                difficulty={cd.difficulty}
-                status={statusOf(dsel.id)}
-                statusText={cd.statusText}
-                statusNote={cd.statusNote}
-                contact={contactText}
+                onBack={() => navigate('/use-cases')}
+                onStart={has.apply ? () => scrollToId('uc-apply') : null}
+                startLabel={t('Bắt đầu dùng')}
               />
-              <StatTiles stats={cd.stats} />
+              <StatTiles stats={tp.stats} />
             </div>
           </div>
         </section>
 
-        <div style={css('position:relative; z-index:4; background:#07070c; padding:10px var(--zp-gutter) 60px;')}>
-          <div style={css(DETAIL_COL)}>
-            <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
-              <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Overview</h2>
-              <span style={css('font-size:13px; color:#8b98b8;')}>Bài toán › Giải pháp › Kết quả</span>
-            </div>
-            <ProblemSolution t={t} problem={cd.problem || dsel.desc} pains={painR} steps={solutionR} />
-            <ResultCard t={t} results={resultR} limits={limitsR} />
-            {cd.guide && <div style={{ marginTop: 26 }}><UseCaseGuide guide={cd.guide} /></div>}
-            {!cd.guide && <DetailTables t={t} tables={tablesR} />}
-            {!cd.guide && (
-              <DeepDive key={dsel.id} t={t} prep={prepR} steps={stepsR} success={successR} code={codeR} pitfalls={pitfallR} security={securityR} gallery={galleryR} />
-            )}
-            <div style={{ height: 26 }}></div>
-
-            {!!dsel.repoHref && (
-              <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:20px 24px; margin-bottom:26px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;')}>
-                <div>
-                  <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; color:#94a3b8;')}>SOURCE</div>
-                  <div style={css('margin-top:3px; font-size:14px; font-weight:700; color:#0F172A;')}>{dsel.repo}</div>
+        <div style={css('position:relative; z-index:4; background:#07070c; padding:0 var(--zp-gutter) 60px;')}>
+          <div className="zp-detail-wrap" style={css(DETAIL_COL)}>
+            <div className="zp-detail-grid">
+            <div style={{ minWidth: 0 }}>
+            {has.tldr && <Section id="uc-tldr" num="1" title={t('Tóm tắt 30 giây')} sub={t('Đọc 4 dòng này để biết có nên đọc tiếp')}><Tldr rows={tp.tldr} /></Section>}
+            {has.ps && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} />}
+            {has.result && <Section id="uc-result" num="4" title={t('Kết quả')}><ResultBody r={tp.result} t={t} /></Section>}
+            {has.apply && <ApplySection id={dsel.id} a={tp.apply} t={t} />}
+            {has.safety && (
+              <Section id="uc-safety" num="6" title={t('An toàn & giới hạn')}>
+                <div style={css('display:flex; flex-direction:column; gap:16px;')}>
+                  {tp.safety.rules.length > 0 && <div><div style={css('font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;')}>{t('Nguyên tắc an toàn')}</div><BulletList items={tp.safety.rules} dot="#6F0CE2" /></div>}
+                  {tp.safety.limits.length > 0 && <div><div style={css('font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;')}>{t('Hiện chưa làm được')}</div><BulletList items={tp.safety.limits} dot="#E39100" /></div>}
+                  {tp.safety.tables.map((tb, i) => <PlainTable flat key={i} table={tb} />)}
                 </div>
-                <a href={dsel.repoHref} target="_blank" rel="noopener" className={hoverClass('background:#DCE6FB;')} style={css('display:inline-flex; align-items:center; gap:9px; padding:11px 18px; border:1px solid #B9CCF8; border-radius:999px; background:#E7ECFB; color:#2c5fff; text-decoration:none; font-size:13px; font-weight:700;')}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
-                  Mở repo
-                </a>
-              </div>
+              </Section>
+            )}
+            {has.demo && (
+              <Section id="uc-demo" num="7" title="Demo">
+                <div className="zp-bars">{tp.demo.map((g, i) => <figure key={i} style={{ margin: 0 }}><img src={g.src} alt={g.caption || ''} style={{ width: '100%', borderRadius: 12, display: 'block' }} /><figcaption style={css('margin-top:8px; font-size:12.5px; color:#64748b;')}>{g.caption}</figcaption></figure>)}</div>
+              </Section>
+            )}
+            {has.tech && <TechSection tech={tp.tech} t={t} />}
+            {has.next && (
+              <Section id="uc-next" num="9" title={t('Tiếp theo & liên hệ')}>
+                <div style={css('display:flex; flex-direction:column; gap:16px;')}>
+                  {tp.next.steps.length > 0 && <div><div style={css('font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;')}>{t('Sắp làm')}</div><BulletList items={tp.next.steps} dot="#2c5fff" /></div>}
+                  {tp.next.contact.length > 0 && <div><div style={css('font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;')}>{t('Liên hệ')}</div><BulletList items={tp.next.contact} dot="#9FB6E8" /></div>}
+                  {tp.next.link && <a href={tp.next.link} target="_blank" rel="noopener" style={css('align-self:flex-start; font-size:13.5px; font-weight:700; color:#2c5fff;')}>{t('Tài liệu gốc')} ↗</a>}
+                </div>
+              </Section>
             )}
 
-            <div id="comments" style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin-bottom:36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
+            <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin:30px 0 36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap;')}>
                 <button
                   onClick={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
+                  aria-pressed={voted}
                   style={css(`display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 20px; border:1px solid ${voted ? '#B9CCF8' : '#DDE3EC'}; border-radius:999px; background:${voted ? '#EAF1FF' : '#fff'}; color:${voted ? '#2c5fff' : '#3A4757'}; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;`)}
                 >
                   <svg width="17" height="17" viewBox="0 0 24 24" fill={voted ? '#2c5fff' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
                   {base} {t('Upvote')}
+                </button>
+                <button
+                  onClick={toggleApplied}
+                  aria-pressed={iApplied}
+                  title={t('Bấm nếu bạn đã tự áp dụng use case này')}
+                  style={css(`display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 20px; border:1px solid ${iApplied ? '#9FDDBC' : '#DDE3EC'}; border-radius:999px; background:${iApplied ? '#E7F9F0' : '#fff'}; color:${iApplied ? '#00723C' : '#3A4757'}; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;`)}
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">{iApplied ? <><circle cx="12" cy="12" r="9" fill="#00A352" stroke="#00A352"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5" stroke="#fff"></path></> : <><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5"></path></>}</svg>
+                  {t('Tôi đã áp dụng')} · {applied}
                 </button>
                 <span style={css('display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#94a3b8;')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"></path></svg>
@@ -663,7 +651,9 @@ export default function UseCaseLibraryPage() {
                 })}
               </div>
             </div>
-
+            </div>
+            <Toc items={toc} t={t} />
+            </div>
           </div>
         </div>
       </div>

@@ -205,6 +205,14 @@ export function nextId(prefix) {
 
 // 1–5 star ratings on use cases (one per person, changeable).
 db.exec(`
+-- "Tôi đã áp dụng": people who say they used a use case themselves (one per person).
+CREATE TABLE IF NOT EXISTS use_case_applied (
+  use_case_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (use_case_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS use_case_ratings (
   use_case_id TEXT NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users(id),

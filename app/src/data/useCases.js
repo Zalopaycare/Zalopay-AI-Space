@@ -173,7 +173,6 @@ export const caseDetail = {
   },
   c3: {
     difficulty: 'Trung bình',
-    statusText: 'Đã hoàn tất',
     statusNote: 'Dữ liệu 01 – 07/2026 · giải pháp kỹ thuật đã xong',
     stats: [
       { value: '1.881', label: 'yêu cầu hỗ trợ về khuyến mãi (01 – 07/2026)' },
@@ -433,7 +432,7 @@ export function statusMeta(s) {
 }
 
 const KIND_BY_ID = { c1: 'tech', c2: 'tech', c3: 'nontech', c4: 'nontech', c5: 'tech' }
-const STATUS_BY_ID = { c1: 'prototype', c2: 'inuse', c3: 'planning', c4: 'prototype', c5: 'inuse' }
+const STATUS_BY_ID = { c1: 'prototype', c2: 'inuse', c3: 'inuse', c4: 'prototype', c5: 'inuse' }
 export function kindOf(id) {
   return KIND_BY_ID[id] || 'tech'
 }
