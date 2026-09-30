@@ -187,23 +187,34 @@ export default function ProfilePage() {
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((m) => ({ ...m, [ucId]: d }))).catch(() => {})
   useEffect(() => { savedUseCaseIds.forEach(refreshUcMeta) }, [savedUseCaseIds])
 
+  // Each part loads on its own: one failed request must not blank the whole profile (it used to,
+  // silently — "Use case của tôi" showed 0 while the approval notification was right there).
+  const [loadErr, setLoadErr] = useState({})
+  const [reloadKey, setReloadKey] = useState(0)
   useEffect(() => {
     if (!user) { setLoaded(true); return }
+    setLoadErr({})
+    const part = (key, p, apply) => p.then(apply).then(() => true, () => { setLoadErr((e) => ({ ...e, [key]: true })); return false })
     Promise.all([
-      api.listQuestions(),
-      api.listSubmissions('?mine=1'),
-      api.mySavedUseCaseIds(),
-    ]).then(([qd, sd, savedIds]) => {
-      const mine = qd.questions.filter((q) => q.authorId === user.id)
-      setMyQuestions(mine)
-      setSavedQuestions(qd.questions.filter((q) => q.saved))
-      let answered = 0
-      qd.questions.forEach((q) => q.answers.forEach((a) => { if (a.authorId === user.id) answered++ }))
-      setAnswersGiven(answered)
-      setMyUseCases(sd.submissions)
-      setSavedUseCaseIds(savedIds.ids)
-    }).finally(() => setLoaded(true))
-  }, [user])
+      part('questions', api.listQuestions(), (qd) => {
+        const qs = qd.questions || []
+        setMyQuestions(qs.filter((q) => q.authorId === user.id))
+        setSavedQuestions(qs.filter((q) => q.saved))
+        let answered = 0
+        qs.forEach((q) => (q.answers || []).forEach((a) => { if (a.authorId === user.id) answered++ }))
+        setAnswersGiven(answered)
+      }),
+      part('usecases', api.listSubmissions('?mine=1'), (sd) => setMyUseCases(sd.submissions || [])),
+      part('saved', api.mySavedUseCaseIds(), (d) => setSavedUseCaseIds(d.ids || [])),
+    ]).finally(() => setLoaded(true))
+  }, [user, reloadKey])
+  const loadFailed = Object.keys(loadErr).length > 0
+  const loadErrorBox = loadFailed ? (
+    <div role="alert" style={css(`display:flex; align-items:center; gap:12px; margin:0 0 12px; padding:10px 14px; border-radius:12px; background:#FFF4E3; border:1px solid #F5D29A; font:600 13px ${FONT}; color:#7A4700;`)}>
+      <span style={css('flex:1;')}>{t('Không tải được')} {[loadErr.usecases && t('use case của bạn'), loadErr.questions && t('câu hỏi'), loadErr.saved && t('mục đã lưu')].filter(Boolean).join(', ')}.</span>
+      <button onClick={() => setReloadKey((k) => k + 1)} style={css(`flex:none; height:30px; padding:0 14px; border:none; border-radius:999px; background:#2c5fff; color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Thử lại')}</button>
+    </div>
+  ) : null
 
   if (!user) {
     return (
@@ -309,7 +320,7 @@ export default function ProfilePage() {
   const recentItems = [].concat(draftItem)
     .concat(myQuestions.map((q) => ({
       tagLabel: t('Câu hỏi'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
-      title: q.title, meta: relativeTime(q.time),
+      title: q.title, meta: relativeTime(q.time), ts: q.time,
       statusLabel: q.resolved ? 'Đã trả lời' : t('Đang chờ trả lời'),
       statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0', statusColor: q.resolved ? '#00893F' : '#B45300',
       cta: t('Xem chi tiết'), primary: false,
@@ -319,7 +330,7 @@ export default function ProfilePage() {
       const st = UC_STATUS[c.reviewStatus] || UC_STATUS.pending
       return {
         tagLabel: t('Use case'), tagBg: '#E7F9F0', tagColor: '#00893F',
-        title: c.title, meta: relativeTime(c.time),
+        title: c.title, meta: relativeTime(c.reviewedAt || c.time), ts: c.reviewedAt || c.time,
         statusLabel: t(st.label), statusBg: st.bg, statusColor: st.color,
         // Pending actions on the viewer's side get a "continue" CTA; everything else just opens it.
         cta: ucCta(c),
@@ -327,6 +338,8 @@ export default function ProfilePage() {
         onOpen: () => navigate(ucHref(c)),
       }
     }))
+    // Newest first (the draft, if any, stays on top); SQLite times sort correctly as strings.
+    .sort((x, y) => (x.ts === undefined ? -1 : y.ts === undefined ? 1 : String(y.ts).localeCompare(String(x.ts))))
     .slice(0, 4)
 
   const sectionTitle = section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : ''
@@ -342,6 +355,7 @@ export default function ProfilePage() {
           <section style={css('position:relative; padding:22px var(--zp-gutter) 0;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h1 style={heroHeading}>{sectionTitle}</h1>
+              {loaded && loadErrorBox && <div style={css('margin-top:12px;')}>{loadErrorBox}</div>}
             </div>
           </section>
         )}
