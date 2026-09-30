@@ -1,5 +1,6 @@
 export default {
   id: 'c10',
+  postedAt: '2026-09-30',
   title: 'Cho AI tra cứu hạ tầng PROD mà không cần đưa mật khẩu cho dev',
   toolName: 'MCP Platform',
   desc: 'Dev tự tạo 1 khoá kết nối (MCP key) cho các tài nguyên mình sở hữu, rồi để AI tra cứu Redis, database, Kafka, service trên PROD an toàn.',

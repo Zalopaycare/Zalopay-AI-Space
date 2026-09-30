@@ -1,5 +1,6 @@
 export default {
   id: 'c7',
+  postedAt: '2026-09-30',
   title: 'Chuẩn bị pentest trong 5 phút thay vì 2 ngày',
   toolName: 'secreq-bot',
   desc: 'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.',

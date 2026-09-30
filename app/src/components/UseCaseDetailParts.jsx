@@ -69,7 +69,7 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
         <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
         <div style={css('min-width:0;')}>
           <div style={css(value)}><Fill text={h.owner} /></div>
-          <div style={css('font-size:12px; line-height:1.4; color:#a9b8dc;')}><Fill text={h.ownerTeam} />{h.updated ? ' · ' + t('Cập nhật') + ' ' + h.updated : ''}</div>
+          <div style={css('font-size:12px; line-height:1.4; color:#a9b8dc;')}><Fill text={h.ownerTeam} />{h.posted ? ' · ' + t('Đăng') + ' ' + h.posted : ''}{h.updated && !/cần bổ sung/.test(h.updated) ? ' · ' + t('Cập nhật') + ' ' + h.updated : ''}</div>
         </div>
       </div>
     </div>,
@@ -122,9 +122,16 @@ export function StatTiles({ stats }) {
 export function Images({ images, style }) {
   if (!images || !images.length) return null
   return (
-    <div className={images.length > 1 ? 'zp-bars' : ''} style={{ marginTop: 16, ...style }}>
+    <div className="zp-thumbs" style={{ marginTop: 16, ...style }}>
       {images.map((img, i) => <Figure key={i} img={img} />)}
     </div>
+  )
+}
+
+/** Section number in a glowing circle. */
+export function NumBadge({ n, size = 28 }) {
+  return (
+    <span aria-hidden="true" style={css(`flex:none; display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #7FA8FF 0%, #2c5fff 60%, #1B3FCC 100%); color:#fff; font-size:${Math.round(size * 0.46)}px; font-weight:800; line-height:1; box-shadow:0 0 0 3px rgba(44,95,255,.18), 0 0 18px rgba(80,130,255,.75);`)}>{n}</span>
   )
 }
 
@@ -132,8 +139,8 @@ export function Images({ images, style }) {
 export function Section({ id, num, title, sub, children, bare = false }) {
   return (
     <section id={id} data-toc style={css('scroll-margin-top:84px; margin-top:26px;')}>
-      <div style={css('display:flex; align-items:baseline; gap:10px; margin-bottom:12px; flex-wrap:wrap;')}>
-        {num && <span style={css('font-size:13px; font-weight:800; color:#8fb4ff;')}>{num}</span>}
+      <div style={css('display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;')}>
+        {num && <NumBadge n={num} />}
         <h2 style={css('margin:0; font-size:22px; font-weight:800; letter-spacing:-.3px; color:#fff;')}>{title}</h2>
         {sub && <span style={css('font-size:13px; color:#8b98b8;')}>{sub}</span>}
       </div>
@@ -186,8 +193,8 @@ export function ProblemSolution({ problem, solution, t }) {
             )}
             <div style={css(CARD)}>
               <div style={css(H3 + 'margin-bottom:12px; display:flex; align-items:center; gap:8px;')}>
+                <NumBadge n={num} size={26} />{title}
                 <span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
-                <span style={css('color:#94a3b8; font-size:13px;')}>{num}</span>{title}
               </div>
               {body}
             </div>
@@ -364,7 +371,14 @@ export function ApplySection({ id, a, t }) {
       <Images images={a.images} />
     </div>,
   )
-  if (a.pitfalls.length || a.pitfallTable) parts.push(
+  const pitfallsMissing = !a.pitfallTable && a.pitfalls.length === 1 && /cần bổ sung/i.test(a.pitfalls[0].meet) && !a.pitfalls[0].why
+  if (pitfallsMissing) parts.push(
+    <div key="errors" style={css('padding:14px 16px; border-radius:14px; border:1px dashed #E3A33B; background:#FFFBF2;')}>
+      <div style={css(SUB + 'margin-bottom:6px;')}>{t('Lỗi hay gặp')}</div>
+      <div style={css('font-size:13.5px; line-height:1.6; color:#5A4522;')}><Fill text="[cần bổ sung]" /> {t('Tài liệu gốc chưa ghi lỗi hay gặp và cách xử lý. Tác giả bổ sung giúp: Bạn gặp · Vì sao · Nói gì với AI / làm gì.')}</div>
+    </div>,
+  )
+  else if (a.pitfalls.length || a.pitfallTable) parts.push(
     <Collapsible key="errors" title={t('Lỗi hay gặp')} count={a.pitfallTable ? null : a.pitfalls.length}>
       {a.pitfallTable
         ? <Blocks blocks={a.pitfallTable} />
@@ -378,8 +392,8 @@ export function ApplySection({ id, a, t }) {
       <div style={css('border-radius:24px; padding:2px; background:linear-gradient(135deg,#5b8cff,#2c5fff 45%,#00c2a8); box-shadow:0 20px 50px rgba(44,95,255,.35);')}>
         <div style={css('border-radius:22px; background:#fff; overflow:hidden; color-scheme:light;')}>
           <div style={css('padding:20px 26px 18px; background:linear-gradient(180deg,#EEF3FF,#ffffff); border-bottom:1px solid #E6EBF3;')}>
-            <div style={css('font-size:12.5px; font-weight:800; letter-spacing:.08em; color:#2c5fff;')}>5 · {t('BẮT ĐẦU TỪ ĐÂY')}</div>
-            <h2 style={css('margin:4px 0 0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}>{t(a.title)}</h2>
+            <div style={css('font-size:12.5px; font-weight:800; letter-spacing:.08em; color:#2c5fff;')}>{t('BẮT ĐẦU TỪ ĐÂY')}</div>
+            <h2 style={css('margin:6px 0 0; display:flex; align-items:center; gap:10px; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}><NumBadge n="5" size={30} />{t(a.title)}</h2>
           </div>
           <div style={css('padding:22px 26px 26px; display:flex; flex-direction:column; gap:22px;')}>{parts}</div>
         </div>
@@ -392,7 +406,7 @@ export function ApplySection({ id, a, t }) {
 export function TechSection({ tech, t }) {
   return (
     <section id="uc-tech" data-toc style={css('scroll-margin-top:84px; margin-top:26px;')}>
-      <Collapsible dark title={<><span style={css('color:#8fb4ff; margin-right:8px;')}>8</span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
+      <Collapsible dark title={<><span style={{ marginRight: 10, display: 'inline-flex', verticalAlign: 'middle' }}><NumBadge n="8" size={26} /></span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
         <div style={css('display:flex; flex-direction:column; gap:14px; padding-top:8px;')}>
           {tech.bullets && tech.bullets.length > 0 && <div style={css('padding:16px 18px; border-radius:14px; background:#fff;')}><BulletList items={tech.bullets} dot="#2c5fff" /></div>}
           {tech.tables.map((tb, i) => <div key={i} style={css('padding:16px; border-radius:14px; background:#fff;')}><PlainTable flat table={tb} /></div>)}

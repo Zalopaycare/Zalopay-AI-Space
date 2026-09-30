@@ -378,11 +378,11 @@ export const caseDetail = {
 }
 
 export const allCases = [
-  { id: 'c1', title: 'Tự động chạy lại toàn bộ kịch bản kiểm thử trên máy Android, giảm thao tác lặp cho QC', desc: 'Ghi lại thao tác của QC một lần rồi cho máy tự bấm lại trên điện thoại thật, có so ảnh màn hình trước mỗi bước để không bấm sai.', author: 'AI Space', team: 'Tài liệu không ghi PIC', category: 'Engineering', tools: [], repo: '', repoHref: '', audience: ['tech'] },
-  { id: 'c2', title: 'Bộ agent dùng chung cho Claude Code, Cursor và Codex, giúp cả team làm việc với AI theo một chuẩn', desc: 'Cài một lần là cả team có cùng bộ trợ lý AI, cùng bộ lệnh và cùng tiêu chuẩn kỹ thuật, thay vì mỗi người tự dựng một kiểu.', author: 'NamNTH', team: 'Utility Solutions', category: 'Engineering', tools: ['Claude', 'Cursor', 'Codex'], repo: 'GitLab · aqr/bill/us-hive', repoHref: 'https://gitlab.zalopay.vn/aqr/bill/us-hive', audience: ['tech'] },
-  { id: 'c3', title: 'Giảm lỗi cấu hình campaign trong CRM tool, chặn sai sót trước khi campaign chạy', desc: 'Rà 1.881 yêu cầu hỗ trợ về khuyến mãi (01–07/2026) để tìm những chỗ hay nhập sai khi thiết lập chiến dịch và cách chặn lỗi trước khi chạy.', author: 'KietTT', team: 'Promotion · CRM', category: 'Operations', tools: [], repo: '', repoHref: '', audience: ['nontech'] },
-  { id: 'c4', title: 'Giúp người không rành kỹ thuật tự đưa AI agent lên chạy thật bằng lệnh tiếng Việt', desc: 'Hướng dẫn từng bước dùng Zalopay Agent Base: cài bộ skill vào Claude Code / Codex / Cursor, rồi chỉ cần ra lệnh bằng tiếng Việt để AI deploy, cập nhật, kiểm tra và đổi tên miền cho ứng dụng — prompt copy sẵn cho mọi bước.', author: 'AI Space', team: 'Hỗ trợ: SRE (HienLQ)', category: 'People Enablement', tools: ['Claude', 'Codex', 'Cursor'], repo: '', repoHref: '', audience: ['nontech'] },
-  { id: 'c5', title: 'Để AI agent tự viết và đăng bài trên website, giảm chi phí thuê Agency', desc: 'Bộ kết nối cho trợ lý AI tự viết và đăng bài tin tức lên website, giữ văn phong giống người viết và giảm chi phí thuê agency.', author: 'LuanNA', team: 'CMS · Website', category: 'Marketing', tools: ['Claude', 'ChatGPT'], repo: 'GitLab · zlpws-admin-mcp', repoHref: 'https://gitlab.zalopay.vn/cms/zlp-website/zlpws-admin-mcp', audience: ['tech', 'nontech'] },
+  { id: 'c1', postedAt: '2026-09-23', title: 'Tự động chạy lại toàn bộ kịch bản kiểm thử trên máy Android, giảm thao tác lặp cho QC', desc: 'Ghi lại thao tác của QC một lần rồi cho máy tự bấm lại trên điện thoại thật, có so ảnh màn hình trước mỗi bước để không bấm sai.', author: 'AI Space', team: 'Tài liệu không ghi PIC', category: 'Engineering', tools: [], repo: '', repoHref: '', audience: ['tech'] },
+  { id: 'c2', postedAt: '2026-09-23', title: 'Bộ agent dùng chung cho Claude Code, Cursor và Codex, giúp cả team làm việc với AI theo một chuẩn', desc: 'Cài một lần là cả team có cùng bộ trợ lý AI, cùng bộ lệnh và cùng tiêu chuẩn kỹ thuật, thay vì mỗi người tự dựng một kiểu.', author: 'NamNTH', team: 'Utility Solutions', category: 'Engineering', tools: ['Claude', 'Cursor', 'Codex'], repo: 'GitLab · aqr/bill/us-hive', repoHref: 'https://gitlab.zalopay.vn/aqr/bill/us-hive', audience: ['tech'] },
+  { id: 'c3', postedAt: '2026-09-23', title: 'Giảm lỗi cấu hình campaign trong CRM tool, chặn sai sót trước khi campaign chạy', desc: 'Rà 1.881 yêu cầu hỗ trợ về khuyến mãi (01–07/2026) để tìm những chỗ hay nhập sai khi thiết lập chiến dịch và cách chặn lỗi trước khi chạy.', author: 'KietTT', team: 'Promotion · CRM', category: 'Operations', tools: [], repo: '', repoHref: '', audience: ['nontech'] },
+  { id: 'c4', postedAt: '2026-09-23', title: 'Giúp người không rành kỹ thuật tự đưa AI agent lên chạy thật bằng lệnh tiếng Việt', desc: 'Hướng dẫn từng bước dùng Zalopay Agent Base: cài bộ skill vào Claude Code / Codex / Cursor, rồi chỉ cần ra lệnh bằng tiếng Việt để AI deploy, cập nhật, kiểm tra và đổi tên miền cho ứng dụng — prompt copy sẵn cho mọi bước.', author: 'AI Space', team: 'Hỗ trợ: SRE (HienLQ)', category: 'People Enablement', tools: ['Claude', 'Codex', 'Cursor'], repo: '', repoHref: '', audience: ['nontech'] },
+  { id: 'c5', postedAt: '2026-09-23', title: 'Để AI agent tự viết và đăng bài trên website, giảm chi phí thuê Agency', desc: 'Bộ kết nối cho trợ lý AI tự viết và đăng bài tin tức lên website, giữ văn phong giống người viết và giảm chi phí thuê agency.', author: 'LuanNA', team: 'CMS · Website', category: 'Marketing', tools: ['Claude', 'ChatGPT'], repo: 'GitLab · zlpws-admin-mcp', repoHref: 'https://gitlab.zalopay.vn/cms/zlp-website/zlpws-admin-mcp', audience: ['tech', 'nontech'] },
 ]
 
 export const teamsData = [
@@ -484,7 +484,7 @@ export function registerTemplateCases(list) {
     prdMeta[m.id] = { problem: m.problem?.text || (m.tldr?.[0]?.[1] || ''), result: m.tldr?.[2]?.[1] || '', topics: m.topics || [], helpful: 0, comments: 0 }
     caseDetail[m.id] = { tpl: m, difficulty: m.difficulty || '', audience: m.audience || '', level: m.level || 'ready', summary: m.desc }
     const card = {
-      id: m.id, title: m.title, desc: m.desc, author: m.author, team: m.ownerTeam || '', category: m.category || 'Other',
+      id: m.id, postedAt: m.postedAt || '', title: m.title, desc: m.desc, author: m.author, team: m.ownerTeam || '', category: m.category || 'Other',
       tools: normalizeTools(m.tools || []), repo: m.tech?.repo?.label || '', repoHref: m.tech?.repo?.href || '',
       audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null,
     }
@@ -530,6 +530,14 @@ export function registerPublished(subs) {
     }
   })
   allCases.unshift(...cases)
+}
+
+/** dd/mm/yyyy for a card's posting date (approved submissions: publishedAt; built-ins: postedAt). */
+export function postedLabel(c) {
+  const raw = c.publishedAt || c.postedAt
+  if (!raw) return ''
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw + 'T00:00:00' : String(raw).replace(' ', 'T') + (/[zZ+]/.test(String(raw)) ? '' : 'Z'))
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 /** "Mới nhất" order used everywhere (Home + Library): approved community posts newest first

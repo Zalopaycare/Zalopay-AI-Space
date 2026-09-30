@@ -2,6 +2,7 @@ const I = (n) => `/use-cases/c8/${n}.png`
 
 export default {
   id: 'c8',
+  postedAt: '2026-09-30',
   title: 'Biến ý tưởng hoặc thiết kế Figma thành Mini App bấm thử được, không cần chờ 2 tuần',
   toolName: 'ZaloPay Mini App Builder',
   desc: 'PO, HR, Marketing, BD mô tả ý tưởng hoặc gửi link Figma, nhận một Mini App bấm thử được và file HTML để lấy feedback.',

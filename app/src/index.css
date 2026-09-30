@@ -178,3 +178,7 @@ html.zp-vt .zp-page-in { animation: none; }
   .zp-ps-arrow > span { transform: rotate(90deg); }
   .zp-detail-title { font-size: 28px !important; letter-spacing: -.5px !important; }
 }
+
+/* Original images: small thumbnails, several per row; click opens them large. */
+.zp-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+@media (max-width: 699px) { .zp-thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }

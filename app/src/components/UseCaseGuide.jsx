@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
 import Fill from './Fill.jsx'
@@ -201,7 +202,7 @@ function Block({ b }) {
           </div>
         </div>
       )
-    case 'image': return <Figure img={b} />
+    case 'image': return <div className="zp-thumbs"><Figure img={b} /></div>
     case 'prompt': return <Prompt b={b} />
     case 'result': return <Result b={b} />
     case 'table': return <Table b={b} />
@@ -211,14 +212,32 @@ function Block({ b }) {
   }
 }
 
-/** An original screenshot/diagram from the source doc, full width, opens full size on click. */
+/** An original screenshot/diagram from the source doc as a small thumbnail; click opens it large
+ *  in a popup, and a click anywhere (or Esc) closes it again. */
 export function Figure({ img }) {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!open) return undefined
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+  }, [open])
   return (
-    <figure style={{ margin: 0 }}>
-      <a href={img.src} target="_blank" rel="noopener" title="Mở ảnh gốc" style={{ display: 'block' }}>
-        <img src={img.src} alt={img.caption || ''} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 12, border: '1px solid #E6EBF3', background: '#F7F9FD' }} />
-      </a>
-      {img.caption && <figcaption style={css(`margin-top:8px; font:400 12.5px/1.5 ${FONT}; color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
+    <figure style={{ margin: 0, minWidth: 0 }}>
+      <button type="button" onClick={() => setOpen(true)} title="Bấm để xem ảnh lớn" className={hoverClass('border-color:#B9CCF8 !important; box-shadow:0 8px 22px rgba(44,95,255,.18) !important;')} style={css('display:block; width:100%; padding:0; border:1px solid #E6EBF3; border-radius:12px; background:#F7F9FD; overflow:hidden; cursor:zoom-in; transition:box-shadow .15s, border-color .15s;')}>
+        <img src={img.src} alt={img.caption || ''} style={{ display: 'block', width: '100%', height: 150, objectFit: 'cover', objectPosition: 'top' }} />
+      </button>
+      {img.caption && <figcaption style={css(`margin-top:7px; font:400 12px/1.45 ${FONT}; color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
+      {open && createPortal(
+        <div role="dialog" aria-modal="true" aria-label={img.caption || 'Ảnh'} onClick={() => setOpen(false)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(3,6,18,.86); backdrop-filter:blur(4px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px; box-sizing:border-box; cursor:zoom-out;')}>
+          <img src={img.src} alt={img.caption || ''} style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 110px)', objectFit: 'contain', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.6)', background: '#fff' }} />
+          {img.caption && <div style={css(`max-width:900px; text-align:center; font:500 13.5px/1.5 ${FONT}; color:#dbe4f7;`)}><Fill text={img.caption} /></div>}
+          <div style={css(`font:500 12px ${FONT}; color:#8fa6d8;`)}>Bấm bất cứ đâu để đóng</div>
+        </div>,
+        document.body,
+      )}
     </figure>
   )
 }

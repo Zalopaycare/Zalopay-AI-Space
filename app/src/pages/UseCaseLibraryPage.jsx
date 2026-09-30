@@ -19,14 +19,14 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
-import { DETAIL_COL, DetailHero, StatTiles, Section, Tldr, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId, Images } from '../components/UseCaseDetailParts.jsx'
+import { DETAIL_COL, DetailHero, Section, Tldr, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId, Images } from '../components/UseCaseDetailParts.jsx'
 import { buildTemplate } from '../data/useCaseTemplate.js'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip,
-  newestFirst,
+  newestFirst, postedLabel,
 } from '../data/useCases.js'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
@@ -305,6 +305,7 @@ export default function UseCaseLibraryPage() {
     return {
       ...c,
       avInitial: c.author.slice(0, 1).toUpperCase(),
+      posted: postedLabel(c),
       avStyle: `width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex:none;background:${avatarColor(c.author)}`,
       avStyleL: `width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex:none;background:${avatarColor(c.author)}`,
       toolsR: c.tools.map((name) => ({ name })),
@@ -484,14 +485,13 @@ export default function UseCaseLibraryPage() {
               <DetailHero
                 t={t}
                 c={dsel}
-                h={tp.hero}
+                h={{ ...tp.hero, posted: postedLabel(dsel) }}
                 topics={dTopics}
                 avatarBg={avatarColor(dsel.author)}
                 onBack={() => navigate('/use-cases')}
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Bắt đầu dùng')}
               />
-              <StatTiles stats={tp.stats} />
             </div>
           </div>
         </section>
@@ -746,8 +746,9 @@ export default function UseCaseLibraryPage() {
                       </div>
                       <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
                         <span style={css(c.avStyle)}>{c.avInitial}</span>
-                        <div style={css('display:flex; flex-direction:column; min-width:0;')}>
+                        <div style={css('display:flex; align-items:baseline; gap:6px; min-width:0;')}>
                           <span style={css('font-size:12.5px; font-weight:600; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
+                          {c.posted && <span style={css('flex:none; font-size:12px; font-weight:500; color:#94a3b8; white-space:nowrap;')}>· {t('Đăng')} {c.posted}</span>}
                         </div>
                       </div>
                       <TagRow topics={c.topics || []} tools={c.tools} style={{ marginTop: 10 }} />
