@@ -213,3 +213,10 @@ CREATE TABLE IF NOT EXISTS use_case_ratings (
   PRIMARY KEY (use_case_id, user_id)
 );
 `)
+
+// Optional cover image for a use case (stored with the submission so every viewer sees it).
+{
+  const cols = db.prepare('PRAGMA table_info(use_case_submissions)').all().map((c) => c.name)
+  if (!cols.includes('cover_mime')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN cover_mime TEXT')
+  if (!cols.includes('cover_data')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN cover_data BLOB')
+}

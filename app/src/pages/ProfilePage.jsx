@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -6,7 +7,6 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
-import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
 import { usePublishedUseCases } from '../lib/publishedUseCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
@@ -129,9 +129,7 @@ function UseCaseCard({ c }) {
         </span>
       </div>
       <div style={css('display:flex; gap:13px;')}>
-        <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:76px; height:76px; border-radius:12px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
-          <ImageSlot id={'lib-' + c.id} shape="rect" placeholder="ảnh" />
-        </div>
+        <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
           <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.title}</h3>
           <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.desc}</p>

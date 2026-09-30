@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
+import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import { useDialog } from '../hooks/useDialog.js'
@@ -9,7 +10,6 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
-import ImageSlot from '../components/ImageSlot.jsx'
 import { allCases, prdMeta, avatarColor, newestFirst } from '../data/useCases.js'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
@@ -72,7 +72,7 @@ const matches = (needle, ...fields) => fields.flat().some((f) => fold(f).include
 const SEARCH_LIMIT = 5
 
 function replyLabel(n) {
-  return n === 0 ? 'Chưa có comment' : n + ' comment'
+  return n + ' Bình luận'
 }
 
 const tsNum = (v) => new Date(String(v).includes('T') ? v : String(v).replace(' ', 'T') + 'Z').getTime()
@@ -250,7 +250,7 @@ export default function HomePage() {
           value={modalReplyDraft}
           onChange={setModalReplyDraft}
           onEnter={submitModalReply}
-          placeholder={t('Reply comment của') + ' ' + modalReply.authorName + ', ' + t('gõ @ để mention...')}
+          placeholder={t('Trả lời') + ' ' + modalReply.authorName + ', ' + t('gõ @ để mention...')}
           style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:999px; padding:8px 14px; font:400 13px ${FONT}; color:#0F172A; background:#fff; outline:none;`)}
         />
       </div>
@@ -426,7 +426,7 @@ export default function HomePage() {
                         <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
                           <button onClick={(e) => copyLink(e, '/questions#q=' + encodeURIComponent(q.id), 'q:' + q.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
-                            {copiedCardId === 'q:' + q.id ? t('Đã copy!') : t('Copy link')}
+                            {copiedCardId === 'q:' + q.id ? t('Đã copy!') : t('Sao chép link')}
                           </button>
                           <button onClick={(e) => { q.onSave(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saved ? '#00A352' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -522,11 +522,11 @@ export default function HomePage() {
                         <div style={css('display:flex; align-items:center; gap:16px; margin-top:9px;')}>
                           <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:${a.helpColor};`)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                            {t('Like')} · {a.helpful}
+                            {t('Upvote')} · {a.helpful}
                           </button>
                           <button onClick={() => startModalReply(a.id, null, a.author)} style={css(`display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#64748b;`)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            {t('Reply')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
+                            {t('Trả lời')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
                           </button>
                         </div>
                         {(a.comments || []).filter((c) => !c.parentId).map((c) => {
@@ -542,13 +542,13 @@ export default function HomePage() {
                                     <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
                                   </div>
                                   <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(c.body)}</div>
-                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Reply')}</button>
+                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
                                 </div>
                               </div>
                               {replies.length > 0 && (
                                 <button onClick={() => toggleModalThread(c.id)} style={css(`margin:8px 0 0 35px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px ${FONT}; color:#2c5fff;`)}>
                                   <span style={css('width:20px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
-                                  {open ? t('Ẩn comment') : t('Xem') + ' ' + replies.length + ' ' + t('comment')}
+                                  {open ? t('Ẩn bình luận') : t('Xem') + ' ' + replies.length + ' ' + t('bình luận')}
                                 </button>
                               )}
                               {open && replies.map((r) => (
@@ -560,7 +560,7 @@ export default function HomePage() {
                                       <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
                                     </div>
                                     <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(r.body)}</div>
-                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Reply')}</button>
+                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
                                   </div>
                                 </div>
                               ))}
@@ -573,17 +573,17 @@ export default function HomePage() {
                     </div>
                   ))}
                   {modalAnswers.length === 0 && (
-                    <div style={css(`padding:16px 0 6px; text-align:center; font:600 13px ${FONT}; color:#94a3b8;`)}>{t('Chưa có comment nào. Comment đầu tiên thường giúp ích nhất.')}</div>
+                    <div style={css(`padding:16px 0 6px; text-align:center; font:600 13px ${FONT}; color:#94a3b8;`)}>{t('Chưa có bình luận nào. Bình luận đầu tiên thường giúp ích nhất.')}</div>
                   )}
 
                   <div style={css('display:flex; gap:12px; margin-top:16px;')}>
                     <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{user?.initials || '?'}</span>
                     <div style={{ flex: 1 }}>
-                      <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết comment của bạn. Gõ @ để mention đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
+                      <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
                       <div style={css('display:flex; align-items:center; margin-top:10px;')}>
                         <button onClick={() => navigate(`/questions#q=${modalSrc.id}`)} style={css(`font:700 12.5px ${FONT}; color:#3366F0; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;`)}>{t('Mở trong Questions')}</button>
                         <button onClick={postModalReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; opacity:${modalDraft.trim() ? 1 : 0.5};`)}>
-                          {t('Đăng comment')}
+                          {t('Gửi bình luận')}
                         </button>
                       </div>
                     </div>
@@ -625,7 +625,7 @@ export default function HomePage() {
                         <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:190px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
                           <button onClick={(e) => copyCardLink(e, item.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
-                            {copiedCardId === item.id ? t('Đã copy!') : t('Copy link')}
+                            {copiedCardId === item.id ? t('Đã copy!') : t('Sao chép link')}
                           </button>
                           <button onClick={(e) => { item.onSaveToggle(e); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={item.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -648,9 +648,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div style={css('display:flex; gap:13px;')}>
-                    <div onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none; width:76px; height:76px; border-radius:12px; overflow:hidden; background:linear-gradient(160deg,#e9eef7,#dde6f2);')}>
-                      <ImageSlot id={'lib-' + item.id} shape="rect" placeholder="ảnh" />
-                    </div>
+                    <CoverImage c={allCases.find((x) => x.id === item.id) || item} />
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
                       <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
                       <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>

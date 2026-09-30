@@ -1,3 +1,4 @@
+import { normalizeTools } from '../lib/taxonomy.js'
 import { agentBaseGuide } from './guides/agentBase.js'
 // Ported near-verbatim from Zalopay Use Case Library v2.dc.html's Logic class
 // (prdMeta / caseDetail / allCases / teamsData getters) — the 5 real use cases,
@@ -376,11 +377,11 @@ export const caseDetail = {
 }
 
 export const allCases = [
-  { id: 'c1', title: 'Tự động chạy lại toàn bộ kịch bản kiểm thử trên máy Android, giảm thao tác lặp cho QC', desc: 'Ghi lại thao tác của QC một lần rồi cho máy tự bấm lại trên điện thoại thật, có so ảnh màn hình trước mỗi bước để không bấm sai.', author: 'Chưa rõ', team: 'Tài liệu không ghi PIC', category: 'Engineering', tools: [], repo: '', repoHref: '', audience: ['tech'] },
+  { id: 'c1', title: 'Tự động chạy lại toàn bộ kịch bản kiểm thử trên máy Android, giảm thao tác lặp cho QC', desc: 'Ghi lại thao tác của QC một lần rồi cho máy tự bấm lại trên điện thoại thật, có so ảnh màn hình trước mỗi bước để không bấm sai.', author: 'AI Space', team: 'Tài liệu không ghi PIC', category: 'Engineering', tools: [], repo: '', repoHref: '', audience: ['tech'] },
   { id: 'c2', title: 'Bộ agent dùng chung cho Claude Code, Cursor và Codex, giúp cả team làm việc với AI theo một chuẩn', desc: 'Cài một lần là cả team có cùng bộ trợ lý AI, cùng bộ lệnh và cùng tiêu chuẩn kỹ thuật, thay vì mỗi người tự dựng một kiểu.', author: 'NamNTH', team: 'Utility Solutions', category: 'Engineering', tools: ['Claude', 'Cursor', 'Codex'], repo: 'GitLab · aqr/bill/us-hive', repoHref: 'https://gitlab.zalopay.vn/aqr/bill/us-hive', audience: ['tech'] },
   { id: 'c3', title: 'Giảm lỗi cấu hình campaign trong CRM tool, chặn sai sót trước khi campaign chạy', desc: 'Rà 1.881 yêu cầu hỗ trợ về khuyến mãi (01–07/2026) để tìm những chỗ hay nhập sai khi thiết lập chiến dịch và cách chặn lỗi trước khi chạy.', author: 'KietTT', team: 'Promotion · CRM', category: 'Operations', tools: [], repo: '', repoHref: '', audience: ['nontech'] },
-  { id: 'c4', title: 'Giúp người không rành kỹ thuật tự đưa AI agent lên chạy thật bằng lệnh tiếng Việt', desc: 'Hướng dẫn từng bước dùng Zalopay Agent Base: cài bộ skill vào Claude Code / Codex / Cursor, rồi chỉ cần ra lệnh bằng tiếng Việt để AI deploy, cập nhật, kiểm tra và đổi tên miền cho ứng dụng — prompt copy sẵn cho mọi bước.', author: 'Chưa rõ', team: 'Hỗ trợ: SRE (HienLQ)', category: 'People Enablement', tools: ['Claude', 'Codex', 'Cursor'], repo: '', repoHref: '', audience: ['nontech'] },
-  { id: 'c5', title: 'Để AI agent tự viết và đăng bài trên website, giảm chi phí thuê Agency', desc: 'Bộ kết nối cho trợ lý AI tự viết và đăng bài tin tức lên website, giữ văn phong giống người viết và giảm chi phí thuê agency.', author: 'LuanNA', team: 'CMS · Website', category: 'Marketing', tools: ['Claude', 'GPT'], repo: 'GitLab · zlpws-admin-mcp', repoHref: 'https://gitlab.zalopay.vn/cms/zlp-website/zlpws-admin-mcp', audience: ['tech', 'nontech'] },
+  { id: 'c4', title: 'Giúp người không rành kỹ thuật tự đưa AI agent lên chạy thật bằng lệnh tiếng Việt', desc: 'Hướng dẫn từng bước dùng Zalopay Agent Base: cài bộ skill vào Claude Code / Codex / Cursor, rồi chỉ cần ra lệnh bằng tiếng Việt để AI deploy, cập nhật, kiểm tra và đổi tên miền cho ứng dụng — prompt copy sẵn cho mọi bước.', author: 'AI Space', team: 'Hỗ trợ: SRE (HienLQ)', category: 'People Enablement', tools: ['Claude', 'Codex', 'Cursor'], repo: '', repoHref: '', audience: ['nontech'] },
+  { id: 'c5', title: 'Để AI agent tự viết và đăng bài trên website, giảm chi phí thuê Agency', desc: 'Bộ kết nối cho trợ lý AI tự viết và đăng bài tin tức lên website, giữ văn phong giống người viết và giảm chi phí thuê agency.', author: 'LuanNA', team: 'CMS · Website', category: 'Marketing', tools: ['Claude', 'ChatGPT'], repo: 'GitLab · zlpws-admin-mcp', repoHref: 'https://gitlab.zalopay.vn/cms/zlp-website/zlpws-admin-mcp', audience: ['tech', 'nontech'] },
 ]
 
 export const teamsData = [
@@ -397,7 +398,8 @@ export const teamsData = [
 ]
 
 const authorInfo = {
-  'Chưa rõ': { name: 'Chưa rõ trong tài liệu', role: 'Zalopay' },
+  // Built-in cases whose source doc names no author are credited to the team that published them here.
+  'AI Space': { name: 'Zalopay AI Space', role: 'Ban biên tập · đăng từ tài liệu nội bộ' },
   NamNTH: { name: 'Nam. Nguyễn Trần Hoàng', role: 'Zalopay · Utility Solutions' },
   KietTT: { name: 'Kiệt. Tô Thế', role: 'Zalopay · Promotion / CRM' },
   LuanNA: { name: 'Luân. Nguyễn Anh', role: 'Zalopay · CMS / Website' },
@@ -476,7 +478,7 @@ const firstPara = (t) => { const p = String(t || '').trim().split(/\n\s*\n/)[0] 
 export function registerPublished(subs) {
   for (let i = allCases.length - 1; i >= 0; i--) if (!builtinCases.includes(allCases[i])) allCases.splice(i, 1)
   const cases = subs.map((s) => {
-    const author = s.authorDomain || s.author || 'Chưa rõ'
+    const author = s.authorDomain || s.author || 'AI Space'
     KIND_BY_ID[s.id] = KIND_MAP[s.kind] || 'tech'
     STATUS_BY_ID[s.id] = STATUS_MAP[s.status] || 'inuse'
     authorInfo[author] = { name: s.author || author, role: 'Zalopay' + (s.team ? ' · ' + s.team : '') }
@@ -496,8 +498,8 @@ export function registerPublished(subs) {
     }
     return {
       id: s.id, title: s.title, desc: firstPara(lines(s.solution).join(' · ') || s.problem), author, team: s.team || '',
-      category: [].concat(s.category)[0] || 'Khác', tools: s.tools || [], repo: '', repoHref: s.link || '',
-      audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId,
+      category: [].concat(s.category)[0] || 'Khác', tools: normalizeTools(s.tools), repo: '', repoHref: s.link || '',
+      audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId, coverUrl: s.coverUrl || null,
     }
   })
   allCases.unshift(...cases)

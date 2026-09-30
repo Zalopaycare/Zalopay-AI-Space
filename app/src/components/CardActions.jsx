@@ -22,7 +22,7 @@ export default function CardActions({ helpful = 0, helped = false, onHelpful, re
         style={css(`${pill} border:1px solid ${replyActive ? '#B9CCF8' : '#DDE3EC'}; background:${replyActive ? '#EAF1FF' : '#fff'}; color:${replyActive ? '#2c5fff' : '#3A4757'};`)}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-        {replies ? replies + ' ' + t('Comment') : t('Comment')}
+        {replies} {t('Bình luận')}
       </button>
     </div>
   )

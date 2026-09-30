@@ -139,6 +139,7 @@ router.get('/submissions', requireAuth, (req, res) => {
         reviewStatus: r.review_status, adminNote: r.admin_note,
         author: author ? author.name : '—', authorDomain: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, time: r.created_at,
         publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null, edited: !!r.edited_at,
+        coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
       }
     }),
   })
@@ -149,6 +150,27 @@ const adminEmailsFor = (req) => {
   const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
   return [...new Set([...envAdmins, ...dbAdmins])].filter((e) => e !== req.user.email.toLowerCase())
 }
+// Cover image: "data:image/<png|jpeg|webp|gif>;base64,..." up to 2 MB; null/'' removes it; undefined leaves it.
+const MAX_COVER = 2 * 1024 * 1024
+function decodeCover(v) {
+  if (v === undefined) return undefined
+  if (!v) return null
+  const m = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(String(v))
+  if (!m) return false
+  const data = Buffer.from(m[2], 'base64')
+  return data.length && data.length <= MAX_COVER ? { mime: m[1], data } : false
+}
+const saveCover = (id, cover) => {
+  if (cover === undefined) return
+  db.prepare('UPDATE use_case_submissions SET cover_mime = ?, cover_data = ? WHERE id = ?').run(cover ? cover.mime : null, cover ? cover.data : null, id)
+}
+
+router.get('/submissions/:id/cover', requireAuth, (req, res) => {
+  const r = db.prepare('SELECT cover_mime, cover_data FROM use_case_submissions WHERE id = ?').get(req.params.id)
+  if (!r || !r.cover_data) return res.status(404).end()
+  res.set('Content-Type', r.cover_mime).set('Cache-Control', 'private, max-age=86400').send(r.cover_data)
+})
+
 const SUBMISSION_FIELDS = ['title', 'audience', 'team', 'problem', 'solution', 'prep', 'prompt', 'result']
 const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.kind && f.status && f.level
 
@@ -159,6 +181,8 @@ router.post('/submissions', requireAuth, (req, res) => {
   if (!Array.isArray(f.category) || !f.category.length || !f.kind || !f.status || !f.level) {
     return res.status(400).json({ error: 'missing_fields' })
   }
+  const cover = decodeCover(f.cover)
+  if (cover === false) return res.status(400).json({ error: 'bad_cover' })
   const id = nextId('s')
   db.prepare(`INSERT INTO use_case_submissions
     (id, title, audience, team, problem, solution, prep, prompt_text, result, limits, contact, link, kind, status_field, level, category, topics, tools, author_id)
@@ -166,6 +190,7 @@ router.post('/submissions', requireAuth, (req, res) => {
     .run(id, f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
       f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(),
       f.kind, f.status, f.level, JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), req.user.id)
+  saveCover(id, cover)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
   for (const to of adminEmailsFor(req)) {
@@ -189,11 +214,14 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   const nextStatus = row.review_status === 'approved' ? 'approved' : 'pending'
   const f = req.body || {}
   if (!validSubmission(f)) return res.status(400).json({ error: 'missing_fields' })
+  const cover = decodeCover(f.cover)
+  if (cover === false) return res.status(400).json({ error: 'bad_cover' })
   db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
     limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = ?, edited_at = datetime('now') WHERE id = ?`)
     .run(f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
       String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(), f.kind, f.status, f.level,
       JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), nextStatus, row.id)
+  saveCover(row.id, cover)
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
     for (const to of adminEmailsFor(req)) notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng: "${f.title.trim()}"`, href: `/use-cases/${row.id}`, actor: req.user.name })
