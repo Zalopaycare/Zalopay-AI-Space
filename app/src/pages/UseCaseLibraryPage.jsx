@@ -969,7 +969,7 @@ export default function UseCaseLibraryPage() {
                           </div>
                           <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Hiện trên thẻ use case. Không có ảnh thì dùng icon theo danh mục.')}</div>
                           <div style={css('display:flex; align-items:center; gap:14px; margin-top:10px;')}>
-                            <CoverImage c={{ coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, category: shareCategory[0] }} size={84} radius={14} />
+                            <CoverImage c={{ coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, category: shareCategory[0] }} size={84} radius={14} forceImage />
                             <label className={hoverClass('background:#F2F6FF !important; border-color:#B9CCF8 !important;')} style={css('display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
                               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = '' }} />
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m21 15-5-5L5 21"></path></svg>
