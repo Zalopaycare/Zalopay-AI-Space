@@ -38,12 +38,24 @@ export function notifyUpvotes(ownerEmail, { ref, count, lastVoter, title, href }
   } catch (e) { console.error('[notifications] upvote failed:', e.message) }
 }
 
+const BUILTIN_CASES = new Set(['c1', 'c2', 'c3', 'c4', 'c5'])
+function stillExists(r) {
+  const href = String(r.href || '')
+  let m = /^\/use-cases\/([^/?#]+)/.exec(href)
+  if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(id) }
+  m = /^\/questions#q=([^&]+)/.exec(href)
+  if (m) return !!db.prepare('SELECT 1 FROM questions WHERE id = ?').get(decodeURIComponent(m[1]))
+  return true
+}
+
 const router = express.Router()
 
 router.get('/', requireAuth, (req, res) => {
   const email = req.user.email.toLowerCase()
-  const rows = db.prepare('SELECT * FROM notifications WHERE email = ? ORDER BY created_at DESC, id DESC LIMIT 100').all(email)
-  const unread = db.prepare('SELECT COUNT(*) n FROM notifications WHERE email = ? AND read = 0').get(email).n
+  // Hide notifications about posts that no longer exist (e.g. a use case its author deleted),
+  // so the list and the unread badge only count things you can still open. Rows stay in the DB.
+  const rows = db.prepare('SELECT * FROM notifications WHERE email = ? ORDER BY created_at DESC, id DESC LIMIT 200').all(email).filter(stillExists).slice(0, 100)
+  const unread = rows.filter((r) => !r.read).length
   res.json({
     unread,
     notifications: rows.map((r) => ({ id: r.id, kind: r.kind, text: r.text, href: r.href, actor: r.actor, time: r.created_at, unread: !r.read })),

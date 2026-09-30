@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { css } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api } from '../lib/api.js'
+import { useDialog } from '../hooks/useDialog.js'
 
 export default function LoginModal() {
   const { loginOpen, closeLogin, onLoggedIn, ssoEnabled } = useAuth()
@@ -12,6 +13,7 @@ export default function LoginModal() {
   const [busy, setBusy] = useState(false)
   const [devCode, setDevCode] = useState('')
 
+  const dialog = useDialog(loginOpen, () => closeLogin(), 'Đăng nhập')
   if (!loginOpen) return null
 
   const reset = () => { setStage('email'); setEmail(''); setCode(''); setError(''); setDevCode('') }
@@ -43,7 +45,7 @@ export default function LoginModal() {
 
   return (
     <div onClick={close} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,8,20,.66); backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:24px; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
-      <div onClick={(e) => e.stopPropagation()} style={css('width:100%; max-width:400px; background:#fff; border-radius:20px; padding:28px; box-shadow:0 30px 70px rgba(0,0,0,.4);')}>
+      <div ref={dialog.ref} {...dialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:100%; max-width:400px; background:#fff; border-radius:20px; padding:28px; box-shadow:0 30px 70px rgba(0,0,0,.4);')}>
         <div style={css('font:800 19px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>Đăng nhập</div>
         <div style={css('margin-top:6px; font:400 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>
           Dùng email công ty để đăng nhập và tham gia thảo luận.

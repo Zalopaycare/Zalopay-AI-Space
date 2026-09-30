@@ -337,7 +337,7 @@ export default function ProfilePage() {
         {/* Profile header — only on the main view, hidden once a specific section is selected. */}
         {/* Section heading — gradient/glow style, no item-count label (removed per latest design revision). */}
         {section && (
-          <section style={css('position:relative; padding:22px 40px 0;')}>
+          <section style={css('position:relative; padding:22px var(--zp-gutter) 0;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h1 style={heroHeading}>{sectionTitle}</h1>
             </div>
@@ -345,12 +345,12 @@ export default function ProfilePage() {
         )}
 
         {section === 'activity' && (
-          <section style={css('position:relative; padding:14px 40px 0;')}>
+          <section style={css('position:relative; padding:14px var(--zp-gutter) 0;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h3 style={css(`margin:0 0 10px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Thông báo')}</h3>
               <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; overflow:hidden;')}>
                 <div style={css('display:flex; justify-content:flex-end; padding:10px 16px; border-bottom:1px solid #EEF1F7;')}>
-                  <button onClick={() => markNotificationsRead()} disabled={!notif.unread} style={css(`border:none; background:transparent; cursor:${notif.unread ? 'pointer' : 'default'}; font:700 12.5px ${FONT}; color:${notif.unread ? '#3366F0' : '#94a3b8'}; padding:0;`)}>{t('Đánh dấu đã đọc tất cả')}</button>
+                  {notif.unread > 0 ? (<button onClick={() => markNotificationsRead()} disabled={!notif.unread} style={css(`border:none; background:transparent; cursor:${notif.unread ? 'pointer' : 'default'}; font:700 12.5px ${FONT}; color:${notif.unread ? '#3366F0' : '#94a3b8'}; padding:0;`)}>{t('Đánh dấu đã đọc tất cả')}</button>) : <span style={css(`font:600 12.5px ${FONT}; color:#94a3b8;`)}>{t('Đã đọc hết')}</span>}
                 </div>
                 {notif.loaded && notif.items.length === 0 && (
                   <div style={css(`padding:32px 18px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có thông báo nào. Khi có người trả lời, bình luận hoặc nhắc đến bạn, thông báo sẽ hiện ở đây.')}</div>
@@ -402,7 +402,7 @@ export default function ProfilePage() {
 
 
         {section === 'usecase' && (
-          <section style={css('position:relative; padding:18px 40px 40px;')}>
+          <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <div style={css('display:flex; flex-wrap:wrap; gap:6px; padding:5px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.22); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); width:fit-content; max-width:100%;')}>
                 {ucTabs.map((tab) => {
@@ -439,7 +439,7 @@ export default function ProfilePage() {
         )}
 
         {section === 'question' && (
-          <section style={css('position:relative; padding:18px 40px 40px;')}>
+          <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
               {draftItem.map((r) => (
                 <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
@@ -460,7 +460,7 @@ export default function ProfilePage() {
         )}
 
         {section === 'saved' && (
-          <section style={css('position:relative; padding:14px 40px 28px;')}>
+          <section style={css('position:relative; padding:14px var(--zp-gutter) 28px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h3 style={subHeading}>{t('Use case đã lưu')}</h3>
               {savedUseCaseCards.length === 0 ? (

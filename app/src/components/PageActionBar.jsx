@@ -9,10 +9,10 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
  * Composer prompt + search box pinned to the very top of Home, Use Case Library and Questions,
  * with identical geometry on every page so switching pages doesn't make the top of the page jump.
  */
-const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose, query, onQuery, onSubmit, placeholder, searchOnly = false, maxWidth = 760, filters = null }, inputRef) {
+const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose, query, onQuery, onSubmit, placeholder, searchOnly = false, maxWidth = 760, filters = null, onKeyDown, onFocus, inputProps = {} }, inputRef) {
   const { t } = useI18n()
   return (
-    <div style={css('position:relative; z-index:6; padding:20px 40px 0;')}>
+    <div style={css('position:relative; z-index:6; padding:20px var(--zp-gutter) 0;')}>
       <div style={{ maxWidth, margin: '0 auto' }}>
         {!searchOnly && (
         <div
@@ -33,11 +33,29 @@ const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3-3"></path></svg>
             <input
               ref={inputRef}
+              type="search"
               value={query}
               onChange={(e) => onQuery(e.target.value)}
+              onKeyDown={onKeyDown}
+              onFocus={onFocus}
               placeholder={t(placeholder)}
+              aria-label={t(placeholder)}
+              className="zp-search-input"
               style={css(`flex:1; min-width:0; border:none; outline:none; background:transparent; font:400 14.5px ${FONT}; color:#0F172A;`)}
+              {...inputProps}
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => { onQuery(''); if (inputRef && typeof inputRef !== 'function') inputRef.current?.focus() }}
+                aria-label={t('Xoá từ khoá')}
+                title={t('Xoá từ khoá')}
+                className={hoverClass('background:#E6EBF3 !important; color:#0F172A !important;')}
+                style={css('flex:none; width:26px; height:26px; margin-right:-6px; border:none; border-radius:50%; background:#F1F4FA; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;')}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+              </button>
+            )}
           </form>
           {filters}
         </div>

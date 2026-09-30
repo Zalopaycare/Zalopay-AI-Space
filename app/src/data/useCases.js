@@ -502,3 +502,9 @@ export function registerPublished(subs) {
   })
   allCases.unshift(...cases)
 }
+
+/** "Mới nhất" order used everywhere (Home + Library): approved community posts newest first
+ *  (they're already sorted that way), then the built-in cases, newest built-in first. */
+export function newestFirst(list) {
+  return [...list.filter((c) => c.submitted), ...list.filter((c) => !c.submitted).reverse()]
+}

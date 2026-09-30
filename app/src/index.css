@@ -1,3 +1,7 @@
+/* Page side gutter: 40px on desktop, 16px on phones. */
+:root { --zp-gutter: 40px; }
+@media (max-width: 699px) { :root { --zp-gutter: 16px; } }
+
 * { box-sizing: border-box; }
 html { background: #04060d; color-scheme: dark; }
 body {
@@ -105,7 +109,9 @@ input, textarea, button { font-family: inherit; }
 @keyframes mascotfloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { .zp-mascot { animation: none; } }
 
-.zp-page-in { animation: pagein .26s ease-out both; }
+/* fill-mode backwards (not both): once the fade ends <main> has no animated opacity, so it stops
+   being a stacking context and modals inside it can sit above the fixed sidebar/top bar. */
+.zp-page-in { animation: pagein .26s ease-out backwards; }
 @keyframes pagein { from { opacity: 0; } to { opacity: 1; } }
 /* Sidebar/top-bar navigation cross-fades old → new page (View Transitions); the fixed chrome is
    captured on its own so it stays put, and the per-page fade-in is skipped to avoid a double fade. */
@@ -121,3 +127,7 @@ html.zp-vt .zp-page-in { animation: none; }
 
 /* MentionField draws its text in a mirror layer; keep the real field's placeholder visible */
 .zp-mention-field::placeholder { color: #94a3b8; opacity: 1; }
+
+/* Our own × clear button replaces the browser's search-field cancel icon. */
+.zp-search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+[role="dialog"]:focus { outline: none; }

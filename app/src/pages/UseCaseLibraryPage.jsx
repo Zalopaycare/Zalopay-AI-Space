@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { renderMentions } from '../components/MentionField.jsx'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
+import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
+import { useDialog } from '../hooks/useDialog.js'
 import { css, cx, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -21,6 +22,7 @@ import PageActionBar from '../components/PageActionBar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip, hlList,
+  newestFirst,
 } from '../data/useCases.js'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
@@ -56,7 +58,7 @@ export default function UseCaseLibraryPage() {
   const { id } = useParams()
   const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
   const navigate = useNavigate()
-  const [sidebarCollapsed] = useSidebarCollapsed()
+  const { offset: sidebarOffset } = useSidebarLayout()
   const location = useLocation()
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
@@ -137,14 +139,24 @@ export default function UseCaseLibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search])
 
-  // open the share modal via ?share=1 (used by other pages' "Share a Use Case" CTAs)
+  // open the share modal via ?share=1 (used by other pages' "Share a Use Case" CTAs) — also when
+  // the link is clicked while already on this page, since the page doesn't remount.
   useEffect(() => {
     if (new URLSearchParams(location.search).get('share') != null) {
       setShareOpen(true)
-      setShareStage('form')
+      setShareStage((st) => (st === 'submitted' ? 'form' : st))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [location.search])
+  // Closing keeps the autosaved draft; ?share / ?edit are dropped so the same link opens it again.
+  const closeShare = () => {
+    setShareOpen(false); setShareError('')
+    if (editing) { setEditing(null); resetShareForm() }
+    const qs = new URLSearchParams(location.search)
+    if (qs.has('share') || qs.has('edit')) { qs.delete('share'); qs.delete('edit'); navigate({ pathname: location.pathname, search: qs.toString() ? '?' + qs : '' }, { replace: true }) }
+  }
+  const shareDialog = useDialog(shareOpen, () => closeShare(), 'Chia sẻ Use Case')
+  const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
 
   // Sidebar's "Tìm kiếm" link (/use-cases#search) should land focused in the search box
   const searchInputRef = useRef(null)
@@ -335,7 +347,7 @@ export default function UseCaseLibraryPage() {
     if (q) list = list.filter((c) => (c.title + ' ' + c.desc + ' ' + c.author + ' ' + c.category + ' ' + c.tools.join(' ')).toLowerCase().includes(q))
     if (libSort === 'helpful') list = list.slice().sort((a, b) => (b.helpful || 0) - (a.helpful || 0))
     // Newest first: approved community submissions (already newest-first), then the built-ins.
-    else list = [...list.filter((c) => c.submitted), ...list.filter((c) => !c.submitted).reverse()]
+    else list = newestFirst(list)
     return list
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [libCat, libTopic, libGroup, libTool, libKind, libSort, q, ucMeta, pubV])
@@ -354,8 +366,8 @@ export default function UseCaseLibraryPage() {
   const sortOptions = SORT_OPTS.map((o) => ({ label: t(o.label), active: libSort === o.val, onClick: () => { setLibSort(o.val); closeDrop() } }))
   const libFilters = (
     <>
-      <FilterPill label={libCat || t('Category')} active={!!libCat} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
-      <FilterPill label={libTool || t('Công cụ AI')} active={!!libTool} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={200} />
+      <FilterPill label={libCat || t('Category')} active={!!libCat} onClear={() => setLibCat(null)} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
+      <FilterPill label={libTool || t('Công cụ AI')} active={!!libTool} onClear={() => setLibTool(null)} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={200} />
       <FilterPill label={t((SORT_OPTS.find((o) => o.val === libSort) || SORT_OPTS[0]).label)} name="sort" openDrop={openDrop} setOpenDrop={setOpenDrop} options={sortOptions} width={200} align="right" />
     </>
   )
@@ -525,7 +537,7 @@ export default function UseCaseLibraryPage() {
       <div>
         <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
           <SpaceBackdrop arcTop={300} />
-          <div style={css('position:relative; z-index:3; max-width:900px; margin:0 auto; padding:18px 40px 40px;')}>
+          <div style={css('position:relative; z-index:3; max-width:900px; margin:0 auto; padding:18px var(--zp-gutter) 40px;')}>
             {/* Back button stays pinned top-left while scrolling; portalled so no transformed/clipped ancestor traps it. */}
             <div style={{ height: 26, marginBottom: 16 }}></div>
             {createPortal(
@@ -533,7 +545,7 @@ export default function UseCaseLibraryPage() {
                 onClick={() => navigate('/use-cases')}
                 title={t('Quay lại Use Case Library')}
                 className={hoverClass('color:#fff !important;')}
-                style={css(`position:fixed; top:74px; left:${sidebarCollapsed ? 68 + 24 : 224 + 24}px; z-index:1800; display:inline-flex; align-items:center; gap:7px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; text-shadow:0 1px 8px rgba(0,0,0,.8); transition:left .16s ease, color .15s;`)}
+                style={css(`position:fixed; top:74px; left:${sidebarOffset + 24}px; z-index:1800; display:inline-flex; align-items:center; gap:7px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; text-shadow:0 1px 8px rgba(0,0,0,.8); transition:left .16s ease, color .15s;`)}
               >
                 <svg style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.8))' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
                 {t('Quay lại')}
@@ -551,7 +563,7 @@ export default function UseCaseLibraryPage() {
           </div>
         </section>
 
-        <div style={css('position:relative; z-index:4; background:#07070c; padding:10px 40px 60px;')}>
+        <div style={css('position:relative; z-index:4; background:#07070c; padding:10px var(--zp-gutter) 60px;')}>
           <div style={css('max-width:900px; margin:0 auto;')}>
             <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
               <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Overview</h2>
@@ -856,18 +868,19 @@ export default function UseCaseLibraryPage() {
       <div style={css('background:#07070c; color:#fff;')}>
         <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
           <SpaceBackdrop arcTop={190} />
-          <div style={css('position:relative; z-index:4; padding:22px 40px 0;')}>
+          <div style={css('position:relative; z-index:4; padding:22px var(--zp-gutter) 0;')}>
             <h1 style={css('margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:50px; line-height:1.06; font-weight:800; letter-spacing:-1px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
             <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Tổng hợp các cách và tips Zalopay Starter áp dụng AI vào công việc.')}</p>
           </div>
           <PageActionBar ref={searchInputRef} prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, dữ liệu..." filters={libFilters} />
         </section>
 
-        <section style={css('position:relative; z-index:5; background:transparent; padding:26px 40px 52px;')}>
+        <section style={css('position:relative; z-index:5; background:transparent; padding:26px var(--zp-gutter) 52px;')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
 
               {activeFilterCount > 0 && (
-                <div style={css('display:flex; justify-content:flex-end; margin:-14px 0 8px;')}>
+                <div style={css('display:flex; justify-content:flex-start; align-items:center; gap:8px; margin:-12px 0 10px; font-size:13px; color:#a9b8dc;')}>
+                  <span>{libCases.length} {t('use case phù hợp')}</span><span style={{ color: '#56607E' }}>·</span>
                   <button
                     onClick={() => { setLibCat(null); setLibTopic(null); setLibTool(null); setLibGroup(null); setLibKind(null); setOpenDrop(null) }}
                     style={css('height:28px; padding:0 4px; border:none; background:transparent; color:#8fb4ff; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;')}
@@ -971,7 +984,7 @@ export default function UseCaseLibraryPage() {
 
         {confirmDeleteId && (
           <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
-            <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
+            <div ref={delDialog.ref} {...delDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
               <div style={css('width:52px; height:52px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
               </div>
@@ -1000,12 +1013,12 @@ export default function UseCaseLibraryPage() {
 
     return (
       <div
-        onClick={() => { setShareOpen(false); setShareError(''); if (editing) { setEditing(null); resetShareForm(); navigate('/use-cases', { replace: true }) } }}
+        onClick={closeShare}
         style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,8,20,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:48px 24px; overflow-y:auto; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}
       >
-        <div onClick={(e) => e.stopPropagation()} style={css('width:880px; max-width:100%; background:#eef1f9; border-radius:24px; box-shadow:0 44px 110px rgba(2,8,30,.6); overflow:hidden;')}>
+        <div ref={shareDialog.ref} {...shareDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:880px; max-width:100%; background:#eef1f9; border-radius:24px; outline:none; box-shadow:0 44px 110px rgba(2,8,30,.6); overflow:hidden;')}>
           <div style={css('position:relative; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%); padding:26px 32px 28px;')}>
-            <button onClick={() => { setShareOpen(false); setShareError(''); if (editing) { setEditing(null); resetShareForm(); navigate('/use-cases', { replace: true }) } }} title="Đóng" style={css('position:absolute; top:22px; right:22px; width:36px; height:36px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#dbe6ff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;')}>
+            <button onClick={closeShare} title="Đóng" aria-label="Đóng" style={css('position:absolute; top:22px; right:22px; width:36px; height:36px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#dbe6ff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
             </button>
             <h1 style={css('margin:0; padding-right:56px; font-size:26px; font-weight:800; line-height:1.25; letter-spacing:-.01em; color:#fff;')}>{shareHeading}</h1>
@@ -1032,7 +1045,7 @@ export default function UseCaseLibraryPage() {
                   <div style={css('margin-top:8px; font-size:14px; line-height:1.6; color:#64748b;')}>Use case ở trạng thái <strong style={{ color: '#B45300' }}>Pending Review</strong>. Bạn sẽ nhận thông báo khi được duyệt hoặc bị từ chối kèm lý do. Trong lúc chờ, bài chưa xuất hiện trong Library.</div>
                   <div style={css('display:flex; justify-content:center; gap:12px; margin-top:22px;')}>
                     <a href="/profile#usecase" onClick={(e) => { e.preventDefault(); navigate('/profile#usecase') }} style={css('display:inline-flex; align-items:center; height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:13.5px; font-weight:700; text-decoration:none;')}>{t('Xem trong Use case của tôi')}</a>
-                    <button onClick={() => { setShareOpen(false); navigate('/use-cases') }} style={css('height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;')}>{t('Về Library')}</button>
+                    <button onClick={closeShare} style={css('height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;')}>{t('Về Library')}</button>
                   </div>
                 </div>
               )}
@@ -1178,7 +1191,7 @@ export default function UseCaseLibraryPage() {
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
                     <span style={css('font-size:12.5px; font-weight:600; color:#94a3b8;')}>{t('Điền đủ các mục Required để người đọc hiểu và làm lại được. Admin duyệt trước khi publish.')}</span>
                     <div style={css('margin-left:auto; display:flex; gap:12px;')}>
-                      <button onClick={() => { setHasDraft(true); localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })); setShareOpen(false) }} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;')}>{t('Lưu nháp & đóng')}</button>
+                      <button onClick={() => { setHasDraft(true); localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })); closeShare() }} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;')}>{t('Lưu nháp & đóng')}</button>
                       <button
                         onClick={() => {
                           if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Required để người khác đọc là làm lại được.'); return }
@@ -1209,7 +1222,7 @@ export default function UseCaseLibraryPage() {
   return (
     <Layout active="usecase">
       {isDetail ? renderDetail() : renderLibrary()}
-      {shareOpen && renderShareModal()}
+      {shareOpen && createPortal(renderShareModal(), document.body)}
     </Layout>
   )
 }

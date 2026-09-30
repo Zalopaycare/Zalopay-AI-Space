@@ -4,7 +4,7 @@ import SoftLink from './SoftLink.jsx'
 import { useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
-import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed.js'
+import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { useNotifications } from '../lib/notifications.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import Avatar from './Avatar.jsx'
@@ -54,7 +54,16 @@ export default function Sidebar({ active }) {
   const { t } = useI18n()
   const location = useLocation()
   const [hash, setHash] = useState(location.hash)
-  const [collapsed] = useSidebarCollapsed()
+  // Drawer mode (< 1024px): always the full-width menu, slid in from the left over a dimmed page.
+  const { collapsed: railCollapsed, narrow, mobile, drawerOpen, setDrawerOpen } = useSidebarLayout()
+  const collapsed = narrow ? false : railCollapsed
+  useEffect(() => { if (narrow) setDrawerOpen(false) }, [location.pathname, location.hash]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!drawerOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') setDrawerOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [drawerOpen]) // eslint-disable-line react-hooks/exhaustive-deps
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
@@ -73,11 +82,28 @@ export default function Sidebar({ active }) {
   const homeActive = active === 'home'
 
   return (
-    <div style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:58px; bottom:0; width:${collapsed ? 68 : 224}px; z-index:2000; display:flex; flex-direction:column; padding:${collapsed ? '16px 9px 16px' : '16px 12px 16px'}; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.30), transparent 70%), radial-gradient(90% 35% at 100% 100%, rgba(60,110,255,.16), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.72) 0%, rgba(9,16,46,.80) 50%, rgba(5,9,26,.88) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16); box-shadow:1px 0 24px rgba(20,50,160,.18); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
+    <>
+    {drawerOpen && <div onClick={() => setDrawerOpen(false)} aria-hidden="true" style={css('position:fixed; inset:58px 0 0 0; z-index:1990; background:rgba(2,6,20,.6); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);')}></div>}
+    <aside
+      id="zp-sidebar"
+      aria-label={t('Menu chính')}
+      aria-hidden={narrow && !drawerOpen ? true : undefined}
+      inert={narrow && !drawerOpen ? true : undefined}
+      style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:58px; bottom:0; width:${narrow ? 260 : collapsed ? 68 : 224}px; z-index:2000; ${narrow ? `transform:translateX(${drawerOpen ? 0 : -105}%); transition:transform .22s ease; box-shadow:${drawerOpen ? '12px 0 40px rgba(0,0,0,.5)' : 'none'};` : ''} display:flex; flex-direction:column; padding:${collapsed ? '16px 9px 16px' : '16px 12px 16px'}; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.30), transparent 70%), radial-gradient(90% 35% at 100% 100%, rgba(60,110,255,.16), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.72) 0%, rgba(9,16,46,.80) 50%, rgba(5,9,26,.88) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16); box-shadow:1px 0 24px rgba(20,50,160,.18); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
       <nav style={css('display:flex; flex-direction:column; gap:2px;')}>
         <NavLink to="/" active={homeActive} collapsed={collapsed} title='Home' icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>
         }>Home</NavLink>
+        {mobile && (
+          <>
+            <NavLink to="/use-cases" active={active === 'usecase'} collapsed={false} title={t('Use Case')} icon={
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+            }>{t('Use Case')}</NavLink>
+            <NavLink to="/questions" active={active === 'question'} collapsed={false} title={t('Câu hỏi')} icon={
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
+            }>{t('Câu hỏi')}</NavLink>
+          </>
+        )}
       </nav>
 
       <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
@@ -154,6 +180,7 @@ export default function Sidebar({ active }) {
           </button>
         </div>
       )}
-    </div>
+    </aside>
+    </>
   )
 }

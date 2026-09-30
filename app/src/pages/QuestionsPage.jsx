@@ -8,9 +8,10 @@ import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Avatar from '../components/Avatar.jsx'
 import MentionInput from '../components/MentionInput.jsx'
+import { useDialog } from '../hooks/useDialog.js'
 import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
@@ -43,6 +44,9 @@ export default function QuestionsPage() {
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  // Drop a deep-link hash once its modal closes, so clicking the same link again reopens it.
+  const clearHash = (re) => { if (re.test(window.location.hash || '')) navigate({ pathname: location.pathname, search: location.search }, { replace: true }) }
   const [questions, setQuestions] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [view, setView] = useState('feed') // 'feed' | 'ask'
@@ -100,16 +104,14 @@ export default function QuestionsPage() {
 
   // deep-link: #ask opens the ask-question composer directly (from Sidebar's "Đặt câu hỏi" quick action)
   useEffect(() => {
-    if ((window.location.hash || '') === '#ask') {
+    if ((location.hash || '') === '#ask') {
       setView('ask')
       try {
         const d = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null')
         if (d) { setAskTitle(''); setAskBody([d.title, d.body].filter(Boolean).join('\n')); setAskToolsSel((d.tools || []).map(normTool)); setAskTopicsSel(d.topics || []); setAskToolOtherText(d.toolOther || ''); setAskTopicOtherText(d.topicOther || '') }
       } catch { /* ignore */ }
     }
-    const q0 = new URLSearchParams(window.location.search).get('q')
-    if (q0) setQuery(q0)
-  }, [])
+  }, [location.hash])
 
   // People matching what's typed after "@": signed-in users plus the company directory (server side).
   // Picking inserts their mention token: an email handle (@thyndm) or a full company email.
@@ -137,7 +139,7 @@ export default function QuestionsPage() {
   // deep-link: #q=<id> expands and scrolls to that question
   useEffect(() => {
     if (!loaded) return
-    const m = /[#&]q=([^&]+)/.exec(window.location.hash || '')
+    const m = /[#&]q=([^&]+)/.exec(location.hash || '')
     if (!m) return
     const id = decodeURIComponent(m[1])
     if (!questions.some((q) => q.id === id)) return
@@ -153,18 +155,21 @@ export default function QuestionsPage() {
       } else if (tries++ < 20) setTimeout(seek, 80)
     }
     setTimeout(seek, 120)
-  }, [loaded])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, location.hash])
 
   const toggle = (id) => { setExpanded((s) => (s[id] ? {} : { [id]: true })); setFullBody((s) => ({ ...s, [id]: true })) }
   // Popup behaviour while a question is open: Esc closes it (unless a field inside handled Esc), page behind doesn't scroll.
   useEffect(() => {
     if (!Object.values(expanded).some(Boolean)) return
-    const onKey = (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) setExpanded({}) }
-    window.addEventListener('keydown', onKey)
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+    return () => { document.body.style.overflow = prev }
   }, [expanded])
+  // Esc in a comment box first leaves the box (keeps what you typed); Esc again closes the popup.
+  const qDialog = useDialog(Object.values(expanded).some(Boolean), () => setExpanded({}), t('Câu hỏi'), { escInFields: false, focusField: false })
+  const askDialog = useDialog(view === 'ask', () => setView('feed'), t('Đặt câu hỏi'))
+  const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
   const accept = (qid, aid) => requireLogin(() => api.acceptAnswer(qid, aid).then((d) => patch(qid, d.question)).catch(() => {}))
 
   const copyLink = (id) => {
@@ -320,12 +325,27 @@ export default function QuestionsPage() {
   }, [view])
   // #edit=<id> (from Home's card menu) opens that question in the composer once the list is loaded.
   useEffect(() => {
-    const m = /#edit=([^&]+)/.exec(window.location.hash || '')
+    const m = /#edit=([^&]+)/.exec(location.hash || '')
     if (!m || !loaded) return
     const q = questions.find((x) => x.id === decodeURIComponent(m[1]))
     if (q && user && q.authorId === user.id) startEditQuestion(q)
-    window.history.replaceState(null, '', window.location.pathname + window.location.search)
-  }, [loaded])
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, location.hash])
+  // ?q=<từ khoá> (from Home's search) pre-fills the search box.
+  useEffect(() => {
+    const q0 = new URLSearchParams(location.search).get('q')
+    if (q0 != null) setQuery(q0)
+  }, [location.search])
+  // Closing the composer / a question popup drops its #ask / #q= hash (only on an open → closed change).
+  const wasOpen = useRef({ ask: false, q: false })
+  const anyExpanded = Object.values(expanded).some(Boolean)
+  useEffect(() => {
+    if (wasOpen.current.ask && view !== 'ask') clearHash(/^#ask$/)
+    if (wasOpen.current.q && !anyExpanded) clearHash(/[#&]q=/)
+    wasOpen.current = { ask: view === 'ask', q: anyExpanded }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, anyExpanded])
 
   // ---- derive feed ----
   const qs = query.trim().toLowerCase()
@@ -708,7 +728,7 @@ export default function QuestionsPage() {
       <div style={css('position:relative; z-index:1;')}>
 
         <div>
-          <div style={css('position:relative; background:transparent; padding:22px 40px 0;')}>
+          <div style={css('position:relative; background:transparent; padding:22px var(--zp-gutter) 0;')}>
             <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
               <h1 style={css('margin:0; text-align:center; font:800 50px/1.06 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('Câu hỏi')}</h1>
               <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Hỏi nhanh đáp gọn tất tần tật những câu hỏi về AI.')}</p>
@@ -722,7 +742,7 @@ export default function QuestionsPage() {
               options={[['latest', 'Mới nhất'], ['top', 'Nổi bật nhất']].map(([k, l]) => ({ label: t(l), active: sort === k, onClick: () => { setSort(k); setOpenDrop(null) } }))}
             />
           } />
-          <div style={css('padding:16px 40px 60px;')}>
+          <div style={css('padding:16px var(--zp-gutter) 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               <div style={css('display:flex; align-items:center; gap:8px; margin-top:0; flex-wrap:wrap;')}>
                 {quickFilters.map((f) => (
@@ -747,7 +767,7 @@ export default function QuestionsPage() {
 
         {confirmDeleteId && (
           <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
-            <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
+            <div ref={delDialog.ref} {...delDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
               <div style={css('width:52px; height:52px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
               </div>
@@ -763,7 +783,7 @@ export default function QuestionsPage() {
 
         {view === 'ask' && createPortal(
           <div onClick={() => setView('feed')} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:44px 24px; overflow-y:auto;')}>
-            <div onClick={(e) => e.stopPropagation()} style={css('width:760px; max-width:100%;')}>
+            <div ref={askDialog.ref} {...askDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:760px; max-width:100%;')}>
               <div style={css('display:flex; align-items:flex-start; gap:16px; margin-bottom:20px;')}>
                 <div style={{ flex: 1 }}>
                   <h1 style={css('margin:0; font:800 30px/1.2 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#fff; letter-spacing:-.01em;')}>{editQId ? t('Chỉnh sửa câu hỏi') : t('Đặt câu hỏi')}</h1>
@@ -887,8 +907,8 @@ export default function QuestionsPage() {
       {cmodals.modals}
       {openQ && createPortal((
         <div onClick={() => setExpanded({})} style={css('position:fixed; inset:0; z-index:3000; background:rgba(4,10,26,.62); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:flex-start; justify-content:center; padding:40px 24px; overflow-y:auto;')}>
-          <div onClick={(e) => e.stopPropagation()} style={css('position:relative; width:760px; max-width:100%; margin:auto 0; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
-            <button onClick={() => setExpanded({})} title={t('Đóng')} style={css('position:absolute; top:-14px; right:-14px; z-index:5; width:38px; height:38px; border:none; border-radius:50%; background:#ffffff; color:#3A4757; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(0,0,0,.28);')}>
+          <div ref={qDialog.ref} {...qDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('position:relative; width:760px; max-width:100%; margin:auto 0; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
+            <button onClick={() => setExpanded({})} title={t('Đóng')} aria-label={t('Đóng')} style={css('position:absolute; top:-14px; right:-14px; z-index:5; width:38px; height:38px; border:none; border-radius:50%; background:#ffffff; color:#3A4757; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(0,0,0,.28);')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
             </button>
             {renderQCard(openQ, true)}

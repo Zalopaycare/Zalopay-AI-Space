@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { renderMentions } from '../components/MentionField.jsx'
 import MentionInput from '../components/MentionInput.jsx'
+import { useDialog } from '../hooks/useDialog.js'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -9,7 +10,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import ImageSlot from '../components/ImageSlot.jsx'
-import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
+import { allCases, prdMeta, avatarColor, newestFirst } from '../data/useCases.js'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
@@ -23,7 +24,6 @@ import PageActionBar from '../components/PageActionBar.jsx'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
-const FEATURED_IDS = ['c1', 'c2', 'c3', 'c4']
 const AI_LOGOS = [
   { src: aiCloud, alt: 'Cloud terminal', w: 28, pos: { left: -100, top: 58 } },
   { src: aiCube, alt: 'Cursor', w: 22, pos: { left: -40, bottom: 60 } },
@@ -90,6 +90,17 @@ export default function HomePage() {
   const modalReplyBoxRef = useRef(null)
   const [ucMeta, setUcMeta] = useState({})
   const [homeQuery, setHomeQuery] = useState('')
+  // Search results panel: closes on Esc / click outside, reopens on focus or typing.
+  const [searchOpen, setSearchOpen] = useState(true)
+  const [activeIdx, setActiveIdx] = useState(-1)
+  const searchWrapRef = useRef(null)
+  const searchInputRef = useRef(null)
+  useEffect(() => {
+    if (!searchOpen) return
+    const onDown = (e) => { if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setSearchOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [searchOpen])
   // Height of the live search results, so the space backdrop's horizon moves down with the page.
   const resultsRef = useRef(null)
   const [resultsH, setResultsH] = useState(0)
@@ -155,10 +166,10 @@ export default function HomePage() {
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   // Newest approved community use cases first, topped up with the built-in picks.
   const { version: pubV } = usePublishedUseCases()
-  const featuredCases = [...allCases.filter((c) => c.submitted), ...FEATURED_IDS.map((fid) => allCases.find((c) => c.id === fid)).filter(Boolean)].slice(0, 3)
+  const featuredCases = newestFirst(allCases).slice(0, 3) // same order as the Library's "Gần nhất"
   useEffect(() => { featuredCases.forEach((c) => refreshUcMeta(c.id)) }, [pubV]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ---- trending questions (top 3 unresolved by helpfulness, then recency) ----
+  // ---- latest questions (3 newest, any status — same order as /questions "Mới nhất") ----
   const searchNeedle = fold(homeQuery.trim())
   const pick = (list) => Object.assign(list.slice(0, SEARCH_LIMIT), { total: list.length })
   const searchUc = searchNeedle ? pick(allCases.filter((c) => matches(searchNeedle, c.title, c.desc, c.author, c.tools || [], (prdMeta[c.id] || {}).topics || []))
@@ -166,8 +177,24 @@ export default function HomePage() {
   const searchQ = searchNeedle ? pick(questions.filter((q) => matches(searchNeedle, q.title, q.body, q.author, q.topics || [], q.tools || []))
     .map((q) => ({ id: q.id, title: q.title, sub: [q.author, relativeTime(q.time), ...(q.topics || [])].filter(Boolean).join(' · '), href: '/questions#q=' + encodeURIComponent(q.id) }))) : []
 
+  // Keyboard: ↑/↓ walk the results, Enter opens the highlighted one, or (none highlighted) the page
+  // with more matches pre-filtered by the query; Esc closes the panel.
+  const flatResults = [...searchUc, ...searchQ]
+  const onSearchKey = (e) => {
+    if (e.key === 'Escape') { if (searchOpen && searchNeedle) { e.preventDefault(); setSearchOpen(false); setActiveIdx(-1) } return }
+    if (!searchNeedle) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSearchOpen(true); setActiveIdx((i) => Math.min(flatResults.length - 1, i + 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx((i) => Math.max(-1, i - 1)) }
+    else if (e.key === 'Enter') {
+      e.preventDefault()
+      const hit = searchOpen && activeIdx >= 0 ? flatResults[activeIdx] : null
+      if (hit) navigate(hit.href)
+      else navigate(((searchQ.total || 0) > (searchUc.total || 0) ? '/questions' : '/use-cases') + '?q=' + encodeURIComponent(homeQuery.trim()))
+    }
+  }
+  const showResults = !!searchNeedle && searchOpen
+
   const trending = questions
-    .filter((q) => !q.resolved)
     .slice()
     .sort((a, b) => tsNum(b.ts || b.time) - tsNum(a.ts || a.time)) // newest first, matching the "mới nhất" heading
     .slice(0, 3)
@@ -199,6 +226,8 @@ export default function HomePage() {
   })) : []
 
   const closeModal = () => { setOpenQ(null); setModalDraft(''); setModalReply(null); setModalReplyDraft('') }
+  const homeQDialog = useDialog(!!openQ, () => closeModal(), t('Câu hỏi'), { escInFields: false, focusField: false })
+  const homeDelDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
   const startModalReply = (answerId, parentId, authorName) => {
     setModalReply({ answerId, parentId, authorName })
     setModalReplyDraft('')
@@ -269,7 +298,7 @@ export default function HomePage() {
         <SpaceBackdrop arcTop={190 + resultsH} bg="#04060d" className={playIntro ? 'zp-backdrop-intro' : undefined} />
 
         {/* ============ WORDMARK ============ */}
-        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:14px 40px 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
+        <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:1; padding:14px var(--zp-gutter) 70px; margin-bottom:-70px; background:transparent; text-align:center; overflow:hidden;')}>
           <div style={css('position:relative; max-width:320px; width:100%; margin:0 auto; height:32px;')}>
             {UFO_STARS.map((s, i) => (
               <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
@@ -305,9 +334,20 @@ export default function HomePage() {
           <p className="zp-tagline" style={css(`position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 ${FONT}; color:rgba(214,226,250,.86); text-wrap:balance;`)}>{t('Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc.')}</p>
         </section>
 
-        <PageActionBar searchOnly query={homeQuery} onQuery={setHomeQuery} onSubmit={() => {}} placeholder="Tìm use case, câu hỏi, tác giả, công cụ..." />
-        {searchNeedle && (
-          <div ref={resultsRef} style={css('position:relative; z-index:5; padding:14px 40px 0;')}>
+        <div ref={searchWrapRef}>
+        <PageActionBar
+          ref={searchInputRef}
+          searchOnly
+          query={homeQuery}
+          onQuery={(v) => { setHomeQuery(v); setSearchOpen(true); setActiveIdx(-1) }}
+          onFocus={() => setSearchOpen(true)}
+          onKeyDown={onSearchKey}
+          onSubmit={() => {}}
+          inputProps={{ onClick: () => setSearchOpen(true), role: 'combobox', 'aria-expanded': showResults, 'aria-controls': 'home-search-results', 'aria-activedescendant': activeIdx >= 0 ? 'home-sr-' + activeIdx : undefined }}
+          placeholder="Tìm use case, câu hỏi, tác giả, công cụ..."
+        />
+        {showResults && (
+          <div ref={resultsRef} id="home-search-results" role="listbox" style={css('position:relative; z-index:5; padding:14px var(--zp-gutter) 0;')}>
             <div style={css('max-width:760px; margin:0 auto; background:#ffffff; border:1px solid #E6EBF3; border-radius:20px; box-shadow:0 18px 44px rgba(0,0,0,.3); padding:8px 8px 10px;')}>
               {searchUc.length === 0 && searchQ.length === 0 ? (
                 <div style={css(`padding:26px 16px; text-align:center; font:600 14px ${FONT}; color:#64748b;`)}>
@@ -322,8 +362,10 @@ export default function HomePage() {
                         <button onClick={() => navigate(base + '?q=' + encodeURIComponent(homeQuery.trim()))} style={css(`border:none; background:none; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#2c5fff;`)}>{t('Xem tất cả')} →</button>
                       )}
                     </div>
-                    {list.map((r) => (
-                      <button key={r.id} onClick={() => navigate(r.href)} className={hoverClass('background:#F3F6FC;')} style={css('display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:none; background:transparent; border-radius:12px; cursor:pointer; text-align:left; transition:background .12s;')}>
+                    {list.map((r) => {
+                      const idx = flatResults.indexOf(r)
+                      return (
+                      <button key={r.id} id={'home-sr-' + idx} role="option" aria-selected={idx === activeIdx} onMouseEnter={() => setActiveIdx(idx)} onClick={() => navigate(r.href)} className={hoverClass('background:#F3F6FC;')} style={css(`display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:none; background:${idx === activeIdx ? '#EEF3FF' : 'transparent'}; border-radius:12px; cursor:pointer; text-align:left; transition:background .12s;`)}>
                         <span style={css(`flex:none; width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:${label === 'Use case' ? '#EAF0FF' : '#F1E7FF'}; color:${label === 'Use case' ? '#2c5fff' : '#6F0CE2'};`)}>
                           {label === 'Use case'
                             ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
@@ -334,16 +376,19 @@ export default function HomePage() {
                           <span style={css(`display:block; margin-top:2px; font:400 12.5px ${FONT}; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.sub}</span>
                         </span>
                       </button>
-                    ))}
+                      )
+                    })}
                   </div>
                 ))
               )}
+              <div style={css(`padding:8px 12px 2px; font:500 12px ${FONT}; color:#94a3b8;`)}>{t('↑ ↓ để chọn · Enter để mở · Esc để đóng')}</div>
             </div>
           </div>
         )}
+        </div>
 
         {/* ============ TRENDING QUESTIONS ============ */}
-        <section id="waiting" style={css('position:relative; z-index:1; padding:22px 40px 16px; background:transparent;')}>
+        <section id="waiting" style={css('position:relative; z-index:1; padding:22px var(--zp-gutter) 16px; background:transparent;')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
               <h2 style={css(`margin:0; font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; background:linear-gradient(100deg,#ffffff 0%,#f1e4ff 35%,#d9b8ff 70%,#c89bff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(12,4,40,.75)) drop-shadow(0 0 10px rgba(200,145,255,.75)) drop-shadow(0 0 26px rgba(170,100,255,.55));`)}>{t('Các câu hỏi về AI mới nhất')}</h2>
@@ -365,7 +410,7 @@ export default function HomePage() {
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
                       {t('Câu hỏi')}
                     </span>
-                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:#FFF1E0; color:#B45300; font:700 11.5px ${FONT};`)}>{t('Đang chờ trả lời')}</span>
+                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${q.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{q.resolved ? t('Đã trả lời') : t('Đang chờ trả lời')}</span>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
                     <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
@@ -420,8 +465,8 @@ export default function HomePage() {
 
               {trending.length === 0 && (
                 <div style={css('grid-column:1 / -1; padding:44px 24px; text-align:center; background:#fff; border:1px dashed #C9D4E6; border-radius:20px;')}>
-                  <div style={css(`font:800 16px ${FONT}; color:#0F172A;`)}>{t('Không còn câu hỏi nào đang chờ')}</div>
-                  <div style={css(`margin-top:8px; font:400 14px ${FONT}; color:#64748b;`)}>{t('Mọi câu hỏi đều đã có người trả lời. Bạn có thể đặt câu hỏi mới bất cứ lúc nào.')}</div>
+                  <div style={css(`font:800 16px ${FONT}; color:#0F172A;`)}>{t('Chưa có câu hỏi nào')}</div>
+                  <div style={css(`margin-top:8px; font:400 14px ${FONT}; color:#64748b;`)}>{t('Hãy là người đầu tiên đặt câu hỏi về AI.')}</div>
                 </div>
               )}
             </div>
@@ -429,17 +474,17 @@ export default function HomePage() {
 
           {modalSrc && createPortal((
             <div onClick={closeModal} style={css('position:fixed; inset:0; z-index:3000; background:rgba(4,10,26,.62); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:40px 24px;')}>
-              <div onClick={(e) => e.stopPropagation()} style={css('width:720px; max-width:100%; max-height:100%; overflow-y:auto; background:#ffffff; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
+              <div ref={homeQDialog.ref} {...homeQDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:720px; max-width:100%; max-height:100%; overflow-y:auto; background:#ffffff; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
                 <div style={css('display:flex; gap:14px; padding:24px 26px 0;')}>
                   <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${modalSrc.avatarColor || AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};`)}>{modalSrc.initials}</span>
                   <div style={css('flex:1; min-width:0;')}>
                     <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
                       <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span>
                       <span style={css(`font:400 13px ${FONT}; color:#94a3b8;`)}>{relativeTime(modalSrc.time)}</span>
-                      <span style={css(`display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${modalSrc.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${modalSrc.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{modalSrc.resolved ? 'Resolved' : t('Đang chờ trả lời')}</span>
+                      <span style={css(`display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${modalSrc.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${modalSrc.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{modalSrc.resolved ? t('Đã trả lời') : t('Đang chờ trả lời')}</span>
                     </div>
                   </div>
-                  <button onClick={closeModal} style={css('flex:none; width:36px; height:36px; border:1px solid #E6EBF3; border-radius:11px; background:#fff; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;')}>
+                  <button onClick={closeModal} aria-label={t('Đóng')} style={css('flex:none; width:36px; height:36px; border:1px solid #E6EBF3; border-radius:11px; background:#fff; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;')}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                   </button>
                 </div>
@@ -550,7 +595,7 @@ export default function HomePage() {
         </section>
 
         {/* ============ FEATURED USE CASES ============ */}
-        <section id="featured" style={css('position:relative; padding:24px 40px 36px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
+        <section id="featured" style={css('position:relative; padding:24px var(--zp-gutter) 36px; background:linear-gradient(180deg,#05080f 0%,#070c1b 55%,#04060d 100%);')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
             <div style={css('display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px 24px;')}>
               <h2 style={css(`font:900 34px/1.15 ${FONT}; letter-spacing:-.015em; margin:0; background:linear-gradient(100deg,#ffffff 0%,#dce9ff 35%,#9fc2ff 70%,#78a8ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 2px 6px rgba(2,8,30,.75)) drop-shadow(0 0 10px rgba(110,165,255,.75)) drop-shadow(0 0 26px rgba(70,130,255,.55));`)}>{t('Các AI Use Case mới nhất')}</h2>
@@ -636,7 +681,7 @@ export default function HomePage() {
 
       {confirmDeleteId && (
         <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
-          <div onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
+          <div ref={homeDelDialog.ref} {...homeDelDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:360px; max-width:100%; background:#fff; border-radius:20px; padding:26px 24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
             <div style={css('width:52px; height:52px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
             </div>
