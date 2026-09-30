@@ -1,0 +1,306 @@
+export default {
+  id: 'c6',
+  title: 'Tạo nhóm người dùng (segment) mới trong ~4 giờ thay vì 1–2 ngày',
+  toolName: 'segment-pipeline',
+  desc: 'Team Data đưa 1 ticket Jira yêu cầu tạo nhóm người dùng mới, AI kiểm dữ liệu thật rồi trả về code xử lý, câu lệnh tạo bảng và tài liệu.',
+  type: 'case',
+  status: 'prototype',
+  statusNote: 'MVP đã chạy thật trên 1 segment · bản cải tiến PCDCM-6831 đang làm (IN DEV)',
+  kind: 'tech',
+  level: 'ref',
+  category: 'Data',
+  topics: ['Dữ liệu khách hàng', 'Kiểm tra chất lượng dữ liệu', 'Tự động hoá quy trình'],
+  tools: ['Claude Code'],
+  audience: 'Data, Dev',
+  difficulty: 'Khó',
+  access: 'Chỉ trong team: skill nằm trong repo dp-segment-etl (branch feature/apply-ai); xin quyền ở đâu [cần bổ sung]',
+  author: 'DataPlatform',
+  ownerName: '[cần bổ sung]',
+  ownerTeam: 'Data Platform',
+  updated: '',
+  cover: '',
+  stats: [
+    { value: '~4 giờ', extra: 'thay vì 1–2 ngày', label: 'để làm 1 segment mới (đo thật, 1 case)' },
+    { value: '~60–75%', extra: '', label: 'effort giảm cho 1 segment mới' },
+    { value: '0 → 6', extra: '', label: 'điểm kiểm tra chất lượng dữ liệu trước khi nạp' },
+  ],
+
+  tldr: [
+    ['Vấn đề', 'Mỗi nhóm người dùng mới (segment) tốn 1–2 ngày làm lặp lại, và hệ thống không báo lỗi khi dữ liệu ghi xuống bị sai.'],
+    ['Giải pháp', 'Một bộ hướng dẫn cài vào AI (Agent Skill) đi qua 8 bước cố định: từ đọc ticket, kiểm dữ liệu thật tới bàn giao.'],
+    ['Kết quả', 'Segment core_receive_money (PCDCM-6459): từ 1–2 ngày còn ~4 giờ; bắt được 1 trong 3 nhóm của ticket ra 0 dòng trước khi viết code.'],
+    ['Dùng khi', 'Team Data nhận một ticket tạo segment mới chạy theo lịch (batch).'],
+  ],
+
+  problem: {
+    text: 'Mỗi "segment condition" là một nhóm người dùng theo điều kiện, ví dụ "đã nhận tiền qua QR". Mỗi nhóm cần một đường ống xử lý dữ liệu (pipeline) riêng, chạy theo lịch.',
+    bullets: [
+      'Ai gặp: team Data làm segment cho hệ thống dữ liệu khách hàng (CDP); repo hiện có hàng chục bộ xử lý như vậy.',
+      'Việc tốn công: đọc dữ liệu thô, chuẩn hoá, rồi ghi cùng lúc vào 3 kho dữ liệu cho phân tích, CRM và lưu trữ.',
+      'Tốn bao nhiêu: 1–2 ngày làm việc cho mỗi segment mới, lặp lại gần như y hệt.',
+      'Rủi ro âm thầm: dữ liệu sai nhưng job vẫn báo thành công; có lúc phải xoá bảng và nạp lại từ đầu.',
+    ],
+    tables: [],
+    images: [],
+  },
+
+  solution: {
+    analogy: 'Hiểu đơn giản: như một đồng nghiệp làm theo checklist 8 bước, kiểm dữ liệu thật trước khi làm, gặp chỗ không khớp thì dừng lại hỏi bạn chứ không tự đoán.',
+    steps: [
+      'Bạn: đưa mã ticket Jira, ví dụ "tạo segment mới từ ticket PCDCM-xxxx".',
+      'AI: đọc ticket, bóc tách yêu cầu theo khung 27 điểm, kiểm segment đã có chưa, hỏi bạn 4 thông tin bắt buộc.',
+      'AI: chạy thử trên dữ liệu thật, đối chiếu từng cột và từng giá trị ticket ghi; chỗ nào lệch thì dừng lại hỏi.',
+      'Bạn quyết định: chốt từng điểm lệch; quyết định được ghi thành chữ vào tài liệu.',
+      'AI: sinh code, câu lệnh tạo bảng, chạy thử ở môi trường thử nghiệm (STG), viết tài liệu. Bạn tự chạy các bước ghi dữ liệu thật.',
+    ],
+    images: [],
+  },
+
+  result: {
+    beforeAfter: {
+      cols: ['Chỉ số', 'Trước (làm tay)', 'Sau (có skill)'],
+      rows: [
+        ['Effort cho 1 segment mới (ticket → chạy được + tài liệu)', '1–2 ngày làm việc', '~4 giờ (giảm ~60–75%)'],
+        ['Kiểm trên dữ liệu thật trước khi viết code', 'Tuỳ người, thường bỏ bớt khi gấp', 'Bắt buộc, có bước chặn (100% ticket)'],
+        ['Số kiểm tra chất lượng dữ liệu trước khi nạp', '0 tự động', '6 điểm kiểm + 1 bước tổng hợp'],
+        ['Tài liệu mô tả dữ liệu (doc dictionary)', 'Thường viết sau, hoặc thiếu', 'Có ngay, review cùng code'],
+        ['Lỗi âm thầm được chặn', 'Dựa vào kinh nghiệm cá nhân', '4/4 lỗi đã biết được kiểm rõ ràng'],
+        ['Sai sót phải sửa sau lần nạp đầu', 'Có xảy ra (phải xoá bảng + nạp lại)', '0 ở case đầu tiên (cần thêm mẫu để kết luận)'],
+      ],
+      note: 'Đo trên 1 segment thật: core_receive_money (PCDCM-6459), dữ liệu 7 ngày 20260724 → 20260730.',
+    },
+    bullets: [
+      'Bước kiểm đầu tiên bắt được: giá trị lọc TF012 trong ticket ra 0 dòng, nên nhóm "p2p" không có dữ liệu.',
+      'Nếu bỏ bước kiểm, segment vẫn chạy xanh và được giao, nhưng chỉ 2/3 nhóm ticket yêu cầu là có dữ liệu.',
+      'AI dừng lại hỏi 3 điểm; cả 3 đều được người dùng quyết định ngày 2026-07-31 và ghi vào tài liệu.',
+      '6 điểm kiểm chất lượng dữ liệu đều PASS trên 2.661.634 dòng sau lọc.',
+    ],
+    tables: [],
+    note: 'Mới đo trên 1 case. Dự kiến áp cho 3–5 segment kế tiếp để khẳng định con số tiết kiệm effort.',
+    images: [],
+  },
+
+  apply: {
+    intro: 'Cách làm có thể lặp lại: quy trình chia bước có "cổng kiểm" (gate) + kho kiến thức đã kiểm chứng + mẫu sẵn. Team Data gọi skill ngay trong repo; team khác có thể mượn khuôn này cho việc lặp lại của mình.',
+    fit: {
+      yes: [
+        'Bạn ở team Data và nhận ticket tạo segment mới chạy theo lịch (batch), loại USER_ACTION hoặc USER_PROPERTIES.',
+        'Dữ liệu nguồn là giao dịch hoặc log sự kiện ZPA/ZPI trên HDFS, hoặc segment đã có.',
+        'Bạn muốn một việc lặp lại đi qua cùng một quy trình có kiểm tra, không phụ thuộc kinh nghiệm từng người.',
+      ],
+      no: [
+        'Segment gần thời gian thực (streaming Kafka): nhánh này chưa được kiểm end-to-end.',
+        'Bạn cần AI tự ghi dữ liệu, tự nạp lịch sử, tự commit hay push: skill không làm các việc này.',
+        'Bạn cần AI tự đăng ký lịch chạy trên Airflow: hiện vẫn là bước làm tay.',
+      ],
+    },
+    prep: [
+      'Claude Code, mở repo dp-segment-etl (branch feature/apply-ai); skill nằm ở .claude/skills/segment-pipeline/.',
+      'PyCharm có kết nối cho AI (MCP) PyCharm, chạy trên kernel remote Server 95.',
+      'Kết nối mcp_local2 để AI đọc Jira và đăng tài liệu lên Confluence.',
+      'Mã ticket Jira của segment cần làm (dạng PCDCM-xxxx).',
+      'Xin quyền repo, kernel và các kết nối ở đâu: [cần bổ sung].',
+    ],
+    steps: [
+      'Bạn: gọi skill bằng /segment-pipeline hoặc gõ câu mô tả kèm mã ticket.',
+      'Bạn: trả lời 4 câu AI hỏi: tên segment, tên file, domain, cột dimension (cột chia nhóm).',
+      'AI: chạy thử trên dữ liệu thật. Nếu kết quả là "HOI-USER", bạn quyết định từng điểm lệch.',
+      'AI: sinh code, câu lệnh tạo bảng, chạy thử ở STG, viết tài liệu mô tả dữ liệu.',
+      'Bạn: chạy câu lệnh tạo bảng, nạp lịch sử 6 tháng theo ticket, đăng ký lịch chạy Airflow, mở MR gồm cả cdp/ và docs/.',
+    ],
+    blocks: [
+      { type: 'prompt', label: 'Cách 1 — gọi skill bằng lệnh', text: '/segment-pipeline' },
+      { type: 'prompt', label: 'Cách 2 — chỉ cần mô tả (thay PCDCM-xxxx bằng mã ticket của bạn)', text: 'tạo segment mới từ ticket PCDCM-xxxx' },
+      {
+        type: 'table',
+        title: '8 bước skill đi qua (ai làm gì)',
+        cols: ['Bước', 'Việc', 'Bạn nhận được'],
+        rows: [
+          ['0 — Tiếp nhận', 'AI đọc Jira, điền khung 27 điểm, kiểm trùng segment, hỏi bạn 4 thông tin bắt buộc', 'Yêu cầu đã chốt'],
+          ['1 — Kiểm dữ liệu thật', 'AI chạy thử trên dữ liệu thật: tên cột, đơn vị thời gian, phân bố nhóm, trùng lặp, ngày cao điểm', 'Số liệu thật + cổng kiểm PASS'],
+          ['2 — Sinh code', 'AI sinh code từ mẫu, kèm ô nạp lịch sử (backfill) để sẵn dạng comment', 'File code của segment'],
+          ['3 — Soát lỗi', 'AI chạy script kiểm và checklist quy ước', 'Code hợp lệ để push'],
+          ['4 — Câu lệnh tạo bảng', 'AI sinh câu lệnh tạo bảng (DDL) và in ra chat', 'Bạn tự chạy câu lệnh'],
+          ['5 — Chạy thử STG', 'AI chạy thử ở môi trường thử nghiệm, chạy 6 điểm kiểm chất lượng', 'Xác nhận chạy được'],
+          ['6 — Tài liệu', 'AI viết tài liệu mô tả dữ liệu từ số liệu thật, đăng Confluence', 'Tài liệu + trang Confluence'],
+          ['7 — Bàn giao', 'AI liệt kê việc bạn cần làm: chạy DDL, nạp lịch sử, đăng ký lịch chạy', 'Checklist bàn giao'],
+        ],
+      },
+      { type: 'note', tone: 'info', title: 'Khi AI dừng lại hỏi', text: 'AI không tự sửa cho khớp dữ liệu. Mỗi quyết định của bạn được ghi vào Note của tài liệu: ticket ghi gì, thực tế dùng gì, vì sao, ai quyết, ngày nào.' },
+      {
+        type: 'table',
+        title: 'Ví dụ quyết định đã ghi lại (case core_receive_money)',
+        cols: ['Ticket ghi', 'Thực tế dùng', 'Vì sao', 'Ai quyết định', 'Ngày'],
+        rows: [
+          ["appID = 450 và productCode = 'TF012' cho p2p", 'Giữ nguyên theo ticket', 'TF012 ra 0 dòng trong cửa sổ explore 20260724–20260730; user chốt giữ đúng hợp đồng ticket và ghi lại hiện trạng chưa có dữ liệu', 'User', '2026-07-31'],
+          ['Dimension p2p', 'Giữ như giá trị kỳ vọng, hiện 0 dòng', 'Suy ra từ quyết định giữ nguyên TF012 ở trên', 'User', '2026-07-31'],
+          ['— (ticket không đề cập)', 'Không dedup', '31,48% dòng trùng theo (appUser, source, ymd) là nhiều lần nhận tiền thật, phải giữ cho sum và count', 'User', '2026-07-31'],
+        ],
+      },
+      { type: 'result', label: 'Kết quả mẫu', title: 'Output thật — gate hợp đồng ticket (rút gọn)', code: "======================================================================\nCT ticket ghi\n  user_id      'appUser': OK (7/7 ngày)\n  amount       'amount': OK (7/7 ngày)\n  timestamp    'reqDate': OK (7/7 ngày)\n======================================================================\nGIÁ TR FILTER ticket ghi  (trên 27,845,746 dòng CHA filter)\n  status == 'SUCCESS'          25,618,697\n  appID == 3253                2,589,691\n  appID == 450                   565,633\n  appID == 454                 3,311,869\n  productCode == 'MS001'             3,078,857\n  productCode == 'TF012'                     0   <-- 0 DÒNG\n  productCode == 'TU012'                72,064\n======================================================================\nPHI HI USER — ticket lch d liu:\n  filter productCode: giá tr ticket ghi không xut hin: ['TF012']\nHi 2 iu: (1) dng  clarify vi BA, hay tip tc?\n            (2) nu tip tc thì dùng ct/giá tr nào — USER ch nh.\nKHÔNG t i EXPLORE_COLS / FILTER_EXPR cho khp d liu.\n\n--- và sau transform, kim li dimension mà ticket yêu cu ---\n\ndimension 'receive_money_source' — ticket yêu cu 3 giá tr:\n  bank                     2,589,681\n  p2p                              0   <-- 0 DÒNG\n  napas_phone                 71,953\nPHI HI USER — dimension ca ticket không khp kt qu:\n  receive_money_source: giá tr ticket yêu cu ra 0 dòng: ['p2p']\nHi: sai iu kin filter, sai ct ngun, hay nghip v úng là không có d liu?\nBa hng sa khác nhau — KHÔNG t oán, và KHÔNG lng l ship 1/3 dimension.\n\n======================================================================\nEXPLORE GATE: HOI-USER  |  0 chn, 3 cn quyt nh\n======================================================================" },
+      { type: 'result', label: 'Kết quả mẫu', title: 'Output thật — dq_precheck', code: "================================================================\nDATA QUALITY PRECHECK\n================================================================\nPASS  s dòng: 2,661,634\nPASS   ct bt buc\nPASS  redshift_cols không cha ct h thng\nPASS  updated_at 13 ch s, 2026-07-24 00:00:01  2026-07-30 23:59:59\nPASS  user_id úng 15 ký t\nPASS  không null trong redshift_cols\n================================================================\nKT QU: PASS — sn sàng chy run_pipeline\n================================================================\n+---------------+--------------------+--------------------+-------------+\n|user_id        |receive_money_source|receive_money_amount|updated_at   |\n+---------------+--------------------+--------------------+-------------+\n|250624000005364|napas_phone         |20000               |1785158606965|\n|260408000008403|bank                |55000               |1785158625221|\n|210407002500517|bank                |600000              |1785158696468|\n|260604003008420|bank                |50000               |1785156799199|\n|260727003012904|bank                |50000               |1785156811594|\n+---------------+--------------------+--------------------+-------------+" },
+      { type: 'note', tone: 'info', text: 'Hai khối kết quả trên được chép nguyên từ tài liệu gốc; một số chữ tiếng Việt có dấu bị mất ký tự ngay trong bản PDF.' },
+    ],
+    code: [],
+    success: [
+      'Cổng kiểm dữ liệu kết thúc bằng dòng "EXPLORE GATE: PASS"; nếu là "HOI-USER" thì AI đang chờ bạn quyết định.',
+      'Bước kiểm chất lượng in "PASS" cho cả 6 điểm và dòng kết quả cuối là PASS.',
+      'Repo có thêm file code cdp/{domain}/{name}.ipynb và tài liệu docs/{...}.md.',
+      'AI đưa bạn checklist bàn giao: chạy DDL, nạp lịch sử, đăng ký lịch chạy Airflow.',
+    ],
+    images: [],
+    pitfalls: [
+      { meet: 'Giá trị lọc trong ticket ra 0 dòng (ví dụ TF012)', why: 'Ticket ghi lệch so với dữ liệu thật', fix: 'Hỏi lại BA, hoặc chốt giữ nguyên theo ticket; AI ghi quyết định vào tài liệu' },
+      { meet: '1 nhóm (dimension) ticket yêu cầu ra 0 dòng', why: 'Sai điều kiện lọc, sai cột nguồn, hoặc nghiệp vụ đúng là chưa có dữ liệu', fix: 'Bạn chọn 1 trong 3 hướng; AI không tự đoán và không lặng lẽ giao thiếu nhóm' },
+      { meet: 'Dữ liệu có nhiều dòng trùng (31,48% ở case này)', why: 'Mỗi dòng là một lần nhận tiền thật', fix: 'Không bỏ trùng, để tổng tiền và số lần được tính đúng' },
+      { meet: 'Nạp lần đầu thiếu cột skey, sys_create_date', why: '2 cột này chỉ có khi chạy câu lệnh tạo bảng (DDL), hệ thống không tự thêm', fix: 'Chạy DDL AI in ra trước lần nạp đầu tiên' },
+      { meet: 'Job hằng ngày nạp lại toàn bộ lịch sử', why: 'Ô nạp lịch sử (backfill) bị bỏ comment rồi commit; Airflow chạy lại chính file đó mỗi ngày', fix: 'Chạy backfill xong thì comment lại trước khi commit' },
+    ],
+  },
+
+  safety: {
+    rules: [
+      'AI được làm: đọc dữ liệu, phân tích, sinh code.',
+      'AI không được làm nếu bạn chưa yêu cầu rõ ràng: ghi vào HDFS/MongoDB/Redshift/Delta Lake, xoá file HDFS, commit, push.',
+      'AI không chạy bước nạp dữ liệu (run_pipeline) và không bỏ comment ô nạp lịch sử (backfill).',
+      'Dữ liệu đi qua AI: dữ liệu giao dịch thật, chạy trên máy chủ Server 95, không phải dữ liệu mẫu.',
+      'Mọi điểm lệch giữa ticket và dữ liệu đều do người quyết, AI chỉ báo và ghi lại.',
+    ],
+    limits: [
+      'Mới đo trên 1 segment; cần thêm mẫu để khẳng định con số tiết kiệm.',
+      'Chưa kiểm end-to-end cho segment gần thời gian thực (streaming Kafka).',
+      'Chưa tự đăng ký lịch chạy Airflow; bước này vẫn làm tay.',
+      'Case đầu: tài liệu chưa đăng Confluence; mẫu dữ liệu MongoDB sẽ dán sau lần nạp STG đầu tiên.',
+      'Bản hiện tại chưa xong, ước tính thứ 6 (2/10).',
+    ],
+    tables: [],
+  },
+
+  demo: [],
+
+  tech: {
+    bullets: [
+      'Mỗi segment condition trong CDP là 1 pipeline ETL độc lập: đọc dữ liệu thô từ HDFS (event log ZPA/ZPI, translog, Delta Lake), transform về schema chuẩn, ghi song song vào Redshift (analytics), MongoDB (profile phục vụ CRM) và Delta Lake (lakehouse), chạy theo schedule trên Airflow HA. Repo dp-segment-etl có hàng chục notebook, trải trên các domain: core, event_tracking, stock, bill, fs, mmf, risk...',
+      'Vấn đề kỹ thuật: framework segflow không raise lỗi khi data quality sai — job vẫn báo thành công trong khi dữ liệu ghi xuống Redshift/MongoDB đã sai.',
+      'Trong phạm vi MVP: segment batch (Airflow schedule) cho USER_ACTION (có dimension + aggregation) và USER_PROPERTIES; nguồn HDFS parquet partition ym/ymd (translog, event log ZPA/ZPI, Delta Lake của segment đã có); 3 đích ghi Redshift, MongoDB, Delta Lake qua đúng framework segflow hiện tại, không thay thế gì.',
+      'Sinh đầy đủ: notebook ETL, DDL Redshift, doc dictionary publish lên Confluence, cell backfill. Chạy code qua MCP PyCharm trên remote kernel Server 95, tức chạy trên dữ liệu thật, không phải sample.',
+      'Ranh giới an toàn: skill tuân thủ CLAUDE.md §Important Safety Rules. Cell backfill bắt buộc giữ dạng comment khi commit — vì Airflow chạy papermill trên chính notebook đó, uncomment rồi commit sẽ khiến job production nạp lại toàn bộ lịch sử mỗi ngày.',
+    ],
+    tables: [
+      {
+        title: 'Agent Skill gồm 4 lớp (.claude/skills/segment-pipeline/)', note: '',
+        cols: ['Lớp', 'Nội dung', 'Quy mô'],
+        rows: [
+          ['Quy trình', 'SKILL.md — 8 phase từ intake tới handoff, mỗi phase có điều kiện vào/ra rõ ràng', '472 dòng'],
+          ['Knowledge base', '5 file reference: API thư viện segflow (trích trực tiếp từ source trên Server 95), nguồn dữ liệu HDFS, convention đặt tên, chuẩn DDL/doc downstream, khung 27 điểm bóc tách requirement', '1.403 dòng'],
+          ['Template', 'Notebook EDA, notebook ETL cho USER_ACTION, notebook ETL cho USER_PROPERTIES, DDL Redshift, doc dictionary', '1.723 dòng'],
+          ['Thư viện kiểm tra', 'explore_helpers.py — ~28 hàm explore và data quality, được nhúng vào cell notebook (kernel chạy remote nên không import được file local)', '1.007 dòng'],
+        ],
+      },
+      {
+        title: 'Quy trình 8 phase', note: '',
+        cols: ['Phase', 'Nội dung', 'Output'],
+        rows: [
+          ['0 — Intake', 'Đọc Jira, điền khung 27 điểm, kiểm trùng segment đã có, hỏi 4 thứ bắt buộc (tên segment, tên file, domain, cột dimension)', 'Requirement đã chốt'],
+          ['1 — Explore', 'Sinh và chạy notebook EDA trên kernel remote theo 5 nhóm cell; kiểm schema theo ngày, tên cột thật, đơn vị timestamp, phân bố dimension, trùng lặp, volume ngày peak', 'Số liệu thật + EXPLORE GATE: PASS'],
+          ['2 — Notebook ETL', 'Sinh notebook từ template theo segment_type, kèm cell backfill để sẵn dạng comment', 'cdp/{domain}/{name}.ipynb'],
+          ['3 — Validate tĩnh', 'scripts/check_notebook.py + checklist convention', 'Notebook hợp lệ để push'],
+          ['4 — DDL Redshift', 'Sinh base table + materialized view + union view đúng nhánh theo segment_type', 'DDL in ra chat cho user chạy'],
+          ['5 — Dry-run STG', "Chạy tới hết transform trên ENV='stg', chạy dq_precheck, test cả trường hợp JOB_DATE dạng int (mô phỏng Airflow)", 'Xác nhận pipeline chạy được'],
+          ['6 — Doc & publish', 'Sinh doc dictionary từ số liệu explore, publish Confluence, ghi page id vào frontmatter, giải phóng Spark session', 'docs/{...}.md + Confluence page'],
+          ['7 — Handoff', 'Liệt kê việc user cần làm: chạy DDL, chạy backfill, đăng ký DAG Airflow', 'Checklist bàn giao'],
+        ],
+      },
+      {
+        title: 'Case core_receive_money (PCDCM-6459) — đầu vào ticket',
+        note: "Ticket: New segment condition Had/Last receive Money with QR — segment theo dõi hành vi nhận tiền của user, dimension là nguồn nhận tiền. Số liệu là output thật từ notebook explore chạy trên kernel tuanlt2 @ Server 95 (host: PTO_ZaloPay_App-637.95), cửa sổ explore 7 ngày: 20260724 → 20260730, nguồn hdfs://zalopaynewcluster/zalopay/encrypt/tpe/translog.",
+        cols: ['Hạng mục', 'Ticket ghi'],
+        rows: [
+          ['Dimension (3 giá trị)', "Nhận tiền từ Bank (appID=3253, productCode='MS001') · từ p2p (appID=450, productCode='TF012') · từ SĐT NAPAS (appID=454, productCode='TU012')"],
+          ['Metric', 'last (lần nhận tiền gần nhất) và sum (tổng số tiền nhận)'],
+          ['Filter', "Chỉ giao dịch status = 'SUCCESS'"],
+          ['Cột nguồn', 'appUser (user nhận tiền) · amount (số tiền) · reqDate (thời gian giao dịch)'],
+          ['Cửa sổ migrate', '6 tháng gần nhất từ thời điểm public segment condition'],
+        ],
+      },
+      {
+        title: 'Explore trên dữ liệu thật — số liệu đo được, không phỏng đoán', note: '',
+        cols: ['Hạng mục kiểm', 'Kết quả đo'],
+        rows: [
+          ['Kernel guard', '/data/data_science/envs_python/tuanlt2/bin/python — đúng kernel remote, không phải interpreter local'],
+          ['Schema theo ngày', 'Đồng nhất 7/7 ngày; schema đầy đủ 124 cột'],
+          ['Volume', '27.845.746 dòng thô → 2.661.634 dòng sau filter theo ticket'],
+          ['Giá trị thật của status', '4 giá trị: SUCCESS 25.618.697 · FAILED 2.169.595 · PENDING 56.995 · chuỗi rỗng 459'],
+          ['Đơn vị timestamp', 'reqDate kiểu string → convert ra long 13 chữ số, khoảng 2026-07-24 00:00:01 → 2026-07-30 23:59:59, non-null 2.661.634/2.661.634'],
+          ['appUser', '0 null, 0 rỗng, 100% đúng 15 ký tự; 949.474 user distinct trong 7 ngày'],
+          ['Dimension receive_money_source', 'bank 2.589.681 · napas_phone 71.953 · p2p 0. Hai giá trị có dữ liệu đều xuất hiện đủ 7/7 ngày (không có outlier theo ngày)'],
+          ['Chất lượng dimension', '0 null · 0 rỗng/whitespace · 0 mongo-unsafe (không giá trị nào chứa . # $ — các ký tự làm hỏng key document Mongo)'],
+          ['Tác động normalize', 'normalize sẽ đổi 0 dòng, 0 non-ASCII, 0 degenerate → chốt NORMALIZE_COLS = []'],
+          ['Trùng lặp (grain 1 ngày)', '837.908 dòng trùng theo (appUser, receive_money_source, ymd) = 31,48%, key lặp nhiều nhất 248 dòng → không dedup: mỗi dòng là một lần nhận tiền, cần giữ cho sum và count'],
+          ['Volume ngày peak → sizing', 'Peak 20260725: 398.285 dòng/ngày, 265.360 user → phân loại nhỏ (< 1M) → SparkResourceConfig()'],
+        ],
+      },
+      {
+        title: 'Deliverable thật của case này', note: '',
+        cols: ['#', 'Artifact', 'Nội dung'],
+        rows: [
+          ['1', 'cdp/core/receive_money.ipynb', 'Notebook ETL 19 cell: parameters (tag parameters) · setup · resource config · khai báo cột · get_data/transform · SegmentConfig · run_pipeline · cell backfill để sẵn dạng comment (cửa sổ 20260201 → 20260730, có progress file để chạy lại được, chạy tăng dần theo ngày vì MongoDB tích luỹ last/sum)'],
+          ['2', 'docs/core/receive_money.md', 'Doc dictionary 4 section (segment properties · transformation · data model · field dictionary), DDL Redshift nhúng trong doc, Note chứa toàn bộ số liệu explore và bảng quyết định lệch ticket ở trên'],
+          ['3', 'DDL Redshift (in ra chat, nhúng trong doc)', 'datawarehouse.sgm_core_receive_money + _mv + _v. Đúng nhánh USER_ACTION: MV không dedup; view _v sinh 1 AS count_receive_money ở SELECT ngoài cùng (biz đếm bằng SUM(), count luỹ kế thật nằm ở MongoDB data.<dim>.count)'],
+        ],
+      },
+      {
+        title: 'Trạng thái và việc còn lại', note: '',
+        cols: ['Phase', 'Trạng thái'],
+        rows: [
+          ['0 Intake → 1 Explore', 'Xong. Explore 7 ngày trên dữ liệu thật; gate ra HOI-USER với 3 điểm, cả 3 đã có quyết định tường minh của user'],
+          ['2 Notebook ETL → 3 Validate', 'Xong. Notebook qua scripts/check_notebook.py'],
+          ['4 DDL', 'Đã sinh. User chạy DDL — skey và sys_create_date chỉ đến từ DDL, không do framework thêm, nên phải chạy trước lần ingest đầu tiên'],
+          ['5 Dry-run STG', "Xong. Chạy tới hết transform trên ENV='stg'; output đã được clear trước khi commit (nbstripout)"],
+          ['6 Doc', 'docs/core/receive_money.md đã có trong repo. Còn lại: publish lên Confluence rồi điền confluence_page_id vào frontmatter; mẫu document MongoDB trong doc sẽ dán sau lần ingest STG đầu tiên (không dùng mẫu tự nghĩ)'],
+          ['7 Handoff', 'Còn lại, đều là việc user chủ động: chạy DDL · backfill 6 tháng theo ticket (uncomment cell, chạy, comment lại trước khi commit) · đăng ký DAG Airflow · MR gồm cả cdp/ và docs/'],
+        ],
+      },
+      {
+        title: 'Thành phần chính', note: '',
+        cols: ['Thành phần', 'Vai trò'],
+        rows: [
+          ['Claude Code + Agent Skill', 'Bộ não quy trình. Skill là file markdown + template + script trong repo, được version cùng code và review trong MR'],
+          ['MCP PyCharm', 'Kênh duy nhất để chạy code: runNotebookCell / readNotebook / notebookEdit trên notebook đang mở trong IDE'],
+          ['Remote kernel tuanlt2 @ Server 95 (hub)', 'Nơi thật sự chạy PySpark. File notebook nằm ở máy local, kernel ở server — nên helper phải nhúng vào cell, không import được'],
+          ['MCP mcp_local2', 'Jira (đọc ticket), Confluence (publish doc), Superset. Không dùng để chạy code'],
+          ['Framework zlp_package.segflow', 'Thư viện nội bộ hiện có, skill dùng đúng như đang dùng — không thay thế, không wrap'],
+        ],
+      },
+      {
+        title: 'Nguồn và đích dữ liệu', note: '',
+        cols: ['Loại', 'Chi tiết'],
+        rows: [
+          ['Nguồn — translog', 'hdfs://zalopaynewcluster/zalopay/encrypt/tpe/translog — dữ liệu giao dịch'],
+          ['Đích', 'Redshift datawarehouse.sgm_{segment_name} · MongoDB {segment_name}_{yyyy} và ymd_{segment_name}_{yyyy} · Delta Lake theo path trên'],
+        ],
+      },
+    ],
+    code: [
+      { title: 'Luồng hoạt động', code: "      Jira ticket (PCDCM-xxxx)\n\n\n\n     Claude Code  +  skill segment-pipeline\n     (.claude/skills/segment-pipeline/)\n      · SKILL.md      — quy trình 8 phase\n      · references/   — knowledge base\n      · templates/    — notebook / DDL / doc\n      · scripts/      — ~28 hàm explore & DQ\n\n            MCP mcp_local2            MCP PyCharm\n            (Jira, Confluence,        (runNotebookCell,\n             Superset)                 readNotebook, notebookEdit)\n\n   Jira / Confluence         PyCharm    kernel `tuanlt2`\n                                            trên Server 95 (hub)\n                                                    PySpark\n\n                                            HDFS (d liu tht)\n\n\n\n                              Redshift        MongoDB       Delta Lake\n                            (analytics)    (profile/CRM)   (lakehouse)\n\n                                   ch user chy, AI không ghi\n   Output vào repo:  cdp/{domain}/{name}.ipynb     CI rsync lên Airflow HA\n                     docs/{...}.md                 publish Confluence", note: 'Sơ đồ chép từ tài liệu gốc; các mũi tên/khung và một số ký tự có dấu bị mất trong bản PDF.' },
+      { title: 'cdp/core/receive_money.ipynb — get_data() tính path bên trong hàm', code: "BASE_PATH = \"hdfs://zalopaynewcluster/zalopay/encrypt/tpe/translog\"\n\n\ndef get_data():\n    job_date = str(JOB_DATE)          # Airflow truyn int — bt buc cast\n    ym, ymd = job_date[:6], job_date  # tính TRONG hàm,  cell backfill c úng partition\n\n    read_path = f\"{BASE_PATH}/ym={ym}/ymd={ymd}\"\n    return (\n        spark_app.spark.read\n        .option(\"mergeSchema\", \"true\")\n        .option(\"basePath\", BASE_PATH)\n        .parquet(read_path)\n        .select(\"appUser\", \"amount\", \"reqDate\", \"status\", \"appID\", \"productCode\")\n    )\n\n\ndef transform(df):\n    # Không .cache()  ây — run_pipeline ã t cache kt qu ca transform_func\n    out = (df\n        .filter(\n            (func.col(\"status\") == \"SUCCESS\") & (\n                ((func.col(\"appID\").cast(\"int\") == 3253) & (func.col(\"productCode\") == \"MS001\")) |\n                ((func.col(\"appID\").cast(\"int\") == 450) & (func.col(\"productCode\") == \"TF012\")) |\n                ((func.col(\"appID\").cast(\"int\") == 454) & (func.col(\"productCode\") == \"TU012\"))\n            )\n        )\n        .withColumn(\n            \"receive_money_source\",\n            func.when(\n                (func.col(\"appID\").cast(\"int\") == 3253) & (func.col(\"productCode\") == \"MS001\"),\n                func.lit(\"bank\"),\n            ).when(\n                (func.col(\"appID\").cast(\"int\") == 450) & (func.col(\"productCode\") == \"TF012\"),\n                func.lit(\"p2p\"),\n            ).when(\n                (func.col(\"appID\").cast(\"int\") == 454) & (func.col(\"productCode\") == \"TU012\"),\n                func.lit(\"napas_phone\"),\n            )\n        )\n        .withColumn(\"user_id\", func.col(\"appUser\").cast(\"string\"))\n        .withColumn(\"updated_at\",\n                    func.expr(\"CAST(CAST(to_timestamp(reqDate) AS DOUBLE) * 1000 AS LONG)\"))\n        .withColumn(\"receive_money_amount\", func.col(\"amount\").cast(\"long\"))\n        .where(\"user_id is not null and length(cast(user_id as string)) = 15\")\n        .where(\"receive_money_source is not null and updated_at is not null \"\n               \"and receive_money_amount is not null\")\n        .select(\"user_id\", \"receive_money_source\", \"receive_money_amount\", \"updated_at\")\n    )\n\n    return out", note: 'Toàn bộ logic là biểu thức đã được chạy và đo trên notebook explore, không phải code viết từ mô tả ticket rồi mới đem thử.' },
+      { title: 'Segment config — USER_ACTION, dimension + last + sum + count', code: "partition_cols = [\"receive_money_source\"]                                     # dimension\nredshift_cols = [\"user_id\", \"receive_money_source\", \"receive_money_amount\"]   # KHÔNG cha count alias\n\naction_meta = ActionMetaInsertMongo(\n    partition_cols=list(partition_cols),\n    last_value_fields=[\"receive_money_amount\"],\n    first_value_fields=[],\n    sum_agg_cols=[\"receive_money_amount\"],\n    count_agg_cols=[\"*\"],\n    count_aliases=[\"count_receive_money\"],\n)\n\nsegment_config = SegmentConfig(\n    name=SEGMENT_NAME,                       # core_receive_money\n    segment_type=SegmentType.USER_ACTION,\n    job_date=JOB_DATE, env=ENV, mode=MODE,\n    mongo_meta=action_meta,\n    has_mongo_ymd=True,                      # USER_ACTION: to c ymd_* và lifetime\n    mongo_database_option=MongoDatabaseOption.NEW,\n    redshift_cols=redshift_cols,\n    delta_lake_lib_version_config=DeltaLakeLibVersionConfig(\n        lib_version=DeltaLakeLibVersion.ZORDER,\n        clustering_columns=['_timestamp', 'user_id'],\n    ),\n    insert_obs=[InsertObject.REDSHIFT, InsertObject.LAKEHOUSE, InsertObject.MONGO],\n    kafka_config=None,\n)", note: '' },
+    ],
+    images: [],
+    repo: { label: 'dp-segment-etl · .claude/skills/segment-pipeline/ (branch feature/apply-ai)', href: '' },
+  },
+
+  next: {
+    steps: [
+      'Ngắn hạn (1 tháng): áp skill cho 3–5 segment kế tiếp; hoàn thiện nhánh streaming (Kafka); trả nợ tài liệu cho các segment đã có.',
+      'Trung hạn (quý tới): skill tự soát 4 lỗi âm thầm trên mọi MR; sinh DAG Airflow; tự sync docs/ → Confluence trong CI; ghi effort mỗi ticket để có số đo.',
+      'Dài hạn: thư viện skill cùng khuôn cho team Data Platform (migrate MongoDB, theo dõi chất lượng dữ liệu, dashboard Superset, onboarding nguồn dữ liệu mới).',
+    ],
+    contact: [
+      'Người phụ trách: [cần bổ sung]',
+      'Ticket Jira: PCDCM-6831 - Improve Segment pipeline Agent Skill (IN DEV)',
+      'Sau AI Week: thành viên mới đọc SKILL.md + reference để nắm quy trình và các bẫy; mỗi lần thư viện segflow đổi thì cập nhật references/segflow-api.md.',
+    ],
+    link: '',
+  },
+}
