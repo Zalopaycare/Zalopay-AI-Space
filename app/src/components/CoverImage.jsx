@@ -34,7 +34,13 @@ function look(category) {
 
 export default function CoverImage({ c, size = 76, radius = 12 }) {
   const box = `position:relative; flex:none; width:${size}px; height:${size}px; border-radius:${radius}px; overflow:hidden;`
-  if (c.coverUrl) return <span style={css(box + 'display:block; background:#EEF2F9;')}><img src={c.coverUrl} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /></span>
+  // Uploaded / showcase covers are mostly wide screenshots: show them whole in a 4:3 frame
+  // (letterboxed on a soft background) instead of cropping them into a square.
+  if (c.coverUrl) return (
+    <span style={css(`position:relative; flex:none; width:${Math.round(size * 1.34)}px; height:${size}px; border-radius:${radius}px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#F4F7FE; border:1px solid #E6EBF3; box-sizing:border-box;`)}>
+      <img src={c.coverUrl} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
+    </span>
+  )
   const { icon, bg, fg } = look(c.category)
   return (
     <span aria-hidden="true" style={css(box + `display:flex; align-items:center; justify-content:center; background:radial-gradient(120% 120% at 20% 10%, #ffffff 0%, ${bg} 60%); color:${fg}; border:1px solid ${bg};`)}>
