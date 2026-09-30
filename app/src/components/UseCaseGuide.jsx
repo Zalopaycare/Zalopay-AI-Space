@@ -4,13 +4,11 @@ import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
 import Fill from './Fill.jsx'
 
-// Renders a use case's step-by-step guide (data/guides/*.js): a flow diagram, a jump-to index,
-// then numbered sections built from blocks — prompts with Copy, mock AI result windows, tables,
-// coloured notes and tool tabs — so a non-technical reader can follow it top to bottom.
+// Building blocks for step-by-step use case content: prompts with Copy, mock AI result windows,
+// tables, coloured notes, tool tabs and click-to-zoom images (used by the detail page's part 5).
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const MONO = 'ui-monospace,SFMono-Regular,Menlo,monospace'
-const CARD = 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);'
 const TONES = {
   info: { bg: '#EEF3FF', border: '#CFDDFB', title: '#1E44A8', text: '#2A3A57', icon: 'i' },
   warn: { bg: '#FFF8E8', border: '#F3E0B0', title: '#B45300', text: '#5A4522', icon: '!' },
@@ -244,56 +242,4 @@ export function Figure({ img }) {
 
 export function Blocks({ blocks }) {
   return <div style={css('display:flex; flex-direction:column; gap:14px;')}>{blocks.map((b, i) => <Block key={i} b={b} />)}</div>
-}
-
-export default function UseCaseGuide({ guide }) {
-  const jump = (id) => document.getElementById('guide-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  return (
-    <div>
-      <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
-        <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Hướng dẫn từng bước</h2>
-        <span style={css('font-size:13px; color:#8b98b8;')}>Copy prompt · gửi cho AI · đối chiếu kết quả</span>
-      </div>
-
-      {/* Flow diagram + jump-to index */}
-      <div style={css(CARD + 'padding:22px 24px; margin-bottom:18px;')}>
-        <p style={css(`margin:0 0 16px; font:400 14px/1.65 ${FONT}; color:#3A4757;`)}>{guide.intro}</p>
-        <div style={css(`display:grid; grid-template-columns:repeat(${guide.flow.length},minmax(0,1fr)); gap:10px;`)}>
-          {guide.flow.map((f, i) => (
-            <div key={i} style={css('position:relative; padding:14px 14px 12px; border-radius:14px; background:linear-gradient(160deg,#F5F8FF,#E9F0FF); border:1px solid #D5E2FC;')}>
-              <div style={css(`width:28px; height:28px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 13px ${FONT}; box-shadow:0 6px 14px rgba(44,95,255,.35);`)}>{i + 1}</div>
-              <div style={css(`margin-top:10px; font:800 14px ${FONT}; color:#0F172A;`)}>{f.title}</div>
-              <div style={css(`margin-top:3px; font:400 12.5px/1.45 ${FONT}; color:#5B6675;`)}>{f.sub}</div>
-              {i < guide.flow.length - 1 && (
-                <span style={css('position:absolute; right:-12px; top:50%; transform:translateY(-50%); z-index:1; width:14px; height:14px; color:#2c5fff;')}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-        <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
-          <span style={css(`font:700 12px ${FONT}; color:#94a3b8; margin-right:4px; line-height:28px;`)}>Đi nhanh tới:</span>
-          {guide.sections.map((s, i) => (
-            <button key={s.id} onClick={() => jump(s.id)} className={hoverClass('background:#E4ECFF !important; color:#2c5fff !important;')} style={css(`height:28px; padding:0 11px; border:1px solid #E1E8F5; border-radius:999px; background:#F7F9FD; color:#3A4757; font:600 12px ${FONT}; cursor:pointer;`)}>
-              {i + 1}. {s.title}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {guide.sections.map((s, i) => (
-        <section key={s.id} id={'guide-' + s.id} style={css(CARD + 'padding:22px 24px; margin-bottom:18px; scroll-margin-top:84px;')}>
-          <div style={css('display:flex; gap:12px; align-items:flex-start; margin-bottom:14px;')}>
-            <span style={css(`flex:none; min-width:30px; height:30px; padding:0 8px; box-sizing:border-box; border-radius:10px; background:#0F172A; color:#fff; display:flex; align-items:center; justify-content:center; font:800 13px ${FONT};`)}>{i + 1}</span>
-            <div style={css('min-width:0;')}>
-              <div style={css(`font:800 18px/1.3 ${FONT}; color:#0F172A;`)}>{s.title}</div>
-              {s.sub && <div style={css(`margin-top:3px; font:400 13px/1.5 ${FONT}; color:#64748b;`)}>{s.sub}</div>}
-            </div>
-          </div>
-          <Blocks blocks={s.blocks} />
-        </section>
-      ))}
-    </div>
-  )
 }
