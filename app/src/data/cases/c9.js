@@ -16,7 +16,7 @@ export default {
   audience: 'Dev, SRE/Platform',
   difficulty: 'Dễ',
   access: 'Cần xin quyền: [cần bổ sung] — chỉ email @vng.com.vn, chỉ hỏi được project cùng squad',
-  author: 'Taxi',
+  author: 'Platform',
   ownerName: '[cần bổ sung]',
   ownerTeam: 'Platform',
   updated: '05/08/2026',

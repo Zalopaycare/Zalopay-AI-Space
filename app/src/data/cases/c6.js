@@ -14,7 +14,7 @@ export default {
   audience: 'Data, Dev',
   difficulty: 'Khó',
   access: 'Chỉ trong team: skill nằm trong repo dp-segment-etl (branch feature/apply-ai); xin quyền ở đâu [cần bổ sung]',
-  author: 'DataPlatform',
+  author: 'Data Platform',
   ownerName: '[cần bổ sung]',
   ownerTeam: 'Data Platform',
   updated: '',
