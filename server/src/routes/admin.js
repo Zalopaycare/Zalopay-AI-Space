@@ -25,9 +25,37 @@ router.get('/users', (req, res) => {
   res.json({ users })
 })
 
-// Dashboard numbers: active users, top contributors, per-department breakdown.
+// ---- One definition of every count, shared by the KPI cards, the leaderboard and the department
+// table (they used to count "comments" three different ways). "Comment" = every reply anyone
+// writes: answers to questions + replies under answers + comments on use cases.
+const DAY = 86_400_000
+const tsOf = (t) => new Date(String(t).replace(' ', 'T') + 'Z').getTime() // SQLite datetime() is UTC
+const COMMENT_SOURCES = ['question_answers', 'answer_comments', 'use_case_comments']
+const rowsSince = (table, since, extra = '') => db.prepare(`SELECT author_id, created_at FROM ${table} WHERE created_at >= ? ${extra}`).all(since || '0000')
+const byAuthor = (rows) => { const m = {}; for (const r of rows) m[r.author_id] = (m[r.author_id] || 0) + 1; return m }
+const sqlSince = (ms) => new Date(ms).toISOString().replace('T', ' ').slice(0, 19)
+
+/** Per-user counts for one period (since = SQLite UTC timestamp, or null for all time). */
+function contributions(since) {
+  return {
+    questions: byAuthor(rowsSince('questions', since)),
+    answers: byAuthor(rowsSince('question_answers', since)),
+    replies: byAuthor([...rowsSince('answer_comments', since), ...rowsSince('use_case_comments', since)]),
+    useCases: byAuthor(rowsSince('use_case_submissions', since)),
+    approvedUseCases: byAuthor(rowsSince('use_case_submissions', since, "AND review_status = 'approved'")),
+  }
+}
+
+/** total + added today / yesterday (Vietnam calendar days) for a list of created_at values. */
+function kpi(times) {
+  const today = vnDay(), yesterday = vnDay(Date.now() - DAY)
+  let t = 0, y = 0
+  for (const c of times) { const d = vnDay(tsOf(c)); if (d === today) t++; else if (d === yesterday) y++ }
+  return { total: times.length, today: t, yesterday: y }
+}
+
+// Dashboard numbers: KPIs, active users, top contributors, per-department breakdown, weekly trend.
 router.get('/stats', (req, res) => {
-  const DAY = 86_400_000
   const days = Array.from({ length: 14 }, (_, i) => vnDay(Date.now() - (13 - i) * DAY))
   const perDay = Object.fromEntries(db.prepare('SELECT day, COUNT(*) n FROM user_days WHERE day >= ? GROUP BY day').all(days[0]).map((r) => [r.day, r.n]))
   const distinct = (from, to) => db.prepare('SELECT COUNT(DISTINCT user_id) n FROM user_days WHERE day >= ? AND day <= ?').get(from, to).n
@@ -40,44 +68,45 @@ router.get('/stats', (req, res) => {
     prevWau: distinct(vnDay(Date.now() - 13 * DAY), vnDay(Date.now() - 7 * DAY)),
   }
 
-  // Contributions per user, all time and last 30 days (SQLite datetime is UTC, fine for a 30-day window).
-  const since30 = new Date(Date.now() - 30 * DAY).toISOString().replace('T', ' ').slice(0, 19)
-  const tally = (sql, since) => Object.fromEntries(db.prepare(sql).all(since || '0000').map((r) => [r.id, r.n]))
-  const build = (since) => {
-    const q = tally('SELECT author_id id, COUNT(*) n FROM questions WHERE created_at >= ? GROUP BY author_id', since)
-    const a = tally('SELECT author_id id, COUNT(*) n FROM question_answers WHERE created_at >= ? GROUP BY author_id', since)
-    const c1 = tally('SELECT author_id id, COUNT(*) n FROM answer_comments WHERE created_at >= ? GROUP BY author_id', since)
-    const c2 = tally('SELECT author_id id, COUNT(*) n FROM use_case_comments WHERE created_at >= ? GROUP BY author_id', since)
-    const uc = tally("SELECT author_id id, COUNT(*) n FROM use_case_submissions WHERE review_status = 'approved' AND created_at >= ? GROUP BY author_id", since)
+  const times = (table) => db.prepare(`SELECT created_at FROM ${table}`).all().map((r) => r.created_at)
+  const kpis = {
+    questions: kpi(times('questions')),
+    submissions: kpi(times('use_case_submissions')),
+    users: kpi(times('users')),
+    comments: kpi(COMMENT_SOURCES.flatMap(times)),
+  }
+
+  const users = db.prepare('SELECT * FROM users').all()
+  const periods = { last30: sqlSince(Date.now() - 30 * DAY), all: null }
+  const leaderboard = {}, departments = {}
+  const activeWeek = new Set(db.prepare('SELECT DISTINCT user_id id FROM user_days WHERE day >= ?').all(vnDay(Date.now() - 6 * DAY)).map((r) => r.id))
+  for (const [key, since] of Object.entries(periods)) {
+    const c = contributions(since)
     const likes = {}
-    for (const r of db.prepare('SELECT q.author_id id, COUNT(*) n FROM question_reactions x JOIN questions q ON q.id = x.question_id WHERE q.created_at >= ? GROUP BY q.author_id').all(since || '0000')) likes[r.id] = (likes[r.id] || 0) + r.n
-    for (const r of db.prepare('SELECT a.author_id id, COUNT(*) n FROM answer_reactions x JOIN question_answers a ON a.id = x.answer_id WHERE a.created_at >= ? GROUP BY a.author_id').all(since || '0000')) likes[r.id] = (likes[r.id] || 0) + r.n
-    for (const r of db.prepare('SELECT s.author_id id, COUNT(*) n FROM use_case_reactions x JOIN use_case_submissions s ON s.id = x.use_case_id WHERE s.created_at >= ? GROUP BY s.author_id').all(since || '0000')) likes[r.id] = (likes[r.id] || 0) + r.n
-    return db.prepare('SELECT * FROM users').all().map((u) => {
+    const addLikes = (sql) => { for (const r of db.prepare(sql).all(since || '0000')) likes[r.id] = (likes[r.id] || 0) + r.n }
+    addLikes('SELECT q.author_id id, COUNT(*) n FROM question_reactions x JOIN questions q ON q.id = x.question_id WHERE q.created_at >= ? GROUP BY q.author_id')
+    addLikes('SELECT a.author_id id, COUNT(*) n FROM answer_reactions x JOIN question_answers a ON a.id = x.answer_id WHERE a.created_at >= ? GROUP BY a.author_id')
+    addLikes('SELECT s.author_id id, COUNT(*) n FROM use_case_reactions x JOIN use_case_submissions s ON s.id = x.use_case_id WHERE s.created_at >= ? GROUP BY s.author_id')
+    leaderboard[key] = users.map((u) => {
       const row = { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: u.initials, avatarColor: u.avatar_color || null, team: u.team || '',
-        questions: q[u.id] || 0, answers: (a[u.id] || 0), comments: (c1[u.id] || 0) + (c2[u.id] || 0), likes: likes[u.id] || 0, useCases: uc[u.id] || 0 }
+        questions: c.questions[u.id] || 0, answers: c.answers[u.id] || 0, comments: c.replies[u.id] || 0, likes: likes[u.id] || 0, useCases: c.approvedUseCases[u.id] || 0 }
       // Weighting: helping others counts most; approved use cases are the biggest single contribution.
       row.score = row.answers * 3 + row.comments + row.likes * 2 + row.questions + row.useCases * 5
       return row
     }).filter((r) => r.score > 0).sort((x, y) => y.score - x.score).slice(0, 10)
+
+    const depts = {}
+    for (const u of users) {
+      const k = u.team || ''
+      const d = (depts[k] = depts[k] || { team: k, members: 0, active7: 0, questions: 0, comments: 0, useCases: 0 })
+      d.members++; if (activeWeek.has(u.id)) d.active7++
+      // comments = answers + replies/comments: the same total as the "Comment & reply" card
+      d.questions += c.questions[u.id] || 0; d.comments += (c.answers[u.id] || 0) + (c.replies[u.id] || 0); d.useCases += c.useCases[u.id] || 0
+    }
+    departments[key] = Object.values(depts).sort((x, y) => (y.questions + y.comments + y.useCases) - (x.questions + x.comments + x.useCases) || y.members - x.members)
   }
 
-  const week0 = vnDay(Date.now() - 6 * DAY)
-  const activeWeek = new Set(db.prepare('SELECT DISTINCT user_id id FROM user_days WHERE day >= ?').all(week0).map((r) => r.id))
-  const count = (sql) => Object.fromEntries(db.prepare(sql).all().map((r) => [r.id, r.n]))
-  const qs = count('SELECT author_id id, COUNT(*) n FROM questions GROUP BY author_id')
-  const cs = count('SELECT author_id id, SUM(n) n FROM (SELECT author_id, COUNT(*) n FROM question_answers GROUP BY author_id UNION ALL SELECT author_id, COUNT(*) n FROM answer_comments GROUP BY author_id UNION ALL SELECT author_id, COUNT(*) n FROM use_case_comments GROUP BY author_id) GROUP BY author_id')
-  const us = count('SELECT author_id id, COUNT(*) n FROM use_case_submissions GROUP BY author_id')
-  const depts = {}
-  for (const u of db.prepare('SELECT id, team FROM users').all()) {
-    const k = u.team || ''
-    const d = (depts[k] = depts[k] || { team: k, members: 0, active7: 0, questions: 0, comments: 0, useCases: 0 })
-    d.members++; if (activeWeek.has(u.id)) d.active7++
-    d.questions += qs[u.id] || 0; d.comments += cs[u.id] || 0; d.useCases += us[u.id] || 0
-  }
-  const departments = Object.values(depts).sort((x, y) => (y.questions + y.comments + y.useCases) - (x.questions + x.comments + x.useCases) || y.members - x.members)
-
-  res.json({ activity, leaderboard: { all: build(null), last30: build(since30) }, departments })
+  res.json({ activity, kpis, leaderboard, departments })
 })
 
 router.get('/directory-status', async (req, res) => res.json(await directoryStatus(req.user.id)))

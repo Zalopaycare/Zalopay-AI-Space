@@ -91,7 +91,7 @@ export default function AdminConsolePage() {
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [adminStats, setAdminStats] = useState(null)
-  const [lbPeriod, setLbPeriod] = useState('last30')
+  const [lbPeriod, setLbPeriod] = useState('last30') // shared by Top người đóng góp + Theo phòng ban
   const [repStatus, setRepStatus] = useState('open')
   const [submissions, setSubmissions] = useState([])
   const [questions, setQuestions] = useState([])
@@ -149,7 +149,6 @@ export default function AdminConsolePage() {
   const pending = submissions.filter((s) => s.reviewStatus === 'pending')
   const approved = submissions.filter((s) => s.reviewStatus === 'approved')
   const unanswered = questions.filter((q) => !q.answers.length)
-  const commentsTotal = questions.reduce((n, q) => n + q.answers.length + q.answers.reduce((m, a) => m + (a.comments || []).length, 0), 0)
 
 
   const count = (lists) => { const t = {}; lists.forEach((l) => l.forEach((x) => { if (x) t[x] = (t[x] || 0) + 1 })); return Object.entries(t).sort((a, b) => b[1] - a[1]).slice(0, 8) }
@@ -160,7 +159,6 @@ export default function AdminConsolePage() {
   // Daily movement: what was added today vs. how big the total was before today.
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const today0 = startOfDay(now), yesterday0 = today0 - 86_400_000
-  const allComments = questions.flatMap((q) => [...q.answers, ...q.answers.flatMap((a) => a.comments || [])])
   const daily = (list, field) => {
     const ts = list.map((x) => toDate(x[field]).getTime())
     const today = ts.filter((t) => t >= today0).length
@@ -168,13 +166,21 @@ export default function AdminConsolePage() {
     const before = list.length - today
     return { total: list.length, today, yesterday, pct: before > 0 ? Math.round((today / before) * 1000) / 10 : null }
   }
+  // KPI numbers come from the server (/api/admin/stats → kpis) so they are counted exactly like the
+  // department table. "Comment & reply" = answers + replies under answers + comments on use cases.
+  const fromServer = (k) => {
+    if (!k) return null
+    const before = k.total - k.today
+    return { ...k, pct: before > 0 ? Math.round((k.today / before) * 1000) / 10 : null }
+  }
+  const K = adminStats?.kpis || {}
   const act = adminStats?.activity
   const dauPct = act && act.yesterday > 0 ? Math.round(((act.today - act.yesterday) / act.yesterday) * 1000) / 10 : null
   const stats = [
-    { label: 'Câu hỏi', ...daily(questions, 'time'), go: () => setSection('questions') },
-    { label: 'Use case gửi duyệt', ...daily(submissions, 'time'), go: () => { setSection('usecases'); setUcStatus('all') } },
-    { label: 'Thành viên', ...daily(users, 'joined'), go: () => setSection('users') },
-    { label: 'Comment & reply', ...daily(allComments, 'time'), go: () => setSection('questions') },
+    { label: 'Câu hỏi', ...(fromServer(K.questions) || daily(questions, 'time')), go: () => setSection('questions') },
+    { label: 'Use case gửi duyệt', ...(fromServer(K.submissions) || daily(submissions, 'time')), go: () => { setSection('usecases'); setUcStatus('all') } },
+    { label: 'Thành viên', ...(fromServer(K.users) || daily(users, 'joined')), go: () => setSection('users') },
+    { label: 'Comment & reply', ...(fromServer(K.comments) || { total: '—', today: 0, yesterday: 0, pct: null }), go: () => setSection('questions') },
   ]
 
   const statCards = [
@@ -238,7 +244,7 @@ export default function AdminConsolePage() {
   const U_COLS = 'minmax(0,1fr) 110px 120px 80px 80px 80px'
   const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
   const LB_COLS = '34px minmax(0,1fr) 70px 80px 80px 70px 70px 60px'
-  const D_COLS = 'minmax(0,1fr) 100px 150px 90px 90px 90px'
+  const D_COLS = 'minmax(0,1fr) 100px 190px 90px 90px 90px'
   const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
   const repRows = reports.filter((r) => repStatus === 'all' || (repStatus === 'open' ? r.status === 'open' : r.status !== 'open'))
   const resolveReport = (r, action) => api.resolveReport(r.id, action).then(() => { reloadReports(); if (action === 'delete') reloadQuestions() }).catch(() => {})
@@ -311,7 +317,7 @@ export default function AdminConsolePage() {
               </div>
 
               <div style={css('margin-top:18px; padding:16px 18px;' + card)}>
-                <div style={css(font(800, 16) + ';color:#0f172a;')}>Việc cần xử lý</div>
+                <div style={css(font(800, 16) + ';color:#0f172a;')}>Việc cần xử lý <span style={css(font(600, 12.5) + ';color:#64748b;')}>· đang tồn đọng lúc này</span></div>
                 {todos.length === 0 ? (
                   <div style={css('display:flex; align-items:center; gap:10px; margin-top:12px;' + font(600, 13.5) + ';color:#00893F;')}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
@@ -333,7 +339,8 @@ export default function AdminConsolePage() {
                 )}
               </div>
 
-              <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-top:14px;')}>
+              <div style={css('margin-top:16px;' + font(700, 12) + ';letter-spacing:.03em;color:#8fa6d8;')}>CHỈ SỐ CHÍNH · <span style={css(font(500, 12) + ';letter-spacing:0;')}>"Hoạt động hôm nay" tính theo ngày; các thẻ còn lại là tổng từ trước đến nay, kèm số mới hôm nay (giờ Việt Nam)</span></div>
+              <div style={css('display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-top:8px;')}>
                 {statCards.map((k) => (
                   <button key={k.label} onClick={k.go} className={hoverClass(`border-color:${k.color}; transform:translateY(-2px);`)} style={css(`display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:14px 16px; text-align:left; cursor:${k.go ? 'pointer' : 'default'}; transition:transform .15s, border-color .15s; ${card} border-top:4px solid ${k.color};`)}>
                     <span style={css(font(700, 12.5) + ';color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;')}>{k.label}</span>
@@ -347,8 +354,8 @@ export default function AdminConsolePage() {
               <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
-                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp</h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Điểm = trả lời ×3 + like nhận được ×2 + use case được duyệt ×5 + comment/reply ×1 + câu hỏi ×1.</p>
+                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp <span style={css(font(600, 13) + ';color:#64748b;')}>· {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Điểm = trả lời ×3 + like nhận được ×2 + use case được duyệt ×5 + reply/comment ×1 + câu hỏi ×1. Trả lời + Comment ở đây = cột Comment ở bảng phòng ban.</p>
                   </div>
                   <Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} />
                 </div>
@@ -373,11 +380,16 @@ export default function AdminConsolePage() {
               </div>
 
               <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
-                <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Theo phòng ban</h2>
-                <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Phòng ban lấy từ Microsoft khi mỗi người đăng nhập bằng SSO. Người chưa đăng nhập lại từ khi có tính năng này nằm ở "Chưa rõ phòng ban".</p>
+                <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
+                  <div>
+                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Theo phòng ban <span style={css(font(600, 13) + ';color:#64748b;')}>· câu hỏi, comment, use case trong {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5, 1.55) + ';color:#94a3b8;')}>Cùng khoảng thời gian với "Top người đóng góp". Cột Hoạt động luôn là 7 ngày gần nhất. Comment = trả lời + reply + comment ở use case (cùng cách đếm với thẻ "Comment &amp; reply"). Use case = số bài đã gửi, mọi trạng thái. Phòng ban lấy từ Microsoft khi đăng nhập bằng SSO; người chưa đăng nhập lại nằm ở "Chưa rõ phòng ban".</p>
+                  </div>
+                  <Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} />
+                </div>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
-                  <div style={headRow(D_COLS)}><span>PHÒNG BAN</span><span>THÀNH VIÊN</span><span>HOẠT ĐỘNG 7 NGÀY</span><span>CÂU HỎI</span><span>COMMENT</span><span>USE CASE</span></div>
-                  {(adminStats?.departments || []).map((d) => (
+                  <div style={headRow(D_COLS)}><span>PHÒNG BAN</span><span>THÀNH VIÊN</span><span title="Số thành viên có hoạt động trong 7 ngày qua; % tính trên số thành viên đã đăng nhập của phòng ban (chưa có số nhân sự thật)">HOẠT ĐỘNG 7 NGÀY<br /><span style={{ fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>% thành viên đã đăng nhập hoạt động</span></span><span>CÂU HỎI</span><span>COMMENT</span><span>USE CASE</span></div>
+                  {(adminStats?.departments?.[lbPeriod] || []).map((d) => (
                     <div key={d.team || '_'} style={bodyRow(D_COLS)}>
                       <span style={css(font(700, 13.5) + `;color:${d.team ? '#0f172a' : '#94a3b8'};`)}>{d.team || 'Chưa rõ phòng ban'}</span>
                       <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.members}</span>
@@ -392,11 +404,11 @@ export default function AdminConsolePage() {
 
               <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;')}>
                 <div style={css('padding:18px 20px;' + card)}>
-                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Topic được gắn nhiều nhất</h2>
+                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Topic được gắn nhiều nhất <span style={css(font(600, 12.5) + ';color:#64748b;')}>· tất cả thời gian</span></h2>
                   <Bars rows={topTopics} color="linear-gradient(90deg,#8B5CF6,#6F0CE2)" />
                 </div>
                 <div style={css('padding:18px 20px;' + card)}>
-                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Công cụ AI được nhắc nhiều nhất</h2>
+                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Công cụ AI được nhắc nhiều nhất <span style={css(font(600, 12.5) + ';color:#64748b;')}>· tất cả thời gian</span></h2>
                   <Bars rows={topTools} color="linear-gradient(90deg,#4480ff,#2c5fff)" />
                 </div>
               </div>
