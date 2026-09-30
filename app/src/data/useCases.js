@@ -173,14 +173,15 @@ export const caseDetail = {
   },
   c3: {
     difficulty: 'Trung bình',
+    statusText: 'Đã hoàn tất',
+    statusNote: 'Dữ liệu 01 – 07/2026 · giải pháp kỹ thuật đã xong',
+    stats: [
+      { value: '1.881', label: 'yêu cầu hỗ trợ về khuyến mãi (01 – 07/2026)' },
+      { value: '289', extra: '15,4%', label: 'do người cấu hình sai, nhóm nguyên nhân lớn nhất' },
+      { value: '36,1%', label: 'trong nhóm đó là sai ứng dụng / kênh áp dụng (109 yêu cầu)' },
+    ],
     summary: 'Từ tháng 01 đến 07/2026 có khoảng 1.900 yêu cầu hỗ trợ liên quan đến khuyến mãi, trong đó nhóm nguyên nhân lớn nhất là người cấu hình sai: 289 yêu cầu, 15,4%. Phần lớn do nhập sai thiết lập chiến dịch trong CRM tool, khiến Product và Tech phải điều tra và trả lời lại những câu hỏi giống nhau.',
     tables: [
-      { title: 'Tóm tắt nhanh', note: 'Dữ liệu trong khoảng tháng 01 – 07/2026.', cols: ['Mục', 'Nội dung'], rows: [
-        ['Trọng tâm', 'Những lỗi thiết lập chiến dịch mà người làm nghiệp vụ có thể tránh được (Preventable Business-user configuration errors)'],
-        ['Dữ liệu lấy trong', 'Tháng 01 – 07/2026'],
-        ['Trạng thái tài liệu', 'Đã hoàn tất'],
-        ['Giải pháp kỹ thuật', 'Đã xong'],
-      ] },
       { title: 'Phân bổ nguyên nhân gốc', note: 'Toàn bộ yêu cầu hỗ trợ về khuyến mãi trong 01–07/2026.', cols: ['Nguyên nhân gốc', 'Số yêu cầu', 'Tỉ lệ'], rows: [
         ['Người cấu hình sai (Human - Configuration)', '289', '15,4%'],
         ['Khách hiểu sai chương trình', '282', '15,0%'],
@@ -234,11 +235,6 @@ export const caseDetail = {
         '※ Số câu hỏi cấu hình lặp lại phải nhờ Product hoặc Tech giảm.',
         'Phần giải pháp kỹ thuật để chặn lỗi trước đã xong.',
       ],
-      pitfalls: [
-        'Số liệu chỉ tính công cụ khuyến mãi; công cụ sự kiện và phần gợi ý hành động tiếp theo nằm ngoài phạm vi.',
-        'Cách phân loại còn cần đối chiếu lại với bảng bóc tách chi tiết trước khi trích dẫn như kết luận cuối cùng.',
-        '※ Còn 128 yêu cầu chưa gán nguyên nhân (6,8%), nên tỉ lệ thật của nhóm cấu hình sai có thể cao hơn 15,4%.',
-      ],
       contact: [
         'Kiệt. Tô Thế · Promotion · CRM.',
         'Cùng tham gia: Hoàng. Nguyễn Việt, Thắng. Hoàng Mạnh, Trọng. Dương Đức.',
@@ -263,6 +259,7 @@ export const caseDetail = {
     next: [
       'Cách phân loại nguyên nhân cần đối chiếu lại với bảng bóc tách chi tiết trước khi xem kết luận là cuối cùng.',
       'Không nằm trong phạm vi: công cụ sự kiện, gợi ý hành động tiếp theo, và các sự cố hạ tầng, mạng, thiết bị, lỗi code hay lỗi khi phát hành.',
+      'Còn 128 yêu cầu chưa gán nguyên nhân (6,8%), nên tỉ lệ thật của nhóm cấu hình sai có thể cao hơn 15,4%.',
     ],
   },
   c4: {
@@ -295,6 +292,11 @@ export const caseDetail = {
   },
   c5: {
     difficulty: 'Khó',
+    stats: [
+      { value: '300k+', label: 'đồng mỗi bài khi thuê agency viết' },
+      { value: '2 – 3', extra: 'ngày', label: 'để lên một bài, qua nhiều vòng duyệt' },
+      { value: '39 → 10', label: 'bài mới mỗi tháng, từ 2025 sang 2026' },
+    ],
     summary: 'Trang quản trị cũ và khó dùng, còn kinh doanh phải thuê agency viết bài: hơn 300 nghìn đồng một bài, mất 2–3 ngày. Dự án làm bộ kết nối để trợ lý AI (Claude hoặc ChatGPT) tự viết và xuất bản bài lên website, người vận hành chỉ ra yêu cầu và duyệt.',
     tables: [
       { title: 'Vì sao cần làm', note: 'Phụ trách: Luân. Nguyễn Anh · Trạng thái: đã xong.', cols: ['Chỉ số', 'Hiện trạng'], rows: [
@@ -453,12 +455,13 @@ export function levelChip(k, dark) {
     + 'background:' + (dark ? m.dbg : m.bg) + ';border:1px solid ' + (dark ? m.db : m.b) + ';color:' + (dark ? m.dc : m.c) + ';'
 }
 
-/** Marks "※"-prefixed strings (content the design session proposed, not from source docs) in red. */
+/** Strips the "※" marker (content the design session proposed, not from source docs). It used to be
+ *  shown in red, which read as a warning, so it now renders like any other line. */
 export function hlList(arr) {
   return (arr || []).map((s) => {
     const made = s.charAt(0) === '※'
     const text = made ? s.slice(1).trim() : s
-    return { text, made, color: made ? '#C8102E' : '#3A4757', dot: made ? '#C8102E' : '#9FB6E8' }
+    return { text, made, color: '#3A4757', dot: '#9FB6E8' }
   })
 }
 
@@ -490,10 +493,10 @@ export function registerPublished(subs) {
       problem: s.problem,
       solution: lines(s.solution),
       result: lines(s.result),
-      next: [],
+      next: lines(s.limits),
       pain: [],
       level: 'ready',
-      howto: { prep: lines(s.prep), steps: [], pitfalls: lines(s.limits), contact: s.contact ? [s.contact] : [] },
+      howto: { prep: lines(s.prep), steps: [], pitfalls: [], contact: s.contact ? [s.contact] : [] },
       code: s.prompt ? [{ title: 'PROMPT', code: s.prompt }] : [],
     }
     return {

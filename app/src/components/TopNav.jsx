@@ -20,7 +20,7 @@ export default function TopNav() {
   const location = useLocation()
   const { t } = useI18n()
   const { user, openLogin } = useAuth()
-  const { collapsed, setCollapsed, narrow, mobile, drawerOpen, setDrawerOpen } = useSidebarLayout()
+  const { collapsed, setCollapsed, narrow, mobile, drawerOpen, setDrawerOpen, offset } = useSidebarLayout()
   const menuLabel = narrow ? (drawerOpen ? t('Đóng menu') : t('Mở menu')) : collapsed ? t('Mở rộng menu') : t('Thu gọn menu')
 
   return (
@@ -41,7 +41,8 @@ export default function TopNav() {
           <img src={logo} alt="Zalopay AI Space" style={{ height: 17, width: 'auto', display: 'block' }} />
         </SoftLink>
       </div>
-      <nav aria-label={t('Trang chính')} style={css(`position:absolute; left:50%; transform:translateX(-50%); display:${mobile ? 'none' : 'flex'}; align-items:center; gap:6px;`)}>
+      {/* Centred on the content column (right of the sidebar), not the whole screen, so the nav lines up with page titles. */}
+      <nav aria-label={t('Trang chính')} style={css(`position:absolute; left:calc(50% + ${offset / 2}px); transform:translateX(-50%); transition:left .16s ease; display:${mobile ? 'none' : 'flex'}; align-items:center; gap:6px;`)}>
         {NAV_ITEMS.map((item) => {
           const active = item.match(location.pathname)
           return (

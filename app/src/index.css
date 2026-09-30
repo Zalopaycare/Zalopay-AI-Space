@@ -134,12 +134,33 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-toast { animation: toastin .18s ease-out; }
 @keyframes toastin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* Phones: search box on its own line with the filter pills below; fact panels stack. */
+/* Use case detail: info row, headline numbers, problem → solution, result + limits, bar tables, gallery. */
+.zp-info-row { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(0, 1fr)); }
+.zp-info-row > div { padding: 14px 18px; min-width: 0; }
+.zp-info-row > div + div { border-left: 1px solid rgba(130,170,255,.16); }
+.zp-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.zp-ps { display: grid; grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr); column-gap: 22px; align-items: stretch; }
+.zp-ps-arrow { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; }
+.zp-ps-arrow > span { flex: none; }
+.zp-result { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 22px; }
+.zp-bars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+.zp-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 899px) {
+  .zp-info-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zp-info-row > div:first-child { grid-column: 1 / -1; }
+  .zp-info-row > div + div { border-left: none; }
+  .zp-info-row > div { border-top: 1px solid rgba(130,170,255,.14); }
+  .zp-info-row > div:first-child { border-top: none; }
+  .zp-info-row > div:nth-child(odd):not(:first-child) { border-left: 1px solid rgba(130,170,255,.14); }
+  .zp-result, .zp-bars { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Phones: search box on its own line with the filter pills below; detail blocks go to one column. */
 @media (max-width: 699px) {
   .zp-search-row { flex-wrap: wrap; }
   .zp-search-row > form { flex: 1 1 100% !important; }
-  .zp-facts-top { grid-template-columns: minmax(0, 1fr) !important; }
-  .zp-facts-top > div { border-right: none !important; border-bottom: 1px solid rgba(130,170,255,.16); }
-  .zp-facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  .zp-facts-grid > div { border-right: none !important; border-bottom: 1px solid rgba(130,170,255,.12); }
+  .zp-stats, .zp-gallery { grid-template-columns: minmax(0, 1fr); }
+  .zp-ps { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 0 auto; row-gap: 22px; }
+  .zp-ps-arrow > span { transform: rotate(90deg); }
+  .zp-detail-title { font-size: 28px !important; letter-spacing: -.5px !important; }
 }

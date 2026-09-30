@@ -162,7 +162,7 @@ export default function HomePage() {
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   // Newest approved community use cases first, topped up with the built-in picks.
   const { version: pubV } = usePublishedUseCases()
-  const featuredCases = newestFirst(allCases).slice(0, 3) // same order as the Library's "Gần nhất"
+  const featuredCases = newestFirst(allCases).slice(0, 3) // same order as the Library's "Mới nhất"
   useEffect(() => { featuredCases.forEach((c) => refreshUcMeta(c.id)) }, [pubV]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- latest questions (3 newest, any status — same order as /questions "Mới nhất") ----

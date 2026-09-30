@@ -193,7 +193,7 @@ export const PAIRS = [
   ['Hỏi nhanh đáp gọn tất tần tật những câu hỏi về AI.', 'Quick answers to all your AI questions.'],
   ['Visit Admin Dashboard', 'Visit Admin Dashboard'],
   ['Category', 'Category'],
-  ['Nổi bật nhất', 'Most popular'],
+  ['Nổi bật', 'Most popular'],
   ['Thu gọn', 'Show less'],
   ['Cần chỉnh sửa', 'Needs changes'],
   ['Admin cần bổ sung', 'Admin asks for'],

@@ -7,7 +7,6 @@ import { AI_TOOLS, OTHER } from '../lib/taxonomy.js'
 import { renderMentions } from '../components/MentionField.jsx'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { useDialog } from '../hooks/useDialog.js'
 import { css, cx, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
@@ -16,12 +15,12 @@ import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../component
 import { api, relativeTime } from '../lib/api.js'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import Layout from '../components/Layout.jsx'
-import ImageSlot from '../components/ImageSlot.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
 import UseCaseGuide from '../components/UseCaseGuide.jsx'
+import { DETAIL_COL, InfoRow, StatTiles, ProblemSolution, ResultCard, DetailTables, DeepDive } from '../components/UseCaseDetailParts.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import {
@@ -35,7 +34,7 @@ const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Resear
 const TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Khác']
 const TOOLS = [...AI_TOOLS, OTHER]
 const TOOL_LIST = AI_TOOLS
-const SORT_OPTS = [{ label: 'Gần nhất', val: 'new' }, { label: 'Được nhiều vote nhất', val: 'helpful' }]
+const SORT_OPTS = [{ label: 'Mới nhất', val: 'new' }, { label: 'Nổi bật', val: 'helpful' }]
 const EMPTY_SHARE_FORM = { title: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '' }
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
@@ -47,7 +46,6 @@ export default function UseCaseLibraryPage() {
   const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
   useTitle(id ? (allCases.find((x) => x.id === id) || {}).title || 'Use case' : 'Thư viện Use Case')
   const navigate = useNavigate()
-  const { offset: sidebarOffset } = useSidebarLayout()
   const location = useLocation()
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
@@ -58,7 +56,6 @@ export default function UseCaseLibraryPage() {
   const [ucMeta, setUcMeta] = useState({}) // id -> { helpful, iHelped, saved, comments: [] }
   const [dDraft, setDDraft] = useState('')
   const dBoxRef = useRef(null)
-  const [hoverStar, setHoverStar] = useState(0)
   const replyBoxRef = useRef(null)
   const [replyTarget, setReplyTarget] = useState(null) // { parentId, authorName } | null
   const [replyDraft, setReplyDraft] = useState('')
@@ -470,278 +467,76 @@ export default function UseCaseLibraryPage() {
     const base = live ? live.helpful : (prdMeta[dsel.id] || {}).helpful || 0
     const voted = live ? live.iHelped : false
     const commentsList = live ? live.comments : []
-    // At-a-glance facts shown right under the title: who built it, category, audience,
-    // complexity, star rating (click to rate) and the AI tools used.
-    const DIFF = { 'Dễ': ['#4ADE80', 1], 'Trung bình': ['#FBBF24', 2], 'Khó': ['#F87171', 3] }
-    const diff = cd.difficulty && DIFF[cd.difficulty] ? cd.difficulty : ''
-    const rating = (live && live.rating) || { avg: 0, count: 0, mine: 0 }
-    const shown = hoverStar || rating.mine || 0
-    const rate = (n) => requireLogin(() => api.rateUseCase(dsel.id, n).then((d) => setUcMeta((m) => ({ ...m, [dsel.id]: { ...(m[dsel.id] || {}), rating: d.rating } }))).catch(() => {}))
-    const factLabel = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:7px;')}>{text}</div>
-    const renderFacts = () => (
-      <div style={css('margin-top:22px; border-radius:18px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.24); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); overflow:hidden;')}>
-        <div className="zp-facts-top" style={css('display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); border-bottom:1px solid rgba(130,170,255,.16);')}>
-          <div style={css('padding:16px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
-            {factLabel(t('Người / team thực hiện'))}
-            <div style={css('display:flex; align-items:center; gap:12px;')}>
-              <span style={css(`width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex:none;background:${avatarColor(dsel.author)}`)}>{dsel.author.slice(0, 1).toUpperCase()}</span>
-              <div style={css('min-width:0;')}>
-                <div style={css('font-size:14.5px; font-weight:700; color:#fff;')}>{dinfo.name}</div>
-                <div style={css('font-size:12.5px; color:#a9b8dc;')}>{dsel.team || dinfo.role}</div>
-              </div>
-            </div>
-            {contactR.length > 0 && <div style={css('margin-top:10px; font-size:12.5px; line-height:1.55; color:#c3d0f0;')}><span style={css('font-weight:800; color:#8fb4ff;')}>{t('Liên hệ')}: </span>{contactR.map((c) => c.text).join(' · ')}</div>}
-          </div>
-          <div style={css('padding:16px 18px;')}>
-            {factLabel(t('Đánh giá'))}
-            <div style={css('display:flex; align-items:center; gap:10px; flex-wrap:wrap;')}>
-              <div onMouseLeave={() => setHoverStar(0)} style={css('display:flex; gap:2px;')}>
-                {[1, 2, 3, 4, 5].map((n) => {
-                  const fill = shown ? n <= shown : n <= Math.round(rating.avg)
-                  return (
-                    <button key={n} onClick={() => rate(n)} onMouseEnter={() => setHoverStar(n)} title={`${n}/5`} style={css('border:none; background:none; padding:1px; cursor:pointer; line-height:0;')}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill={fill ? '#FBBF24' : 'none'} stroke={fill ? '#FBBF24' : '#5d6f9c'} strokeWidth="1.8" strokeLinejoin="round" style={fill ? { filter: 'drop-shadow(0 0 6px rgba(251,191,36,.55))' } : undefined}><path d="m12 2.8 2.8 5.7 6.3.9-4.6 4.4 1.1 6.3L12 17.1l-5.6 3 1.1-6.3L2.9 9.4l6.3-.9z"></path></svg>
-                    </button>
-                  )
-                })}
-              </div>
-              <span style={css('font-size:15px; font-weight:800; color:#fff;')}>{rating.count ? rating.avg.toFixed(1) : '—'}<span style={css('font-weight:600; color:#8fa6d8;')}>/5</span></span>
-            </div>
-            <div style={css('margin-top:5px; font-size:12px; color:#a9b8dc;')}>
-              {rating.count ? rating.count + ' ' + t('lượt đánh giá') : t('Chưa có đánh giá')}{rating.mine ? ' · ' + t('bạn chấm') + ' ' + rating.mine + '★' : ' · ' + t('bấm sao để đánh giá')}
-            </div>
-          </div>
-        </div>
-        <div className="zp-facts-grid" style={css('display:grid; grid-template-columns:repeat(4,minmax(0,1fr));')}>
-          <div style={css('padding:14px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
-            {factLabel(t('Category'))}
-            <div style={css('font-size:13.5px; font-weight:700; color:#fff;')}>{dsel.category || '—'}</div>
-          </div>
-          <div style={css('padding:14px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
-            {factLabel(t('Dành cho ai'))}
-            <div style={css('font-size:13.5px; font-weight:600; line-height:1.45; color:#fff;')}>{cd.audience || '—'}</div>
-          </div>
-          <div style={css('padding:14px 18px; border-right:1px solid rgba(130,170,255,.16);')}>
-            {factLabel(t('Mức độ phức tạp'))}
-            {diff ? (
-              <div style={css('display:flex; align-items:center; gap:8px;')}>
-                <span style={css('display:flex; gap:3px;')}>
-                  {[1, 2, 3].map((n) => <span key={n} style={css(`width:7px; height:14px; border-radius:3px; background:${n <= DIFF[diff][1] ? DIFF[diff][0] : 'rgba(255,255,255,.16)'}; ${n <= DIFF[diff][1] ? `box-shadow:0 0 6px ${DIFF[diff][0]};` : ''}`)}></span>)}
-                </span>
-                <span style={css(`font-size:13.5px; font-weight:800; color:${DIFF[diff][0]};`)}>{t(diff)}</span>
-              </div>
-            ) : <div style={css('font-size:13.5px; color:#fff;')}>—</div>}
-          </div>
-          <div style={css('padding:14px 18px;')}>
-            {factLabel(t('AI sử dụng'))}
-            <div style={css('display:flex; flex-wrap:wrap; gap:5px;')}>
-              {dsel.tools.length ? dsel.tools.map((name) => <span key={name} style={css('display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; font-size:12px; font-weight:700;')}>{name}</span>) : <span style={css('font-size:13.5px; color:#fff;')}>—</span>}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
     const postDComment = () => {
       const text = (dBoxRef.current ? dBoxRef.current.expand(dDraft) : dDraft).trim()
       if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
     }
 
+    const contactText = contactR.map((c) => c.text.replace(/\.\s*$/, '')).join(' · ')
+    const limitsR = nextR
+
     return (
       <div>
         <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
           <SpaceBackdrop arcTop={300} />
-          <div style={css('position:relative; z-index:3; max-width:900px; margin:0 auto; padding:18px var(--zp-gutter) 40px;')}>
-            {/* Back button stays pinned top-left while scrolling; portalled so no transformed/clipped ancestor traps it. */}
-            <div style={{ height: 26, marginBottom: 16 }}></div>
-            {createPortal(
+          <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 34px;')}>
+            <div style={css(DETAIL_COL)}>
+              {/* Scrolls with the page (it used to be pinned and slid over the white cards). */}
               <button
                 onClick={() => navigate('/use-cases')}
                 title={t('Quay lại Use Case Library')}
                 className={hoverClass('color:#fff !important;')}
-                style={css(`position:fixed; top:74px; left:${sidebarOffset + 24}px; z-index:1800; display:inline-flex; align-items:center; gap:7px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; text-shadow:0 1px 8px rgba(0,0,0,.8); transition:left .16s ease, color .15s;`)}
+                style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 18px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:color .15s;')}
               >
-                <svg style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.8))' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
                 {t('Quay lại')}
-              </button>,
-              document.body,
-            )}
-            <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;')}>
-              {dTopics.map((tp) => (
-                <span key={'t-' + tp} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:12.5px; font-weight:700;')}>{tp}</span>
-              ))}
+              </button>
+              <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;')}>
+                {dTopics.map((tp) => (
+                  <span key={'t-' + tp} style={css('display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:12.5px; font-weight:700;')}>{tp}</span>
+                ))}
+                {dsel.tools.map((name) => (
+                  <span key={'a-' + name} title={t('AI sử dụng')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.24); color:#fff; font-size:12.5px; font-weight:700;')}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M6.3 17.7l2.5-2.5M15.2 8.8l2.5-2.5"></path></svg>
+                    {name}
+                  </span>
+                ))}
+              </div>
+              <h1 className="zp-detail-title" style={css('margin:0 0 14px; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{dsel.title}</h1>
+              <p style={css('margin:0; font-size:15.5px; line-height:1.68; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{dsel.desc}</p>
+              <InfoRow
+                t={t}
+                author={dsel.author}
+                avatarBg={avatarColor(dsel.author)}
+                name={dinfo.name}
+                team={dsel.team || dinfo.role}
+                category={dsel.category}
+                audience={cd.audience}
+                difficulty={cd.difficulty}
+                status={statusOf(dsel.id)}
+                statusText={cd.statusText}
+                statusNote={cd.statusNote}
+                contact={contactText}
+              />
+              <StatTiles stats={cd.stats} />
             </div>
-            <h1 style={css('margin:0 0 14px; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{dsel.title}</h1>
-            <p style={css('margin:0; font-size:15.5px; line-height:1.68; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{dsel.desc}</p>
-            {renderFacts()}
           </div>
         </section>
 
         <div style={css('position:relative; z-index:4; background:#07070c; padding:10px var(--zp-gutter) 60px;')}>
-          <div style={css('max-width:900px; margin:0 auto;')}>
+          <div style={css(DETAIL_COL)}>
             <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
               <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Overview</h2>
               <span style={css('font-size:13px; color:#8b98b8;')}>Bài toán › Giải pháp › Kết quả</span>
             </div>
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Bài toán')}</div>
-              <p style={css('margin:0 0 14px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}>{cd.problem || dsel.desc}</p>
-              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {painR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${'#3A4757'};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#E0353F;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Giải pháp')}</div>
-              <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                {solutionR.map((st) => (
-                  <div key={st.num} style={css('display:flex; gap:12px; align-items:flex-start;')}>
-                    <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;')}>{st.num}</span>
-                    <span style={css('font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}>{st.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Kết quả')}</div>
-              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {resultR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${'#2F4A3C'};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#00A352;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-              {nextR.length > 0 && (
-                <div style={css('margin-top:16px; padding:14px 16px; border-radius:12px; background:#FFF8E8; border:1px solid #F3E0B0;')}>
-                  <div style={css('font-size:12.5px; font-weight:800; color:#B45300; margin-bottom:8px;')}>{t('Giới hạn & lưu ý')}</div>
-                  <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {nextR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${'#5A4522'};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#E39100;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-                </div>
-              )}
-            </div>
-            {cd.guide && <UseCaseGuide guide={cd.guide} />}
-            {!cd.guide && tablesR.map((tb, ti) => (
-              <div key={ti} style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:26px;')}>
-                <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:6px;')}>{tb.title}</div>
-                <div style={css('font-size:12.5px; color:#64748b; margin-bottom:16px;')}>{tb.note}</div>
-                <table style={css('width:100%; border-collapse:collapse; font-size:13px;')}>
-                  <thead>
-                    <tr>
-                      {tb.cols.map((c, ci) => (
-                        <th key={ci} style={css('padding:10px 12px; text-align:left; font-size:11px; font-weight:800; letter-spacing:.06em; color:#2c5fff; background:#F4F7FE; border-bottom:1px solid #E6EBF3;')}>{c}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tb.rows.map((row, ri) => (
-                      <tr key={ri}>
-                        {row.map((cell, ci) => (
-                          <td key={ci} style={css('padding:11px 12px; border-bottom:1px solid #F1F4FA; font-size:13px; line-height:1.55; color:#3A4757; vertical-align:top;')}>{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-
-            {!cd.guide && (<>
-            <div style={css('display:flex; align-items:baseline; gap:12px; margin:8px 0 14px;')}>
-              <h2 style={css('margin:0; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>Deep dive</h2>
-              <span style={css('font-size:13px; color:#8b98b8;')}>Chuẩn bị trước › Các bước cài đặt › Lỗi phổ biến › Bảo mật</span>
-            </div>
-            <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Chuẩn bị trước')}</div>
-              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {prepR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#2c5fff;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={css((stepsR.length ? '' : 'display:none; ') + 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Các bước cài đặt')}</div>
-              <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-                {stepsR.map((it) => (
-                  <div key={it.num} style={css('display:flex; gap:12px; align-items:flex-start;')}>
-                    <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;')}>{it.num}</span>
-                    <span style={css(`font-size:14px; line-height:1.65; color:${it.color}; text-wrap:pretty;`)}>{it.text}</span>
-                  </div>
-                ))}
-              </div>
-              {successR.length > 0 && (
-                <div style={css('margin-top:16px; padding:14px 16px; border-radius:12px; background:#F2FBF6; border:1px solid #CFEEDE;')}>
-                  <div style={css('font-size:12.5px; font-weight:800; color:#00893F; margin-bottom:8px;')}>Biết là thành công khi</div>
-                  <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {successR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#00A352;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-                </div>
-              )}
-            </div>
-            {codeR.map((cb, ci) => (
-              <div key={ci} style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:26px;')}>
-                <div style={css('display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;')}>
-                  <span style={css('font-size:12px; font-weight:800; letter-spacing:.07em; color:#2c5fff;')}>{cb.title}</span>
-                  <button onClick={cb.onCopy} className={hoverClass('background:#F2F6FF; border-color:#B9CCF8;')} style={css('display:inline-flex; align-items:center; gap:7px; height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;')}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
-                    {cb.copyLabel}
-                  </button>
-                </div>
-                <pre style={css('margin:0; padding:16px 18px; border:1px solid #DDE3EC; border-radius:12px; background:#F7F9FD; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; line-height:1.7; color:#0F172A; white-space:pre-wrap; word-break:break-word;')}>{cb.code}</pre>
-              </div>
-            ))}
-
-            <div style={css((pitfallR.length ? '' : 'display:none; ') + 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Các lỗi phổ biến và cách khắc phục')}</div>
-              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {pitfallR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#E0353F;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {securityR.length > 0 && (
-              <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:24px 26px; margin-bottom:18px;')}>
-              <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:14px;')}>{t('Lưu ý quan trọng về bảo mật')}</div>
-              <div style={css('display:flex; flex-direction:column; gap:11px;')}>
-                {securityR.map((it, i) => (
-                  <div key={i} style={css(`display:flex; gap:10px; font-size:14px; line-height:1.65; color:${it.color};`)}>
-                    <span style={css('flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:#6F0CE2;')}></span>{it.text}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ProblemSolution t={t} problem={cd.problem || dsel.desc} pains={painR} steps={solutionR} />
+            <ResultCard t={t} results={resultR} limits={limitsR} />
+            {cd.guide && <div style={{ marginTop: 26 }}><UseCaseGuide guide={cd.guide} /></div>}
+            {!cd.guide && <DetailTables t={t} tables={tablesR} />}
+            {!cd.guide && (
+              <DeepDive key={dsel.id} t={t} prep={prepR} steps={stepsR} success={successR} code={codeR} pitfalls={pitfallR} security={securityR} gallery={galleryR} />
             )}
-            {galleryR.length > 0 && (
-              <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:26px 28px; margin-bottom:26px;')}>
-                <div style={css('font-size:17px; font-weight:800; color:#0F172A; margin-bottom:18px;')}>Hình ảnh &amp; demo</div>
-                <div style={css('display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px;')}>
-                  {galleryR.map((g) => (
-                    <div key={g.id}>
-                      <div style={css('position:relative; aspect-ratio:16/9; border-radius:14px; overflow:hidden; border:1px solid #E6EBF3; background:#eef2f9;')}>
-                        <ImageSlot id={g.id} shape="rect" placeholder={g.placeholder} />
-                      </div>
-                      <div style={css('margin-top:9px; font-size:12.5px; color:#64748b;')}>{g.caption}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            </>)}
+            <div style={{ height: 26 }}></div>
 
             {!!dsel.repoHref && (
               <div style={css('border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:20px 24px; margin-bottom:26px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;')}>

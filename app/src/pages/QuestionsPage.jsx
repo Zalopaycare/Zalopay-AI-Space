@@ -735,9 +735,9 @@ export default function QuestionsPage() {
 
           <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => setView('ask')} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, tác giả, công cụ..." filters={
             <FilterPill
-              label={t(sort === 'top' ? 'Nổi bật nhất' : 'Mới nhất')}
+              label={t(sort === 'top' ? 'Nổi bật' : 'Mới nhất')}
               name="qsort" openDrop={openDrop} setOpenDrop={setOpenDrop} width={180} align="right"
-              options={[['latest', 'Mới nhất'], ['top', 'Nổi bật nhất']].map(([k, l]) => ({ label: t(l), active: sort === k, onClick: () => { setSort(k); setOpenDrop(null) } }))}
+              options={[['latest', 'Mới nhất'], ['top', 'Nổi bật']].map(([k, l]) => ({ label: t(l), active: sort === k, onClick: () => { setSort(k); setOpenDrop(null) } }))}
             />
           } />
           <div style={css('padding:16px var(--zp-gutter) 60px;')}>
