@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { css, hoverClass } from '../lib/style.js'
 import { Blocks, CopyButton, Figure, Placeholders, Prompt } from './UseCaseGuide.jsx'
 import Fill from './Fill.jsx'
 
 // Building blocks of the use case detail page, laid out as the 9-part template:
-// hero + info row + "Bắt đầu dùng →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp · 4 Kết quả ·
+// hero + info row + "Ứng dụng ngay →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp · 4 Kết quả ·
 // 5 Tự áp dụng (the one highlighted block) · 6 An toàn & giới hạn · 7 Demo · 8 Chi tiết kỹ thuật
 // (collapsed) · 9 Tiếp theo & liên hệ — with a sticky table of contents on wide screens.
 
@@ -35,7 +37,7 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
 }
 
 /** Title block on the dark hero: Loại + Trạng thái chips, title, tool name, one-line description,
- *  one horizontal info row and the "Bắt đầu dùng →" button that jumps to part 5. */
+ *  one horizontal info row and the "Ứng dụng ngay →" button that jumps to part 5. */
 export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel, tldr = [], t }) {
   const chip = 'display:inline-flex; align-items:center; gap:7px; height:28px; padding:0 12px; border-radius:999px; font-size:12.5px; font-weight:700;'
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
@@ -214,7 +216,7 @@ export function ProblemSolution({ problem, solution, t }) {
           </div>
         ))}
       </div>
-      {problem.tables.map((tb, i) => <div key={i} style={{ marginTop: 18 }}><PlainTable table={tb} /></div>)}
+      {problem.tables.map((tb, i) => <div key={i} style={{ marginTop: 18 }}>{isNumericTable(tb) ? <div style={css(CARD)}><BarTable table={tb} t={t} /></div> : <PlainTable table={tb} />}</div>)}
     </section>
   )
 }
@@ -419,7 +421,7 @@ export function ApplySection({ id, a, t }) {
 export function TechSection({ tech, t }) {
   return (
     <section id="uc-tech" data-toc style={css('scroll-margin-top:84px; margin-top:26px;')}>
-      <Collapsible dark title={<><span style={{ marginRight: 10, display: 'inline-flex', verticalAlign: 'middle' }}><NumBadge n="8" size={26} /></span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
+      <Collapsible dark defaultOpen title={<><span style={{ marginRight: 10, display: 'inline-flex', verticalAlign: 'middle' }}><NumBadge n="8" size={26} /></span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
         <div style={css('display:flex; flex-direction:column; gap:14px; padding-top:8px;')}>
           {tech.bullets && tech.bullets.length > 0 && <div style={css('padding:16px 18px; border-radius:14px; background:#fff;')}><BulletList items={tech.bullets} dot="#2c5fff" /></div>}
           {tech.tables.map((tb, i) => <div key={i} style={css('padding:16px; border-radius:14px; background:#fff;')}><PlainTable flat table={tb} /></div>)}
@@ -471,5 +473,43 @@ export function Toc({ items, t }) {
         )
       })}
     </nav>
+  )
+}
+
+/** Long pages: "Quay lại" stays reachable once you scroll past the hero. It sits in the empty strip
+ *  left of the content column (a pill when there is room, a round button when the strip is narrow),
+ *  vertically centred, so it never covers the cards; on phones it floats bottom-left. */
+export function FloatingBack({ onBack, t }) {
+  const { offset } = useSidebarLayout()
+  const [show, setShow] = useState(false)
+  const [gutter, setGutter] = useState(0)
+  useEffect(() => {
+    const on = () => {
+      setShow(window.scrollY > 380)
+      const col = document.querySelector('.zp-detail-wrap')
+      if (col) setGutter(Math.max(0, col.getBoundingClientRect().left - offset))
+    }
+    on()
+    window.addEventListener('scroll', on, { passive: true })
+    window.addEventListener('resize', on)
+    return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', on) }
+  }, [offset])
+  const pill = gutter >= 124, round = !pill && gutter >= 40
+  const pos = pill ? `left:${offset + (gutter - 116) / 2}px; top:50%;`
+    : round ? `left:${offset + (gutter - 38) / 2}px; top:50%;`
+      : `left:${offset + 16}px; bottom:18px;`
+  return createPortal(
+    <button
+      onClick={onBack}
+      aria-label={t('Quay lại')}
+      title={t('Quay lại')}
+      tabIndex={show ? 0 : -1}
+      className={hoverClass('background:rgba(44,95,255,.92) !important; border-color:rgba(160,195,255,.8) !important;')}
+      style={css(`position:fixed; ${pos} z-index:1500; display:inline-flex; align-items:center; justify-content:center; gap:8px; height:38px; ${pill ? 'width:116px;' : 'width:38px;'} padding:0; border:1px solid rgba(130,170,255,.45); border-radius:999px; background:rgba(9,18,58,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 10px 28px rgba(0,0,0,.45); transition:opacity .18s, background .15s; opacity:${show ? 1 : 0}; pointer-events:${show ? 'auto' : 'none'}; ${pill || round ? 'transform:translateY(-50%);' : ''}`)}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+      {pill && t('Quay lại')}
+    </button>,
+    document.body,
   )
 }

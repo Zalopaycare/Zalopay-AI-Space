@@ -20,7 +20,7 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
-import { DETAIL_COL, DetailHero, Section, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId, Images } from '../components/UseCaseDetailParts.jsx'
+import { DETAIL_COL, DetailHero, Section, ProblemSolution, ResultBody, ApplySection, TechSection, Toc, BulletList, PlainTable, scrollToId, Images, FloatingBack } from '../components/UseCaseDetailParts.jsx'
 import { buildTemplate } from '../data/useCaseTemplate.js'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
@@ -480,6 +480,7 @@ export default function UseCaseLibraryPage() {
 
     return (
       <div>
+        <FloatingBack t={t} onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))} />
         <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
           <SpaceBackdrop arcTop={300} />
           <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 30px;')}>
@@ -496,7 +497,7 @@ export default function UseCaseLibraryPage() {
                 avatarBg={avatarColor(dsel.author)}
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
-                startLabel={t('Bắt đầu dùng')}
+                startLabel={t('Ứng dụng ngay')}
               />
             </div>
             <div className="zp-toc-space" aria-hidden="true"></div>

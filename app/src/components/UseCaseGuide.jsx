@@ -214,6 +214,10 @@ function Block({ b }) {
  *  in a popup, and a click anywhere (or Esc) closes it again. */
 export function Figure({ img }) {
   const [open, setOpen] = useState(false)
+  // Landscape images are shown whole (never cropped) at the column's full width; tall screenshots
+  // get a capped preview from the top. Never stretched past their real size.
+  const [dims, setDims] = useState(null)
+  const tall = dims && dims.h > dims.w * 1.15
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
@@ -225,7 +229,12 @@ export function Figure({ img }) {
   return (
     <figure style={{ margin: 0, minWidth: 0 }}>
       <button type="button" onClick={() => setOpen(true)} title="Bấm để xem ảnh lớn" className={hoverClass('border-color:#B9CCF8 !important; box-shadow:0 8px 22px rgba(44,95,255,.18) !important;')} style={css('display:block; width:100%; padding:0; border:1px solid #E6EBF3; border-radius:12px; background:#F7F9FD; overflow:hidden; cursor:zoom-in; transition:box-shadow .15s, border-color .15s;')}>
-        <img src={img.src} alt={img.caption || ''} style={{ display: 'block', width: '100%', height: 150, objectFit: 'cover', objectPosition: 'top' }} />
+        <img
+          src={img.src}
+          alt={img.caption || ''}
+          onLoad={(e) => setDims({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+          style={{ display: 'block', margin: '0 auto', width: '100%', maxWidth: dims ? dims.w : undefined, height: tall ? 300 : 'auto', objectFit: tall ? 'cover' : undefined, objectPosition: 'top' }}
+        />
       </button>
       {img.caption && <figcaption style={css(`margin-top:7px; font:400 12px/1.45 ${FONT}; color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
       {open && createPortal(
