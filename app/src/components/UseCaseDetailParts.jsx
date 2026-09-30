@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { css, hoverClass } from '../lib/style.js'
@@ -65,16 +65,6 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
         </div>
       </div>
     ),
-    <div key="owner" className="zp-info-owner">
-      {label(t('Phụ trách'))}
-      <div style={css('display:flex; align-items:center; gap:9px; min-width:0; flex-wrap:wrap;')}>
-        <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
-        <div style={css('min-width:0;')}>
-          <span style={css(value + 'margin-right:8px;')}><Fill text={h.owner} /></span>
-          <span style={css('font-size:12.5px; line-height:1.4; color:#a9b8dc;')}><Fill text={h.ownerTeam} />{h.posted ? ' · ' + t('Đăng') + ' ' + h.posted : ''}{h.updated && !/cần bổ sung/.test(h.updated) ? ' · ' + t('Cập nhật') + ' ' + h.updated : ''}</span>
-        </div>
-      </div>
-    </div>,
   ].filter(Boolean)
 
   return (
@@ -89,11 +79,17 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
         {topics.map((tp) => <span key={tp} style={css(chip + 'background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff;')}>{tp}</span>)}
       </div>
       <h1 className="zp-detail-title" style={css('margin:0; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
+      {/* Who owns / posted it, right under the title: avatar + name + team. */}
+      <div style={css('display:flex; align-items:center; gap:10px; margin-top:14px; min-width:0; flex-wrap:wrap;')}>
+        <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
+        <span style={css('font-size:14.5px; font-weight:700; color:#fff;')}><Fill text={h.owner} /></span>
+        {h.ownerTeam && <span style={css('font-size:13.5px; color:#a9b8dc;')}>· <Fill text={h.ownerTeam} /></span>}
+      </div>
       {h.toolName && <div style={css('margin-top:10px; font-size:13.5px; font-weight:600; color:#8fb4ff;')}>{t('Tên công cụ')}: <span style={css('color:#fff; font-weight:800;')}>{h.toolName}</span></div>}
       <p style={css('margin:12px 0 0; max-width:820px; font-size:15.5px; line-height:1.65; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>
       {/* One overview box: the info row, then the 30-second summary (part 1) right under it. */}
-      <div className="zp-overview" style={{ marginTop: 22 }}>
-        <div className="zp-info-row" style={{ '--zp-cells': Math.max(1, cells.length - 1) }}>{cells}</div>
+      <div id="uc-overview" className="zp-overview" style={{ marginTop: 22 }}>
+        {cells.length > 0 && <div className="zp-info-row" style={{ '--zp-cells': Math.max(1, cells.length) }}>{cells}</div>}
         {tldr.length > 0 && (
           <div id="uc-tldr" className="zp-overview-tldr">
             {tldr.map(([k, v]) => (
@@ -455,8 +451,24 @@ export function TechSection({ tech, t, num = '8' }) {
 }
 
 /** Sticky table of contents (wide screens only); highlights the section in view. */
-export function Toc({ items, t }) {
+export function Toc({ items, t, alignTo }) {
   const [active, setActive] = useState(items[0]?.id)
+  // Start level with an element in the main column (the overview box), then stay sticky.
+  const navRef = useRef(null)
+  const [offset, setOffset] = useState(null)
+  useEffect(() => {
+    if (!alignTo) return undefined
+    const measure = () => {
+      const box = document.getElementById(alignTo), nav = navRef.current
+      if (!box || !nav || !nav.parentElement) return
+      setOffset(Math.max(0, Math.round(box.getBoundingClientRect().top - nav.parentElement.getBoundingClientRect().top)))
+    }
+    measure()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    if (ro) ro.observe(document.body)
+    window.addEventListener('resize', measure)
+    return () => { if (ro) ro.disconnect(); window.removeEventListener('resize', measure) }
+  }, [alignTo])
   const ids = items.map((it) => it.id).join(',')
   useEffect(() => {
     const els = ids.split(',').map((x) => document.getElementById(x)).filter(Boolean)
@@ -469,7 +481,7 @@ export function Toc({ items, t }) {
     return () => io.disconnect()
   }, [ids])
   return (
-    <nav className="zp-toc" aria-label={t('Mục lục')}>
+    <nav ref={navRef} className="zp-toc" aria-label={t('Mục lục')} style={offset != null ? { marginTop: offset } : undefined}>
       <div style={css('font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#8fa6d8; margin:0 0 10px 12px;')}>{t('Mục lục')}</div>
       {items.map((it) => {
         const on = it.id === active

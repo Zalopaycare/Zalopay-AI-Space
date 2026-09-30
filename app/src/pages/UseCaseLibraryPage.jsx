@@ -531,11 +531,12 @@ export default function UseCaseLibraryPage() {
     return (
       <div>
         <FloatingBack t={t} onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))} />
-        <section style={css('position:relative; overflow:hidden; background:#07070c; color:#fff;')}>
+        {/* Hero and body share one grid, so the TOC sits right beside the overview box and then
+            stays in view (sticky) down the whole page. overflow-x:clip keeps sticky working. */}
+        <div style={css('position:relative; background:#07070c; color:#fff; overflow-x:clip;')}>
           <SpaceBackdrop arcTop={300} />
-          <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 30px;')}>
-            {/* same grid as the body below, so the overview box is exactly as wide as the white cards */}
-            <div className="zp-detail-wrap" style={css(DETAIL_COL)}>
+          <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 60px;')}>
+          <div className="zp-detail-wrap" style={css(DETAIL_COL)}>
             <div className="zp-detail-grid">
             <div style={{ minWidth: 0 }}>
               <DetailHero
@@ -549,17 +550,6 @@ export default function UseCaseLibraryPage() {
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Ứng dụng ngay')}
               />
-            </div>
-            <div className="zp-toc-space" aria-hidden="true"></div>
-            </div>
-            </div>
-          </div>
-        </section>
-
-        <div style={css('position:relative; z-index:4; background:#07070c; padding:0 var(--zp-gutter) 60px;')}>
-          <div className="zp-detail-wrap" style={css(DETAIL_COL)}>
-            <div className="zp-detail-grid">
-            <div style={{ minWidth: 0 }}>
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
 
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin:30px 0 36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
@@ -685,8 +675,9 @@ export default function UseCaseLibraryPage() {
               </div>
             </div>
             </div>
-            <Toc items={toc} t={t} />
+            <Toc items={toc} t={t} alignTo="uc-overview" />
             </div>
+          </div>
           </div>
         </div>
       </div>
