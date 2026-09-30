@@ -1,4 +1,5 @@
 import { normalizeTools } from '../lib/taxonomy.js'
+import { submissionTpl, submissionDesc } from './submissionTpl.js'
 // Shared use case registry: every page reads allCases / prdMeta / caseDetail from here.
 
 // The 10 showcase use cases (c1…c10) are written in the 9-part template from the teams' own docs and
@@ -147,9 +148,11 @@ export function registerPublished(subs) {
       level: 'ready',
       howto: { prep: lines(s.prep), steps: [], pitfalls: [], contact: s.contact ? [s.contact] : [] },
       code: s.prompt ? [{ title: 'PROMPT', code: s.prompt }] : [],
+      // Posts sent with the 9-part form carry `extra`; render those through the template directly.
+      ...(s.extra ? { tpl: submissionTpl(s) } : {}),
     }
     return {
-      id: s.id, title: s.title, desc: firstPara(lines(s.solution).join(' · ') || s.problem), author, team: s.team || '',
+      id: s.id, title: s.title, desc: submissionDesc(s) || firstPara(lines(s.solution).join(' · ') || s.problem), author, team: s.team || '',
       category: [].concat(s.category)[0] || 'Khác', tools: normalizeTools(s.tools), repo: '', repoHref: s.link || '',
       audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId, coverUrl: s.coverUrl || null,
     }

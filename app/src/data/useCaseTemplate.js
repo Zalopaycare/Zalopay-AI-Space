@@ -6,7 +6,7 @@ import { hlList, statusOf } from './useCases.js'
 // Built-in cases get their template-only fields from EXTRA below (all taken from the source docs
 // already in useCases.js — nothing new is claimed). Parts with no data come back empty and are hidden.
 
-export const TYPE_LABEL = { tool: 'Công cụ dùng ngay', guide: 'Hướng dẫn', case: 'Case study', proposal: 'Đề xuất' }
+export const TYPE_LABEL = { tool: 'Công cụ dùng ngay', guide: 'Hướng dẫn', case: 'Câu chuyện thực tế', proposal: 'Đề xuất' }
 export const STATUS_LABEL = { inuse: 'Đang dùng', pilot: 'Thử nghiệm', prototype: 'Thử nghiệm', building: 'Đang làm', planning: 'Ý tưởng' }
 
 // Where each source table belongs in the template: problem · result · apply · safety · tech.
@@ -44,13 +44,14 @@ function fromTpl(c, m) {
     hero: {
       type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
       toolName: m.toolName || '', audience: m.audience || '', difficulty: m.difficulty || '', access: m.access || '',
-      tools: c.tools || [], owner: String(m.ownerName || c.author).replace(/\s*\(\d+\)/g, ''), // drop Microsoft's "(8)" counters, ownerTeam: m.ownerTeam || '', updated: m.updated || '[cần bổ sung]',
+      // owner drops Microsoft's "(8)" counters
+      tools: c.tools || [], owner: String(m.ownerName || c.author).replace(/\s*\(\d+\)/g, ''), ownerTeam: m.ownerTeam || c.team || '', updated: m.updated || '[cần bổ sung]',
     },
     stats: arr(m.stats).slice(0, 3),
     tldr: arr(m.tldr).filter((row) => row && row[1]),
     problem: { text: p.text || '', bullets: arr(p.bullets), tables: arr(p.tables), images: arr(p.images) },
     solution: { analogy: so.analogy || '', steps: arr(so.steps), images: arr(so.images) },
-    result: { bullets: arr(r.bullets), beforeAfter: r.beforeAfter && arr(r.beforeAfter.rows).length ? r.beforeAfter : null, tables: arr(r.tables), note: r.note || '', images: arr(r.images) },
+    result: { highlights: arr(r.highlights), bullets: arr(r.bullets), beforeAfter: r.beforeAfter && arr(r.beforeAfter.rows).length ? r.beforeAfter : null, tables: arr(r.tables), note: r.note || '', images: arr(r.images) },
     apply,
     safety: { rules: arr(sa.rules), limits: arr(sa.limits), tables: arr(sa.tables) },
     demo: arr(m.demo).filter((g) => g && g.src),

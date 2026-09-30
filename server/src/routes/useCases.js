@@ -153,6 +153,7 @@ router.get('/submissions', requireAuth, (req, res) => {
         reviewStatus: r.review_status, adminNote: r.admin_note,
         author: author ? author.name : '—', authorDomain: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, time: r.created_at,
         publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null, edited: !!r.edited_at,
+        extra: parseExtra(r.extra),
         coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
       }
     }),
@@ -185,6 +186,22 @@ router.get('/submissions/:id/cover', requireAuth, (req, res) => {
   res.set('Content-Type', r.cover_mime).set('Cache-Control', 'private, max-age=86400').send(r.cover_data)
 })
 
+// Share-form fields beyond the original columns, kept as one JSON column. Only known keys, trimmed and capped.
+const EXTRA_TYPES = ['tool', 'guide', 'case', 'proposal']
+const txt = (v, max = 4000) => String(v || '').trim().slice(0, max)
+function cleanExtra(e) {
+  if (!e || typeof e !== 'object') return null
+  const out = {
+    type: EXTRA_TYPES.includes(e.type) ? e.type : '',
+    oneLine: txt(e.oneLine, 300),
+    highlights: (Array.isArray(e.highlights) ? e.highlights : []).slice(0, 3)
+      .map((h) => ({ value: txt(h && h.value, 40), label: txt(h && h.label, 120) })).filter((h) => h.value || h.label),
+    fitYes: txt(e.fitYes), fitNo: txt(e.fitNo), pitfalls: txt(e.pitfalls), tech: txt(e.tech, 8000),
+  }
+  return Object.values(out).some((v) => (Array.isArray(v) ? v.length : v)) ? JSON.stringify(out) : null
+}
+const parseExtra = (v) => { try { return v ? JSON.parse(v) : null } catch { return null } }
+
 const SUBMISSION_FIELDS = ['title', 'audience', 'team', 'problem', 'solution', 'prep', 'prompt', 'result']
 const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.kind && f.status && f.level
 
@@ -205,6 +222,7 @@ router.post('/submissions', requireAuth, (req, res) => {
       f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(),
       f.kind, f.status, f.level, JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), req.user.id)
   saveCover(id, cover)
+  db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra), id)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
   for (const to of adminEmailsFor(req)) {
@@ -236,6 +254,8 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
       String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(), f.kind, f.status, f.level,
       JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), nextStatus, row.id)
   saveCover(row.id, cover)
+  // Older clients don't send `extra`; leave what's stored untouched then.
+  if (f.extra !== undefined) db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra), row.id)
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
     for (const to of adminEmailsFor(req)) notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng: "${f.title.trim()}"`, href: `/use-cases/${row.id}`, actor: req.user.name })

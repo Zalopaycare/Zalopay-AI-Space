@@ -172,6 +172,8 @@ for (const table of ['question_answers', 'answer_comments', 'use_case_comments',
   const cols = db.prepare('PRAGMA table_info(use_case_submissions)').all().map((c) => c.name)
   if (!cols.includes('published_at')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN published_at TEXT')
   if (!cols.includes('reviewed_at')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN reviewed_at TEXT')
+  // Extra 9-part template fields from the share form (JSON: type, oneLine, highlights, fit, pitfalls, tech). Additive only.
+  if (!cols.includes('extra')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN extra TEXT')
   db.exec("UPDATE use_case_submissions SET published_at = created_at WHERE review_status = 'approved' AND published_at IS NULL")
 }
 

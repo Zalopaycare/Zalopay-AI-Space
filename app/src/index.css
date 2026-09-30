@@ -147,6 +147,7 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-ps { display: grid; grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr); column-gap: 22px; align-items: stretch; }
 .zp-ps-arrow { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; }
 .zp-ps-arrow > span { flex: none; }
+.zp-highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
 .zp-bars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
 .zp-fit { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .zp-collapse > summary::-webkit-details-marker { display: none; }

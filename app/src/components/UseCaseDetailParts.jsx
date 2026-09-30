@@ -79,10 +79,10 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
 
   return (
     <>
-      <button onClick={onBack} title={t('Quay lại Use Case Library')} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 18px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:color .15s;')}>
+      {onBack && <button onClick={onBack} title={t('Quay lại Use Case Library')} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 18px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:color .15s;')}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
         {t('Quay lại')}
-      </button>
+      </button>}
       <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;')}>
         {h.type && <span style={css(chip + 'background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff;')}>{t(h.type)}</span>}
         {h.status && <span style={css(chip + 'background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.2); color:#fff;')}><span style={css(`width:7px; height:7px; border-radius:50%; background:${STATUS_DOT[h.status] || '#4ADE80'};`)}></span>{t(h.status)}</span>}
@@ -178,7 +178,7 @@ export function Tldr({ rows }) {
 }
 
 /** 2 Bài toán | 3 Giải pháp on one row (one column on phones). */
-export function ProblemSolution({ problem, solution, t }) {
+export function ProblemSolution({ problem, solution, t, num: partNum }) {
   return (
     <section id="uc-problem" data-toc style={css('scroll-margin-top:84px; margin-top:26px;')}>
       <div className="zp-ps">
@@ -192,7 +192,7 @@ export function ProblemSolution({ problem, solution, t }) {
           )],
           ['3', t('Giải pháp'), '#00A352', (
             <>
-              {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:13.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={solution.analogy} /></div>}
+              {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:13.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
               <BulletList items={solution.steps} numbered />
               <Images images={solution.images} />
             </>
@@ -208,7 +208,7 @@ export function ProblemSolution({ problem, solution, t }) {
             )}
             <div style={css(CARD)}>
               <div style={css(H3 + 'margin-bottom:12px; display:flex; align-items:center; gap:8px;')}>
-                <NumBadge n={num} size={26} />{title}
+                {i === 0 && partNum && <NumBadge n={partNum} size={26} />}{title}
                 <span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
               </div>
               {body}
@@ -281,6 +281,16 @@ export function ResultBody({ r, t }) {
   const plain = r.tables.filter((tb) => !isNumericTable(tb))
   return (
     <div style={css('display:flex; flex-direction:column; gap:18px;')}>
+      {r.highlights && r.highlights.length > 0 && (
+        <div className="zp-highlights">
+          {r.highlights.map((h, i) => (
+            <div key={i} style={css('padding:12px 14px; border-radius:14px; background:#F2FBF6; border:1px solid #CFEEDE;')}>
+              {h.value && <div style={css('font-size:20px; font-weight:800; line-height:1.2; color:#00723C;')}><Fill text={h.value} /></div>}
+              {h.label && <div style={css('margin-top:3px; font-size:13px; line-height:1.45; color:#2F4A3C;')}><Fill text={h.label} /></div>}
+            </div>
+          ))}
+        </div>
+      )}
       {r.beforeAfter && <PlainTable flat table={{ title: t('Trước / Sau'), note: r.beforeAfter.note, cols: r.beforeAfter.cols, rows: r.beforeAfter.rows }} />}
       {r.bullets.length > 0 && <BulletList items={r.bullets} dot="#00A352" color="#2F4A3C" />}
       {bars.length > 0 && <div className={bars.length > 1 ? 'zp-bars' : ''}>{bars.map((tb, i) => <BarTable key={i} table={tb} t={t} />)}</div>}
@@ -346,7 +356,7 @@ function CodeBlock({ cb }) {
 
 /** 5 Tự áp dụng — the one highlighted block: fit, checklist, steps with copyable prompts, what success
  *  looks like, and the common-errors table (collapsed). */
-export function ApplySection({ id, a, t }) {
+export function ApplySection({ id, a, t, num = '5' }) {
   const parts = []
   if (a.intro) parts.push(<p key="intro" style={css('margin:0; font-size:14.5px; line-height:1.65; color:#1E293B;')}><Fill text={a.intro} /></p>)
   if (a.fit.yes.length || a.fit.no.length) parts.push(
@@ -398,7 +408,9 @@ export function ApplySection({ id, a, t }) {
       {a.pitfallTable
         ? <Blocks blocks={a.pitfallTable} />
         : a.pitfalls.some((p) => p.fix)
-          ? <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao'), t('Nói gì với AI / làm gì')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—', p.fix || '—']) }} />
+          ? a.pitfalls.some((p) => p.why)
+            ? <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao'), t('Nói gì với AI / làm gì')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—', p.fix || '—']) }} />
+            : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Cách xử lý')], rows: a.pitfalls.map((p) => [p.meet, p.fix || '—']) }} />
           : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—']) }} />}
     </Collapsible>,
   )
@@ -408,7 +420,7 @@ export function ApplySection({ id, a, t }) {
         <div style={css('border-radius:22px; background:#fff; overflow:hidden; color-scheme:light;')}>
           <div style={css('padding:20px 26px 18px; background:linear-gradient(180deg,#EEF3FF,#ffffff); border-bottom:1px solid #E6EBF3;')}>
             <div style={css('font-size:12.5px; font-weight:800; letter-spacing:.08em; color:#2c5fff;')}>{t('BẮT ĐẦU TỪ ĐÂY')}</div>
-            <h2 style={css('margin:6px 0 0; display:flex; align-items:center; gap:10px; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}><NumBadge n="5" size={30} />{t(a.title)}</h2>
+            <h2 style={css('margin:6px 0 0; display:flex; align-items:center; gap:10px; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}><NumBadge n={num} size={30} />{t(a.title)}</h2>
           </div>
           <PromptTargetContext.Provider value={a.promptTarget || ''}>
             <div style={css('padding:22px 26px 26px; display:flex; flex-direction:column; gap:22px;')}>{parts}</div>
@@ -420,10 +432,10 @@ export function ApplySection({ id, a, t }) {
 }
 
 /** 8 Chi tiết kỹ thuật — collapsed by default. */
-export function TechSection({ tech, t }) {
+export function TechSection({ tech, t, num = '8' }) {
   return (
     <section id="uc-tech" data-toc style={css('scroll-margin-top:84px; margin-top:26px;')}>
-      <Collapsible dark defaultOpen title={<><span style={{ marginRight: 10, display: 'inline-flex', verticalAlign: 'middle' }}><NumBadge n="8" size={26} /></span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
+      <Collapsible dark defaultOpen title={<><span style={{ marginRight: 10, display: 'inline-flex', verticalAlign: 'middle' }}><NumBadge n={num} size={26} /></span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
         <div style={css('display:flex; flex-direction:column; gap:14px; padding-top:8px;')}>
           {tech.bullets && tech.bullets.length > 0 && <div style={css('padding:16px 18px; border-radius:14px; background:#fff;')}><BulletList items={tech.bullets} dot="#2c5fff" /></div>}
           {tech.tables.map((tb, i) => <div key={i} style={css('padding:16px; border-radius:14px; background:#fff;')}><PlainTable flat table={tb} /></div>)}
