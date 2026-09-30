@@ -23,6 +23,10 @@ const UC_STATUS = {
 }
 const toDate = (t) => new Date(String(t || '').replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(t)) ? '' : 'Z'))
 const fmtDate = (t) => { const d = toDate(t); return isNaN(d) ? '—' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) }
+// Microsoft display names look like "Hải. Trần Thanh (5)": drop the "(5)" suffix and the dot after the given name.
+const cleanName = (n) => String(n || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^([^\s.]+)\.\s+/, '$1 ').trim()
+const fmtDay = (d) => (d ? d.split('-').reverse().join('/') : '—') // "2026-09-30" -> "30/09/2026"
+const clamp2 = 'display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;'
 const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
 
 const btn = (kind) => {
@@ -101,6 +105,10 @@ export default function AdminConsolePage() {
   const [qStatus, setQStatus] = useState('all')
   const [qQuery, setQQuery] = useState('')
   const [userQuery, setUserQuery] = useState('')
+  const [userRole, setUserRole] = useState('all') // all | admin | member
+  const [userTeam, setUserTeam] = useState('__all')
+  const [ucSort, setUcSort] = useState('newest') // newest | waiting (lâu nhất trước)
+  const [qDetailId, setQDetailId] = useState(null)
   const [detailId, setDetailId] = useState(null)
   const [review, setReview] = useState(null) // { id, action: 'approved' | 'rejected' | 'changes_requested' }
   const [reviewNote, setReviewNote] = useState('')
@@ -209,6 +217,9 @@ export default function AdminConsolePage() {
   // ---- use case review ----
   const ucq = fold(ucQuery.trim())
   const ucRows = submissions.filter((s) => (ucStatus === 'all' || s.reviewStatus === ucStatus) && (!ucq || fold(s.title + ' ' + s.author + ' ' + s.team).includes(ucq)))
+    .sort((a, b) => (ucSort === 'waiting' ? toDate(a.time) - toDate(b.time) : toDate(b.time) - toDate(a.time)))
+  const waitHours = (s) => (now.getTime() - toDate(s.time).getTime()) / 3_600_000
+  const waitLabel = (h) => (h >= 48 ? `Chờ ${Math.floor(h / 24)} ngày` : h >= 1 ? `Chờ ${Math.floor(h)} giờ` : 'Vừa gửi')
   const detail = submissions.find((s) => s.id === detailId)
   const submitReview = () => {
     const note = reviewNote.trim()
@@ -225,7 +236,10 @@ export default function AdminConsolePage() {
 
   // ---- users ----
   const uq = fold(userQuery.trim())
-  const userRows = users.filter((u) => !uq || fold(u.name + ' ' + u.email + ' ' + u.domain).includes(uq))
+  const teams = Array.from(new Set(users.map((u) => u.team || ''))).sort((a, b) => (a ? a.localeCompare(b, 'vi') : 1) - (b ? 0 : 1))
+  const userRows = users.filter((u) => (!uq || fold(u.name + ' ' + u.email + ' ' + u.domain + ' ' + (u.team || '')).includes(uq))
+    && (userRole === 'all' || (userRole === 'admin') === !!u.isAdmin)
+    && (userTeam === '__all' || (u.team || '') === userTeam))
 
   const menu = [
     ['dashboard', 'Tổng quan', '#2c5fff', 0],
@@ -240,8 +254,8 @@ export default function AdminConsolePage() {
   const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
   const UC_COLS = 'minmax(0,1fr) 140px 120px 330px'
-  const Q_COLS = 'minmax(0,1fr) 150px 80px 80px 130px 150px'
-  const U_COLS = 'minmax(0,1fr) 110px 120px 80px 80px 80px'
+  const Q_COLS = 'minmax(0,1fr) 110px 58px 62px 128px 118px'
+  const U_COLS = 'minmax(0,1fr) 100px 96px 118px 64px 64px 72px'
   const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
   const LB_COLS = '34px minmax(0,1fr) 70px 80px 80px 70px 70px 60px'
   const D_COLS = 'minmax(0,1fr) 100px 190px 90px 90px 90px'
@@ -420,6 +434,7 @@ export default function AdminConsolePage() {
               <Heading title="Duyệt use case" sub="Use case người dùng gửi phải được duyệt trước khi đăng. Từ chối cần kèm lý do để tác giả sửa." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={ucQuery} onChange={setUcQuery} placeholder="Tìm theo tên use case, tác giả, team..." />
+                <Tabs value={ucSort} onChange={setUcSort} tabs={[['newest', 'Mới gửi trước'], ['waiting', 'Chờ lâu nhất trước']]} />
                 <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Chờ duyệt', pending.length], ['approved', 'Đã đăng', approved.length], ['changes_requested', 'Cần chỉnh sửa', submissions.filter((x) => x.reviewStatus === 'changes_requested').length], ['rejected', 'Từ chối', submissions.filter((x) => x.reviewStatus === 'rejected').length], ['all', 'Tất cả', submissions.length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
@@ -435,7 +450,12 @@ export default function AdminConsolePage() {
                         {s.reviewStatus === 'changes_requested' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF4E3;' + font(600, 12, 1.5) + ';color:#7A4700; white-space:pre-wrap;')}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div>}
                       </div>
                       <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis;')}>{s.author}</div>
-                      <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
+                      <div style={css('display:flex; flex-direction:column; align-items:flex-start; gap:5px;')}>
+                        <span style={css(pill(st.bg, st.fg))}>{st.label}</span>
+                        {s.reviewStatus === 'pending' && (waitHours(s) >= 48
+                          ? <span title="Chờ duyệt quá 48 giờ" style={css(pill('#D8232A', '#fff'))}>{waitLabel(waitHours(s))}</span>
+                          : <span style={css(font(600, 11.5) + ';color:#94a3b8;')}>{waitLabel(waitHours(s))}</span>)}
+                      </div>
                       <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
                         <button onClick={() => setDetailId(s.id)} style={css(btn('plain'))}>Xem</button>
                         {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'approved')} style={css(btn('approve'))}>Duyệt</button>}
@@ -463,15 +483,15 @@ export default function AdminConsolePage() {
                 {qRows.map((q) => (
                   <div key={q.id} style={bodyRow(Q_COLS)}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={css(font(700, 14) + ';color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{q.title}</div>
+                      <div title={q.title} onClick={() => setQDetailId(q.id)} className={hoverClass('color:#2c5fff;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; cursor:pointer;' + clamp2)}>{q.title}</div>
                       <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[relativeTime(q.time), ...(q.topics || [])].join(' · ')}</div>
                     </div>
-                    <div style={css(font(600, 12.5) + ';color:#3A4757;')} title={q.fullName}>{q.author}</div>
+                    <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')} title={[cleanName(q.fullName), q.author].filter(Boolean).join(' · ')}>{q.author}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{q.answers.length}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{helpful(q)}</div>
                     <div><span style={css(q.resolved ? pill('#E7F9F0', '#00893F') : q.answers.length ? pill('#EAF0FF', '#2c5fff') : pill('#FFF1E0', '#B45300'))}>{q.resolved ? 'Đã giải quyết' : q.answers.length ? 'Chờ chọn đáp án' : 'Chưa có trả lời'}</span></div>
                     <div style={css('display:flex; justify-content:flex-end; gap:7px;')}>
-                      <a href={`/questions#q=${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Xem</a>
+                      <button onClick={() => setQDetailId(q.id)} style={css(btn('plain'))}>Xem</button>
                       <button onClick={() => setConfirm({ text: `Xoá câu hỏi "${q.title}" cùng toàn bộ câu trả lời?`, run: () => api.deleteQuestion(q.id).then(reloadQuestions).catch(() => {}) })} style={css(btn('reject'))}>Xoá</button>
                     </div>
                   </div>
@@ -515,40 +535,52 @@ export default function AdminConsolePage() {
 
           {section === 'users' && (
             <div>
-              <Heading title="Thành viên" sub="Những người đã đăng nhập vào Zalopay AI Space. Quyền Admin được cấu hình qua biến ADMIN_EMAILS." />
-              <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px;')}>
-                <Search value={userQuery} onChange={setUserQuery} placeholder="Tìm theo tên hoặc email..." />
+              <Heading title="Thành viên" sub="Những người đã đăng nhập vào Zalopay AI Space." />
+              <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
+                <Search value={userQuery} onChange={setUserQuery} placeholder="Tìm theo tên, email hoặc phòng ban..." />
+                <select value={userTeam} onChange={(e) => setUserTeam(e.target.value)} aria-label="Lọc theo phòng ban" style={css('height:46px; max-width:260px; padding:0 14px; border:1px solid #E6EBF3; border-radius:999px; background:#fff; color:#0f172a;' + font(600, 13) + ';cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.25);')}>
+                  <option value="__all">Tất cả phòng ban</option>
+                  {teams.map((tm) => <option key={tm || '_'} value={tm}>{tm || 'Chưa rõ phòng ban'}</option>)}
+                </select>
+                <Tabs value={userRole} onChange={setUserRole} tabs={[['all', 'Tất cả', users.length], ['admin', 'Admin', users.filter((u) => u.isAdmin).length], ['member', 'Thành viên', users.filter((u) => !u.isAdmin).length]]} />
               </div>
               <div style={css('display:flex; align-items:flex-start; gap:14px; margin-top:18px; padding:16px 18px;' + card + (dirStatus?.state === 'ok' ? 'border-color:#BEE9D3;' : dirStatus ? 'border-color:#F5C9CB;' : ''))}>
                 <span style={css(`flex:none; width:10px; height:10px; margin-top:5px; border-radius:50%; background:${!dirStatus ? '#94a3b8' : dirStatus.state === 'ok' ? '#00A352' : dirStatus.state === 'needs_login' ? '#FF8D00' : '#D8232A'};`)}></span>
                 <div style={css('flex:1; min-width:0;')}>
                   <div style={css(font(800, 14) + ';color:#0f172a;')}>
-                    Gợi ý @mention từ danh bạ công ty (Microsoft Graph): {!dirStatus ? 'đang kiểm tra…' : dirStatus.state === 'ok' ? 'đang hoạt động' : dirStatus.state === 'needs_login' ? 'cần đăng nhập lại' : 'chưa hoạt động'}
+                    Gợi ý @mention từ danh bạ công ty: {!dirStatus ? 'đang kiểm tra…' : dirStatus.state === 'ok' ? 'đang hoạt động' : dirStatus.state === 'needs_login' ? 'cần đăng nhập lại' : 'chưa hoạt động'}
                   </div>
-                  <div style={css('margin-top:4px;' + font(400, 12.5, 1.6) + ';color:#64748b;')}>
+                  {dirStatus?.state === 'needs_login' && <div style={css('margin-top:4px;' + font(400, 12.5, 1.6) + ';color:#64748b;')}>Bấm "Đăng xuất" rồi đăng nhập lại bằng Microsoft, sau đó bấm "Kiểm tra lại".</div>}
+                  {dirStatus && !['ok', 'needs_login'].includes(dirStatus.state) && <div style={css('margin-top:4px;' + font(400, 12.5, 1.6) + ';color:#64748b;')}>Cần IT hỗ trợ — xem "Chi tiết kỹ thuật" bên dưới.</div>}
+                  <details style={css('margin-top:8px;')}>
+                    <summary style={css('cursor:pointer;' + font(700, 12.5) + ';color:#2c5fff;')}>Chi tiết kỹ thuật</summary>
+                  <div style={css('margin-top:6px;' + font(400, 12.5, 1.6) + ';color:#64748b;')}>
                     {!dirStatus ? 'Đang thử tra danh bạ bằng quyền Delegated của tài khoản bạn…'
                       : dirStatus.state === 'ok' ? `Gõ @ + tên là tìm được mọi người trong công ty, kể cả người chưa từng đăng nhập. Mỗi người cần đăng nhập lại 1 lần sau khi bật tính năng này.${dirStatus.scopes ? ' Quyền: ' + dirStatus.scopes + '.' : ''}`
                       : dirStatus.state === 'needs_login' ? 'Tài khoản của bạn chưa cấp quyền danh bạ cho trang. Bấm "Đăng xuất" rồi đăng nhập lại bằng Microsoft, sau đó bấm "Kiểm tra lại".'
                       : dirStatus.state === 'forbidden' ? `Microsoft từ chối tra danh bạ (${dirStatus.detail}). IT cần cấp Delegated permission User.Read.All cho App Registration SSO và bấm Grant admin consent.${dirStatus.scopes ? ' Quyền token đang có: ' + dirStatus.scopes + '.' : ''}`
                       : dirStatus.state === 'no_sso' ? dirStatus.detail
                       : `Không kiểm tra được: ${dirStatus.detail}`}
+                    <div style={{ marginTop: 6 }}>Quyền Admin được cấu hình qua biến môi trường ADMIN_EMAILS (hoặc cờ is_admin trong database).</div>
                   </div>
+                  </details>
                 </div>
                 <button onClick={checkDirectory} style={css(btn('plain'))}>Kiểm tra lại</button>
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(U_COLS)}><span>THÀNH VIÊN</span><span>VAI TRÒ</span><span>THAM GIA</span><span>CÂU HỎI</span><span>TRẢ LỜI</span><span>USE CASE</span></div>
+                <div style={headRow(U_COLS)}><span>THÀNH VIÊN</span><span>VAI TRÒ</span><span>THAM GIA</span><span>HOẠT ĐỘNG GẦN NHẤT</span><span>CÂU HỎI</span><span>TRẢ LỜI</span><span>USE CASE</span></div>
                 {userRows.map((u, i) => (
                   <div key={u.id} style={bodyRow(U_COLS)}>
                     <div style={css('display:flex; align-items:center; gap:12px; min-width:0;')}>
                       <span style={css(`flex:none; width:36px; height:36px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{u.initials}</span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={css(font(700, 14) + ';color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{u.name} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
-                        <div style={css('margin-top:3px;' + font(400, 12) + ';color:#64748b; overflow:hidden; text-overflow:ellipsis;')}>{u.email}{u.team ? ' · ' + u.team : ''}</div>
+                        <div title={`${cleanName(u.name)} · ${u.domain}`} style={css(font(700, 14, 1.4) + ';color:#0f172a; word-break:break-word;')}>{cleanName(u.name)} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
+                        <div title={u.email + (u.team ? ' · ' + u.team : '')} style={css('margin-top:3px;' + font(400, 12, 1.45) + ';color:#64748b; word-break:break-all;')}>{u.email}{u.team ? <span style={{ wordBreak: 'normal' }}> · {u.team}</span> : ''}</div>
                       </div>
                     </div>
                     <div><span style={css(u.isAdmin ? pill('#EDE7FF', '#6F0CE2') : pill('#EDF0FA', '#3A4757'))}>{u.isAdmin ? 'Admin' : 'Thành viên'}</span></div>
                     <div style={css(font(500, 12.5) + ';color:#64748b;')}>{fmtDate(u.joined)}</div>
+                    <div style={css(font(500, 12.5) + ';color:#64748b;')}>{fmtDay(u.lastActive)}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.questions}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.answers}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.useCases}</div>
@@ -560,6 +592,63 @@ export default function AdminConsolePage() {
           )}
         </main>
       </div>
+
+      {qDetailId && (() => {
+        const q = questions.find((x) => x.id === qDetailId)
+        if (!q) return null
+        const st = q.resolved ? ['Đã giải quyết', '#E7F9F0', '#00893F'] : q.answers.length ? ['Chờ chọn đáp án', '#EAF0FF', '#2c5fff'] : ['Chưa có trả lời', '#FFF1E0', '#B45300']
+        const who = (x) => [cleanName(x.fullName), x.author].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ')
+        return (
+          <div onClick={() => setQDetailId(null)} style={css('position:fixed; inset:0; z-index:900; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:32px;')}>
+            <div role="dialog" aria-modal="true" aria-label={q.title} onClick={(e) => e.stopPropagation()} style={css('width:760px; max-width:100%; max-height:100%; overflow-y:auto; background:#fff; border-radius:22px; padding:28px 32px; box-shadow:0 40px 90px rgba(6,14,40,.5); box-sizing:border-box;')}>
+              <div style={css('display:flex; align-items:flex-start; gap:16px;')}>
+                <div style={css('flex:1; min-width:0;')}>
+                  <span style={css(pill(st[1], st[2]))}>{st[0]}</span>
+                  <div style={css('margin-top:12px;' + font(800, 21, 1.35) + ';color:#0f172a; word-break:break-word;')}>{q.title}</div>
+                  <div style={css('margin-top:6px;' + font(400, 13) + ';color:#64748b;')}>{who(q)}{q.team ? ' · ' + q.team : ''} · đăng {relativeTime(q.time)} · {helpful(q)} upvote</div>
+                </div>
+                <button onClick={() => setQDetailId(null)} aria-label="Đóng" style={css('flex:none; width:36px; height:36px; border:1px solid #E6EBF3; border-radius:11px; background:#fff; color:#64748b; cursor:pointer;' + font(700, 16) + ';')}>✕</button>
+              </div>
+              {[...(q.topics || []), ...(q.tools || [])].length > 0 && (
+                <div style={css('display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;')}>
+                  {(q.topics || []).map((x) => <span key={'t' + x} style={css(pill('#EAF0FF', '#2c5fff'))}>{x}</span>)}
+                  {(q.tools || []).map((x) => <span key={'a' + x} style={css(pill('#F1F4FA', '#3A4757'))}>{x}</span>)}
+                </div>
+              )}
+              <Field label="Nội dung" value={q.body} />
+              {(q.images || []).length > 0 && (
+                <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;')}>
+                  {q.images.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" style={{ width: 96, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid #E6EBF3' }} /></a>)}
+                </div>
+              )}
+              <div style={css('margin-top:20px;' + font(800, 11.5) + ';letter-spacing:.04em;color:#94a3b8; text-transform:uppercase;')}>Câu trả lời ({q.answers.length})</div>
+              {q.answers.length === 0 && <div style={css('margin-top:8px;' + font(500, 13.5) + ';color:#94a3b8;')}>Chưa có ai trả lời.</div>}
+              <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:10px;')}>
+                {q.answers.map((a) => (
+                  <div key={a.id} style={css(`padding:12px 14px; border-radius:14px; border:1px solid ${a.accepted ? '#BEE9D3' : '#EEF1F7'}; background:${a.accepted ? '#F2FBF6' : '#F8FAFE'};`)}>
+                    <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;' + font(700, 12.5) + ';color:#0f172a;')}>
+                      {who(a)}<span style={css(font(500, 12) + ';color:#94a3b8;')}>· {relativeTime(a.time)} · {a.helpful || 0} upvote</span>
+                      {a.accepted && <span style={css(pill('#00A352', '#fff'))}>Câu trả lời được chọn</span>}
+                    </div>
+                    <div style={css('margin-top:6px;' + font(400, 13.5, 1.6) + ';color:#334155; white-space:pre-wrap; word-break:break-word;')}>{a.body}</div>
+                    {(a.comments || []).length > 0 && (
+                      <div style={css('margin-top:8px; padding-left:12px; border-left:2px solid #E6EBF3; display:flex; flex-direction:column; gap:6px;')}>
+                        {a.comments.map((c) => (
+                          <div key={c.id} style={css(font(400, 12.5, 1.55) + ';color:#475569; word-break:break-word;')}><b style={{ color: '#0f172a' }}>{who(c)}</b> <span style={{ color: '#94a3b8' }}>· {relativeTime(c.time)}</span><br />{c.body}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={css('display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
+                <a href={`/questions#q=${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(font(700, 13) + ';color:#2c5fff; text-decoration:none;')}>Mở trang câu hỏi ↗</a>
+                <button onClick={() => setConfirm({ text: `Xoá câu hỏi "${q.title}" cùng toàn bộ câu trả lời?`, run: () => api.deleteQuestion(q.id).then(() => { reloadQuestions(); setQDetailId(null) }).catch(() => {}) })} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá câu hỏi</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {detail && (
         <div onClick={() => setDetailId(null)} style={css('position:fixed; inset:0; z-index:900; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:32px;')}>

@@ -17,10 +17,13 @@ router.get('/users', (req, res) => {
   const answers = count('SELECT author_id id, COUNT(*) n FROM question_answers GROUP BY author_id')
   const useCases = count('SELECT author_id id, COUNT(*) n FROM use_case_submissions GROUP BY author_id')
   const comments = count('SELECT author_id id, COUNT(*) n FROM use_case_comments GROUP BY author_id')
+  // Last day (Vietnam time) the person used the site — from user_days, already recorded on every visit.
+  const lastDay = Object.fromEntries(db.prepare('SELECT user_id id, MAX(day) d FROM user_days GROUP BY user_id').all().map((r) => [r.id, r.d]))
   const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all().map((u) => ({
     id: u.id, name: u.name, domain: domainName(u.email, u.name), email: u.email, initials: u.initials,
     avatarColor: u.avatar_color || null, isAdmin: !!u.is_admin, joined: u.created_at, team: u.team || '',
     questions: questions[u.id] || 0, answers: answers[u.id] || 0, useCases: useCases[u.id] || 0, comments: comments[u.id] || 0,
+    lastActive: lastDay[u.id] || null,
   }))
   res.json({ users })
 })
