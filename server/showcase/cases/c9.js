@@ -14,6 +14,7 @@ export default {
   category: 'Engineering',
   topics: ['Vận hành CI/CD', 'Chẩn đoán lỗi', 'Trợ lý trên Teams'],
   tools: [],
+  promptTarget: 'bot Taxi trên Microsoft Teams', // where the sample prompts are sent (shown on each prompt box)
   audience: 'Dev, SRE/Platform',
   difficulty: 'Dễ',
   access: 'Cần xin quyền: [cần bổ sung] — chỉ email @vng.com.vn, chỉ hỏi được project cùng squad',

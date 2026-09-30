@@ -12,6 +12,7 @@ export default {
   category: 'Engineering',
   topics: ['Kết nối AI với hạ tầng', 'Bảo mật PROD', 'Tự phục vụ cho dev'],
   tools: ['Codex', 'Claude', 'Cursor', 'Gemini'],
+  promptTarget: 'Codex (đã kết nối MCP Platform)', // where the sample prompts are sent (shown on each prompt box)
   audience: 'Dev, SRE/Platform, QC',
   difficulty: 'Khó',
   access: 'Cần xin quyền: là owner/co-owner của tài nguyên trên Gear, và admin đã publish tài nguyên đó; nơi đăng ký thử [cần bổ sung]',

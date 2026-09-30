@@ -14,6 +14,7 @@ export default {
   category: 'Product',
   topics: ['Mini App', 'Prototype nhanh', 'Lấy feedback sớm'],
   tools: ['Claude', 'Codex'],
+  promptTarget: 'Claude hoặc Codex (đã cài Mini App Builder)', // where the sample prompts are sent (shown on each prompt box)
   audience: 'PO/PM, Marketing & Content, Business/Ops',
   difficulty: 'Trung bình',
   access: '[cần bổ sung]',

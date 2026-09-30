@@ -12,6 +12,7 @@ export default {
   category: 'Operations',
   topics: ['Thiết lập khuyến mãi', 'Kiểm tra cấu hình', 'Phân tích dữ liệu hỗ trợ'],
   tools: ['n8n', 'Gemini'],
+  promptTarget: 'CRM Assistant (ô chat trong CRM tool)', // where the sample prompts are sent (shown on each prompt box)
   audience: 'Business/Ops, PO/PM',
   difficulty: 'Dễ',
   access: 'Cần xin quyền: tài khoản CRM tool (xin ở đâu: [cần bổ sung])',

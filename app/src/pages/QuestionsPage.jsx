@@ -346,7 +346,7 @@ export default function QuestionsPage() {
   }, [view, anyExpanded])
 
   // ---- derive feed ----
-  const qs = query.trim().toLowerCase()
+  const qs = fold(query.trim())
   const match = (q) => {
     if (quick === 'waiting' && q.resolved) return false
     if (quick === 'resolved' && !q.resolved) return false
@@ -354,7 +354,7 @@ export default function QuestionsPage() {
     if (quick === 'saved' && !q.saved) return false
     if (quick === 'unanswered' && q.answers.length) return false
     if (!qs) return true
-    return [q.title, q.body, q.author, [].concat(q.category).join(' '), q.topics.join(' '), q.tools.join(' ')].join(' ').toLowerCase().indexOf(qs) >= 0
+    return fold([q.title, q.body, q.author, q.fullName, [].concat(q.category).join(' '), q.topics.join(' '), q.tools.join(' ')].join(' ')).indexOf(qs) >= 0
   }
   const helpfulSum = (q) => q.answers.reduce((n, a) => n + a.helpful, 0)
   let list = questions.filter(match)

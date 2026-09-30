@@ -12,6 +12,7 @@ export default {
   category: 'Marketing',
   topics: ['Nội dung website', 'Viết bài bằng AI'],
   tools: ['Codex', 'Claude', 'ChatGPT'],
+  promptTarget: 'Codex (đã cài plugin zlpws-admin)', // where the sample prompts are sent (shown on each prompt box)
   audience: 'Business/Ops, Marketing & Content',
   difficulty: 'Trung bình',
   access: '[cần bổ sung]',

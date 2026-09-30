@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
+import { fold } from '../lib/fold.js'
 import { parseUseCaseDocx, TEMPLATE_URL } from '../lib/docxImport.js'
 import { rememberReturn, hasReturn, pendingReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
@@ -359,7 +360,7 @@ export default function UseCaseLibraryPage() {
   }
 
   // ---- library filter/sort/derivations ----
-  const q = query.trim().toLowerCase()
+  const q = fold(query.trim())
   const meta = prdMeta
   const catList = useMemo(() => Array.from(new Set(allCases.map((c) => c.category))).sort((a, b) => a.localeCompare(b, 'vi')), [pubV])
 
@@ -378,7 +379,7 @@ export default function UseCaseLibraryPage() {
     }
     if (libTool) list = list.filter((c) => c.tools.includes(libTool))
     if (libKind) list = list.filter((c) => c.kind === libKind)
-    if (q) list = list.filter((c) => (c.title + ' ' + c.desc + ' ' + c.author + ' ' + c.category + ' ' + c.tools.join(' ')).toLowerCase().includes(q))
+    if (q) list = list.filter((c) => fold([c.title, c.desc, c.author, c.team, authorInfoFor(c.author).name, c.category, c.tools.join(' '), (c.topics || []).join(' ')].join(' ')).includes(q))
     if (libSort === 'helpful') list = list.slice().sort((a, b) => (b.helpful || 0) - (a.helpful || 0))
     // Newest first: approved community submissions (already newest-first), then the built-ins.
     else list = newestFirst(list)
@@ -460,8 +461,15 @@ export default function UseCaseLibraryPage() {
 
   // ================= DETAIL VIEW =================
   function renderDetail() {
-    const dsel = allCases.find((x) => x.id === id) || (pubLoaded ? allCases[0] : null)
-    if (!dsel) return <div style={css('min-height:60vh; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;')}>Đang tải use case…</div>
+    const dsel = allCases.find((x) => x.id === id)
+    if (!dsel && !pubLoaded) return <div style={css('min-height:60vh; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;')}>Đang tải use case…</div>
+    if (!dsel) return (
+      <div style={css('min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px var(--zp-gutter); text-align:center; color:#fff;')}>
+        <div style={css('font-size:26px; font-weight:800;')}>{t('Không tìm thấy use case')}</div>
+        <div style={css('max-width:460px; font-size:14.5px; line-height:1.6; color:#a9b8dc;')}>{t('Link này không còn đúng: use case có thể đã bị xoá, chưa được duyệt, hoặc địa chỉ bị gõ sai.')}</div>
+        <button onClick={() => navigate('/use-cases')} style={css('margin-top:6px; height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;')}>{t('Về Thư viện use case')}</button>
+      </div>
+    )
     const dinfo = authorInfoFor(dsel.author)
     const cd = caseDetail[dsel.id] || {}
     const dTopics = (prdMeta[dsel.id] || {}).topics || []

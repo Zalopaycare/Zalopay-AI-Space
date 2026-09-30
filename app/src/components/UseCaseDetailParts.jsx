@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { css, hoverClass } from '../lib/style.js'
-import { Blocks, CopyButton, Figure, Placeholders, Prompt } from './UseCaseGuide.jsx'
+import { Blocks, CopyButton, Figure, Placeholders, Prompt, PromptTargetContext } from './UseCaseGuide.jsx'
 import Fill from './Fill.jsx'
 
 // Building blocks of the use case detail page, laid out as the 9-part template:
@@ -410,7 +410,9 @@ export function ApplySection({ id, a, t }) {
             <div style={css('font-size:12.5px; font-weight:800; letter-spacing:.08em; color:#2c5fff;')}>{t('BẮT ĐẦU TỪ ĐÂY')}</div>
             <h2 style={css('margin:6px 0 0; display:flex; align-items:center; gap:10px; font-size:24px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}><NumBadge n="5" size={30} />{t(a.title)}</h2>
           </div>
-          <div style={css('padding:22px 26px 26px; display:flex; flex-direction:column; gap:22px;')}>{parts}</div>
+          <PromptTargetContext.Provider value={a.promptTarget || ''}>
+            <div style={css('padding:22px 26px 26px; display:flex; flex-direction:column; gap:22px;')}>{parts}</div>
+          </PromptTargetContext.Provider>
         </div>
       </div>
     </section>

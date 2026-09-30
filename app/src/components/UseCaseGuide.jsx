@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
@@ -44,7 +44,13 @@ export function Placeholders({ text }) {
     : part))
 }
 
+// Where this use case's prompts are sent ("Claude Code / Codex", "bot Taxi trên Teams"…). A block
+// can override it with `target`.
+export const PromptTargetContext = createContext('')
+
 export function Prompt({ b }) {
+  const ctxTarget = useContext(PromptTargetContext)
+  const target = b.target || ctxTarget
   return (
     <div>
       {b.label && <Label>{b.label}</Label>}
@@ -54,7 +60,7 @@ export function Prompt({ b }) {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             PROMPT
           </span>
-          <span style={css(`font:500 11.5px ${FONT}; color:#64748b;`)}>gửi cho Claude Code / Codex / Cursor</span>
+          <span style={css(`font:500 11.5px ${FONT}; color:#64748b;`)}>{target ? 'gửi cho ' + target : 'copy rồi dán vào công cụ AI của bạn'}</span>
           <span style={{ flex: 1 }}></span>
           <CopyButton text={b.text} />
         </div>

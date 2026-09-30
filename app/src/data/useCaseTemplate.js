@@ -33,6 +33,7 @@ function fromTpl(c, m) {
   const apply = {
     title: m.type === 'case' ? 'Mang ý tưởng về team bạn' : m.type === 'proposal' ? 'Muốn thử nghiệm cùng?' : 'Tự áp dụng',
     intro: a.intro || '', fit: { yes: arr(a.fit?.yes), no: arr(a.fit?.no) },
+    promptTarget: m.promptTarget || (c.tools || []).join(' / '),
     prep: arr(a.prep), prepPrompt: a.prepPrompt || null,
     steps: arr(a.steps), stepSections: [], blocks: arr(a.blocks), code: arr(a.code), refTables: arr(a.refTables),
     success: arr(a.success), samples: arr(a.samples), images: arr(a.images),
