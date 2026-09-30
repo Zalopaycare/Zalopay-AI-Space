@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
+import { parseUseCaseDocx, TEMPLATE_URL } from '../lib/docxImport.js'
 import { rememberReturn, hasReturn, pendingReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
@@ -103,6 +104,9 @@ export default function UseCaseLibraryPage() {
     img.src = src
   }
   const [shareStage, setShareStage] = useState('form')
+  // Fill the form from the Word template instead of typing: { name, filled, missing } | null
+  const [docxInfo, setDocxInfo] = useState(null)
+  const [docxError, setDocxError] = useState('')
   const [shareForm, setShareForm] = useState(EMPTY_SHARE_FORM)
   const [shareKind, setShareKind] = useState('')
   const [shareStatus, setShareStatus] = useState('')
@@ -127,6 +131,25 @@ export default function UseCaseLibraryPage() {
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
   }, [])
+
+  const importDocx = (file) => {
+    setDocxError(''); setDocxInfo(null)
+    if (!file) return
+    parseUseCaseDocx(file, { cats: CATS, kinds: ['By tech', 'By non-tech'], statuses: ['Ý tưởng', 'Prototype', 'Đang dùng thật'], levels: ['Dễ', 'Trung bình', 'Khó'] })
+      .then((r) => {
+        if (!r.filled) { setDocxError('Không tìm thấy nội dung theo mẫu trong file này. Hãy dùng đúng file template và giữ nguyên tên các mục.'); return }
+        setShareForm((f) => ({ ...f, ...Object.fromEntries(Object.entries(r.form).filter(([, v]) => v)) }))
+        if (r.kind) setShareKind(r.kind)
+        if (r.status) setShareStatus(r.status)
+        if (r.level) setShareLevel(r.level)
+        if (r.category.length) setShareCategory(r.category)
+        const pick = (list, all) => { const known = list.filter((x) => all.some((a) => a.toLowerCase() === x.toLowerCase())).map((x) => all.find((a) => a.toLowerCase() === x.toLowerCase())); const extra = list.filter((x) => !all.some((a) => a.toLowerCase() === x.toLowerCase())); return [known, extra] }
+        if (r.topics.length) { const [k, e] = pick(r.topics, TOPICS.filter((x) => x !== 'Khác')); setShareTopicSel([...k, ...(e.length ? ['Khác'] : [])].slice(0, 3)); setShareTopicOtherText(e.join(', ')) }
+        if (r.tools.length) { const [k, e] = pick(r.tools, TOOLS.filter((x) => x !== OTHER)); setShareToolSel([...k, ...(e.length ? [OTHER] : [])]); setShareToolOtherText(e.join(', ')) }
+        setDocxInfo({ name: file.name, filled: r.filled, missing: r.missing })
+      })
+      .catch((e) => setDocxError(e?.message === 'not_docx' ? 'Chỉ nhận file Word .docx (không nhận .doc cũ hay PDF).' : 'Không đọc được file này. Hãy lưu lại dưới dạng .docx rồi thử lại.'))
+  }
 
   // ?edit=<id>: reopen my submission, prefilled, to fix what the admin asked for and resubmit.
   useEffect(() => {
@@ -295,7 +318,7 @@ export default function UseCaseLibraryPage() {
     setShareForm(EMPTY_SHARE_FORM); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
-    setShareCover(null); setCoverError('')
+    setShareCover(null); setCoverError(''); setDocxInfo(null); setDocxError('')
   }
 
   // ---- card mapper shared by grid + list views ----
@@ -919,6 +942,34 @@ export default function UseCaseLibraryPage() {
                         <div style={css('font:800 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#7A4700;')}>Admin cần bạn chỉnh sửa / bổ sung</div>
                         <div style={css('margin-top:4px; font:500 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#5C3A00; white-space:pre-wrap;')}>{editing.note}</div>
                       </div>
+                    </div>
+                  )}
+                  {!editing && (
+                    <div style={css('margin-bottom:16px; padding:16px 18px; border-radius:18px; background:linear-gradient(180deg,#F3F7FF,#EEF3FF); border:1px solid #D5E2FC;')}>
+                      <div style={css('display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;')}>
+                        <span style={css('flex:none; width:38px; height:38px; border-radius:11px; background:#2B579A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900;')}>W</span>
+                        <div style={css('flex:1; min-width:220px;')}>
+                          <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Thích điền bằng Word hơn?')}</div>
+                          <div style={css('margin-top:3px; font-size:12.5px; line-height:1.55; color:#475569;')}>{t('Tải template, điền trên máy (có thể gửi team góp ý trước), rồi tải file lên. Nội dung tự điền vào form bên dưới để bạn kiểm tra và bấm Gửi duyệt.')}</div>
+                        </div>
+                        <div style={css('display:flex; gap:8px; flex-wrap:wrap;')}>
+                          <a href={TEMPLATE_URL} download className={hoverClass('background:#F2F6FF !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:13px; font-weight:700; text-decoration:none; white-space:nowrap;')}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+                            {t('Tải template Word')}
+                          </a>
+                          <label className={hoverClass('filter:brightness(1.06) !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border:none; border-radius:999px; background:#2c5fff; color:#fff; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
+                            <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={(e) => { importDocx(e.target.files?.[0]); e.target.value = '' }} />
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21V9"></path><path d="m7 14 5-5 5 5"></path><path d="M5 3h14"></path></svg>
+                            {t('Tải lên file Word đã điền')}
+                          </label>
+                        </div>
+                      </div>
+                      {docxError && <div style={css('margin-top:10px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{docxError}</div>}
+                      {docxInfo && (
+                        <div role="status" style={css(`margin-top:10px; padding:10px 12px; border-radius:12px; background:${docxInfo.missing.length ? '#FFF8E8' : '#F2FBF6'}; border:1px solid ${docxInfo.missing.length ? '#F3E0B0' : '#CFEEDE'}; font-size:12.5px; line-height:1.55; color:${docxInfo.missing.length ? '#5A4522' : '#1F4B33'};`)}>
+                          <b>✓ {t('Đã điền')} {docxInfo.filled} {t('mục từ')} "{docxInfo.name}".</b> {docxInfo.missing.length ? t('Còn thiếu mục bắt buộc') + ': ' + docxInfo.missing.join(', ') + '. ' + t('Điền thêm bên dưới rồi gửi.') : t('Kiểm tra lại nội dung bên dưới rồi bấm Gửi duyệt.')}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:26px 28px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
