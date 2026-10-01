@@ -39,6 +39,12 @@ const UC_TABS = [
   { key: 'rejected', label: 'Từ chối', color: '#EF4444' },
   { key: 'all', label: 'Tất cả', color: '#6EA8FF' },
 ]
+// Status tabs on "Câu hỏi của tôi": waiting for a first answer vs already answered.
+const Q_TABS = [
+  { key: 'waiting', label: 'Đang đợi câu trả lời', color: '#FFB020' },
+  { key: 'answered', label: 'Đã có câu trả lời', color: '#22C55E' },
+  { key: 'all', label: 'Tất cả', color: '#6EA8FF' },
+]
 const hexA = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`
 
 // Same bright gradient/glow text treatment as the Use Case Library hero title.
@@ -167,6 +173,7 @@ export default function ProfilePage() {
   const [hash, setHash] = useState(location.hash)
   const [showAllNotif, setShowAllNotif] = useState(false)
   const [ucTab, setUcTab] = useState(null) // null = first tab that has posts
+  const [qTab, setQTab] = useState(null)
   useEffect(() => { setHash(location.hash) }, [location.hash])
   useEffect(() => {
     const onHash = () => setHash(window.location.hash)
@@ -238,9 +245,9 @@ export default function ProfilePage() {
     hasTitle: q.hasTitle,
     body: q.body,
     tagLabel: t('Câu hỏi'),
-    statusLabel: q.resolved ? 'Đã trả lời' : t('Đang chờ trả lời'),
-    statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
-    statusColor: q.resolved ? '#00893F' : '#B45300',
+    statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
+    statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0',
+    statusColor: q.answers.length ? '#00893F' : '#B45300',
     topics: q.topics || [], tools: q.tools || [],
     accepted: q.answers.some((a) => a.accepted),
     helpful: q.answers.reduce((n, a) => n + (a.helpful || 0), 0) + (q.qHelpful || 0),
@@ -254,6 +261,12 @@ export default function ProfilePage() {
   })
   const myQuestionCards = myQuestions.map(mapQuestion)
   const savedQuestionCards = savedQuestions.map(mapQuestion)
+  const qTabs = Q_TABS.map((tab) => {
+    const items = tab.key === 'all' ? myQuestionCards : myQuestionCards.filter((q) => (tab.key === 'answered' ? q.answers > 0 : q.answers === 0))
+    return { ...tab, label: t(tab.label), count: items.length, items }
+  })
+  // Default: questions still waiting first, then answered ones, else "Tất cả".
+  const activeQTab = qTabs.find((x) => x.key === qTab) || qTabs.find((x) => x.key !== 'all' && x.count > 0) || qTabs[qTabs.length - 1]
 
   // ---- use case board (status columns, always in this order) ----
   const ucCta = (c) => ({ changes_requested: t('Chỉnh sửa & gửi lại'), rejected: t('Gửi use case mới'), draft: t('Tiếp tục'), approved: t('Xem trong Thư viện') })[c.reviewStatus] || t('Xem use case')
@@ -321,8 +334,8 @@ export default function ProfilePage() {
     .concat(myQuestions.map((q) => ({
       tagLabel: t('Câu hỏi'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
       title: q.title, meta: relativeTime(q.time), ts: q.time,
-      statusLabel: q.resolved ? 'Đã trả lời' : t('Đang chờ trả lời'),
-      statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0', statusColor: q.resolved ? '#00893F' : '#B45300',
+      statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
+      statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0', statusColor: q.answers.length ? '#00893F' : '#B45300',
       cta: t('Xem chi tiết'), primary: false,
       onOpen: () => navigate(`/questions#q=${encodeURIComponent(q.id)}`),
     })))
@@ -420,30 +433,7 @@ export default function ProfilePage() {
         {section === 'usecase' && (
           <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              <div style={css('display:flex; flex-wrap:wrap; gap:6px; padding:5px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.22); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); width:fit-content; max-width:100%;')}>
-                {ucTabs.map((tab) => {
-                  const on = tab.key === activeUcTab.key
-                  const lit = tab.count > 0
-                  return (
-                    <button
-                      key={tab.key}
-                      onClick={() => setUcTab(tab.key)}
-                      className={on ? undefined : hoverClass(`background:${hexA(tab.color, .16)} !important;`)}
-                      style={css(`display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px 0 16px; border-radius:999px; cursor:pointer; white-space:nowrap; font:700 13.5px ${FONT}; transition:background .15s, box-shadow .15s; `
-                        + (on
-                          ? `background:#fff; border:1px solid #fff; color:${tab.key === 'all' ? '#2c5fff' : '#0F172A'}; box-shadow:0 0 0 1px ${hexA(tab.color, .5)}, 0 0 18px ${hexA(tab.color, .55)};`
-                          : lit
-                            ? `background:${hexA(tab.color, .1)}; border:1px solid ${hexA(tab.color, .55)}; color:${tab.color}; box-shadow:0 0 14px ${hexA(tab.color, .35)};`
-                            : `background:rgba(255,255,255,.05); border:1px solid ${hexA(tab.color, .35)}; color:#E4ECFF;`))}
-                    >
-                      <span style={css(`width:8px; height:8px; border-radius:50%; background:${tab.color}; ${lit ? `box-shadow:0 0 8px ${tab.color};` : ''}`)}></span>
-                      {tab.label}
-                      <span style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; font:800 12px ${FONT}; `
-                        + (lit ? `background:${tab.color}; color:#fff;` : on ? `background:${hexA(tab.color, .16)}; color:#0F172A;` : `background:${hexA(tab.color, .22)}; color:#fff;`))}>{tab.count}</span>
-                    </button>
-                  )
-                })}
-              </div>
+              <StatusTabs tabs={ucTabs} active={activeUcTab.key} onPick={setUcTab} />
               <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
                 {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
                 {activeUcTab.items.length === 0 && (
@@ -464,6 +454,7 @@ export default function ProfilePage() {
         {section === 'question' && (
           <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
+              {myQuestionCards.length > 0 && <div style={{ marginBottom: 2 }}><StatusTabs tabs={qTabs} active={activeQTab.key} onPick={setQTab} /></div>}
               {draftItem.map((r) => (
                 <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
                   <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
@@ -474,7 +465,10 @@ export default function ProfilePage() {
                   <button onClick={(e) => { e.stopPropagation(); r.onOpen() }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
                 </div>
               ))}
-              {myQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
+              {activeQTab.items.map((q) => <QuestionCard key={q.id} q={q} />)}
+              {loaded && myQuestionCards.length > 0 && activeQTab.items.length === 0 && (
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{activeQTab.key === 'waiting' ? t('Câu hỏi nào của bạn cũng đã có người trả lời.') : t('Chưa có câu hỏi nào được trả lời.')}</div>
+              )}
               {loaded && myQuestionCards.length === 0 && (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có câu hỏi nào.')}</div>
               )}
@@ -507,5 +501,35 @@ export default function ProfilePage() {
         )}
       </div>
     </Layout>
+  )
+}
+
+// Status filter pills (colour per status; pills holding items glow). Used by "Use case của tôi" and "Câu hỏi của tôi".
+function StatusTabs({ tabs, active, onPick }) {
+  return (
+  <div style={css('display:flex; flex-wrap:wrap; gap:6px; padding:5px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.22); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); width:fit-content; max-width:100%;')}>
+    {tabs.map((tab) => {
+      const on = tab.key === active
+      const lit = tab.count > 0
+      return (
+        <button
+          key={tab.key}
+          onClick={() => onPick(tab.key)}
+          className={on ? undefined : hoverClass(`background:${hexA(tab.color, .16)} !important;`)}
+          style={css(`display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px 0 16px; border-radius:999px; cursor:pointer; white-space:nowrap; font:700 13.5px ${FONT}; transition:background .15s, box-shadow .15s; `
+            + (on
+              ? `background:#fff; border:1px solid #fff; color:${tab.key === 'all' ? '#2c5fff' : '#0F172A'}; box-shadow:0 0 0 1px ${hexA(tab.color, .5)}, 0 0 18px ${hexA(tab.color, .55)};`
+              : lit
+                ? `background:${hexA(tab.color, .1)}; border:1px solid ${hexA(tab.color, .55)}; color:${tab.color}; box-shadow:0 0 14px ${hexA(tab.color, .35)};`
+                : `background:rgba(255,255,255,.05); border:1px solid ${hexA(tab.color, .35)}; color:#E4ECFF;`))}
+        >
+          <span style={css(`width:8px; height:8px; border-radius:50%; background:${tab.color}; ${lit ? `box-shadow:0 0 8px ${tab.color};` : ''}`)}></span>
+          {tab.label}
+          <span style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; font:800 12px ${FONT}; `
+            + (lit ? `background:${tab.color}; color:#fff;` : on ? `background:${hexA(tab.color, .16)}; color:#0F172A;` : `background:${hexA(tab.color, .22)}; color:#fff;`))}>{tab.count}</span>
+        </button>
+      )
+    })}
+  </div>
   )
 }
