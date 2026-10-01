@@ -892,7 +892,10 @@ export default function UseCaseLibraryPage() {
                     <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} topics={previewTopics} avatarBg={user?.avatarColor || avatarColor(pv.c.author)} avatarUrl={user?.avatarUrl} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
-                  <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
+                  <div style={css('margin-top:16px; padding:12px 16px; border-radius:14px; background:#fff; border:1px solid #E6EBF3;')}>
+                    <AnonToggle compact on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
+                  </div>
+                  <div style={css('display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap;')}>
                     <button onClick={() => setShareStage('form')} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Quay lại chỉnh sửa')}</button>
                     <button
                       onClick={submitShare}
@@ -982,7 +985,11 @@ export default function UseCaseLibraryPage() {
                           {coverError && <div style={css('margin-top:8px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
                         </div>
                         <ChipGroup title="Loại" required="Bắt buộc · chọn một" options={shareTypes} />
-                        <div style={css('margin:-8px 0 24px;')}><AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} /></div>
+                        <div style={css(`margin:-4px 0 24px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon ? '#F2F6FF' : '#F8FAFE'};`)}>
+                          <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Người đăng')}</div>
+                          <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật. Admin vẫn biết bạn là ai.')}</div>
+                          <AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
+                        </div>
                       </>
                     )}
                     {shareFields.filter((f) => f.step === SHARE_STEPS[shareStep].key).map((f) => (
