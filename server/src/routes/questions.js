@@ -1,8 +1,9 @@
+import { colorOf } from '../avatarColors.js'
 import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
-import { notifyMentions, appUrl, domainName } from '../mentions.js'
+import { notifyMentions, appUrl, domainName, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
 
 const router = express.Router()
@@ -14,7 +15,7 @@ const qTitle = (q) => {
   const first = String(q.body || '').split('\n').find((l) => l.trim()) || ''
   return first.length > 90 ? first.slice(0, 90).trimEnd() + '…' : first
 }
-const userBrief = (u) => (u ? { author: domainName(u.email, u.name), fullName: u.name, initials: u.initials, team: u.team, authorId: u.id, avatarColor: u.avatar_color || null } : { author: 'Người dùng đã xoá', fullName: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
+const userBrief = (u) => (u ? { author: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), team: u.team, authorId: u.id, avatarColor: colorOf(u) } : { author: 'Người dùng đã xoá', fullName: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
 
 
 function loadQuestion(id, userId) {

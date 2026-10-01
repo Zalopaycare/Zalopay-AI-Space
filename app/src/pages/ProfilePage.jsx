@@ -237,7 +237,7 @@ export default function ProfilePage() {
   const mapQuestion = (q) => ({
     id: q.id,
     initials: q.initials,
-    avatarBg: avatarColor(q.author),
+    avatarBg: q.avatarColor || avatarColor(q.author),
     author: q.author,
     team: q.team,
     time: relativeTime(q.time),

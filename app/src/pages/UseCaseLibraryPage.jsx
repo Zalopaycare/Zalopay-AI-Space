@@ -579,7 +579,7 @@ export default function UseCaseLibraryPage() {
               </div>
 
               <div style={css('display:flex; gap:12px; margin-top:20px; align-items:flex-start;')}>
-                <span style={css('width:36px; height:36px; border-radius:50%; flex:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;')}>{user?.initials || '?'}</span>
+                <span style={css(`width:36px; height:36px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;`)}>{user?.initials || '?'}</span>
                 <div style={{ flex: 1 }}>
                   <MentionInput
                     ref={dBoxRef}
@@ -648,7 +648,7 @@ export default function UseCaseLibraryPage() {
 
                       {replyTarget?.parentId === c.id && (
                         <div style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
-                          <span style={css('width:30px; height:30px; border-radius:50%; flex:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;')}>{user?.initials || '?'}</span>
+                          <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;`)}>{user?.initials || '?'}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <MentionInput
                               ref={replyBoxRef}
@@ -880,7 +880,7 @@ export default function UseCaseLibraryPage() {
                     {t('Xem trước: đây đúng là trang chi tiết người đọc sẽ thấy sau khi bài được duyệt.')}
                   </div>
                   <div className="zp-detail-wrap" style={css('margin-top:16px; border-radius:20px; overflow:hidden; background:#07070c; color:#fff; padding:22px 22px 30px;')}>
-                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} topics={previewTopics} avatarBg={avatarColor(pv.c.author)} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
+                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} topics={previewTopics} avatarBg={user?.avatarColor || avatarColor(pv.c.author)} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>

@@ -40,7 +40,10 @@ export function toolColor(t) {
   return ({ GPT: '#10a37f', Claude: '#d97757', Gemini: '#4285f4', Magnify: '#2b2f45', Kling: '#2563eb', Perplexity: '#20808d', Copilot: '#6a5cff' })[t] || '#64748b'
 }
 
+// Real people's colors (their pick, or the server's fixed fallback), keyed by the name cards show.
+const AUTHOR_COLOR = {}
 export function avatarColor(name) {
+  if (AUTHOR_COLOR[name]) return AUTHOR_COLOR[name]
   const p = ['#3b82f6', '#8b5cf6', '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#22c55e', '#6366f1']
   let h = 0
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0
@@ -134,6 +137,7 @@ export function registerPublished(subs) {
     const author = s.authorDomain || s.author || 'AI Space'
     KIND_BY_ID[s.id] = KIND_MAP[s.kind] || 'tech'
     STATUS_BY_ID[s.id] = STATUS_MAP[s.status] || 'inuse'
+    if (s.authorAvatarColor) AUTHOR_COLOR[author] = s.authorAvatarColor
     authorInfo[author] = { name: s.author || author, role: 'Zalopay' + (s.team ? ' · ' + s.team : '') }
     prdMeta[s.id] = { problem: s.problem, result: s.result, topics: s.topics || [], helpful: 0, comments: 0 }
     caseDetail[s.id] = {

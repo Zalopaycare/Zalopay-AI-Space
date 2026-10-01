@@ -639,7 +639,7 @@ export default function QuestionsPage() {
 
                                           {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (
                                             <div style={css('display:flex; gap:10px; margin:10px 0 0 36px; align-items:center;')}>
-                                              <div style={css('flex:none; width:24px; height:24px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
+                                              <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{user?.initials || '?'}</div>
                                               <div style={{ flex: 1 }}>
                                                 <input
                                                   autoFocus
@@ -658,7 +658,7 @@ export default function QuestionsPage() {
                                       )
                                     })}
                                     <div style={css('display:flex; gap:10px; align-items:center;')}>
-                                      <div style={css('flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
+                                      <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{user?.initials || '?'}</div>
                                       <div style={css('flex:1; position:relative;')}>
                                         <MentionField id={'cmt-in-' + a.id} value={a.commentDraft} onChange={a.onCommentChange} onBlur={() => setCommentMention(null)} onKeyDown={withEsc(a.mentionOpen, () => setCommentMention(null), enterSends(a.onPostComment, () => { if (a.mentionOpen && a.mentions[0]) { a.mentions[0].onPick(); return true } return false }))} placeholder={t('Trả lời') + ' ' + a.author + ', ' + t('gõ @ để mention...')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
                                         {a.mentionOpen && (
@@ -689,7 +689,7 @@ export default function QuestionsPage() {
                         </div>
 
                         <div style={css('display:flex; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid #E6EBF3;')}>
-                          <div style={css('flex:none; width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{user?.initials || '?'}</div>
+                          <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{user?.initials || '?'}</div>
                           <div style={{ flex: 1, position: 'relative' }}>
                             <MentionField multiline id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onBlur={() => setReplyMention(null)} onKeyDown={withEsc(q.replyMentionOpen, () => setReplyMention(null), enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false }))} rows={2} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')} />
                             {q.replyMentionOpen && (

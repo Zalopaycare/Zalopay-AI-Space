@@ -7,3 +7,13 @@ export const AVATAR_COLORS = [
   '#0E7490', '#00B7FF', '#0284C7', '#0033C9', '#2c5fff', '#4F46E5',
   '#6F0CE2', '#7C3AED', '#9333EA', '#C026D3', '#DB2777', '#E11D48',
 ]
+
+/** A person's avatar color: their own pick, else a fixed color derived from their email, so
+ *  everyone without a pick still looks the same on every page and every device. */
+export function colorOf(u) {
+  if (!u) return null
+  if (u.avatar_color) return u.avatar_color
+  let h = 0
+  for (const ch of String(u.email || u.name || '?').toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}

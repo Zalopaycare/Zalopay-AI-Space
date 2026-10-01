@@ -1,8 +1,9 @@
+import { colorOf } from '../avatarColors.js'
 import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
-import { notifyMentions, appUrl, domainName, handleOf } from '../mentions.js'
+import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
 
 const router = express.Router()
@@ -16,7 +17,7 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const saved = req.user ? !!db.prepare('SELECT 1 FROM use_case_saves WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
   const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at ASC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
-    return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? u.initials : '??', avatarColor: u ? (u.avatar_color || null) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
+    return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? (colorOf(u)) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
   })
   res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
 })
@@ -130,7 +131,7 @@ router.post('/:id/comments', requireAuth, (req, res) => {
     sendMail({ to: u.email, subject: text, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
   notifyMentions(req, { text: body, where, path: href, skip: [...told] })
-  res.status(201).json({ id: cid, authorId: req.user.id, author: domainName(req.user.email, req.user.name), initials: req.user.initials, avatarColor: req.user.avatar_color || null, time: new Date().toISOString(), body, parentId })
+  res.status(201).json({ id: cid, authorId: req.user.id, author: domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), time: new Date().toISOString(), body, parentId })
 })
 
 // Share-a-use-case submissions (pending admin review).
@@ -151,7 +152,7 @@ router.get('/submissions', requireAuth, (req, res) => {
         kind: r.kind, status: r.status_field, level: r.level,
         category: asArr(r.category), topics: asArr(r.topics), tools: asArr(r.tools),
         reviewStatus: r.review_status, adminNote: r.admin_note,
-        author: author ? author.name : '—', authorDomain: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, time: r.created_at,
+        author: author ? author.name : '—', authorAvatarColor: colorOf(author), authorDomain: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, time: r.created_at,
         publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null, edited: !!r.edited_at,
         extra: parseExtra(r.extra),
         coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,

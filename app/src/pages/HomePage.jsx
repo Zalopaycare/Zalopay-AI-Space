@@ -240,7 +240,7 @@ export default function HomePage() {
   }
   const renderModalReplyBox = (answerId, parentId) => (modalReply && modalReply.answerId === answerId && modalReply.parentId === parentId ? (
     <div style={css('display:flex; gap:9px; align-items:center; margin-top:10px;')}>
-      <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{user?.initials || '?'}</span>
+      <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{user?.initials || '?'}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <MentionInput
           ref={modalReplyBoxRef}
@@ -575,7 +575,7 @@ export default function HomePage() {
                   )}
 
                   <div style={css('display:flex; gap:12px; margin-top:16px;')}>
-                    <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{user?.initials || '?'}</span>
+                    <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{user?.initials || '?'}</span>
                     <div style={{ flex: 1 }}>
                       <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
                       <div style={css('display:flex; align-items:center; margin-top:10px;')}>

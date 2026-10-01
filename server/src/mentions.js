@@ -66,3 +66,15 @@ export function notifyMentions(req, { text, where, path, skip = [] }) {
     }).catch((e) => console.error('[mentions] send failed:', e.message))
   }
 }
+
+/** Avatar letters, always from the name people see next to the avatar (the domain account):
+ *  "ThyNDM" → "TN", "NamNTH" → "NN", "Menutest" → "ME". Computed on read, so a name change or
+ *  a Microsoft sign-in never leaves stale letters behind. */
+export function initialsOf(u) {
+  if (!u) return '??'
+  const d = domainName(u.email, u.name) || String(u.name || '')
+  const letters = d.replace(/[^\p{L}\p{N}]/gu, '')
+  if (!letters) return '??'
+  const cap = letters.slice(1).search(/\p{Lu}/u)
+  return (letters[0] + (cap >= 0 ? letters[cap + 1] : letters[1] || '')).toUpperCase()
+}
