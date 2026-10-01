@@ -1,4 +1,7 @@
 import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
+import AnonTag from '../components/AnonTag.jsx'
+import AnonToggle from '../components/AnonToggle.jsx'
+import FileLinks from '../components/FileLinks.jsx'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useTitle } from '../hooks/useTitle.js'
@@ -91,6 +94,8 @@ export default function HomePage() {
   const [questions, setQuestions] = useState([])
   const [openQ, setOpenQ] = useState(null)
   const [modalDraft, setModalDraft] = useState('')
+  const [modalAnon, setModalAnon] = useState(false)
+  const [modalAlias, setModalAlias] = useState('')
   const modalBoxRef = useRef(null)
   const modalReplyBoxRef = useRef(null)
   const [ucMeta, setUcMeta] = useState({})
@@ -261,7 +266,7 @@ export default function HomePage() {
   const postModalReply = () => {
     const body = (modalBoxRef.current ? modalBoxRef.current.expand(modalDraft) : modalDraft).trim()
     if (!body || !modalSrc) return
-    requireLogin(() => api.postAnswer(modalSrc.id, body).then((d) => { patch(modalSrc.id, d.question); setModalDraft('') }).catch(() => {}))
+    requireLogin(() => api.postAnswer(modalSrc.id, body, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '' }).then((d) => { patch(modalSrc.id, d.question); setModalDraft('') }).catch(() => {}))
   }
 
   // ---- featured use cases (real data, live helpful/save counts) ----
@@ -416,7 +421,7 @@ export default function HomePage() {
                   <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
                     <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</span>
                     <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
-                      <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
+                      <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span><AnonTag p={q} />
                       <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
                     </div>
                     <div style={css('position:relative; flex:none;')}>
@@ -480,7 +485,7 @@ export default function HomePage() {
                   <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${modalSrc.avatarColor || AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};${avatarPhotoCss(modalSrc.avatarUrl)}`)}>{modalSrc.initials}</span>
                   <div style={css('flex:1; min-width:0;')}>
                     <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                      <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span>
+                      <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span><AnonTag p={modalSrc} />
                       <span style={css(`font:400 13px ${FONT}; color:#94a3b8;`)}>{relativeTime(modalSrc.time)}</span>
                       <span style={css(`display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${modalSrc.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${modalSrc.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{modalSrc.resolved ? t('Đã trả lời') : t('Đang chờ trả lời')}</span>
                     </div>
@@ -493,6 +498,7 @@ export default function HomePage() {
                 <div style={css('padding:16px 26px 0;')}>
                   {modalSrc.hasTitle !== false && <h3 style={css(`margin:0; font:800 21px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{modalSrc.title}</h3>}
                   <p style={css(`margin:${modalSrc.hasTitle !== false ? 11 : 0}px 0 0; font:400 15px/1.65 ${FONT}; color:#3A4757; white-space:pre-wrap;`)}>{renderMentions(modalSrc.body)}</p>
+                  <FileLinks files={modalSrc.files} />
                   <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px; flex-wrap:wrap;')}>
                     {[].concat(modalSrc.category).filter(Boolean).map((c) => (
                       <span key={c} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:8px; background:#EAF0FF; color:#2c5fff; font:700 12px ${FONT};`)}>{c}</span>
@@ -516,7 +522,7 @@ export default function HomePage() {
                       <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(a.avatarUrl)}`)}>{a.initials}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A;`)}>{a.author}</span>
+                          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A;`)}>{a.author}</span><AnonTag p={a} />
                           <span style={css(`font:400 12px ${FONT}; color:#94a3b8;`)}>{a.timeLabel}</span>
                         </div>
                         <p style={css(`margin:7px 0 0; font:400 14px/1.6 ${FONT}; color:#3A4757;`)}>{renderMentions(a.body)}</p>
@@ -581,6 +587,7 @@ export default function HomePage() {
                     <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
                     <div style={{ flex: 1 }}>
                       <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
+                      <AnonToggle on={modalAnon} onChange={setModalAnon} alias={modalAlias} onAlias={setModalAlias} label="Trả lời ẩn danh" />
                       <div style={css('display:flex; align-items:center; margin-top:10px;')}>
                         <button onClick={() => navigate(`/questions#q=${modalSrc.id}`)} style={css(`font:700 12.5px ${FONT}; color:#3366F0; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;`)}>{t('Mở trong Questions')}</button>
                         <button onClick={postModalReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; opacity:${modalDraft.trim() ? 1 : 0.5};`)}>

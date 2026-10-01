@@ -26,6 +26,8 @@ import { DETAIL_COL, DetailHero, Toc, scrollToId, FloatingBack } from '../compon
 import { DetailSections, detailLayout } from '../components/UseCaseDetailView.jsx'
 import { buildTemplate } from '../data/useCaseTemplate.js'
 import { submissionTpl } from '../data/submissionTpl.js'
+import AnonTag from '../components/AnonTag.jsx'
+import AnonToggle from '../components/AnonToggle.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
@@ -122,6 +124,8 @@ export default function UseCaseLibraryPage() {
   const [shareStage, setShareStage] = useState('form')
   const [shareStep, setShareStep] = useState(0)
   const [shareType, setShareType] = useState('')
+  const [shareAnon, setShareAnon] = useState(false)
+  const [shareAlias, setShareAlias] = useState('')
   const [shareHighlights, setShareHighlights] = useState(EMPTY_HIGHLIGHTS)
   // Fill the form from the Word template instead of typing: { name, filled, missing } | null
   const [docxInfo, setDocxInfo] = useState(null)
@@ -180,6 +184,7 @@ export default function UseCaseLibraryPage() {
       const ex = s.extra || {}
       setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' })
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
+      setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && s.alias !== 'Ẩn danh' ? s.alias : '')
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       setShareCategory([].concat(s.category || []))
       const known = (list, all) => list.filter((x) => all.includes(x))
@@ -268,7 +273,7 @@ export default function UseCaseLibraryPage() {
   const restoredRef = useRef(false)
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
 
   useEffect(() => {
     if (restoredRef.current) return
@@ -279,6 +284,7 @@ export default function UseCaseLibraryPage() {
       const d = JSON.parse(raw) || {}
       setShareForm({ ...EMPTY_SHARE_FORM, ...(d.shareForm || {}) })
       setShareType(d.shareType || '')
+      setShareAnon(!!d.shareAnon); setShareAlias(d.shareAlias || '')
       setShareHighlights(padHighlights(d.shareHighlights))
       setShareKind(d.shareKind || '')
       setShareStatus(d.shareStatus || '')
@@ -311,7 +317,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -332,6 +338,7 @@ export default function UseCaseLibraryPage() {
         kind: shareKind, status: shareStatus, level: shareLevel,
         category: shareCategory, topics: previewTopics, tools: previewTools,
         extra: shareExtra(),
+        anonymous: shareAnon, alias: shareAnon ? shareAlias.trim() : '',
         ...(shareCover?.data ? { cover: shareCover.data } : shareCover?.cleared ? { cover: null } : {}),
       }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
         .catch(() => setShareError('Không gửi được use case, thử lại.'))
@@ -339,7 +346,7 @@ export default function UseCaseLibraryPage() {
   }
 
   const resetShareForm = () => {
-    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
+    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
     setShareCover(null); setCoverError(''); setDocxInfo(null); setDocxError('')
@@ -490,9 +497,9 @@ export default function UseCaseLibraryPage() {
     const sub = {
       title: previewTitle, audience: shareForm.audience, team: shareForm.team, problem: shareForm.problem, solution: shareForm.solution,
       prep: shareForm.prep, prompt: shareForm.prompt, result: shareForm.result, limits: shareForm.limits, contact: shareForm.contact, link: shareForm.link,
-      status: shareStatus, level: shareLevel, author: user?.name || '', extra: shareExtra(),
+      status: shareStatus, level: shareLevel, author: shareAnon ? (shareAlias.trim() || 'Ẩn danh') : user?.name || '', team: shareAnon ? '' : shareForm.team, extra: shareExtra(),
     }
-    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, author: user?.domain || user?.name || 'Bạn', team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
+    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, author: shareAnon ? (shareAlias.trim() || 'Ẩn danh') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon, alias: shareAlias.trim() || 'Ẩn danh', realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
     const tp = buildTemplate(c, { tpl: submissionTpl(sub) }, { name: user?.name || '', role: shareForm.team })
     return { c, tp, layout: detailLayout(tp, t) }
   }
@@ -774,7 +781,7 @@ export default function UseCaseLibraryPage() {
                       <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
                         <span style={css(c.avStyle)}>{c.avInitial}</span>
                         <div style={css('display:flex; align-items:baseline; gap:6px; min-width:0;')}>
-                          <span style={css('font-size:12.5px; font-weight:600; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span>
+                          <span style={css('font-size:12.5px; font-weight:600; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span><AnonTag p={c} />
                           {c.posted && <span style={css('flex:none; font-size:12px; font-weight:500; color:#94a3b8; white-space:nowrap;')}>· {t('Đăng')} {c.posted}</span>}
                         </div>
                       </div>
@@ -975,6 +982,7 @@ export default function UseCaseLibraryPage() {
                           {coverError && <div style={css('margin-top:8px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
                         </div>
                         <ChipGroup title="Loại" required="Bắt buộc · chọn một" options={shareTypes} />
+                        <div style={css('margin:-8px 0 24px;')}><AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} /></div>
                       </>
                     )}
                     {shareFields.filter((f) => f.step === SHARE_STEPS[shareStep].key).map((f) => (

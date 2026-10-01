@@ -1,5 +1,7 @@
 import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
-import { useEffect, useState } from 'react'
+import AnonTag from '../components/AnonTag.jsx'
+import { useEffect, useRef, useState } from 'react'
+import { copyWithToast } from '../lib/clipboard.js'
 import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
@@ -96,11 +98,12 @@ function QuestionCard({ q }) {
           {t('Câu hỏi')}
         </span>
         <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
+        {q.menu && <QuestionMenu m={q.menu} />}
       </div>
       <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
         <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</span>
         <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
-          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
+          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span><AnonTag p={q} />
           <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.time}</span>
         </div>
       </div>
@@ -237,6 +240,7 @@ export default function ProfilePage() {
   // ---- shared card mappers ----
   const mapQuestion = (q) => ({
     id: q.id,
+    anonymous: q.anonymous, alias: q.alias, realAuthor: q.realAuthor,
     initials: q.initials,
     avatarBg: q.avatarColor || avatarColor(q.author),
     avatarUrl: q.avatarUrl || null,
@@ -260,6 +264,21 @@ export default function ProfilePage() {
     }).catch(() => {}),
     answers: q.answers.length,
     onOpen: () => navigate(`/questions#q=${encodeURIComponent(q.id)}`),
+    // ⋯ menu, same actions as the Questions page card
+    menu: {
+      saved: !!q.saved,
+      canEdit: q.authorId === user.id,
+      canDelete: q.authorId === user.id || !!user.isAdmin,
+      onCopy: () => copyWithToast(window.location.origin + '/questions#q=' + encodeURIComponent(q.id), 'Đã sao chép link ✓'),
+      onSave: () => api.saveQuestion(q.id).then((d) => {
+        if (d && d.question) setMyQuestions((list) => list.map((x) => (x.id === q.id ? d.question : x)))
+        setSavedQuestions((list) => (d && d.question && d.question.saved ? [d.question, ...list.filter((x) => x.id !== q.id)] : list.filter((x) => x.id !== q.id)))
+      }).catch(() => {}),
+      onEdit: () => navigate('/questions#edit=' + encodeURIComponent(q.id)),
+      onDelete: () => api.deleteQuestion(q.id).then(() => {
+        setMyQuestions((list) => list.filter((x) => x.id !== q.id)); setSavedQuestions((list) => list.filter((x) => x.id !== q.id))
+      }).catch(() => {}),
+    },
   })
   const myQuestionCards = myQuestions.map(mapQuestion)
   const savedQuestionCards = savedQuestions.map(mapQuestion)
@@ -534,5 +553,48 @@ function StatusTabs({ tabs, active, onPick }) {
       )
     })}
   </div>
+  )
+}
+
+/** ⋯ menu on a question card: copy link, save, and (own posts) edit / delete with a confirm step. */
+function QuestionMenu({ m }) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const [confirm, setConfirm] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) return undefined
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setConfirm(false) } }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+  const item = (color) => `display:flex; align-items:center; gap:10px; width:100%; padding:9px 11px; border:none; background:transparent; cursor:pointer; border-radius:9px; font:600 13px ${FONT}; color:${color}; text-align:left;`
+  const pick = (fn) => (e) => { e.stopPropagation(); setOpen(false); fn() }
+  return (
+    <div ref={ref} onClick={(e) => e.stopPropagation()} style={css('position:relative; flex:none;')}>
+      <button onClick={() => { setOpen((o) => !o); setConfirm(false) }} title={t('Tuỳ chọn')} aria-label={t('Tuỳ chọn')} aria-haspopup="menu" aria-expanded={open} className={hoverClass('background:#EEF2F9 !important;')} style={css('width:30px; height:30px; border:1px solid #E6EBF3; border-radius:9px; background:#fff; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg>
+      </button>
+      {open && (
+        <div role="menu" style={css('position:absolute; right:0; top:36px; width:210px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:5px; z-index:90;')}>
+          {confirm ? (
+            <div style={css('padding:8px;')}>
+              <div style={css(`font:700 13px ${FONT}; color:#0F172A;`)}>{t('Xoá vĩnh viễn câu hỏi này?')}</div>
+              <div style={css('display:flex; gap:6px; margin-top:10px;')}>
+                <button onClick={() => setConfirm(false)} style={css(`flex:1; height:32px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Huỷ')}</button>
+                <button onClick={pick(m.onDelete)} style={css(`flex:1; height:32px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Xoá')}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <button role="menuitem" onClick={pick(m.onCopy)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{t('Sao chép link')}</button>
+              <button role="menuitem" onClick={pick(m.onSave)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{m.saved ? t('Bỏ lưu') : t('Lưu câu hỏi')}</button>
+              {m.canEdit && <button role="menuitem" onClick={pick(m.onEdit)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{t('Chỉnh sửa')}</button>}
+              {m.canDelete && <button role="menuitem" onClick={(e) => { e.stopPropagation(); setConfirm(true) }} className={hoverClass('background:#FFF4F4;')} style={css(item('#D8232A'))}>{t('Xoá câu hỏi')}</button>}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

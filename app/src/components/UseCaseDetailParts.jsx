@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { css, hoverClass } from '../lib/style.js'
+import AnonTag from './AnonTag.jsx'
 import { Blocks, CopyButton, Figure, Placeholders, Prompt, PromptTargetContext } from './UseCaseGuide.jsx'
 import Fill from './Fill.jsx'
 import { avatarPhotoCss } from './Avatar.jsx'
@@ -16,7 +17,6 @@ const CARD = 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; 
 const H3 = 'font-size:17px; font-weight:800; color:#0F172A;'
 const SUB = 'font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
 const DIFF = { 'Dễ': ['#4ADE80', 1], 'Trung bình': ['#FBBF24', 2], 'Khó': ['#F87171', 3] }
-const STATUS_DOT = { 'Đang dùng': '#4ADE80', 'Thử nghiệm': '#7FB2FF', 'Đang làm': '#FBBF24', 'Ý tưởng': '#FBBF24' }
 
 export const scrollToId = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
@@ -74,17 +74,16 @@ export function DetailHero({ c, h, topics, avatarBg, avatarUrl, onBack, onStart,
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
         {t('Quay lại')}
       </button>}
-      <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;')}>
-        {h.type && <span style={css(chip + 'background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff;')}>{t(h.type)}</span>}
-        {h.status && <span style={css(chip + 'background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.2); color:#fff;')}><span style={css(`width:7px; height:7px; border-radius:50%; background:${STATUS_DOT[h.status] || '#4ADE80'};`)}></span>{t(h.status)}</span>}
+      {topics.length > 0 && <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;')}>
         {topics.map((tp) => <span key={tp} style={css(chip + 'background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff;')}>{tp}</span>)}
-      </div>
+      </div>}
       <h1 className="zp-detail-title" style={css('margin:0; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
       {/* Who owns / posted it, right under the title: avatar + name + team. */}
       <div style={css('display:flex; align-items:center; gap:10px; margin-top:14px; min-width:0; flex-wrap:wrap;')}>
         <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg};${avatarPhotoCss(avatarUrl)}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
         <span style={css('font-size:14.5px; font-weight:700; color:#fff;')}><Fill text={h.owner} /></span>
         {h.ownerTeam && <span style={css('font-size:13.5px; color:#a9b8dc;')}>· <Fill text={h.ownerTeam} /></span>}
+        <AnonTag p={c} dark />
       </div>
       {h.toolName && <div style={css('margin-top:10px; font-size:13.5px; font-weight:600; color:#8fb4ff;')}>{t('Tên công cụ')}: <span style={css('color:#fff; font-weight:800;')}>{h.toolName}</span></div>}
       <p style={css('margin:12px 0 0; max-width:820px; font-size:15.5px; line-height:1.65; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>

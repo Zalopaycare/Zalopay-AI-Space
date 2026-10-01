@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import AnonTag from '../components/AnonTag.jsx'
+import AnonToggle from '../components/AnonToggle.jsx'
+import FileLinks from '../components/FileLinks.jsx'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
@@ -88,7 +91,11 @@ export default function QuestionsPage() {
   const [askBody, setAskBody] = useState('')
   const [askToolsSel, setAskToolsSel] = useState([])
   const [askTopicsSel, setAskTopicsSel] = useState([])
-  const [askFiles, setAskFiles] = useState([])
+  const [askFiles, setAskFiles] = useState([]) // [{ name, size, dataUrl }] — uploaded with the question
+  const [askAnon, setAskAnon] = useState(false)
+  const [askAlias, setAskAlias] = useState('')
+  const [ansAnon, setAnsAnon] = useState(false) // answer boxes: post the next answer anonymously
+  const [ansAlias, setAnsAlias] = useState('')
   const [askImages, setAskImages] = useState([]) // [{name, dataUrl}] — up to MAX_ASK_IMAGES, uploaded with the question
   const [askEmojiOpen, setAskEmojiOpen] = useState(false)
   const [askDraftSaved, setAskDraftSaved] = useState(false)
@@ -272,20 +279,32 @@ export default function QuestionsPage() {
     navigate('/profile#question')
   }
 
+  // Attach a document (any type, ≤ 10 MB, up to 3); it's uploaded with the question and downloadable.
+  const pickAskFile = (file) => {
+    if (!file) return
+    if (askFiles.length >= 3) { setAskError('Tối đa 3 tài liệu cho mỗi câu hỏi.'); return }
+    if (file.size > 10 * 1024 * 1024) { setAskError('Tài liệu quá lớn (tối đa 10 MB).'); return }
+    const r = new FileReader()
+    r.onload = () => { setAskFiles((s) => [...s, { name: file.name, size: file.size, dataUrl: String(r.result) }]); setAskError('') }
+    r.onerror = () => setAskError('Không đọc được tài liệu này.')
+    r.readAsDataURL(file)
+  }
+
   const postQuestion = () => {
     const tt = askTitle.trim(), bb = (askBoxRef.current ? askBoxRef.current.expand(askBody) : askBody).trim()
     if (!bb) { setAskError('Cần có nội dung câu hỏi trước khi đăng.'); return }
     requireLogin(() => {
-      const docNote = askFiles.length ? '\n\n📎 ' + askFiles.join(', ') : ''
       const payload = {
-        title: tt, body: bb + docNote,
+        title: tt, body: bb,
+        anonymous: askAnon, alias: askAnon ? askAlias.trim() : '',
+        files: askFiles.map((f) => ({ name: f.name, data: f.dataUrl })),
         category: DEFAULT_CATEGORY,
         topics: askTopicsSel.map((x) => (x === OTHER ? askTopicOtherText.trim() || OTHER : x)),
         tools: askToolsSel.map((x) => (x === OTHER ? askToolOtherText.trim() || OTHER : x)),
         images: askImages.map((img) => img.dataUrl),
       }
       if (editQId) {
-        const { images, category, ...changes } = payload
+        const { images, category, files, ...changes } = payload
         api.updateQuestion(editQId, changes).then((d) => {
           patch(editQId, d.question)
           setView('feed')
@@ -298,7 +317,7 @@ export default function QuestionsPage() {
         setView('feed')
         setExpanded((s) => ({ ...s, [id]: true }))
         try { localStorage.removeItem(QUESTION_DRAFT_KEY) } catch { /* ignore */ }
-        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
+        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false); setAskAnon(false); setAskAlias('')
         window.scrollTo(0, 0)
       }).catch(() => setAskError('Không đăng được câu hỏi, thử lại.'))
     })
@@ -318,12 +337,13 @@ export default function QuestionsPage() {
     setAskTitle(q.hasTitle ? q.title : ''); setAskBody(q.body || '')
     setAskTopicsSel(tps); setAskTopicOtherText(tpo); setAskToolsSel(tls); setAskToolOtherText(tlo)
     setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
+    setAskAnon(!!q.anonymous); setAskAlias(q.anonymous && q.alias && q.alias !== 'Ẩn danh' ? q.alias : '')
     setEditQId(q.id); setOpenMenuId(null); setExpanded({}); setView('ask')
   }
   // Leaving the composer drops the edit so the next "Đặt câu hỏi" starts blank.
   useEffect(() => {
     if (view === 'ask' || !editQId) return
-    setEditQId(null); setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskError('')
+    setEditQId(null); setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskError(''); setAskAnon(false); setAskAlias('')
   }, [view])
   // #edit=<id> (from Home's card menu) opens that question in the composer once the list is loaded.
   useEffect(() => {
@@ -441,7 +461,7 @@ export default function QuestionsPage() {
         const raw = (replyDrafts[q.id] || '').trim()
         if (!raw) return
         const body = takeMentions('q:' + q.id, raw)
-        requireLogin(() => api.postAnswer(q.id, body).then((d) => patch(q.id, d.question)).catch(() => {}))
+        requireLogin(() => api.postAnswer(q.id, body, { anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '' }).then((d) => patch(q.id, d.question)).catch(() => {}))
         setReplyDrafts((s) => ({ ...s, [q.id]: '' })); setReplyMention(null)
       },
     }
@@ -474,7 +494,7 @@ export default function QuestionsPage() {
                       <div style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                          <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span>
+                          <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span><AnonTag p={q} />
                           <span style={css('font:400 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.team}</span>
                           <span style={css('color:#CDD5DD;')}>·</span>
                           <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.time}{q.edited ? ' · đã sửa' : ''}</span>
@@ -524,6 +544,7 @@ export default function QuestionsPage() {
                         )}
                       </p>
                       {q.hasImages && <ImageThumbs srcs={q.images} height={inModal ? 200 : 140} />}
+                      <FileLinks files={q.files} />
                     </div>
 
                     <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
@@ -559,7 +580,7 @@ export default function QuestionsPage() {
                                     </div>
                                   )}
                                   <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
-                                    <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{a.author}</span>
+                                    <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{a.author}</span><AnonTag p={a} />
                                     {a.team ? <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{a.team}</span> : null}
                                     <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {a.time}{a.edited ? ' · đã sửa' : ''}</span>
                                     <span style={{ flex: 1 }}></span>
@@ -706,6 +727,7 @@ export default function QuestionsPage() {
                                 ))}
                               </div>
                             )}
+                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời ẩn danh" />
                             <div style={css('display:flex; align-items:center; margin-top:8px;')}>
                               <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
                               <button onClick={q.onPostReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi bình luận')}</button>
@@ -806,6 +828,7 @@ export default function QuestionsPage() {
                     <Avatar user={user} size={44} fontSize={15} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={css('font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{user ? `${user.domain || user.name}${user.team ? ' · ' + user.team : ''}` : t('Chưa đăng nhập')}</div>
+                      <AnonToggle on={askAnon} onChange={setAskAnon} alias={askAlias} onAlias={setAskAlias} />
 
 
                       <div style={{ marginTop: 6 }}><MentionInput ref={askBoxRef} inputRef={askBodyRef} multiline rows={5} popupWidth={340} placement="below" value={askBody} onChange={(v) => { setAskBody(v); setAskError('') }} placeholder={t('Bạn đang vướng ở đâu với AI? Mô tả bối cảnh, cách bạn đã thử và kết quả mong đợi... Gõ @ để nhờ đồng nghiệp.')} style={css('width:100%; border:none; outline:none; background:transparent; padding:0; font-size:15px; line-height:1.65; color:#0F172A; resize:vertical; display:block; box-sizing:border-box;')} /></div>
@@ -820,7 +843,7 @@ export default function QuestionsPage() {
                               </button>
                             </span>
                           ))}
-                          {askFiles.map((name, i) => (
+                          {askFiles.map(({ name }, i) => (
                             <span key={i} style={css('display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 8px 0 12px; border:1px solid #E6EBF3; border-radius:10px; background:#F8FAFE; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
                               {name}
@@ -840,7 +863,7 @@ export default function QuestionsPage() {
                           </button>
                         )}
 
-                        <input ref={askDocInputRef} type="file" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) setAskFiles((s) => [...s, f.name]); e.target.value = '' }} />
+                        <input ref={askDocInputRef} type="file" hidden onChange={(e) => { pickAskFile(e.target.files?.[0]); e.target.value = '' }} />
                         {!editQId && (
                           <button onClick={() => askDocInputRef.current?.click()} title={t('Thêm tài liệu')} aria-label={t('Thêm tài liệu')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
                             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L10.13 17.1a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>

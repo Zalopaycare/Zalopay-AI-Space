@@ -167,6 +167,7 @@ export function registerPublished(subs) {
       id: s.id, title: s.title, desc: submissionDesc(s) || firstPara(lines(s.solution).join(' · ') || s.problem), author, team: s.team || '',
       category: [].concat(s.category)[0] || 'Khác', tools: normalizeTools(s.tools), repo: '', repoHref: s.link || '',
       audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId, coverUrl: s.coverUrl || null,
+      anonymous: !!s.anonymous, alias: s.alias || null, realAuthor: s.realAuthor || null,
     }
   })
   allCases.unshift(...cases)
