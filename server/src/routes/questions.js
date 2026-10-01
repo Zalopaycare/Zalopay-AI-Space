@@ -1,10 +1,11 @@
-import { colorOf } from '../avatarColors.js'
+import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
+import { anonFields, maskAuthor, anonName } from '../anon.js'
 
 const router = express.Router()
 
@@ -15,10 +16,12 @@ const qTitle = (q) => {
   const first = String(q.body || '').split('\n').find((l) => l.trim()) || ''
   return first.length > 90 ? first.slice(0, 90).trimEnd() + '…' : first
 }
-const userBrief = (u) => (u ? { author: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), team: u.team, authorId: u.id, avatarColor: colorOf(u) } : { author: 'Người dùng đã xoá', fullName: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
+const userBrief = (u) => (u ? { author: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), team: u.team, authorId: u.id, avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : { author: 'Người dùng đã xoá', fullName: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
 
 
-function loadQuestion(id, userId) {
+// `viewer` = req.user (anonymous posts are masked for everyone but their author and admins).
+function loadQuestion(id, viewer) {
+  const userId = viewer?.id
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
   if (!q) return null
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
@@ -29,13 +32,13 @@ function loadQuestion(id, userId) {
     }))
     const helpful = db.prepare('SELECT COUNT(*) n FROM answer_reactions WHERE answer_id = ?').get(a.id).n
     const iHelped = userId ? !!db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(a.id, userId) : false
-    return { id: a.id, ...userBrief(aAuthor), time: a.created_at, helpful, iHelped, accepted: !!a.accepted, body: a.body, edited: !!a.edited_at, comments }
+    return { id: a.id, ...maskAuthor(userBrief(aAuthor), a, viewer), time: a.created_at, helpful, iHelped, accepted: !!a.accepted, body: a.body, edited: !!a.edited_at, comments }
   })
   const qHelpful = db.prepare('SELECT COUNT(*) n FROM question_reactions WHERE question_id = ?').get(id).n
   const iHelpedQ = userId ? !!db.prepare('SELECT 1 FROM question_reactions WHERE question_id = ? AND user_id = ?').get(id, userId) : false
   const saved = userId ? !!db.prepare('SELECT 1 FROM saved_questions WHERE question_id = ? AND user_id = ?').get(id, userId) : false
   return {
-    id: q.id, title: qTitle(q), hasTitle: !!q.title, body: q.body, ...userBrief(author), time: q.created_at, ts: q.created_at,
+    id: q.id, title: qTitle(q), hasTitle: !!q.title, body: q.body, ...maskAuthor(userBrief(author), q, viewer), time: q.created_at, ts: q.created_at,
     category: asArr(q.category), topics: asArr(q.topics), tools: asArr(q.tools),
     resolved: !!q.resolved, saved, files: [], edited: !!q.edited_at,
     images: db.prepare('SELECT idx FROM question_images WHERE question_id = ? ORDER BY idx').all(id).map((r) => `/api/questions/${id}/images/${r.idx}`), qHelpful, iHelpedQ, answers,
@@ -44,7 +47,7 @@ function loadQuestion(id, userId) {
 
 router.get('/', requireAuth, (req, res) => {
   const ids = db.prepare('SELECT id FROM questions ORDER BY created_at DESC').all().map((r) => r.id)
-  res.json({ questions: ids.map((id) => loadQuestion(id, req.user?.id)) })
+  res.json({ questions: ids.map((id) => loadQuestion(id, req.user)) })
 })
 
 const deleteQuestionTx = db.transaction((id) => {
@@ -86,14 +89,15 @@ router.post('/', requireAuth, (req, res) => {
   const decoded = (Array.isArray(images) ? images : []).slice(0, MAX_IMAGES).map(decodeImage)
   if (decoded.some((d) => !d)) return res.status(400).json({ error: 'bad_image' })
   const id = nextId('q')
+  const anon = anonFields(req.body)
   db.transaction(() => {
-    db.prepare('INSERT INTO questions (id, title, body, category, topics, tools, author_id) VALUES (?,?,?,?,?,?,?)')
-      .run(id, String(title || '').trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id)
+    db.prepare('INSERT INTO questions (id, title, body, category, topics, tools, author_id, anonymous, alias) VALUES (?,?,?,?,?,?,?,?,?)')
+      .run(id, String(title || '').trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id, anon.anonymous, anon.alias)
     decoded.forEach((img, i) => db.prepare('INSERT INTO question_images (question_id, idx, mime, data) VALUES (?,?,?,?)').run(id, i, img.mime, img.data))
   })()
   const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
-  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}` })
-  res.status(201).json({ question: loadQuestion(id, req.user.id) })
+  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}`, as: anon.anonymous ? anonName(anon) : null })
+  res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
 // The author edits their own question (text, topic and tool tags; images stay as posted).
@@ -106,7 +110,8 @@ router.patch('/:id', requireAuth, (req, res) => {
   const clean = (a) => (Array.isArray(a) ? a.map((x) => String(x).trim()).filter(Boolean).slice(0, 12) : [])
   db.prepare("UPDATE questions SET title = ?, body = ?, topics = ?, tools = ?, edited_at = datetime('now') WHERE id = ?")
     .run(String(title).trim(), String(body).trim(), JSON.stringify(clean(topics)), JSON.stringify(clean(tools)), q.id)
-  res.json({ question: loadQuestion(q.id, req.user.id) })
+  if (req.body && req.body.anonymous !== undefined) { const an = anonFields(req.body); db.prepare('UPDATE questions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, q.id) }
+  res.json({ question: loadQuestion(q.id, req.user) })
 })
 
 router.get('/:id/images/:idx', requireAuth, (req, res) => {
@@ -130,7 +135,7 @@ router.post('/:id/react', requireAuth, (req, res) => {
     const one = voters.length === 1 ? voters[0] : req.user
     notifyUpvotes(owner.email, { ref: 'q:' + id, count: voters.length, lastVoter: domainName(one.email, one.name), title: qTitle(q), href: `/questions#q=${id}` })
   }
-  res.json({ question: loadQuestion(id, req.user.id) })
+  res.json({ question: loadQuestion(id, req.user) })
 })
 
 router.post('/:id/save', requireAuth, (req, res) => {
@@ -138,7 +143,7 @@ router.post('/:id/save', requireAuth, (req, res) => {
   const exists = db.prepare('SELECT 1 FROM saved_questions WHERE question_id = ? AND user_id = ?').get(id, req.user.id)
   if (exists) db.prepare('DELETE FROM saved_questions WHERE question_id = ? AND user_id = ?').run(id, req.user.id)
   else db.prepare('INSERT INTO saved_questions (question_id, user_id) VALUES (?, ?)').run(id, req.user.id)
-  res.json({ question: loadQuestion(id, req.user.id) })
+  res.json({ question: loadQuestion(id, req.user) })
 })
 
 router.post('/:id/answers', requireAuth, (req, res) => {
@@ -148,16 +153,18 @@ router.post('/:id/answers', requireAuth, (req, res) => {
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
   if (!q) return res.status(404).json({ error: 'not_found' })
   const aid = nextId('a')
-  db.prepare('INSERT INTO question_answers (id, question_id, author_id, body) VALUES (?,?,?,?)').run(aid, id, req.user.id, body)
+  const anon = anonFields(req.body)
+  db.prepare('INSERT INTO question_answers (id, question_id, author_id, body, anonymous, alias) VALUES (?,?,?,?,?,?)').run(aid, id, req.user.id, body, anon.anonymous, anon.alias)
+  const who = anon.anonymous ? anonName(anon) : domainName(req.user.email, req.user.name)
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
-    notify(qAuthor.email, { kind: 'answer', text: `${domainName(req.user.email, req.user.name)} đã comment vào câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions#q=${id}`, actor: req.user.name })
-    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
+    notify(qAuthor.email, { kind: 'answer', text: `${who} đã comment vào câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions#q=${id}`, actor: anon.anonymous ? who : req.user.name })
+    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${anon.anonymous ? who : req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email] })
+  notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email], as: anon.anonymous ? who : null })
 
-  res.status(201).json({ question: loadQuestion(id, req.user.id) })
+  res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
 router.post('/:id/answers/:answerId/react', requireAuth, (req, res) => {
@@ -165,7 +172,7 @@ router.post('/:id/answers/:answerId/react', requireAuth, (req, res) => {
   const exists = db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(answerId, req.user.id)
   if (exists) db.prepare('DELETE FROM answer_reactions WHERE answer_id = ? AND user_id = ?').run(answerId, req.user.id)
   else db.prepare('INSERT INTO answer_reactions (answer_id, user_id) VALUES (?, ?)').run(answerId, req.user.id)
-  res.json({ question: loadQuestion(id, req.user.id) })
+  res.json({ question: loadQuestion(id, req.user) })
 })
 
 router.post('/:id/answers/:answerId/accept', requireAuth, (req, res) => {
@@ -176,7 +183,7 @@ router.post('/:id/answers/:answerId/accept', requireAuth, (req, res) => {
   db.prepare('UPDATE question_answers SET accepted = 0 WHERE question_id = ?').run(id)
   db.prepare('UPDATE question_answers SET accepted = 1 WHERE id = ?').run(answerId)
   db.prepare('UPDATE questions SET resolved = 1, accepted_answer_id = ? WHERE id = ?').run(answerId, id)
-  res.json({ question: loadQuestion(id, req.user.id) })
+  res.json({ question: loadQuestion(id, req.user) })
 })
 
 router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
@@ -212,7 +219,7 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   }
   notifyMentions(req, { text: body, where: `câu hỏi "${label}"`, path: href, skip: [...told] })
 
-  res.status(201).json({ question: loadQuestion(id, req.user.id) })
+  res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
 // ---- edit / delete answers and comments (author edits; author or admin deletes) ----
@@ -239,7 +246,7 @@ router.patch('/:id/answers/:answerId', requireAuth, (req, res) => {
   if (!a) return res.status(404).json({ error: 'not_found' })
   if (!canEdit(req, a)) return res.status(403).json({ error: 'not_owner' })
   db.prepare("UPDATE question_answers SET body = ?, edited_at = datetime('now') WHERE id = ?").run(body, a.id)
-  res.json({ question: loadQuestion(req.params.id, req.user.id) })
+  res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 
 router.delete('/:id/answers/:answerId', requireAuth, (req, res) => {
@@ -247,7 +254,7 @@ router.delete('/:id/answers/:answerId', requireAuth, (req, res) => {
   if (!a) return res.status(404).json({ error: 'not_found' })
   if (!canDelete(req, a)) return res.status(403).json({ error: 'not_owner' })
   deleteAnswerTx(a.id)
-  res.json({ question: loadQuestion(req.params.id, req.user.id) })
+  res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 
 const findComment = (req) => {
@@ -263,7 +270,7 @@ router.patch('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, re
   if (!c) return res.status(404).json({ error: 'not_found' })
   if (!canEdit(req, c)) return res.status(403).json({ error: 'not_owner' })
   db.prepare("UPDATE answer_comments SET body = ?, edited_at = datetime('now') WHERE id = ?").run(body, c.id)
-  res.json({ question: loadQuestion(req.params.id, req.user.id) })
+  res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 
 router.delete('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, res) => {
@@ -271,7 +278,7 @@ router.delete('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, r
   if (!c) return res.status(404).json({ error: 'not_found' })
   if (!canDelete(req, c)) return res.status(403).json({ error: 'not_owner' })
   deleteCommentTx(c.id)
-  res.json({ question: loadQuestion(req.params.id, req.user.id) })
+  res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 
 export default router

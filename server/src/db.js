@@ -177,6 +177,17 @@ for (const table of ['question_answers', 'answer_comments', 'use_case_comments',
   db.exec("UPDATE use_case_submissions SET published_at = created_at WHERE review_status = 'approved' AND published_at IS NULL")
 }
 
+// Avatar photo (users) and anonymous posting (questions, answers, use cases). Additive only.
+{
+  const has = (t, c) => db.prepare(`PRAGMA table_info(${t})`).all().some((x) => x.name === c)
+  if (!has('users', 'avatar_mime')) db.exec('ALTER TABLE users ADD COLUMN avatar_mime TEXT')
+  if (!has('users', 'avatar_data')) db.exec('ALTER TABLE users ADD COLUMN avatar_data BLOB')
+  for (const t of ['questions', 'question_answers', 'use_case_submissions']) {
+    if (!has(t, 'anonymous')) db.exec(`ALTER TABLE ${t} ADD COLUMN anonymous INTEGER NOT NULL DEFAULT 0`)
+    if (!has(t, 'alias')) db.exec(`ALTER TABLE ${t} ADD COLUMN alias TEXT`)
+  }
+}
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

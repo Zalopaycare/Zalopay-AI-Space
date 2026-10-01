@@ -1,4 +1,4 @@
-import { colorOf } from './avatarColors.js'
+import { colorOf, avatarUrlOf } from './avatarColors.js'
 import { touch } from './presence.js'
 import jwt from 'jsonwebtoken'
 import { db } from './db.js'
@@ -89,5 +89,5 @@ export function requireAuth(req, res, next) {
 
 export function publicUser(u) {
   if (!u) return null
-  return { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: initialsOf(u), team: u.team, email: u.email, isAdmin: !!u.is_admin, avatarColor: colorOf(u) }
+  return { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: initialsOf(u), team: u.team, email: u.email, isAdmin: !!u.is_admin, avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) }
 }

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 // Preset avatar colors users can choose from (PATCH /auth/me). Keep this list in sync
 // with app/src/components/Avatar.jsx's AVATAR_COLORS — there's no shared package between
 // the two, so it's duplicated by hand.
@@ -16,4 +17,14 @@ export function colorOf(u) {
   let h = 0
   for (const ch of String(u.email || u.name || '?').toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0
   return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}
+
+// Photo URL with a content hash, so a new photo shows at once while the old one stays cached.
+const hashCache = new Map() // user id -> [byteLength, hash]
+export function avatarUrlOf(u) {
+  if (!u || !u.avatar_mime || !u.avatar_data) return null
+  const len = u.avatar_data.length
+  let hit = hashCache.get(u.id)
+  if (!hit || hit[0] !== len) { hit = [len, crypto.createHash('sha1').update(u.avatar_data).digest('hex').slice(0, 10)]; hashCache.set(u.id, hit) }
+  return `/api/auth/avatar/${u.id}?v=${hit[1]}`
 }

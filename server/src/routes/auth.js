@@ -6,7 +6,7 @@ import { isCompanyEmail, getOrCreateUser, issueSession, clearSession, publicUser
 import { sendMail, devLoginCodeAllowed } from '../mailer.js'
 import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_SCOPE_BASE, SSO_REDIRECT_URI } from '../sso.js'
 import { saveGraphTokens, dropGraphTokens } from '../graphTokens.js'
-import { AVATAR_COLORS, colorOf } from '../avatarColors.js'
+import { AVATAR_COLORS, colorOf, avatarUrlOf } from '../avatarColors.js'
 import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
@@ -175,6 +175,30 @@ router.patch('/me', (req, res) => {
   res.json({ user: publicUser(updated) })
 })
 
+// Avatar photo: the client crops/resizes to a 256px square first; we only accept a small image.
+const MAX_AVATAR = 400 * 1024
+router.put('/me/avatar', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'login_required' })
+  const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body?.image || ''))
+  if (!m) return res.status(400).json({ error: 'bad_image' })
+  const data = Buffer.from(m[2], 'base64')
+  if (!data.length || data.length > MAX_AVATAR) return res.status(400).json({ error: 'too_large' })
+  db.prepare('UPDATE users SET avatar_mime = ?, avatar_data = ? WHERE id = ?').run(m[1], data, req.user.id)
+  res.json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)) })
+})
+router.delete('/me/avatar', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'login_required' })
+  db.prepare('UPDATE users SET avatar_mime = NULL, avatar_data = NULL WHERE id = ?').run(req.user.id)
+  res.json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)) })
+})
+router.get('/avatar/:id', (req, res) => {
+  if (!req.user) return res.status(401).end()
+  const u = db.prepare('SELECT avatar_mime, avatar_data FROM users WHERE id = ?').get(Number(req.params.id))
+  if (!u || !u.avatar_data) return res.status(404).end()
+  // URLs carry a content hash (?v=), so the browser can keep each version for a long time.
+  res.set('Content-Type', u.avatar_mime).set('Cache-Control', 'private, max-age=31536000, immutable').send(u.avatar_data)
+})
+
 router.get('/avatar-colors', (req, res) => {
   res.json({ colors: AVATAR_COLORS })
 })
@@ -185,11 +209,11 @@ const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,
 router.get('/users', requireAuth, async (req, res) => {
   const q = String(req.query.q || '').trim().toLowerCase().slice(0, 64)
   const me = req.user.email.toLowerCase()
-  const known = db.prepare('SELECT id, email, name, initials, team, avatar_color FROM users ORDER BY name COLLATE NOCASE').all()
+  const known = db.prepare('SELECT id, email, name, initials, team, avatar_color, avatar_mime, avatar_data FROM users ORDER BY name COLLATE NOCASE').all()
     .filter((u) => u.email.toLowerCase() !== me)
     .filter((u) => !q || fold(u.name).replace(/\s+/g, '').includes(fold(q).replace(/\s+/g, '')) || u.email.toLowerCase().includes(q))
     .slice(0, 8)
-    .map((u) => ({ key: u.email.toLowerCase(), name: u.name, mention: handleOf(u.email), sub: '@' + handleOf(u.email) + (u.team ? ' · ' + u.team : ''), initials: initialsOf(u), avatarColor: colorOf(u) }))
+    .map((u) => ({ key: u.email.toLowerCase(), name: u.name, mention: handleOf(u.email), sub: '@' + handleOf(u.email) + (u.team ? ' · ' + u.team : ''), initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) }))
   const seen = new Set([me, ...known.map((u) => u.key)])
   const dir = q ? (await searchDirectory(q, req.user.id)).filter((u) => !seen.has(u.email)).map((u) => ({ key: u.email, name: u.name, mention: u.email, sub: u.email + (u.title ? ' · ' + u.title : ''), initials: u.initials, avatarColor: null })) : []
   res.json({ users: [...known, ...dir].slice(0, 10), domains: companyDomains(), directory: directoryEnabled(), relogin: needsRelogin(req.user.id) })

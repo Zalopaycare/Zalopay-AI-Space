@@ -51,14 +51,16 @@ export function appUrl(req) {
  * Email everyone @-mentioned in `text` (except the author and anyone in `skip`, who already
  * gets a separate notification). `where` describes the post, `path` is the in-app link.
  */
-export function notifyMentions(req, { text, where, path, skip = [] }) {
-  const actor = req.user
-  const skipSet = new Set([actor.email.toLowerCase(), ...skip.filter(Boolean).map((e) => e.toLowerCase())])
+// `as` = the name to show instead of the real one (anonymous posts).
+export function notifyMentions(req, { text, where, path, skip = [], as = null }) {
+  const actor = as ? { ...req.user, name: as, email: '' } : req.user
+  const realEmail = req.user.email
+  const skipSet = new Set([realEmail.toLowerCase(), ...skip.filter(Boolean).map((e) => e.toLowerCase())])
   const link = appUrl(req) + path
   const excerpt = String(text).length > 400 ? String(text).slice(0, 400) + '…' : String(text)
   for (const to of mentionedEmails(text)) {
     if (skipSet.has(to)) continue
-    notify(to, { kind: 'mention', text: `${domainName(actor.email, actor.name)} đã nhắc đến bạn trong ${where}`, href: path, actor: actor.name })
+    notify(to, { kind: 'mention', text: `${as || domainName(actor.email, actor.name)} đã nhắc đến bạn trong ${where}`, href: path, actor: actor.name })
     sendMail({
       to,
       subject: `${actor.name} đã nhắc đến bạn trên Zalopay AI Space`,

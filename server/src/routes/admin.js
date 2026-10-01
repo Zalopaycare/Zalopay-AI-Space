@@ -1,4 +1,4 @@
-import { colorOf } from '../avatarColors.js'
+import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import express from 'express'
 import { db } from '../db.js'
 import { requireAuth } from '../auth.js'
@@ -24,7 +24,7 @@ router.get('/users', (req, res) => {
   const lastDay = Object.fromEntries(db.prepare('SELECT user_id id, MAX(day) d FROM user_days GROUP BY user_id').all().map((r) => [r.id, r.d]))
   const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all().map((u) => ({
     id: u.id, name: u.name, domain: domainName(u.email, u.name), email: u.email, initials: initialsOf(u),
-    avatarColor: colorOf(u), isAdmin: !!u.is_admin, joined: u.created_at, team: u.team || '',
+    avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u), isAdmin: !!u.is_admin, joined: u.created_at, team: u.team || '',
     questions: questions[u.id] || 0, answers: answers[u.id] || 0, useCases: useCases[u.id] || 0, comments: comments[u.id] || 0,
     lastActive: lastDay[u.id] || null,
   }))
@@ -94,7 +94,7 @@ router.get('/stats', (req, res) => {
     addLikes('SELECT a.author_id id, COUNT(*) n FROM answer_reactions x JOIN question_answers a ON a.id = x.answer_id WHERE a.created_at >= ? GROUP BY a.author_id')
     addLikes('SELECT s.author_id id, COUNT(*) n FROM use_case_reactions x JOIN use_case_submissions s ON s.id = x.use_case_id WHERE s.created_at >= ? GROUP BY s.author_id')
     leaderboard[key] = users.map((u) => {
-      const row = { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: initialsOf(u), avatarColor: colorOf(u), team: u.team || '',
+      const row = { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u), team: u.team || '',
         questions: c.questions[u.id] || 0, answers: c.answers[u.id] || 0, comments: c.replies[u.id] || 0, likes: likes[u.id] || 0, useCases: c.approvedUseCases[u.id] || 0 }
       // Ranked by the plain total of contributions (no weighted score shown any more).
       row.score = row.answers + row.comments + row.likes + row.questions + row.useCases
@@ -135,7 +135,7 @@ router.get('/stats', (req, res) => {
 
 // People online right now + everyone who has used the site today (Vietnam time).
 router.get('/live', (req, res) => {
-  const brief = (u) => ({ id: u.id, name: u.name, domain: domainName(u.email, u.name), email: u.email, initials: initialsOf(u), avatarColor: colorOf(u), team: u.team || '', isAdmin: !!u.is_admin })
+  const brief = (u) => ({ id: u.id, name: u.name, domain: domainName(u.email, u.name), email: u.email, initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u), team: u.team || '', isAdmin: !!u.is_admin })
   const byId = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id)
   const online = onlineNow().map((p) => { const u = byId(p.id); return u ? { ...brief(u), at: p.at, path: p.path } : null }).filter(Boolean).sort((a, b) => b.at - a.at)
   const today = db.prepare('SELECT u.* FROM user_days d JOIN users u ON u.id = d.user_id WHERE d.day = ?').all(vnDay())

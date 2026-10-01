@@ -1,4 +1,5 @@
-import { colorOf } from '../avatarColors.js'
+import { colorOf, avatarUrlOf } from '../avatarColors.js'
+import { anonFields, maskAuthor } from '../anon.js'
 import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
@@ -17,7 +18,7 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const saved = req.user ? !!db.prepare('SELECT 1 FROM use_case_saves WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
   const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at ASC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
-    return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? (colorOf(u)) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
+    return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? colorOf(u) : null, avatarUrl: u ? avatarUrlOf(u) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
   })
   res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
 })
@@ -131,7 +132,7 @@ router.post('/:id/comments', requireAuth, (req, res) => {
     sendMail({ to: u.email, subject: text, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
   notifyMentions(req, { text: body, where, path: href, skip: [...told] })
-  res.status(201).json({ id: cid, authorId: req.user.id, author: domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), time: new Date().toISOString(), body, parentId })
+  res.status(201).json({ id: cid, authorId: req.user.id, author: domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId })
 })
 
 // Share-a-use-case submissions (pending admin review).
@@ -146,13 +147,16 @@ router.get('/submissions', requireAuth, (req, res) => {
   res.json({
     submissions: rows.map((r) => {
       const author = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
+      // Anonymous posts: everyone but the author and admins sees the alias, a grey avatar and no id.
+      const who = maskAuthor({ author: author ? author.name : '—', fullName: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, avatarColor: colorOf(author), avatarUrl: avatarUrlOf(author), team: r.team }, r, req.user)
       return {
-        id: r.id, title: r.title, audience: r.audience, team: r.team, problem: r.problem, solution: r.solution,
+        id: r.id, title: r.title, audience: r.audience, team: who.anonymous && who.authorId === null ? '' : r.team, problem: r.problem, solution: r.solution,
         prep: r.prep, prompt: r.prompt_text, result: r.result, limits: r.limits, contact: r.contact, link: r.link,
         kind: r.kind, status: r.status_field, level: r.level,
         category: asArr(r.category), topics: asArr(r.topics), tools: asArr(r.tools),
         reviewStatus: r.review_status, adminNote: r.admin_note,
-        author: author ? author.name : '—', authorAvatarColor: colorOf(author), authorDomain: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, time: r.created_at,
+        author: who.author, authorAvatarColor: who.avatarColor, authorAvatarUrl: who.avatarUrl, authorDomain: who.anonymous && who.authorId === null ? who.author : who.fullName, authorId: who.authorId, time: r.created_at,
+        anonymous: !!who.anonymous, alias: who.anonymous ? who.alias : null, realAuthor: who.realAuthor || null,
         publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null, edited: !!r.edited_at,
         extra: parseExtra(r.extra),
         coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
@@ -223,7 +227,8 @@ router.post('/submissions', requireAuth, (req, res) => {
       f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(),
       f.kind, f.status, f.level, JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), req.user.id)
   saveCover(id, cover)
-  db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra), id)
+  const anon = anonFields(f)
+  db.prepare('UPDATE use_case_submissions SET extra = ?, anonymous = ?, alias = ? WHERE id = ?').run(cleanExtra(f.extra), anon.anonymous, anon.alias, id)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
   for (const to of adminEmailsFor(req)) {
@@ -257,6 +262,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   saveCover(row.id, cover)
   // Older clients don't send `extra`; leave what's stored untouched then.
   if (f.extra !== undefined) db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra), row.id)
+  if (f.anonymous !== undefined) { const an = anonFields(f); db.prepare('UPDATE use_case_submissions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, row.id) }
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
     for (const to of adminEmailsFor(req)) notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng: "${f.title.trim()}"`, href: `/use-cases/${row.id}`, actor: req.user.name })
