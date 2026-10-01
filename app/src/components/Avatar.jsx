@@ -14,15 +14,26 @@ export function fallbackAvatarColor(seed) {
 }
 
 /**
+ * Extra declarations for a `css()` avatar circle: with an uploaded photo it covers the circle
+ * (the colored background stays underneath while it loads, the initials go transparent).
+ */
+export function avatarPhotoCss(url) {
+  // Always emit background-image (none without a photo) so removing a photo doesn't drop a longhand
+  // React would otherwise warn about next to the `background` shorthand these circles use.
+  return url ? ` background-image:url("${url}"); background-size:cover; background-position:center; color:transparent;` : ' background-image:none;'
+}
+
+/**
  * The colored initials circle used everywhere a person's avatar shows up. Pass any
  * user-ish object with `initials` + `name` (or `author`), and optionally `avatarColor`
  * (from the API — a person's own pick) to use their real color instead of the hash
- * fallback.
+ * fallback, and `avatarUrl` to show their uploaded photo.
  */
 export default function Avatar({ user, size = 36, fontSize }) {
   const initials = user?.initials || '?'
   const color = user?.avatarColor || fallbackAvatarColor(user?.name || user?.author || user?.email || initials)
   const fs = fontSize || Math.round(size * 0.36)
+  const photo = user?.avatarUrl
   return (
     <span
       style={{
@@ -30,8 +41,9 @@ export default function Avatar({ user, size = 36, fontSize }) {
         width: size,
         height: size,
         borderRadius: '50%',
-        background: color,
-        color: '#fff',
+        backgroundColor: color,
+        ...(photo ? { backgroundImage: `url("${photo}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : null),
+        color: photo ? 'transparent' : '#fff',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

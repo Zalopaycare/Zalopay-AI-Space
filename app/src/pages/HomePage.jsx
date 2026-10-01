@@ -13,7 +13,8 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
-import { allCases, prdMeta, avatarColor, newestFirst } from '../data/useCases.js'
+import { allCases, prdMeta, avatarColor, avatarPhoto, newestFirst } from '../data/useCases.js'
+import { avatarPhotoCss } from '../components/Avatar.jsx'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
@@ -156,9 +157,10 @@ export default function HomePage() {
     }
   }
 
+  // Again when the signed-in user changes their photo, so their own posts pick it up at once.
   useEffect(() => {
     api.listQuestions().then((d) => setQuestions(d.questions || [])).catch(() => {})
-  }, [])
+  }, [user?.avatarUrl])
 
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})
   // Newest approved community use cases first, topped up with the built-in picks.
@@ -240,7 +242,7 @@ export default function HomePage() {
   }
   const renderModalReplyBox = (answerId, parentId) => (modalReply && modalReply.answerId === answerId && modalReply.parentId === parentId ? (
     <div style={css('display:flex; gap:9px; align-items:center; margin-top:10px;')}>
-      <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{user?.initials || '?'}</span>
+      <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <MentionInput
           ref={modalReplyBoxRef}
@@ -273,6 +275,7 @@ export default function HomePage() {
       problem: (prdMeta[c.id] || {}).problem || '',
       initials: c.author.slice(0, 1).toUpperCase(),
       avatarBg: avatarColor(c.author),
+      avatarUrl: avatarPhoto(c.author),
       saved, helpful,
       saveColor: saved ? '#00893F' : '#5B6675',
       saveFill: saved ? 'currentColor' : 'none',
@@ -411,7 +414,7 @@ export default function HomePage() {
                     <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${q.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{q.resolved ? t('Đã trả lời') : t('Đang chờ trả lời')}</span>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
-                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
+                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</span>
                     <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
                       <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
                       <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
@@ -474,7 +477,7 @@ export default function HomePage() {
             <div onClick={closeModal} style={css('position:fixed; inset:0; z-index:3000; background:rgba(4,10,26,.62); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:40px 24px;')}>
               <div ref={homeQDialog.ref} {...homeQDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:720px; max-width:100%; max-height:100%; overflow-y:auto; background:#ffffff; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
                 <div style={css('display:flex; gap:14px; padding:24px 26px 0;')}>
-                  <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${modalSrc.avatarColor || AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};`)}>{modalSrc.initials}</span>
+                  <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${modalSrc.avatarColor || AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};${avatarPhotoCss(modalSrc.avatarUrl)}`)}>{modalSrc.initials}</span>
                   <div style={css('flex:1; min-width:0;')}>
                     <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
                       <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span>
@@ -510,7 +513,7 @@ export default function HomePage() {
                 <div style={css('margin-top:18px; padding:18px 26px 22px; background:#F8FAFE; border-top:1px solid #EEF1F7;')}>
                   {modalAnswers.map((a) => (
                     <div key={a.id} style={css('display:flex; gap:12px; padding:14px 0; border-bottom:1px solid #EEF1F7;')}>
-                      <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{a.initials}</span>
+                      <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(a.avatarUrl)}`)}>{a.initials}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
                           <span style={css(`font:600 12.5px ${FONT}; color:#0F172A;`)}>{a.author}</span>
@@ -533,7 +536,7 @@ export default function HomePage() {
                           return (
                             <div key={c.id} style={css('margin-top:12px; padding-left:12px; border-left:2px solid #E2E8F5;')}>
                               <div style={css('display:flex; gap:9px;')}>
-                                <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarColor || AV[c.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};`)}>{c.initials}</span>
+                                <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarColor || AV[c.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
                                 <div style={css('flex:1; min-width:0;')}>
                                   <div style={css('display:flex; align-items:center; gap:8px;')}>
                                     <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{c.author}</span>
@@ -551,7 +554,7 @@ export default function HomePage() {
                               )}
                               {open && replies.map((r) => (
                                 <div key={r.id} style={css('display:flex; gap:9px; margin:10px 0 0 35px;')}>
-                                  <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${r.avatarColor || AV[r.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9px ${FONT};`)}>{r.initials}</span>
+                                  <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${r.avatarColor || AV[r.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9px ${FONT};${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</span>
                                   <div style={css('flex:1; min-width:0;')}>
                                     <div style={css('display:flex; align-items:center; gap:8px;')}>
                                       <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{r.author}</span>
@@ -575,7 +578,7 @@ export default function HomePage() {
                   )}
 
                   <div style={css('display:flex; gap:12px; margin-top:16px;')}>
-                    <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{user?.initials || '?'}</span>
+                    <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
                     <div style={{ flex: 1 }}>
                       <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
                       <div style={css('display:flex; align-items:center; margin-top:10px;')}>
@@ -653,7 +656,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
-                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{item.initials}</span>
+                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(item.avatarUrl)}`)}>{item.initials}</span>
                     <div style={css('display:flex; flex-direction:column; min-width:0;')}>
                       <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
                     </div>

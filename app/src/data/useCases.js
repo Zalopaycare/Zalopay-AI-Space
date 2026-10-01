@@ -50,6 +50,12 @@ export function avatarColor(name) {
   return p[h % p.length]
 }
 
+// Their uploaded photo (from the same submissions), or null → the colored initials circle.
+const AUTHOR_PHOTO = {}
+export function avatarPhoto(name) {
+  return AUTHOR_PHOTO[name] || null
+}
+
 const STATUS_META = {
   inuse: { label: 'In use', up: 'IN USE', color: '#16c47f' },
   pilot: { label: 'Pilot', up: 'PILOT', color: '#2563eb' },
@@ -138,6 +144,8 @@ export function registerPublished(subs) {
     KIND_BY_ID[s.id] = KIND_MAP[s.kind] || 'tech'
     STATUS_BY_ID[s.id] = STATUS_MAP[s.status] || 'inuse'
     if (s.authorAvatarColor) AUTHOR_COLOR[author] = s.authorAvatarColor
+    if (s.authorAvatarUrl) AUTHOR_PHOTO[author] = s.authorAvatarUrl
+    else delete AUTHOR_PHOTO[author]
     authorInfo[author] = { name: s.author || author, role: 'Zalopay' + (s.team ? ' · ' + s.team : '') }
     prdMeta[s.id] = { problem: s.problem, result: s.result, topics: s.topics || [], helpful: 0, comments: 0 }
     caseDetail[s.id] = {

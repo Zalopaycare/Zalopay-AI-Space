@@ -84,7 +84,7 @@ const MentionInput = forwardRef(function MentionInput({ value, onChange, onEnter
         <div style={css(`position:absolute; left:0; ${placement === 'below' ? 'top:calc(100% + 6px);' : 'bottom:calc(100% + 6px);'} width:${popupWidth}px; max-height:320px; overflow-y:auto; max-width:100%; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;`)}>
           {items.map((m) => (
             <div key={m.key} onMouseDown={(e) => e.preventDefault()} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer;')}>
-              <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px ${FONT};`)}>{m.initials}</span>
+              <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px ${FONT};${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
               <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
                 <span style={css(`font:700 13px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{m.name}</span>
                 <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{m.sub}</span>

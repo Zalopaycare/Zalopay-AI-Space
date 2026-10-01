@@ -40,7 +40,8 @@ function loadQuestion(id, viewer) {
   return {
     id: q.id, title: qTitle(q), hasTitle: !!q.title, body: q.body, ...maskAuthor(userBrief(author), q, viewer), time: q.created_at, ts: q.created_at,
     category: asArr(q.category), topics: asArr(q.topics), tools: asArr(q.tools),
-    resolved: !!q.resolved, saved, files: [], edited: !!q.edited_at,
+    resolved: !!q.resolved, saved, edited: !!q.edited_at,
+    files: db.prepare('SELECT idx, name, size FROM question_files WHERE question_id = ? ORDER BY idx').all(id).map((f) => ({ name: f.name, size: f.size, url: `/api/questions/${id}/files/${f.idx}` })),
     images: db.prepare('SELECT idx FROM question_images WHERE question_id = ? ORDER BY idx').all(id).map((r) => `/api/questions/${id}/images/${r.idx}`), qHelpful, iHelpedQ, answers,
   }
 }
@@ -60,6 +61,7 @@ const deleteQuestionTx = db.transaction((id) => {
   db.prepare('DELETE FROM question_reactions WHERE question_id = ?').run(id)
   db.prepare('DELETE FROM saved_questions WHERE question_id = ?').run(id)
   db.prepare('DELETE FROM question_images WHERE question_id = ?').run(id)
+  db.prepare('DELETE FROM question_files WHERE question_id = ?').run(id)
   db.prepare('DELETE FROM questions WHERE id = ?').run(id)
 })
 
@@ -73,6 +75,16 @@ router.delete('/:id', requireAuth, (req, res) => {
 
 const MAX_IMAGES = 4
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024
+const MAX_FILES = 3
+const MAX_FILE_BYTES = 10 * 1024 * 1024
+// { name, data: "data:<mime>;base64,..." } → { name, mime, data } | null. Any file type; it is only ever downloaded.
+function decodeFile(f) {
+  const m = /^data:([\w.+-]+\/[\w.+-]+)?(?:;[^,;]*)*;base64,([A-Za-z0-9+/=]*)$/.exec(String(f && f.data || ''))
+  const name = String(f && f.name || '').replace(/[\\/\r\n"]/g, '_').trim().slice(0, 160)
+  if (!m || !name) return null
+  const data = Buffer.from(m[2], 'base64')
+  return data.length && data.length <= MAX_FILE_BYTES ? { name, mime: m[1] || 'application/octet-stream', data } : null
+}
 // Accepts "data:image/<type>;base64,..." strings from the composer; anything else is rejected.
 function decodeImage(dataUrl) {
   const m = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''))
@@ -82,18 +94,21 @@ function decodeImage(dataUrl) {
 }
 
 router.post('/', requireAuth, (req, res) => {
-  const { title, body, category = [], topics = [], tools = [], images = [] } = req.body || {}
+  const { title, body, category = [], topics = [], tools = [], images = [], files = [] } = req.body || {}
   if (!String(body || '').trim() || !category.length) {
     return res.status(400).json({ error: 'missing_fields' })
   }
   const decoded = (Array.isArray(images) ? images : []).slice(0, MAX_IMAGES).map(decodeImage)
   if (decoded.some((d) => !d)) return res.status(400).json({ error: 'bad_image' })
+  const decodedFiles = (Array.isArray(files) ? files : []).slice(0, MAX_FILES).map(decodeFile)
+  if (decodedFiles.some((d) => !d)) return res.status(400).json({ error: 'bad_file' })
   const id = nextId('q')
   const anon = anonFields(req.body)
   db.transaction(() => {
     db.prepare('INSERT INTO questions (id, title, body, category, topics, tools, author_id, anonymous, alias) VALUES (?,?,?,?,?,?,?,?,?)')
       .run(id, String(title || '').trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id, anon.anonymous, anon.alias)
     decoded.forEach((img, i) => db.prepare('INSERT INTO question_images (question_id, idx, mime, data) VALUES (?,?,?,?)').run(id, i, img.mime, img.data))
+    decodedFiles.forEach((f, i) => db.prepare('INSERT INTO question_files (question_id, idx, name, mime, size, data) VALUES (?,?,?,?,?,?)').run(id, i, f.name, f.mime, f.data.length, f.data))
   })()
   const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
   notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}`, as: anon.anonymous ? anonName(anon) : null })
@@ -112,6 +127,17 @@ router.patch('/:id', requireAuth, (req, res) => {
     .run(String(title).trim(), String(body).trim(), JSON.stringify(clean(topics)), JSON.stringify(clean(tools)), q.id)
   if (req.body && req.body.anonymous !== undefined) { const an = anonFields(req.body); db.prepare('UPDATE questions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, q.id) }
   res.json({ question: loadQuestion(q.id, req.user) })
+})
+
+router.get('/:id/files/:idx', requireAuth, (req, res) => {
+  const f = db.prepare('SELECT name, mime, data FROM question_files WHERE question_id = ? AND idx = ?').get(req.params.id, Number(req.params.idx))
+  if (!f) return res.status(404).end()
+  // Always a download (never rendered inline), with the original name.
+  res.set('Content-Type', 'application/octet-stream')
+  res.set('Content-Disposition', `attachment; filename="${f.name.replace(/[^\x20-\x7e]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(f.name)}`)
+  res.set('X-Content-Type-Options', 'nosniff')
+  res.set('Cache-Control', 'private, max-age=86400')
+  res.send(f.data)
 })
 
 router.get('/:id/images/:idx', requireAuth, (req, res) => {

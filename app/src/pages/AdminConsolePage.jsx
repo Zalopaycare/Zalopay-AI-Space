@@ -10,6 +10,7 @@ import { useNotifications, markNotificationsRead } from '../lib/notifications.js
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import { downloadCsv } from '../lib/csv.js'
+import { avatarPhotoCss } from '../components/Avatar.jsx'
 
 // Admin console: review use case submissions and look at the community's real numbers.
 // Everything here comes from the API — no sample data.
@@ -331,7 +332,7 @@ export default function AdminConsolePage() {
               )}
             </div>
             <div style={css('display:flex; align-items:center; gap:10px; padding:4px 6px 4px 4px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);')}>
-              <span style={css(`width:30px; height:30px; border-radius:50%; background:${user.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';')}>{user.initials}</span>
+              <span style={css(`width:30px; height:30px; border-radius:50%; background:${user.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';' + avatarPhotoCss(user.avatarUrl))}>{user.initials}</span>
               <span style={css(font(600, 13) + ';color:#fff; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>
               <button onClick={() => logout()} className={hoverClass('background:rgba(255,59,48,.28);')} style={css('height:30px; padding:0 12px; border:none; border-radius:999px; background:rgba(255,59,48,.16); color:#ffb4ae;' + font(700, 12) + ';cursor:pointer;')}>Đăng xuất</button>
             </div>
@@ -418,7 +419,7 @@ export default function AdminConsolePage() {
                         return (
                           <div key={u.id} style={css('display:flex; align-items:center; gap:10px; padding:8px 0;' + (i ? 'border-top:1px solid #F3F5FA;' : ''))}>
                             <span style={css('position:relative; flex:none;')}>
-                              <span style={css(`width:30px; height:30px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11) + ';')}>{u.initials}</span>
+                              <span style={css(`width:30px; height:30px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11) + ';' + avatarPhotoCss(u.avatarUrl))}>{u.initials}</span>
                               {on && <span title="Đang online" style={css('position:absolute; right:-1px; bottom:-1px; width:10px; height:10px; border-radius:50%; background:#00A352; border:2px solid #fff;')}></span>}
                             </span>
                             <div style={css('flex:1; min-width:0;')}>
@@ -448,7 +449,7 @@ export default function AdminConsolePage() {
                     <div key={u.id} style={bodyRow(LB_COLS)}>
                       <span style={css(font(900, 15) + `;color:${i < 3 ? ['#E0A100', '#8A99AD', '#B8733A'][i] : '#94a3b8'};`)}>{i + 1}</span>
                       <div style={css('display:flex; align-items:center; gap:10px; min-width:0;')}>
-                        <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';')}>{u.initials}</span>
+                        <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';' + avatarPhotoCss(u.avatarUrl))}>{u.initials}</span>
                         <div style={{ minWidth: 0 }}>
                           <div style={css(font(700, 13.5) + ';color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{u.domain}</div>
                           <div style={css(font(400, 11.5) + ';color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{u.team || u.name}</div>
@@ -667,7 +668,7 @@ export default function AdminConsolePage() {
                 {userRows.map((u, i) => (
                   <div key={u.id} style={bodyRow(U_COLS)}>
                     <div style={css('display:flex; align-items:center; gap:12px; min-width:0;')}>
-                      <span style={css(`flex:none; width:36px; height:36px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';')}>{u.initials}</span>
+                      <span style={css(`flex:none; width:36px; height:36px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';' + avatarPhotoCss(u.avatarUrl))}>{u.initials}</span>
                       <div style={{ minWidth: 0 }}>
                         <div title={`${cleanName(u.name)} · ${u.domain}`} style={css(font(700, 14, 1.4) + ';color:#0f172a; word-break:break-word;')}>{cleanName(u.name)} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
                         <div title={u.email + (u.team ? ' · ' + u.team : '')} style={css('margin-top:3px;' + font(400, 12, 1.45) + ';color:#64748b; word-break:break-all;')}>{u.email}{u.team ? <span style={{ wordBreak: 'normal' }}> · {u.team}</span> : ''}</div>

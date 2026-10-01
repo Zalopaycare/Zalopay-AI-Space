@@ -9,7 +9,8 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
-import { allCases, prdMeta, avatarColor } from '../data/useCases.js'
+import { allCases, prdMeta, avatarColor, avatarPhoto } from '../data/useCases.js'
+import { avatarPhotoCss } from '../components/Avatar.jsx'
 import { usePublishedUseCases } from '../lib/publishedUseCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
@@ -97,7 +98,7 @@ function QuestionCard({ q }) {
         <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
       </div>
       <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
-        <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};`)}>{q.initials}</span>
+        <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</span>
         <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
           <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span>
           <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.time}</span>
@@ -144,7 +145,7 @@ function UseCaseCard({ c }) {
         </div>
       </div>
       <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
-        <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 11px ${FONT};`)}>{c.initial}</span>
+        <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 11px ${FONT};${avatarPhotoCss(c.avatarUrl)}`)}>{c.initial}</span>
         <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{c.author}</span>
       </div>
       <TagRow topics={c.topics} tools={c.toolsR.map((x) => x.name)} style={{ marginTop: 10 }} />
@@ -238,6 +239,7 @@ export default function ProfilePage() {
     id: q.id,
     initials: q.initials,
     avatarBg: q.avatarColor || avatarColor(q.author),
+    avatarUrl: q.avatarUrl || null,
     author: q.author,
     team: q.team,
     time: relativeTime(q.time),
@@ -311,6 +313,7 @@ export default function ProfilePage() {
       author: c.author,
       initial: c.author.slice(0, 1).toUpperCase(),
       avatarBg: avatarColor(c.author),
+      avatarUrl: avatarPhoto(c.author),
       topics: (prdMeta[c.id] || {}).topics || [],
       helpful: ucMeta[c.id] ? ucMeta[c.id].helpful : (prdMeta[c.id] || {}).helpful || 0,
       helped: !!(ucMeta[c.id] && ucMeta[c.id].iHelped),

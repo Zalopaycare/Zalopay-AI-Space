@@ -13,7 +13,7 @@ import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useLocation, useNavigate } from 'react-router-dom'
-import Avatar from '../components/Avatar.jsx'
+import Avatar, { avatarPhotoCss } from '../components/Avatar.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import { useDialog } from '../hooks/useDialog.js'
 import FilterPill from '../components/FilterPill.jsx'
@@ -104,7 +104,8 @@ export default function QuestionsPage() {
   const patch = (id, updated) => setQuestions((qs) => qs.map((q) => (q.id === id ? updated : q)))
 
   const reload = () => api.listQuestions().then((d) => { setQuestions(d.questions); setLoaded(true) }).catch(() => setLoaded(true))
-  useEffect(() => { reload() }, [])
+  // Again when the signed-in user changes their photo, so their own posts pick it up at once.
+  useEffect(() => { reload() }, [user?.avatarUrl])
 
   // deep-link: #ask opens the ask-question composer directly (from Sidebar's "Đặt câu hỏi" quick action)
   useEffect(() => {
@@ -470,7 +471,7 @@ export default function QuestionsPage() {
                       <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
                     </div>
                     <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
-                      <div style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.initials}</div>
+                      <div style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
                           <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span>
@@ -548,7 +549,7 @@ export default function QuestionsPage() {
                         <div style={css('display:flex; flex-direction:column; gap:14px;')}>
                           {q.answers.map((a) => (
                             <div key={a.id} style={css('display:flex; gap:10px;')}>
-                              <div style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{a.initials}</div>
+                              <div style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(a.avatarUrl)}`)}>{a.initials}</div>
                               <div style={css('flex:1; min-width:0;')}>
                                 <div className="zp-cmt" style={css(a.accepted ? 'background:#F1FBF6; border:1px solid #BEE9D3; border-radius:12px; padding:8px 12px;' : '')}>
                                   {a.accepted && (
@@ -596,7 +597,7 @@ export default function QuestionsPage() {
                                       return (
                                         <div key={c.id}>
                                           <div style={css('display:flex; gap:10px;')}>
-                                            <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{c.initials}</div>
+                                            <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</div>
                                             <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                               <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                                 <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span>
@@ -621,7 +622,7 @@ export default function QuestionsPage() {
 
                                           {expanded && replies.map((r) => (
                                             <div key={r.id} style={css('display:flex; gap:10px; margin:10px 0 0 36px;')}>
-                                              <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${r.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{r.initials}</div>
+                                              <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${r.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</div>
                                               <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                                 <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                                   <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span>
@@ -639,7 +640,7 @@ export default function QuestionsPage() {
 
                                           {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (
                                             <div style={css('display:flex; gap:10px; margin:10px 0 0 36px; align-items:center;')}>
-                                              <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{user?.initials || '?'}</div>
+                                              <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                                               <div style={{ flex: 1 }}>
                                                 <input
                                                   autoFocus
@@ -658,14 +659,14 @@ export default function QuestionsPage() {
                                       )
                                     })}
                                     <div style={css('display:flex; gap:10px; align-items:center;')}>
-                                      <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{user?.initials || '?'}</div>
+                                      <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                                       <div style={css('flex:1; position:relative;')}>
                                         <MentionField id={'cmt-in-' + a.id} value={a.commentDraft} onChange={a.onCommentChange} onBlur={() => setCommentMention(null)} onKeyDown={withEsc(a.mentionOpen, () => setCommentMention(null), enterSends(a.onPostComment, () => { if (a.mentionOpen && a.mentions[0]) { a.mentions[0].onPick(); return true } return false }))} placeholder={t('Trả lời') + ' ' + a.author + ', ' + t('gõ @ để mention...')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
                                         {a.mentionOpen && (
                                           <div style={css('position:absolute; left:0; bottom:calc(100% + 6px); width:320px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                             {a.mentions.map((m) => (
                                               <div key={m.key} onMouseDown={(e) => e.preventDefault()} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer;')}>
-                                                <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
+                                                <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
                                                 <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
                                                   <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
                                                   <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
@@ -689,14 +690,14 @@ export default function QuestionsPage() {
                         </div>
 
                         <div style={css('display:flex; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid #E6EBF3;')}>
-                          <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{user?.initials || '?'}</div>
+                          <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                           <div style={{ flex: 1, position: 'relative' }}>
                             <MentionField multiline id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onBlur={() => setReplyMention(null)} onKeyDown={withEsc(q.replyMentionOpen, () => setReplyMention(null), enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false }))} rows={2} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')} />
                             {q.replyMentionOpen && (
                               <div style={css('position:absolute; left:0; bottom:calc(100% + 6px); width:340px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                 {q.replyMentions.map((m) => (
                                   <div key={m.key} onMouseDown={(e) => e.preventDefault()} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;')}>
-                                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{m.initials}</span>
+                                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
                                     <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
                                       <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
                                       <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>

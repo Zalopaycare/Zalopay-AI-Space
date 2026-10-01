@@ -4,6 +4,7 @@ import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { css, hoverClass } from '../lib/style.js'
 import { Blocks, CopyButton, Figure, Placeholders, Prompt, PromptTargetContext } from './UseCaseGuide.jsx'
 import Fill from './Fill.jsx'
+import { avatarPhotoCss } from './Avatar.jsx'
 
 // Building blocks of the use case detail page, laid out as the 9-part template:
 // hero + info row + "Ứng dụng ngay →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp · 4 Kết quả ·
@@ -38,7 +39,7 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
 
 /** Title block on the dark hero: Loại + Trạng thái chips, title, tool name, one-line description,
  *  one horizontal info row and the "Ứng dụng ngay →" button that jumps to part 5. */
-export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel, tldr = [], t }) {
+export function DetailHero({ c, h, topics, avatarBg, avatarUrl, onBack, onStart, startLabel, tldr = [], t }) {
   const chip = 'display:inline-flex; align-items:center; gap:7px; height:28px; padding:0 12px; border-radius:999px; font-size:12.5px; font-weight:700;'
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:13.5px; font-weight:700; line-height:1.45; color:#fff;'
@@ -81,7 +82,7 @@ export function DetailHero({ c, h, topics, avatarBg, onBack, onStart, startLabel
       <h1 className="zp-detail-title" style={css('margin:0; font-size:38px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
       {/* Who owns / posted it, right under the title: avatar + name + team. */}
       <div style={css('display:flex; align-items:center; gap:10px; margin-top:14px; min-width:0; flex-wrap:wrap;')}>
-        <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
+        <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; background:${avatarBg};${avatarPhotoCss(avatarUrl)}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
         <span style={css('font-size:14.5px; font-weight:700; color:#fff;')}><Fill text={h.owner} /></span>
         {h.ownerTeam && <span style={css('font-size:13.5px; color:#a9b8dc;')}>· <Fill text={h.ownerTeam} /></span>}
       </div>

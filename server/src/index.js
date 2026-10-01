@@ -29,7 +29,8 @@ app.use((req, res, next) => {
   res.redirect(301, canonical.origin + req.originalUrl)
 })
 
-app.use(express.json({ limit: '12mb' }))
+// Up to 3 × 10 MB question attachments (base64 adds ~37%), plus images.
+app.use(express.json({ limit: '48mb' }))
 app.use(cookieParser())
 app.use(attachUser)
 

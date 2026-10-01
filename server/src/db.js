@@ -177,6 +177,19 @@ for (const table of ['question_answers', 'answer_comments', 'use_case_comments',
   db.exec("UPDATE use_case_submissions SET published_at = created_at WHERE review_status = 'approved' AND published_at IS NULL")
 }
 
+// Files attached to a question (Word, PDF, Excel…), downloaded by name. Additive only.
+db.exec(`
+CREATE TABLE IF NOT EXISTS question_files (
+  question_id TEXT NOT NULL,
+  idx INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  data BLOB NOT NULL,
+  PRIMARY KEY (question_id, idx)
+);
+`)
+
 // Avatar photo (users) and anonymous posting (questions, answers, use cases). Additive only.
 {
   const has = (t, c) => db.prepare(`PRAGMA table_info(${t})`).all().some((x) => x.name === c)

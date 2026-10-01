@@ -8,6 +8,7 @@ import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { useNotifications } from '../lib/notifications.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import Avatar from './Avatar.jsx'
+import AvatarPhotoPicker from './AvatarPhotoPicker.jsx'
 
 const itemBase = 'display:flex; align-items:center; gap:12px; height:40px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14px; cursor:pointer; text-align:left; font-family:inherit; width:100%; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 const subItemBase = 'display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:13.5px; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
@@ -153,6 +154,7 @@ export default function Sidebar({ active }) {
           {menuOpen && menuPos && createPortal(
             // Portalled to <body>: the sidebar clips its overflow, so a popup inside it would be cut off when collapsed.
             <div ref={popRef} style={css(`position:fixed; left:${menuPos.left}px; bottom:${menuPos.bottom}px; width:${menuPos.width}px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:2100;`)}>
+              <AvatarPhotoPicker />
               {user.isAdmin && (
                 <SoftLink
                   to="/admin"

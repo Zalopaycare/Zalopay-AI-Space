@@ -28,9 +28,10 @@ import { buildTemplate } from '../data/useCaseTemplate.js'
 import { submissionTpl } from '../data/submissionTpl.js'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
+import { avatarPhotoCss } from '../components/Avatar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
-  avatarColor, statusMeta, kindOf, statusOf, levelMeta, levelChip,
+  avatarColor, avatarPhoto, statusMeta, kindOf, statusOf, levelMeta, levelChip,
   newestFirst, postedLabel,
 } from '../data/useCases.js'
 
@@ -354,8 +355,8 @@ export default function UseCaseLibraryPage() {
       ...c,
       avInitial: c.author.slice(0, 1).toUpperCase(),
       posted: postedLabel(c),
-      avStyle: `width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex:none;background:${avatarColor(c.author)}`,
-      avStyleL: `width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex:none;background:${avatarColor(c.author)}`,
+      avStyle: `width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex:none;background:${avatarColor(c.author)};${avatarPhotoCss(avatarPhoto(c.author))}`,
+      avStyleL: `width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex:none;background:${avatarColor(c.author)};${avatarPhotoCss(avatarPhoto(c.author))}`,
       toolsR: c.tools.map((name) => ({ name })),
       kindLabel: c.kind === 'tech' ? 'By tech' : 'By non-tech',
       levelLabel: levelMeta(cd.level).label,
@@ -546,6 +547,7 @@ export default function UseCaseLibraryPage() {
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
                 topics={dTopics}
                 avatarBg={avatarColor(dsel.author)}
+                avatarUrl={avatarPhoto(dsel.author)}
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Ứng dụng ngay')}
@@ -579,7 +581,7 @@ export default function UseCaseLibraryPage() {
               </div>
 
               <div style={css('display:flex; gap:12px; margin-top:20px; align-items:flex-start;')}>
-                <span style={css(`width:36px; height:36px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;`)}>{user?.initials || '?'}</span>
+                <span style={css(`width:36px; height:36px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
                 <div style={{ flex: 1 }}>
                   <MentionInput
                     ref={dBoxRef}
@@ -610,7 +612,7 @@ export default function UseCaseLibraryPage() {
                   return (
                     <div key={c.id} style={css('padding-top:14px; border-top:1px solid #EEF1F7;')}>
                       <div className="zp-cmt" style={css('display:flex; gap:12px;')}>
-                        <span style={css('width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;')}>{c.initials}</span>
+                        <span style={css(`width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
                             <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
@@ -632,7 +634,7 @@ export default function UseCaseLibraryPage() {
 
                       {expanded && replies.map((r) => (
                         <div key={r.id} className="zp-cmt" style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
-                          <span style={css('width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;')}>{r.initials}</span>
+                          <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={css('display:flex; align-items:center; gap:8px;')}>
                               <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
@@ -648,7 +650,7 @@ export default function UseCaseLibraryPage() {
 
                       {replyTarget?.parentId === c.id && (
                         <div style={css('display:flex; gap:10px; margin:12px 0 0 48px;')}>
-                          <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;`)}>{user?.initials || '?'}</span>
+                          <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <MentionInput
                               ref={replyBoxRef}
@@ -880,7 +882,7 @@ export default function UseCaseLibraryPage() {
                     {t('Xem trước: đây đúng là trang chi tiết người đọc sẽ thấy sau khi bài được duyệt.')}
                   </div>
                   <div className="zp-detail-wrap" style={css('margin-top:16px; border-radius:20px; overflow:hidden; background:#07070c; color:#fff; padding:22px 22px 30px;')}>
-                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} topics={previewTopics} avatarBg={user?.avatarColor || avatarColor(pv.c.author)} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
+                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} topics={previewTopics} avatarBg={user?.avatarColor || avatarColor(pv.c.author)} avatarUrl={user?.avatarUrl} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
