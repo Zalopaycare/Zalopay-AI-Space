@@ -24,6 +24,8 @@ const UC_STATUS = {
   changes_requested: { label: 'Cần chỉnh sửa', bg: '#FFF4E3', fg: '#9A5B00' },
   rejected: { label: 'Từ chối', bg: '#FFECEC', fg: '#D8232A' },
 }
+// Who made the last review decision, shown on reviewed submissions (older ones predate the record: "Không rõ").
+const REVIEWED_BY = { approved: 'Duyệt bởi', changes_requested: 'Yêu cầu chỉnh sửa bởi', rejected: 'Từ chối bởi' }
 const toDate = (t) => new Date(String(t || '').replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(t)) ? '' : 'Z'))
 const fmtDate = (t) => { const d = toDate(t); return isNaN(d) ? '—' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) }
 // Microsoft display names look like "Hải. Trần Thanh (5)": drop the "(5)" suffix and the dot after the given name.
@@ -515,7 +517,7 @@ export default function AdminConsolePage() {
                         <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; text-decoration:none;' + clamp2)}>{c.title}</a>
                         <div style={css('margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;' + font(400, 12) + ';color:#94a3b8;')}>
                           <span style={css(c.source === 'showcase' ? pill('#EEF3FF', '#2c5fff') : pill('#F1F4FA', '#3A4757'))}>{c.source === 'showcase' ? 'Showcase' : 'Cộng đồng gửi'}</span>
-                          {[c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : ''].filter(Boolean).join(' · ')}
+                          {[c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : '', c.source === 'community' ? 'Duyệt bởi ' + (c.approvedBy || 'Không rõ') : ''].filter(Boolean).join(' · ')}
                         </div>
                       </div>
                       {[c.upvotes, c.comments, c.saves, c.applied].map((v, j) => <span key={j} style={css(font(800, 14) + ';color:#3A4757;')}>{v}</span>)}
@@ -538,6 +540,7 @@ export default function AdminConsolePage() {
                       <div style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => setDetailId(s.id)}>
                         <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a;')}>{s.title}</div>
                         <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0], relativeTime(s.time)].filter(Boolean).join(' · ')}</div>
+                        {REVIEWED_BY[s.reviewStatus] && <div style={css('margin-top:4px;' + font(600, 12) + ';color:#475569;')}>{REVIEWED_BY[s.reviewStatus]} <b style={{ color: '#0f172a' }}>{s.reviewedBy || 'Không rõ'}</b>{s.reviewedAt ? ' · ' + relativeTime(s.reviewedAt) : ''}</div>}
                         {s.reviewStatus === 'rejected' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFECEC;' + font(600, 12, 1.5) + ';color:#B4232A;')}>Lý do từ chối: {s.adminNote}</div>}
                         {s.reviewStatus === 'changes_requested' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF4E3;' + font(600, 12, 1.5) + ';color:#7A4700; white-space:pre-wrap;')}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div>}
                       </div>

@@ -157,13 +157,17 @@ router.get('/submissions', requireAuth, (req, res) => {
         reviewStatus: r.review_status, adminNote: r.admin_note,
         author: who.author, authorAvatarColor: who.avatarColor, authorAvatarUrl: who.avatarUrl, authorDomain: who.anonymous && who.authorId === null ? who.author : who.fullName, authorId: who.authorId, time: r.created_at,
         anonymous: !!who.anonymous, alias: who.anonymous ? who.alias : null, realAuthor: who.realAuthor || null,
-        publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null, edited: !!r.edited_at,
+        publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
+        // Only admins learn which admin reviewed it.
+        reviewedBy: req.user && req.user.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
         extra: parseExtra(r.extra),
         coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
       }
     }),
   })
 })
+
+const reviewerName = (uid) => { const u = uid ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(uid) : null; return u ? domainName(u.email, u.name) : null }
 
 const adminEmailsFor = (req) => {
   const envAdmins = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
@@ -292,8 +296,8 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
   if (status !== 'approved' && !note) return res.status(400).json({ error: 'note_required' })
   const before = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
   if (!before) return res.status(404).json({ error: 'not_found' })
-  db.prepare(`UPDATE use_case_submissions SET review_status = ?, admin_note = ?, reviewed_at = datetime('now'),
-    published_at = CASE WHEN ? = 'approved' THEN COALESCE(published_at, datetime('now')) ELSE published_at END WHERE id = ?`).run(status, note, status, id)
+  db.prepare(`UPDATE use_case_submissions SET review_status = ?, admin_note = ?, reviewed_at = datetime('now'), reviewed_by = ?,
+    published_at = CASE WHEN ? = 'approved' THEN COALESCE(published_at, datetime('now')) ELSE published_at END WHERE id = ?`).run(status, note, req.user.id, status, id)
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id)
   if (author) {

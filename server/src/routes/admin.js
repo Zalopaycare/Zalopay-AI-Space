@@ -157,7 +157,8 @@ router.get('/published', (req, res) => {
   const showcase = showcaseCases.map((c) => ({ id: c.id, source: 'showcase', title: c.title, author: c.ownerName && !/cần bổ sung/.test(c.ownerName) ? c.ownerName : c.author, team: /cần bổ sung/.test(c.ownerTeam || '') ? '' : c.ownerTeam || '', type: c.type || '', status: c.status || '', postedAt: c.postedAt || null, ...stats(c.id) }))
   const subs = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved'").all().map((r) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
-    return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, ...stats(r.id) }
+    const rv = r.reviewed_by ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(r.reviewed_by) : null
+    return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, approvedBy: rv ? domainName(rv.email, rv.name) : null, ...stats(r.id) }
   })
   res.json({ useCases: [...subs, ...showcase].sort((a, b) => String(b.postedAt || '').localeCompare(String(a.postedAt || '')) || b.id.localeCompare(a.id, undefined, { numeric: true })) })
 })
