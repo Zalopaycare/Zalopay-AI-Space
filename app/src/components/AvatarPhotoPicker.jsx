@@ -37,7 +37,7 @@ function squareJpeg(file) {
 const btn = 'display:block; width:100%; text-align:left; padding:7px 10px; border:none; border-radius:9px; background:transparent; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; white-space:nowrap;'
 
 /** "Ảnh đại diện" block for the avatar menu: upload a photo (cropped in the browser) or remove it. */
-export default function AvatarPhotoPicker() {
+export default function AvatarPhotoPicker({ size = 40, bare = false }) {
   const { t } = useI18n()
   const { user, setUser } = useAuth()
   const fileRef = useRef(null)
@@ -76,9 +76,9 @@ export default function AvatarPhotoPicker() {
 
   if (!user) return null
   return (
-    <div style={css('padding:8px 6px 8px; margin-bottom:4px; border-bottom:1px solid #EEF1F7;')}>
-      <div style={css('display:flex; align-items:center; gap:10px;')}>
-        <Avatar user={user} size={40} fontSize={14} />
+    <div style={css(bare ? '' : 'padding:8px 6px 8px; margin-bottom:4px; border-bottom:1px solid #EEF1F7;')}>
+      <div style={css(`display:flex; align-items:center; gap:${bare ? 16 : 10}px;`)}>
+        <Avatar user={user} size={size} fontSize={Math.round(size * 0.35)} />
         <div style={css('flex:1; min-width:0;')}>
           <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className={hoverClass('background:#EEF3FF !important;')} style={css(btn + `color:#2c5fff; ${busy ? 'opacity:.6; cursor:default;' : ''}`)}>
             {busy ? t('Đang lưu...') : t('Tải ảnh lên')}

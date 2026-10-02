@@ -1,10 +1,14 @@
 import { css } from '../lib/style.js'
+import { useAuth } from '../auth/AuthContext.jsx'
 
 /**
  * "Đăng ẩn danh" switch with an optional display name. Others see the name (or "Ẩn danh") and a
  * grey avatar; the author and admins still see who posted.
  */
-export default function AnonToggle({ on, onChange, alias, onAlias, label = 'Đăng ẩn danh', compact = false }) {
+export default function AnonToggle({ on, onChange: setOn, alias, onAlias, label = 'Đăng ẩn danh', compact = false }) {
+  const { user } = useAuth()
+  // Turning it on fills in the default name set once in the profile (still editable per post).
+  const onChange = (v) => { setOn(v); if (v && !alias && user?.anonAlias) onAlias(user.anonAlias) }
   return (
     <div style={css(`display:flex; align-items:center; gap:8px; flex-wrap:wrap; ${compact ? '' : 'margin-top:8px;'}`)}>
       <label style={css('display:inline-flex; align-items:center; gap:7px; cursor:pointer; font-size:12.5px; font-weight:700; color:#3A4757; user-select:none;')}>

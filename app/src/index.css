@@ -194,3 +194,10 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-nudge { animation: zp-nudge 3.5s ease-in-out infinite; transform-origin: center; }
 .zp-nudge:hover { animation-play-state: paused; filter: brightness(1.06); }
 @media (prefers-reduced-motion: reduce) { .zp-nudge { animation: none; } }
+
+/* Profile overview: 3 count tiles, 2 name fields side by side (stacked on phones). */
+.zp-profile-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.zp-profile-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 640px) {
+  .zp-profile-stats, .zp-profile-fields { grid-template-columns: minmax(0, 1fr); }
+}

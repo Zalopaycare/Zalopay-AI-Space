@@ -27,6 +27,9 @@ export function initialsFor(name) {
 
 const ADMIN_EMAILS = String(process.env.ADMIN_EMAILS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 
+/** The name a new account starts with, from the email: "thy.ndm@…" → "Thy Ndm". */
+export const autoNameFor = (email) => String(email).split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+
 export function getOrCreateUser(email) {
   const isAdmin = ADMIN_EMAILS.includes(email) ? 1 : 0
   const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(email)
@@ -34,8 +37,7 @@ export function getOrCreateUser(email) {
     if (isAdmin && !existing.is_admin) db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(existing.id)
     return db.prepare('SELECT * FROM users WHERE id = ?').get(existing.id)
   }
-  const localPart = email.split('@')[0]
-  const name = localPart.replace(/[._]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const name = autoNameFor(email)
   const id = db.prepare('INSERT INTO users (email, name, initials, team, is_admin) VALUES (?, ?, ?, ?, ?)')
     .run(email, name, initialsFor(name), '', isAdmin).lastInsertRowid
   return db.prepare('SELECT * FROM users WHERE id = ?').get(id)
@@ -89,5 +91,5 @@ export function requireAuth(req, res, next) {
 
 export function publicUser(u) {
   if (!u) return null
-  return { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: initialsOf(u), team: u.team, email: u.email, isAdmin: !!u.is_admin, avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) }
+  return { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: initialsOf(u), team: u.team, email: u.email, isAdmin: !!u.is_admin, anonAlias: u.anon_alias || '', avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) }
 }

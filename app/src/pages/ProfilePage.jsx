@@ -2,6 +2,7 @@ import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import AnonTag from '../components/AnonTag.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
+import AvatarPhotoPicker from '../components/AvatarPhotoPicker.jsx'
 import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
@@ -185,8 +186,8 @@ export default function ProfilePage() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
   const notif = useNotifications(!!user)
-  const section = /#(activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'activity'
-  useTitle({ activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu' }[section])
+  const section = /#(overview|activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'overview'
+  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -377,7 +378,7 @@ export default function ProfilePage() {
     .sort((x, y) => (x.ts === undefined ? -1 : y.ts === undefined ? 1 : String(y.ts).localeCompare(String(x.ts))))
     .slice(0, 4)
 
-  const sectionTitle = section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : ''
+  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
   return (
     <Layout active="profile">
@@ -391,6 +392,31 @@ export default function ProfilePage() {
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h1 style={heroHeading}>{sectionTitle}</h1>
               {loaded && loadErrorBox && <div style={css('margin-top:12px;')}>{loadErrorBox}</div>}
+            </div>
+          </section>
+        )}
+
+        {section === 'overview' && (
+          <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
+            <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
+              <ProfileCard user={user} setUser={setUser} />
+              <div className="zp-profile-stats">
+                {[
+                  ['usecase', 'Use case của bạn', myUseCases.length, `${myUseCases.filter((c) => c.reviewStatus === 'approved').length} ${t('đã đăng')}`],
+                  ['question', 'Câu hỏi của bạn', myQuestions.length, `${myQuestions.filter((q) => q.answers.length).length} ${t('đã có câu trả lời')}`],
+                  ['saved', 'Đã lưu', savedUseCaseIds.length + savedQuestions.length, `${savedUseCaseIds.length} use case · ${savedQuestions.length} ${t('câu hỏi')}`],
+                ].map(([key, label, n, sub]) => (
+                  <div key={key} style={css('display:flex; flex-direction:column; padding:16px 18px; border-radius:18px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 10px 24px rgba(30,50,90,.08);')}>
+                    <div style={css(`font:700 13px ${FONT}; color:#64748b;`)}>{t(label)}</div>
+                    <div style={css(`margin-top:4px; font:800 34px/1.1 ${FONT}; color:#0F172A;`)}>{loaded ? n : '…'}</div>
+                    <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{loaded ? sub : ''}</div>
+                    <button onClick={() => navigate('/profile#' + key)} className={hoverClass('gap:9px !important;')} style={css(`margin-top:12px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .15s;`)}>
+                      {t('Xem thêm')}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -595,6 +621,54 @@ function QuestionMenu({ m }) {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Profile header: photo, name, department, and the default name for anonymous posts — all editable. */
+function ProfileCard({ user, setUser }) {
+  const { t } = useI18n()
+  const [name, setName] = useState(user.name || '')
+  const [team, setTeam] = useState(user.team || '')
+  const [alias, setAlias] = useState(user.anonAlias || '')
+  const [state, setState] = useState('') // '' | 'saving' | 'saved' | 'error'
+  const dirty = name.trim() !== (user.name || '') || team.trim() !== (user.team || '') || alias.trim() !== (user.anonAlias || '')
+  const save = () => {
+    if (!name.trim()) { setState('error'); return }
+    setState('saving')
+    api.updateMe({ name: name.trim(), team: team.trim(), anonAlias: alias.trim() })
+      .then((d) => { if (d?.user) setUser(d.user); setState('saved') })
+      .catch(() => setState('error'))
+  }
+  const field = (label, hint, value, onChange, placeholder, max) => (
+    <label style={css('display:block;')}>
+      <div style={css(`font:800 13px ${FONT}; color:#0F172A;`)}>{label}</div>
+      {hint && <div style={css(`margin-top:2px; font:500 12px ${FONT}; color:#94a3b8;`)}>{hint}</div>}
+      <input value={value} maxLength={max} placeholder={placeholder} onChange={(e) => { onChange(e.target.value); setState('') }} style={css(`width:100%; margin-top:7px; height:40px; padding:0 12px; border:1px solid #DDE3EC; border-radius:11px; background:#fff; color-scheme:light; font:500 14px ${FONT}; color:#0F172A; outline:none; box-sizing:border-box;`)} />
+    </label>
+  )
+  return (
+    <div style={css('padding:22px 24px; border-radius:20px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 14px 34px rgba(8,16,40,.25);')}>
+      <div style={css('display:flex; align-items:center; gap:18px; flex-wrap:wrap;')}>
+        <AvatarPhotoPicker size={76} bare />
+        <div style={css('min-width:0;')}>
+          <div style={css(`font:800 22px/1.2 ${FONT}; color:#0F172A;`)}>{user.domain || user.name}</div>
+          <div style={css(`margin-top:3px; font:500 13.5px ${FONT}; color:#64748b;`)}>{[user.name, user.team].filter(Boolean).join(' · ')}</div>
+          <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{user.email}</div>
+        </div>
+      </div>
+      <div className="zp-profile-fields" style={{ marginTop: 20 }}>
+        {field(t('Họ và tên'), '', name, setName, 'Nguyễn Văn A', 60)}
+        {field(t('Phòng ban / Team'), '', team, setTeam, 'Ví dụ: Zalopay HR', 60)}
+      </div>
+      <div style={{ marginTop: 14 }}>
+        {field(t('Tên hiển thị khi ẩn danh'), t('Tự điền mỗi khi bạn bật "Đăng ẩn danh". Để trống thì hiện "Ẩn danh". Admin vẫn biết bạn là ai.'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
+      </div>
+      <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
+        <button onClick={save} disabled={!dirty || state === 'saving'} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:${dirty ? 'pointer' : 'default'}; opacity:${dirty && state !== 'saving' ? 1 : 0.5};`)}>{state === 'saving' ? t('Đang lưu...') : t('Lưu thay đổi')}</button>
+        {state === 'saved' && !dirty && <span style={css(`font:700 12.5px ${FONT}; color:#00893F;`)}>✓ {t('Đã lưu')}</span>}
+        {state === 'error' && <span style={css(`font:700 12.5px ${FONT}; color:#D8232A;`)}>{name.trim() ? t('Không lưu được, thử lại.') : t('Họ và tên không được để trống.')}</span>}
+      </div>
     </div>
   )
 }

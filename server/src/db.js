@@ -195,6 +195,8 @@ CREATE TABLE IF NOT EXISTS question_files (
   const has = (t, c) => db.prepare(`PRAGMA table_info(${t})`).all().some((x) => x.name === c)
   if (!has('users', 'avatar_mime')) db.exec('ALTER TABLE users ADD COLUMN avatar_mime TEXT')
   if (!has('users', 'avatar_data')) db.exec('ALTER TABLE users ADD COLUMN avatar_data BLOB')
+  // Default display name for anonymous posts, set once in the profile.
+  if (!has('users', 'anon_alias')) db.exec('ALTER TABLE users ADD COLUMN anon_alias TEXT')
   for (const t of ['questions', 'question_answers', 'use_case_submissions']) {
     if (!has(t, 'anonymous')) db.exec(`ALTER TABLE ${t} ADD COLUMN anonymous INTEGER NOT NULL DEFAULT 0`)
     if (!has(t, 'alias')) db.exec(`ALTER TABLE ${t} ADD COLUMN alias TEXT`)

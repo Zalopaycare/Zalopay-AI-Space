@@ -8,7 +8,6 @@ import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { useNotifications } from '../lib/notifications.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import Avatar from './Avatar.jsx'
-import AvatarPhotoPicker from './AvatarPhotoPicker.jsx'
 
 const itemBase = 'display:flex; align-items:center; gap:12px; height:40px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14px; cursor:pointer; text-align:left; font-family:inherit; width:100%; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 const subItemBase = 'display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:13.5px; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
@@ -78,7 +77,7 @@ export default function Sidebar({ active }) {
   }, [menuOpen])
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
-  const sub = active === 'profile' ? /#(activity|usecase|question|saved)\b/.exec(hash)?.[1] || 'activity' : null
+  const sub = active === 'profile' ? /#(overview|activity|usecase|question|saved)\b/.exec(hash)?.[1] || 'overview' : null
   const { unread: unreadCount } = useNotifications(!!user)
   const homeActive = active === 'home'
 
@@ -119,6 +118,7 @@ export default function Sidebar({ active }) {
 
       {collapsed && (
         <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
+          <NavLink to="/profile" active={sub === 'overview'} collapsed title={t('Hồ sơ')} icon={<svg style={{ flex: "none" }} width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>}>{t('Hồ sơ')}</NavLink>
           <NavLink to="/profile#activity" active={sub === 'activity'} collapsed title={t('Thông báo & hoạt động')} icon={
             <span style={css('position:relative; display:inline-flex;')}>
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
@@ -132,6 +132,9 @@ export default function Sidebar({ active }) {
         <>
           <div style={css('display:flex; align-items:center; padding:0 12px; margin-top:26px; margin-bottom:6px; font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#8aa0d6;')}>{t('Của tôi')}</div>
           <div style={css('display:flex; flex-direction:column; gap:2px;')}>
+            <SubLink to="/profile" active={sub === 'overview'} icon={
+              <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+            }>{t('Hồ sơ')}</SubLink>
             <SubLink to="/profile#activity" active={sub === 'activity'} icon={
               <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
             }><span style={css('white-space:nowrap;')}>{t('Thông báo')}</span><span style={css(`margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:${unreadCount ? '#FF3B30' : 'rgba(255,255,255,.14)'}; color:#fff; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;`)}>{unreadCount}</span></SubLink>
@@ -154,7 +157,15 @@ export default function Sidebar({ active }) {
           {menuOpen && menuPos && createPortal(
             // Portalled to <body>: the sidebar clips its overflow, so a popup inside it would be cut off when collapsed.
             <div ref={popRef} style={css(`position:fixed; left:${menuPos.left}px; bottom:${menuPos.bottom}px; width:${menuPos.width}px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:2100;`)}>
-              <AvatarPhotoPicker />
+              <SoftLink
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className={hoverClass('background:#EEF3FF !important;')}
+                style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap;')}
+              >
+                <svg style={{ flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+                {t('Hồ sơ của tôi')}
+              </SoftLink>
               {user.isAdmin && (
                 <SoftLink
                   to="/admin"
@@ -163,7 +174,7 @@ export default function Sidebar({ active }) {
                   style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff; white-space:nowrap;')}
                 >
                   <svg style={{ flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
-                  {t('Visit Admin Dashboard')}
+                  {t('Trang quản trị')}
                 </SoftLink>
               )}
               <button onClick={() => { setMenuOpen(false); logout() }} style={css('display:block; width:100%; text-align:left; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{t('Đăng xuất')}</button>
