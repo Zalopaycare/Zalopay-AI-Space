@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { useTitle } from '../hooks/useTitle.js'
 import { Link } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
@@ -244,7 +245,16 @@ export default function AdminConsolePage() {
     api.reviewSubmission(review.id, review.action, note).then(() => { reloadSubmissions(); reloadPublished(); setDetailId(null) }).catch(() => {})
     setReview(null); setReviewNote('')
   }
-  const remove = (s) => setConfirm({ text: `Xoá vĩnh viễn use case "${s.title}"?`, run: () => api.deleteSubmission(s.id).then(() => { reloadSubmissions(); reloadPublished(); setDetailId(null) }).catch(() => {}) })
+  const remove = (s) => {
+    const after = () => { reloadSubmissions(); reloadPublished(); setDetailId(null) }
+    // Someone else's post: the reason goes to the author along with the removed content.
+    if (s.authorId !== user.id) askRemovalReason({ what: 'use case', title: s.title }).then((r) => r && api.deleteSubmission(s.id, r).then(after).catch(() => {}))
+    else setConfirm({ text: `Xoá vĩnh viễn use case "${s.title}"?`, run: () => api.deleteSubmission(s.id).then(after).catch(() => {}) })
+  }
+  const removeQuestion = (q, after) => {
+    if (q.authorId !== user.id) askRemovalReason({ what: 'câu hỏi', title: q.title }).then((r) => r && api.deleteQuestion(q.id, r).then(after).catch(() => {}))
+    else setConfirm({ text: `Xoá câu hỏi "${q.title}" cùng toàn bộ câu trả lời?`, run: () => api.deleteQuestion(q.id).then(after).catch(() => {}) })
+  }
 
   // ---- questions ----
   const qq = fold(qQuery.trim())
@@ -588,7 +598,7 @@ export default function AdminConsolePage() {
                     <div><span style={css(q.resolved ? pill('#E7F9F0', '#00893F') : q.answers.length ? pill('#EAF0FF', '#2c5fff') : pill('#FFF1E0', '#B45300'))}>{q.resolved ? 'Đã giải quyết' : q.answers.length ? 'Chờ chọn đáp án' : 'Chưa có trả lời'}</span></div>
                     <div style={css('display:flex; justify-content:flex-end; gap:7px;')}>
                       <button onClick={() => setQDetailId(q.id)} style={css(btn('plain'))}>Xem</button>
-                      <button onClick={() => setConfirm({ text: `Xoá câu hỏi "${q.title}" cùng toàn bộ câu trả lời?`, run: () => api.deleteQuestion(q.id).then(reloadQuestions).catch(() => {}) })} style={css(btn('reject'))}>Xoá</button>
+                      <button onClick={() => removeQuestion(q, reloadQuestions)} style={css(btn('reject'))}>Xoá</button>
                     </div>
                   </div>
                 ))}
@@ -740,7 +750,7 @@ export default function AdminConsolePage() {
               </div>
               <div style={css('display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
                 <a href={`/questions#q=${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(font(700, 13) + ';color:#2c5fff; text-decoration:none;')}>Mở trang câu hỏi ↗</a>
-                <button onClick={() => setConfirm({ text: `Xoá câu hỏi "${q.title}" cùng toàn bộ câu trả lời?`, run: () => api.deleteQuestion(q.id).then(() => { reloadQuestions(); setQDetailId(null) }).catch(() => {}) })} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá câu hỏi</button>
+                <button onClick={() => removeQuestion(q, () => { reloadQuestions(); setQDetailId(null) })} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá câu hỏi</button>
               </div>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
 import { anonFields, maskAuthor, anonName } from '../anon.js'
+import { removalCheck, notifyRemoval } from '../moderation.js'
 
 const router = express.Router()
 
@@ -68,8 +69,10 @@ const deleteQuestionTx = db.transaction((id) => {
 router.delete('/:id', requireAuth, (req, res) => {
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(req.params.id)
   if (!q) return res.status(404).json({ error: 'not_found' })
-  if (!req.user.is_admin && q.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
+  const block = removalCheck(req, q.author_id)
+  if (block) return res.status(block.status).json({ error: block.error })
   deleteQuestionTx(req.params.id)
+  notifyRemoval(req, { authorId: q.author_id, what: 'câu hỏi', title: qTitle(q), content: q.body })
   res.json({ ok: true })
 })
 
@@ -250,7 +253,6 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
 
 // ---- edit / delete answers and comments (author edits; author or admin deletes) ----
 const canEdit = (req, row) => row && row.author_id === req.user.id
-const canDelete = (req, row) => row && (row.author_id === req.user.id || req.user.is_admin)
 
 export const deleteAnswerTx = db.transaction((answerId) => {
   const a = db.prepare('SELECT * FROM question_answers WHERE id = ?').get(answerId)
@@ -278,8 +280,10 @@ router.patch('/:id/answers/:answerId', requireAuth, (req, res) => {
 router.delete('/:id/answers/:answerId', requireAuth, (req, res) => {
   const a = db.prepare('SELECT * FROM question_answers WHERE id = ? AND question_id = ?').get(req.params.answerId, req.params.id)
   if (!a) return res.status(404).json({ error: 'not_found' })
-  if (!canDelete(req, a)) return res.status(403).json({ error: 'not_owner' })
+  const block = removalCheck(req, a.author_id)
+  if (block) return res.status(block.status).json({ error: block.error })
   deleteAnswerTx(a.id)
+  notifyRemoval(req, { authorId: a.author_id, what: 'câu trả lời', title: '', content: a.body })
   res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 
@@ -302,8 +306,10 @@ router.patch('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, re
 router.delete('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, res) => {
   const c = findComment(req)
   if (!c) return res.status(404).json({ error: 'not_found' })
-  if (!canDelete(req, c)) return res.status(403).json({ error: 'not_owner' })
+  const block = removalCheck(req, c.author_id)
+  if (block) return res.status(block.status).json({ error: block.error })
   deleteCommentTx(c.id)
+  notifyRemoval(req, { authorId: c.author_id, what: 'bình luận', title: '', content: c.body })
   res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import AnonTag from '../components/AnonTag.jsx'
 import AnonToggle from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
+import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
@@ -189,8 +190,8 @@ export default function QuestionsPage() {
     copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
   }
-  const deleteQuestion = (id) => {
-    api.deleteQuestion(id).then(() => {
+  const deleteQuestion = (id, reason) => {
+    api.deleteQuestion(id, reason).then(() => {
       setQuestions((qs) => qs.filter((q) => q.id !== id))
       setConfirmDeleteId(null)
     }).catch(() => setConfirmDeleteId(null))
@@ -221,8 +222,13 @@ export default function QuestionsPage() {
   const isMine = (x) => !!user && x.authorId === user.id
   const saveAnswerEdit = (qId, aId, body) => api.editAnswer(qId, aId, body).then((d) => { patch(qId, d.question); setEditing(null) }).catch(() => {})
   const saveCommentEdit = (qId, aId, cId, body) => api.editAnswerComment(qId, aId, cId, body).then((d) => { patch(qId, d.question); setEditing(null) }).catch(() => {})
-  const askDeleteAnswer = (qId, aId) => cmodals.askDelete(() => api.deleteAnswer(qId, aId).then((d) => patch(qId, d.question)).catch(() => {}))
-  const askDeleteComment = (qId, aId, cId) => cmodals.askDelete(() => api.deleteAnswerComment(qId, aId, cId).then((d) => patch(qId, d.question)).catch(() => {}))
+  // Your own post: the usual confirm. An admin removing someone else's: ask for the reason (sent to the author).
+  const askDeleteAnswer = (qId, aId, mine = true, body = '') => (mine
+    ? cmodals.askDelete(() => api.deleteAnswer(qId, aId).then((d) => patch(qId, d.question)).catch(() => {}))
+    : askRemovalReason({ what: 'câu trả lời', title: body.slice(0, 80) }).then((r) => r && api.deleteAnswer(qId, aId, r).then((d) => patch(qId, d.question)).catch(() => {})))
+  const askDeleteComment = (qId, aId, cId, mine = true, body = '') => (mine
+    ? cmodals.askDelete(() => api.deleteAnswerComment(qId, aId, cId).then((d) => patch(qId, d.question)).catch(() => {}))
+    : askRemovalReason({ what: 'bình luận', title: body.slice(0, 80) }).then((r) => r && api.deleteAnswerComment(qId, aId, cId, r).then((d) => patch(qId, d.question)).catch(() => {})))
   const toggleCommentThread = (cid) => setExpandedCommentThreads((s) => { const n = new Set(s); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
 
   useEffect(() => {
@@ -525,7 +531,7 @@ export default function QuestionsPage() {
                               </button>
                             )}
                             {q.canDelete && (
-                              <button onClick={() => { setConfirmDeleteId(q.id); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
+                              <button onClick={() => { setOpenMenuId(null); if (q.canEdit) setConfirmDeleteId(q.id); else askRemovalReason({ what: 'câu hỏi', title: q.title }).then((r) => r && deleteQuestion(q.id, r)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                                 {t('Xoá bài viết')}
                               </button>
@@ -584,7 +590,7 @@ export default function QuestionsPage() {
                                     {a.team ? <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{a.team}</span> : null}
                                     <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {a.time}{a.edited ? ' · đã sửa' : ''}</span>
                                     <span style={{ flex: 1 }}></span>
-                                    <CommentMenu isOwner={isMine(a)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'answer', id: a.id })} onDelete={() => askDeleteAnswer(q.id, a.id)} onReport={() => cmodals.askReport('answer', a.id)} />
+                                    <CommentMenu isOwner={isMine(a)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'answer', id: a.id })} onDelete={() => askDeleteAnswer(q.id, a.id, isMine(a), a.body)} onReport={() => cmodals.askReport('answer', a.id)} />
                                   </div>
                                   {editing?.kind === 'answer' && editing.id === a.id
                                     ? <InlineEdit initial={a.body} onSave={(b) => saveAnswerEdit(q.id, a.id, b)} onCancel={() => setEditing(null)} />
@@ -625,7 +631,7 @@ export default function QuestionsPage() {
                                                 {c.team ? <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.team}</span> : null}
                                                 <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {c.time}{c.edited ? ' · đã sửa' : ''}</span>
                                                 <span style={{ flex: 1 }}></span>
-                                                <CommentMenu isOwner={isMine(c)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: c.id })} onDelete={() => askDeleteComment(q.id, a.id, c.id)} onReport={() => cmodals.askReport('comment', c.id)} />
+                                                <CommentMenu isOwner={isMine(c)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: c.id })} onDelete={() => askDeleteComment(q.id, a.id, c.id, isMine(c), c.body)} onReport={() => cmodals.askReport('comment', c.id)} />
                                               </div>
                                               {editing?.kind === 'comment' && editing.id === c.id
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
@@ -649,7 +655,7 @@ export default function QuestionsPage() {
                                                   <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span>
                                                   <span style={css('font:400 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {r.time}{r.edited ? ' · đã sửa' : ''}</span>
                                                   <span style={{ flex: 1 }}></span>
-                                                  <CommentMenu isOwner={isMine(r)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: r.id })} onDelete={() => askDeleteComment(q.id, a.id, r.id)} onReport={() => cmodals.askReport('comment', r.id)} />
+                                                  <CommentMenu isOwner={isMine(r)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: r.id })} onDelete={() => askDeleteComment(q.id, a.id, r.id, isMine(r), r.body)} onReport={() => cmodals.askReport('comment', r.id)} />
                                                 </div>
                                                 {editing?.kind === 'comment' && editing.id === r.id
                                                   ? <InlineEdit initial={r.body} onSave={(b) => saveCommentEdit(q.id, a.id, r.id, b)} onCancel={() => setEditing(null)} />

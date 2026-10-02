@@ -28,6 +28,7 @@ import { buildTemplate } from '../data/useCaseTemplate.js'
 import { submissionTpl } from '../data/submissionTpl.js'
 import AnonTag from '../components/AnonTag.jsx'
 import AnonToggle from '../components/AnonToggle.jsx'
+import { askRemovalReason } from '../components/RemovalReason.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
@@ -251,8 +252,8 @@ export default function UseCaseLibraryPage() {
     setOpenMenuId(null)
   }
 
-  const deleteUseCase = (ucId) => {
-    api.deleteUseCase(ucId).then(() => {
+  const deleteUseCase = (ucId, reason) => {
+    api.deleteUseCase(ucId, reason).then(() => {
       loadPublishedUseCases(true)
       if (id === ucId) navigate('/use-cases')
       setUcMeta((m) => { const n = { ...m }; delete n[ucId]; return n })
@@ -623,7 +624,7 @@ export default function UseCaseLibraryPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
                             <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
-                            <CommentMenu isOwner={!!user && c.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(c.id)} onDelete={() => ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} onReport={() => ucModals.askReport('uc_comment', c.id)} />
+                            <CommentMenu isOwner={!!user && c.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(c.id)} onDelete={() => (user && c.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(c.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, c.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', c.id)} />
                           </div>
                           {editingCmt === c.id
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
@@ -645,7 +646,7 @@ export default function UseCaseLibraryPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={css('display:flex; align-items:center; gap:8px;')}>
                               <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
-                              <CommentMenu isOwner={!!user && r.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(r.id)} onDelete={() => ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} onReport={() => ucModals.askReport('uc_comment', r.id)} />
+                              <CommentMenu isOwner={!!user && r.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(r.id)} onDelete={() => (user && r.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(r.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, r.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', r.id)} />
                             </div>
                             {editingCmt === r.id
                               ? <InlineEdit initial={r.body} onSave={(b) => api.editUseCaseComment(dsel.id, r.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
@@ -762,7 +763,7 @@ export default function UseCaseLibraryPage() {
                                 </button>
                               )}
                               {c.canDelete && (
-                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(c.id); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
+                                <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (c.canEdit) setConfirmDeleteId(c.id); else askRemovalReason({ what: 'use case', title: c.title }).then((why) => why && deleteUseCase(c.id, why)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                                   {t('Xoá bài viết')}
                                 </button>

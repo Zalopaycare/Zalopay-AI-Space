@@ -1,3 +1,6 @@
+// DELETE with an optional reason (required when an admin removes someone else's post).
+const delBody = (reason) => (reason ? { method: 'DELETE', body: JSON.stringify({ reason }) } : { method: 'DELETE' })
+
 async function request(path, options = {}) {
   const res = await fetch('/api' + path, {
     credentials: 'include',
@@ -32,7 +35,7 @@ export const api = {
   listUsers: (q) => request('/auth/users?q=' + encodeURIComponent(q || '')),
 
   listQuestions: () => request('/questions'),
-  deleteQuestion: (id) => request(`/questions/${id}`, { method: 'DELETE' }),
+  deleteQuestion: (id, reason) => request(`/questions/${id}`, delBody(reason)),
   updateQuestion: (id, payload) => request(`/questions/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   postQuestion: (payload) => request('/questions', { method: 'POST', body: JSON.stringify(payload) }),
   reactQuestion: (id) => request(`/questions/${id}/react`, { method: 'POST' }),
@@ -41,11 +44,11 @@ export const api = {
   reactAnswer: (id, answerId) => request(`/questions/${id}/answers/${answerId}/react`, { method: 'POST' }),
   acceptAnswer: (id, answerId) => request(`/questions/${id}/answers/${answerId}/accept`, { method: 'POST' }),
   editAnswer: (id, answerId, body) => request(`/questions/${id}/answers/${answerId}`, { method: 'PATCH', body: JSON.stringify({ body }) }),
-  deleteAnswer: (id, answerId) => request(`/questions/${id}/answers/${answerId}`, { method: 'DELETE' }),
+  deleteAnswer: (id, answerId, reason) => request(`/questions/${id}/answers/${answerId}`, delBody(reason)),
   editAnswerComment: (id, answerId, commentId, body) => request(`/questions/${id}/answers/${answerId}/comments/${commentId}`, { method: 'PATCH', body: JSON.stringify({ body }) }),
-  deleteAnswerComment: (id, answerId, commentId) => request(`/questions/${id}/answers/${answerId}/comments/${commentId}`, { method: 'DELETE' }),
+  deleteAnswerComment: (id, answerId, commentId, reason) => request(`/questions/${id}/answers/${answerId}/comments/${commentId}`, delBody(reason)),
   editUseCaseComment: (id, commentId, body) => request(`/use-cases/${id}/comments/${commentId}`, { method: 'PATCH', body: JSON.stringify({ body }) }),
-  deleteUseCaseComment: (id, commentId) => request(`/use-cases/${id}/comments/${commentId}`, { method: 'DELETE' }),
+  deleteUseCaseComment: (id, commentId, reason) => request(`/use-cases/${id}/comments/${commentId}`, delBody(reason)),
   report: (type, id, reason) => request('/reports', { method: 'POST', body: JSON.stringify({ type, id, reason }) }),
   adminReports: () => request('/admin/reports'),
   resolveReport: (id, action) => request(`/admin/reports/${id}/resolve`, { method: 'POST', body: JSON.stringify({ action }) }),
@@ -60,14 +63,14 @@ export const api = {
   toggleApplied: (id) => request(`/use-cases/${id}/applied`, { method: 'POST' }),
   rateUseCase: (id, stars) => request(`/use-cases/${id}/rate`, { method: 'POST', body: JSON.stringify({ stars }) }),
   saveUseCase: (id) => request(`/use-cases/${id}/save`, { method: 'POST' }),
-  deleteUseCase: (id) => request(`/use-cases/${id}`, { method: 'DELETE' }),
+  deleteUseCase: (id, reason) => request(`/use-cases/${id}`, delBody(reason)),
   mySavedUseCaseIds: () => request('/use-cases/saved/mine'),
   commentUseCase: (id, body, parentId, title, extra = {}) => request(`/use-cases/${id}/comments`, { method: 'POST', body: JSON.stringify({ body, parentId: parentId || null, title: title || '', ...extra }) }),
   submitUseCase: (payload) => request('/use-cases/submissions', { method: 'POST', body: JSON.stringify(payload) }),
   listSubmissions: (params = '') => request(`/use-cases/submissions${params}`),
   updateSubmission: (id, payload) => request(`/use-cases/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   reviewSubmission: (id, status, note) => request(`/use-cases/submissions/${id}/review`, { method: 'POST', body: JSON.stringify({ status, note }) }),
-  deleteSubmission: (id) => request(`/use-cases/submissions/${id}`, { method: 'DELETE' }),
+  deleteSubmission: (id, reason) => request(`/use-cases/submissions/${id}`, delBody(reason)),
 }
 
 export function relativeTime(iso) {

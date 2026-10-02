@@ -2,6 +2,7 @@ import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import AnonTag from '../components/AnonTag.jsx'
 import AnonToggle from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
+import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useTitle } from '../hooks/useTitle.js'
@@ -152,13 +153,13 @@ export default function HomePage() {
   }
 
   // confirmDeleteId is either a use case id or 'q:<questionId>'.
-  const confirmDelete = (key) => {
+  const confirmDelete = (key, reason) => {
     const done = () => setConfirmDeleteId(null)
     if (key.startsWith('q:')) {
       const qid = key.slice(2)
-      api.deleteQuestion(qid).then(() => { setQuestions((qs) => qs.filter((x) => x.id !== qid)); done() }).catch(done)
+      api.deleteQuestion(qid, reason).then(() => { setQuestions((qs) => qs.filter((x) => x.id !== qid)); done() }).catch(done)
     } else {
-      api.deleteUseCase(key).then(() => { loadPublishedUseCases(true); done() }).catch(done)
+      api.deleteUseCase(key, reason).then(() => { loadPublishedUseCases(true); done() }).catch(done)
     }
   }
 
@@ -447,7 +448,7 @@ export default function HomePage() {
                             </button>
                           )}
                           {q.canDelete && (
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId('q:' + q.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
+                            <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (q.canEdit) setConfirmDeleteId('q:' + q.id); else askRemovalReason({ what: 'câu hỏi', title: q.title }).then((r) => r && confirmDelete('q:' + q.id, r)) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                               {t('Xoá bài viết')}
                             </button>
@@ -648,7 +649,7 @@ export default function HomePage() {
                             </button>
                           )}
                           {item.canDelete && (
-                            <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(item.id); setOpenMenuId(null) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
+                            <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (item.canEdit) setConfirmDeleteId(item.id); else askRemovalReason({ what: 'use case', title: item.title }).then((r) => r && confirmDelete(item.id, r)) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#D8232A; text-align:left;`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                               {t('Xoá bài viết')}
                             </button>
