@@ -77,7 +77,8 @@ export default function Sidebar({ active }) {
   }, [menuOpen])
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
-  const sub = active === 'profile' ? /#(overview|activity|usecase|question|saved)\b/.exec(hash)?.[1] || 'overview' : null
+  // #usecase / #question are parts of the profile page now, so they light up "Hồ sơ".
+  const sub = active === 'profile' ? ({ usecase: 'overview', question: 'overview' }[/#(overview|activity|usecase|question|saved)\b/.exec(hash)?.[1]] || /#(activity|saved)\b/.exec(hash)?.[1] || 'overview') : null
   const { unread: unreadCount } = useNotifications(!!user)
   const homeActive = active === 'home'
 
@@ -138,12 +139,6 @@ export default function Sidebar({ active }) {
             <SubLink to="/profile#activity" active={sub === 'activity'} icon={
               <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
             }><span style={css('white-space:nowrap;')}>{t('Thông báo')}</span><span style={css(`margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:${unreadCount ? '#FF3B30' : 'rgba(255,255,255,.14)'}; color:#fff; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;`)}>{unreadCount}</span></SubLink>
-            <SubLink to="/profile#usecase" active={sub === 'usecase'} icon={
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
-            }>{t('Use case của tôi')}</SubLink>
-            <SubLink to="/profile#question" active={sub === 'question'} icon={
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"></path><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"></path></svg>
-            }>{t('Câu hỏi của tôi')}</SubLink>
             <SubLink to="/profile#saved" active={sub === 'saved'} icon={
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             }>{t('Đã lưu')}</SubLink>

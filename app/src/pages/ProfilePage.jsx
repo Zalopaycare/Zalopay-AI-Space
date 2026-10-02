@@ -241,7 +241,7 @@ export default function ProfilePage() {
   // ---- shared card mappers ----
   const mapQuestion = (q) => ({
     id: q.id,
-    anonymous: q.anonymous, alias: q.alias, realAuthor: q.realAuthor,
+    anonymous: q.anonymous, alias: q.alias, realAuthor: q.realAuthor, authorId: q.authorId,
     initials: q.initials,
     avatarBg: q.avatarColor || avatarColor(q.author),
     avatarUrl: q.avatarUrl || null,
@@ -397,7 +397,7 @@ export default function ProfilePage() {
         )}
 
         {section === 'overview' && (
-          <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
+          <section style={css('position:relative; padding:18px var(--zp-gutter) 20px;')}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
               <ProfileCard user={user} setUser={setUser} />
               <div className="zp-profile-stats">
@@ -410,7 +410,7 @@ export default function ProfilePage() {
                     <div style={css(`font:700 13px ${FONT}; color:#64748b;`)}>{t(label)}</div>
                     <div style={css(`margin-top:4px; font:800 34px/1.1 ${FONT}; color:#0F172A;`)}>{loaded ? n : '…'}</div>
                     <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{loaded ? sub : ''}</div>
-                    <button onClick={() => navigate('/profile#' + key)} className={hoverClass('gap:9px !important;')} style={css(`margin-top:12px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .15s;`)}>
+                    <button onClick={() => (key === 'saved' ? navigate('/profile#saved') : document.getElementById(key === 'usecase' ? 'my-usecases' : 'my-questions')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className={hoverClass('gap:9px !important;')} style={css(`margin-top:12px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .15s;`)}>
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
@@ -478,9 +478,11 @@ export default function ProfilePage() {
         )}
 
 
-        {section === 'usecase' && (
-          <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
+        {/* "Use case của tôi" and "Câu hỏi của tôi" live on the profile page itself (and still on their own #hash views). */}
+        {(section === 'usecase' || section === 'overview') && (
+          <section style={css(`position:relative; padding:${section === 'overview' ? '10px var(--zp-gutter) 12px' : '18px var(--zp-gutter) 40px'};`)}>
             <div style={css('max-width:760px; margin:0 auto;')}>
+              {section === 'overview' && <h2 id="my-usecases" style={css(`scroll-margin-top:80px; margin:0 0 12px; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Use case của tôi')}</h2>}
               <StatusTabs tabs={ucTabs} active={activeUcTab.key} onPick={setUcTab} />
               <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
                 {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
@@ -499,9 +501,10 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {section === 'question' && (
-          <section style={css('position:relative; padding:18px var(--zp-gutter) 40px;')}>
+        {(section === 'question' || section === 'overview') && (
+          <section style={css(`position:relative; padding:${section === 'overview' ? '22px var(--zp-gutter) 40px' : '18px var(--zp-gutter) 40px'};`)}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
+              {section === 'overview' && <h2 id="my-questions" style={css(`scroll-margin-top:80px; margin:0; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Câu hỏi của tôi')}</h2>}
               {myQuestionCards.length > 0 && <div style={{ marginBottom: 2 }}><StatusTabs tabs={qTabs} active={activeQTab.key} onPick={setQTab} /></div>}
               {draftItem.map((r) => (
                 <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
