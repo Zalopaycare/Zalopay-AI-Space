@@ -9,7 +9,7 @@ import logo from '../assets/zalopay-ai-space-logo.png'
 const NAV_ITEMS = [
   { label: 'Home', to: '/', match: (p) => p === '/' },
   { label: 'Use Case', to: '/use-cases', match: (p) => p.startsWith('/use-cases') },
-  { label: 'Câu hỏi', to: '/questions', match: (p) => p.startsWith('/questions') },
+  { label: 'AI Questions', to: '/questions', match: (p) => p.startsWith('/questions') },
 ]
 
 const navItemBase = 'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:999px;transition:color .15s, background .15s, box-shadow .15s;border:1px solid transparent;text-decoration:none;white-space:nowrap;'

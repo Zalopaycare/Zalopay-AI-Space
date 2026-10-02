@@ -48,7 +48,7 @@ const insertMention = (v, handle) => v.replace(/@([\p{L}\w.-]*)$/u, '@' + handle
 const renderBody = renderMentions
 
 export default function QuestionsPage() {
-  useTitle('Câu hỏi')
+  useTitle('AI Questions')
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
   const navigate = useNavigate()
@@ -471,9 +471,7 @@ export default function QuestionsPage() {
 
 
 
-  const quickFilters = [['all', 'Tất cả'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời']].map(([k, label]) => ({
-    label: t(label), ...chip(quick === k), onPick: () => setQuick(k),
-  }))
+  const QUICK = [['all', 'Tất cả trạng thái'], ['waiting', 'Chờ trả lời'], ['resolved', 'Đã trả lời']]
   const isEmpty = feed.length === 0
   const emptyTitle = qs || quick !== 'all' ? 'Không có câu hỏi khớp bộ lọc' : 'Chưa có câu hỏi nào'
   const emptyHint = qs || quick !== 'all' ? 'Thử đổi từ khóa hoặc bỏ bộ lọc.' : 'Câu hỏi đầu tiên sẽ mở đầu cho cả thread thảo luận.'
@@ -484,7 +482,7 @@ export default function QuestionsPage() {
 
   // One question card; inModal adds the full comment thread (the popup opened by clicking a card).
   const renderQCard = (q, inModal) => (
-                  <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : 'zp-card zp-card-q ' + hoverClass('transform:translateY(-3px); border-color:rgba(168,85,247,.75); box-shadow:0 0 0 1px rgba(168,85,247,.18), 0 0 22px rgba(168,85,247,.34), 0 22px 48px rgba(0,0,0,.36);')} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`background:#ffffff; border-radius:20px; ${inModal ? 'border:1px solid #E6EBF3;' : 'border:1px solid rgba(168,85,247,.45); box-shadow:0 0 0 1px rgba(168,85,247,.10), 0 0 16px rgba(168,85,247,.22), 0 14px 36px rgba(0,0,0,.28); cursor:pointer; transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;'} overflow:hidden;`)}>
+                  <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : 'zp-card zp-card-q ' + hoverClass('transform:translateY(-3px); border-color:rgba(168,85,247,.75); box-shadow:0 0 0 1px rgba(168,85,247,.18), 0 0 22px rgba(168,85,247,.34), 0 22px 48px rgba(0,0,0,.36);')} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`background:#ffffff; border-radius:20px; ${inModal ? 'border:1px solid #E6EBF3;' : 'border:1px solid rgba(168,85,247,.45); box-shadow:0 0 0 1px rgba(168,85,247,.10), 0 0 16px rgba(168,85,247,.22), 0 14px 36px rgba(0,0,0,.28); cursor:pointer; transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;'} overflow:${openMenuId === q.id ? 'visible' : 'hidden'};`)}>
                     <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
                       <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
@@ -511,7 +509,7 @@ export default function QuestionsPage() {
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
                         </button>
                         {openMenuId === q.id && (
-                          <div onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
+                          <div role="menu" onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
                             <button onClick={() => copyLink(q.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                               {t('Sao chép link')}
@@ -753,27 +751,29 @@ export default function QuestionsPage() {
         <div>
           <div style={css('position:relative; background:transparent; padding:22px var(--zp-gutter) 0;')}>
             <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
-              <h1 style={css('margin:0; text-align:center; font:800 50px/1.06 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('Câu hỏi')}</h1>
+              <h1 style={css('margin:0; text-align:center; font:800 50px/1.06 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('AI Questions')}</h1>
               <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Hỏi nhanh đáp gọn tất tần tật những câu hỏi về AI.')}</p>
             </div>
           </div>
 
           <PageActionBar prompt="Bạn đang vướng ở đâu với AI?" cta="Đặt câu hỏi" onCompose={() => setView('ask')} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, tác giả, công cụ..." filters={
+            <>
+            <FilterPill
+              label={t((QUICK.find(([k]) => k === quick) || QUICK[0])[1])}
+              active={quick !== 'all'} onClear={() => setQuick('all')}
+              name="qstatus" openDrop={openDrop} setOpenDrop={setOpenDrop} width={190}
+              options={QUICK.map(([k, l]) => ({ label: t(l), active: quick === k, onClick: () => { setQuick(k); setOpenDrop(null) } }))}
+            />
             <FilterPill
               label={t(sort === 'top' ? 'Nổi bật' : 'Mới nhất')}
               name="qsort" openDrop={openDrop} setOpenDrop={setOpenDrop} width={180} align="right"
               options={[['latest', 'Mới nhất'], ['top', 'Nổi bật']].map(([k, l]) => ({ label: t(l), active: sort === k, onClick: () => { setSort(k); setOpenDrop(null) } }))}
             />
+            </>
           } />
           <div style={css('padding:16px var(--zp-gutter) 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              <div style={css('display:flex; align-items:center; gap:8px; margin-top:0; flex-wrap:wrap;')}>
-                {quickFilters.map((f) => (
-                  <button key={f.label} onClick={f.onPick} style={css(`height:32px; padding:0 14px; white-space:nowrap; border:1px solid ${f.border}; border-radius:999px; background:${f.bg}; color:${f.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{f.label}</button>
-                ))}
-              </div>
-
-              <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:14px;')}>
+              <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:0;')}>
                 {feed.map((q) => renderQCard(q, false))}
 
                 {isEmpty && (

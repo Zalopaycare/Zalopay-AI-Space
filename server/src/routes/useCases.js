@@ -304,9 +304,9 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
     const link = `${appUrl(req)}${status === 'approved' ? `/use-cases/${encodeURIComponent(row.id)}` : '/profile#usecase'}`
     const msg = {
       approved: {
-        n: { kind: 'approved', text: `Use case "${row.title}" của bạn đã được duyệt và đăng lên Thư viện${note ? ` — Admin: ${note}` : ''}`, href: `/use-cases/${encodeURIComponent(row.id)}` },
+        n: { kind: 'approved', text: `Use case "${row.title}" của bạn đã được duyệt và đăng lên Use Case Library${note ? ` — Admin: ${note}` : ''}`, href: `/use-cases/${encodeURIComponent(row.id)}` },
         subject: 'Use case của bạn đã được duyệt',
-        text: `Chúc mừng! Use case "${row.title}" đã được duyệt và hiển thị trong Thư viện Use Case.${note ? `\n\nLời nhắn của Admin: ${note}` : ''}\n\nXem tại: ${link}`,
+        text: `Chúc mừng! Use case "${row.title}" đã được duyệt và hiển thị trong Use Case Library.${note ? `\n\nLời nhắn của Admin: ${note}` : ''}\n\nXem tại: ${link}`,
       },
       rejected: {
         n: { kind: 'rejected', text: `Use case "${row.title}" của bạn bị từ chối: ${note}`, href: '/profile#usecase' },

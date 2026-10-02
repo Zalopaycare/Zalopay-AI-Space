@@ -291,7 +291,7 @@ export default function ProfilePage() {
   const activeQTab = qTabs.find((x) => x.key === qTab) || qTabs.find((x) => x.key !== 'all' && x.count > 0) || qTabs[qTabs.length - 1]
 
   // ---- use case board (status columns, always in this order) ----
-  const ucCta = (c) => ({ changes_requested: t('Chỉnh sửa & gửi lại'), rejected: t('Gửi use case mới'), draft: t('Tiếp tục'), approved: t('Xem trong Thư viện') })[c.reviewStatus] || t('Xem use case')
+  const ucCta = (c) => ({ changes_requested: t('Chỉnh sửa & gửi lại'), rejected: t('Gửi use case mới'), draft: t('Tiếp tục'), approved: t('Xem trong Use Case Library') })[c.reviewStatus] || t('Xem use case')
   const ucHref = (c) => ({ changes_requested: `/use-cases?edit=${encodeURIComponent(c.id)}`, rejected: '/use-cases?share=1', draft: '/use-cases?share=1', approved: `/use-cases/${encodeURIComponent(c.id)}` })[c.reviewStatus] || '/profile#usecase'
   const ucPosts = myUseCases.map((c) => {
     const st = UC_STATUS[c.reviewStatus] || UC_STATUS.pending

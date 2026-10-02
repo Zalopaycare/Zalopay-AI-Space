@@ -201,3 +201,6 @@ html.zp-vt .zp-page-in { animation: none; }
 @media (max-width: 640px) {
   .zp-profile-stats, .zp-profile-fields { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* A card whose ⋯ menu is open sits above its neighbours, so the menu is never hidden under the next card. */
+.zp-card:has([role="menu"]) { z-index: 40; }

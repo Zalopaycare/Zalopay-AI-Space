@@ -100,9 +100,9 @@ export default function Sidebar({ active }) {
             <NavLink to="/use-cases" active={active === 'usecase'} collapsed={false} title={t('Use Case')} icon={
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
             }>{t('Use Case')}</NavLink>
-            <NavLink to="/questions" active={active === 'question'} collapsed={false} title={t('Câu hỏi')} icon={
+            <NavLink to="/questions" active={active === 'question'} collapsed={false} title={t('AI Questions')} icon={
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
-            }>{t('Câu hỏi')}</NavLink>
+            }>{t('AI Questions')}</NavLink>
           </>
         )}
       </nav>

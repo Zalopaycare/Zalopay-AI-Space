@@ -65,7 +65,7 @@ export default function UseCaseLibraryPage() {
   const { id } = useParams()
   const { version: pubV, loaded: pubLoaded } = usePublishedUseCases()
   useScrollReturn(!id && pubLoaded ? pubV + 1 : false) // back from a use case -> same place in the list
-  useTitle(id ? (allCases.find((x) => x.id === id) || {}).title || 'Use case' : 'Thư viện Use Case')
+  useTitle(id ? (allCases.find((x) => x.id === id) || {}).title || 'Use case' : 'Use Case Library')
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useI18n()
@@ -442,7 +442,7 @@ export default function UseCaseLibraryPage() {
   // [key, label, required, hint, placeholder, input|area, rows, step]
   const fieldDefs = [
     ['title', 'Tên use case', 'Required', 'Một câu ngắn gọn nói rõ use case làm được gì.', 'Ví dụ: Tóm tắt phản hồi khách hàng theo tuần', 'input', 0, 'intro'],
-    ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Thư viện: ai dùng, làm được gì.', 'Ví dụ: Giúp team CS gom và tóm tắt phản hồi của cả tuần trong 30 phút.', 'input', 0, 'intro'],
+    ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai dùng, làm được gì.', 'Ví dụ: Giúp team CS gom và tóm tắt phản hồi của cả tuần trong 30 phút.', 'input', 0, 'intro'],
     ['audience', 'Dành cho ai', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Ví dụ: QC / QE, team mobile', 'input', 0, 'intro'],
     ['team', 'Team / Nhóm', 'Required', 'Nhóm đang làm use case, để người đọc biết hỏi ai.', 'Ví dụ: Product Ops', 'input', 0, 'intro'],
     ['problem', 'Bài toán', 'Required', 'Vấn đề bạn gặp và bối cảnh công việc, trước khi có AI.', 'Mỗi tuần cần đọc hàng trăm phản hồi từ khảo sát và ticket...', 'area', 4, 'ps'],
@@ -512,7 +512,7 @@ export default function UseCaseLibraryPage() {
       <div style={css('min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px var(--zp-gutter); text-align:center; color:#fff;')}>
         <div style={css('font-size:26px; font-weight:800;')}>{t('Không tìm thấy use case')}</div>
         <div style={css('max-width:460px; font-size:14.5px; line-height:1.6; color:#a9b8dc;')}>{t('Link này không còn đúng: use case có thể đã bị xoá, chưa được duyệt, hoặc địa chỉ bị gõ sai.')}</div>
-        <button onClick={() => navigate('/use-cases')} style={css('margin-top:6px; height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;')}>{t('Về Thư viện use case')}</button>
+        <button onClick={() => navigate('/use-cases')} style={css('margin-top:6px; height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;')}>{t('Về Use Case Library')}</button>
       </div>
     )
     const dinfo = authorInfoFor(dsel.author)
@@ -700,7 +700,7 @@ export default function UseCaseLibraryPage() {
         <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
           <SpaceBackdrop arcTop={190} />
           <div style={css('position:relative; z-index:4; padding:22px var(--zp-gutter) 0;')}>
-            <h1 style={css('margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:50px; line-height:1.06; font-weight:800; letter-spacing:-1px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Thư viện Use Case')}</h1>
+            <h1 style={css('margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:50px; line-height:1.06; font-weight:800; letter-spacing:-1px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Use Case Library')}</h1>
             <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Tổng hợp các cách và tips Zalopay Starter áp dụng AI vào công việc.')}</p>
           </div>
           <PageActionBar ref={searchInputRef} prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, dữ liệu..." filters={libFilters} />
@@ -837,8 +837,8 @@ export default function UseCaseLibraryPage() {
     // Editing a published use case saves in place; editing one under review resubmits it.
     const liveEdit = editing?.status === 'approved'
     const shareHeading = shareStage === 'submitted' ? (liveEdit ? 'Đã lưu thay đổi' : editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Xem trước use case' : liveEdit ? 'Chỉnh sửa use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
-    const shareSubhead = shareStage === 'submitted' ? (liveEdit ? 'Use case đã được cập nhật trong Thư viện.' : 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.') : liveEdit ? 'Thay đổi được cập nhật ngay trong Thư viện.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
-    const shareHint = shareError || (liveEdit ? 'Bài vẫn hiển thị trong Thư viện sau khi lưu.' : 'Sau khi gửi, bài ở trạng thái Chờ duyệt và chưa hiển thị trong Thư viện.')
+    const shareSubhead = shareStage === 'submitted' ? (liveEdit ? 'Use case đã được cập nhật trong Use Case Library.' : 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.') : liveEdit ? 'Thay đổi được cập nhật ngay trong Use Case Library.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
+    const shareHint = shareError || (liveEdit ? 'Bài vẫn hiển thị trong Use Case Library sau khi lưu.' : 'Sau khi gửi, bài ở trạng thái Chờ duyệt và chưa hiển thị trong Use Case Library.')
     const shareHintColor = shareError ? '#D8232A' : '#94a3b8'
 
     return (

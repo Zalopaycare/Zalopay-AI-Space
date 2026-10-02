@@ -32,7 +32,7 @@ const fmtDate = (t) => { const d = toDate(t); return isNaN(d) ? '—' : d.toLoca
 const cleanName = (n) => String(n || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^([^\s.]+)\.\s+/, '$1 ').trim()
 const fmtDay = (d) => (d ? d.split('-').reverse().join('/') : '—') // "2026-09-30" -> "30/09/2026"
 // "/use-cases/c7" -> "Đang xem use case: Chuẩn bị pentest…" for the online list.
-const PAGE_NAMES = { '/': 'Trang chủ', '/use-cases': 'Thư viện use case', '/questions': 'Câu hỏi', '/profile': 'Trang cá nhân', '/admin': 'Trang Admin' }
+const PAGE_NAMES = { '/': 'Trang chủ', '/use-cases': 'Use Case Library', '/questions': 'AI Questions', '/profile': 'Trang cá nhân', '/admin': 'Trang Admin' }
 const agoLabel = (now, at) => { const m = Math.max(0, Math.round((now - at) / 60_000)); return m < 1 ? 'vừa xong' : m < 60 ? `${m} phút trước` : `${Math.floor(m / 60)} giờ trước` }
 const clamp2 = 'display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;'
 const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
@@ -791,7 +791,7 @@ export default function AdminConsolePage() {
       {review && (() => {
         const target = submissions.find((x) => x.id === review.id) || {}
         const cfg = {
-          approved: { title: 'Duyệt & đăng use case này?', desc: 'Use case sẽ hiện ngay trong Thư viện và ở Home. Người gửi nhận email + thông báo.', label: 'Lời nhắn cho người gửi', required: false, placeholder: 'Không bắt buộc, ví dụ: Cảm ơn bạn, use case rất hữu ích!', cta: 'Duyệt & đăng', color: '#00A352' },
+          approved: { title: 'Duyệt & đăng use case này?', desc: 'Use case sẽ hiện ngay trong Use Case Library và ở Home. Người gửi nhận email + thông báo.', label: 'Lời nhắn cho người gửi', required: false, placeholder: 'Không bắt buộc, ví dụ: Cảm ơn bạn, use case rất hữu ích!', cta: 'Duyệt & đăng', color: '#00A352' },
           changes_requested: { title: 'Yêu cầu chỉnh sửa / bổ sung', desc: 'Người gửi nhận email + thông báo kèm ghi chú này, sửa ngay trên bài cũ rồi gửi lại để bạn duyệt.', label: 'Use case còn thiếu gì, cần bổ sung gì?', required: true, placeholder: 'Ví dụ: Bổ sung prompt mẫu đầy đủ, ghi rõ kết quả đo được (tiết kiệm bao nhiêu thời gian), thêm người liên hệ...', cta: 'Gửi yêu cầu chỉnh sửa', color: '#D98200' },
           rejected: { title: 'Từ chối use case này?', desc: 'Use case sẽ không được đăng. Người gửi nhận email + thông báo kèm lý do.', label: 'Lý do từ chối', required: true, placeholder: 'Nêu rõ lý do, ví dụ: trùng với use case đã có, chứa thông tin nội bộ nhạy cảm...', cta: 'Từ chối & gửi lý do', color: '#D8232A' },
         }[review.action]
