@@ -22,7 +22,7 @@ export default function AnonToggle({ on, onChange: setOn, alias, onAlias, label 
           value={alias}
           onChange={(e) => onAlias(e.target.value)}
           maxLength={40}
-          placeholder="Tên hiển thị (để trống = Ẩn danh)"
+          placeholder="Tên hiển thị (để trống = Anonymous)"
           aria-label="Tên hiển thị khi ẩn danh"
           style={css('height:30px; min-width:0; width:220px; max-width:100%; padding:0 10px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none; box-sizing:border-box;')}
         />

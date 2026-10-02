@@ -184,7 +184,7 @@ export default function UseCaseLibraryPage() {
       const ex = s.extra || {}
       setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' })
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
-      setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && s.alias !== 'Ẩn danh' ? s.alias : '')
+      setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && s.alias !== 'Anonymous' ? s.alias : '')
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       setShareCategory([].concat(s.category || []))
       const known = (list, all) => list.filter((x) => all.includes(x))
@@ -497,9 +497,9 @@ export default function UseCaseLibraryPage() {
     const sub = {
       title: previewTitle, audience: shareForm.audience, team: shareForm.team, problem: shareForm.problem, solution: shareForm.solution,
       prep: shareForm.prep, prompt: shareForm.prompt, result: shareForm.result, limits: shareForm.limits, contact: shareForm.contact, link: shareForm.link,
-      status: shareStatus, level: shareLevel, author: shareAnon ? (shareAlias.trim() || 'Ẩn danh') : user?.name || '', team: shareAnon ? '' : shareForm.team, extra: shareExtra(),
+      status: shareStatus, level: shareLevel, author: shareAnon ? (shareAlias.trim() || 'Anonymous') : user?.name || '', team: shareAnon ? '' : shareForm.team, extra: shareExtra(),
     }
-    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, author: shareAnon ? (shareAlias.trim() || 'Ẩn danh') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon, alias: shareAlias.trim() || 'Ẩn danh', realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
+    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, author: shareAnon ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
     const tp = buildTemplate(c, { tpl: submissionTpl(sub) }, { name: user?.name || '', role: shareForm.team })
     return { c, tp, layout: detailLayout(tp, t) }
   }

@@ -220,8 +220,6 @@ export default function AdminConsolePage() {
   const openReports = reports.filter((r) => r.status === 'open')
   const staleUnanswered = unanswered.filter((q) => ageDays(q.time) >= 2)
   // Waiting for the asker to pick an answer for more than 3 days, counted from the first answer.
-  const firstAnswerAge = (q) => ageDays(q.answers.reduce((m, a) => (toDate(a.time) < toDate(m) ? a.time : m), q.answers[0].time))
-  const waitingOld = questions.filter((q) => q.answers.length && !q.resolved && firstAnswerAge(q) > 3)
   const oldestPending = pending.reduce((m, s) => Math.max(m, ageDays(s.time)), 0)
   const todos = [
     { n: openReports.length, color: '#D8232A', title: 'comment bị báo cáo', hint: 'Xem và xoá nội dung vi phạm hoặc bỏ qua.', cta: 'Xử lý báo cáo', go: () => { setSection('reports'); setRepStatus('open') } },
@@ -248,7 +246,7 @@ export default function AdminConsolePage() {
 
   // ---- questions ----
   const qq = fold(qQuery.trim())
-  const qRows = questions.filter((q) => (qStatus === 'all' || (qStatus === 'waiting_old' ? waitingOld.includes(q) : qStatus === 'resolved' ? q.resolved : qStatus === 'unanswered' ? !q.answers.length : !!q.answers.length && !q.resolved)) && (!qq || fold(q.title + ' ' + q.body + ' ' + q.author + ' ' + (q.fullName || '')).includes(qq)))
+  const qRows = questions.filter((q) => (qStatus === 'all' || (qStatus === 'resolved' ? q.resolved : qStatus === 'unanswered' ? !q.answers.length : !!q.answers.length && !q.resolved)) && (!qq || fold(q.title + ' ' + q.body + ' ' + q.author + ' ' + (q.fullName || '')).includes(qq)))
   const helpful = (q) => (q.qHelpful || 0) + q.answers.reduce((n, a) => n + (a.helpful || 0), 0)
 
   // ---- users ----
@@ -571,7 +569,7 @@ export default function AdminConsolePage() {
               <Heading title="Câu hỏi" sub="Câu hỏi được đăng trực tiếp. Admin có thể xem và xoá bài không phù hợp." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={qQuery} onChange={setQQuery} placeholder="Tìm theo nội dung hoặc tác giả..." />
-                <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['waiting', 'Chờ chọn đáp án', questions.filter((q) => q.answers.length && !q.resolved).length], ['waiting_old', 'Chờ chọn đáp án > 3 ngày', waitingOld.length], ['resolved', 'Đã giải quyết', questions.filter((q) => q.resolved).length]]} />
+                <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['waiting', 'Chờ chọn đáp án', questions.filter((q) => q.answers.length && !q.resolved).length], ['resolved', 'Đã giải quyết', questions.filter((q) => q.resolved).length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
                 <div style={headRow(Q_COLS)}><span>CÂU HỎI</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>UPVOTE</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>

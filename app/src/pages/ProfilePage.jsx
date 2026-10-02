@@ -662,7 +662,7 @@ function ProfileCard({ user, setUser }) {
         {field(t('Phòng ban / Team'), '', team, setTeam, 'Ví dụ: Zalopay HR', 60)}
       </div>
       <div style={{ marginTop: 14 }}>
-        {field(t('Tên hiển thị khi ẩn danh'), t('Tự điền mỗi khi bạn bật "Đăng ẩn danh". Để trống thì hiện "Ẩn danh". Admin vẫn biết bạn là ai.'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
+        {field(t('Tên hiển thị khi ẩn danh'), t('Tự điền mỗi khi bạn bật "Đăng ẩn danh". Để trống thì hiện "Anonymous". Admin vẫn biết bạn là ai.'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
       </div>
       <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
         <button onClick={save} disabled={!dirty || state === 'saving'} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:${dirty ? 'pointer' : 'default'}; opacity:${dirty && state !== 'saving' ? 1 : 0.5};`)}>{state === 'saving' ? t('Đang lưu...') : t('Lưu thay đổi')}</button>

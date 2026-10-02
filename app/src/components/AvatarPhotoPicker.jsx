@@ -75,6 +75,21 @@ export default function AvatarPhotoPicker({ size = 40, bare = false }) {
   }
 
   if (!user) return null
+  // Profile page: the photo with the upload button (camera icon) right under it.
+  if (bare) return (
+    <div style={css('display:flex; flex-direction:column; align-items:center; gap:8px; flex:none;')}>
+      <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} title={t('Đổi ảnh đại diện')} aria-label={t('Đổi ảnh đại diện')} style={css('padding:0; border:none; background:none; border-radius:50%; cursor:pointer;')}>
+        <Avatar user={user} size={size} fontSize={Math.round(size * 0.35)} />
+      </button>
+      <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className={hoverClass('background:#EEF3FF !important;')} style={css(`display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; cursor:pointer; font:700 12.5px "Be Vietnam Pro",sans-serif; color:#2c5fff; white-space:nowrap; ${busy ? 'opacity:.6; cursor:default;' : ''}`)}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7.5 6.5H5A2 2 0 0 0 3 8.5v9A2 2 0 0 0 5 19.5h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2.5z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+        {busy ? t('Đang lưu...') : user.avatarUrl ? t('Đổi ảnh') : t('Tải ảnh lên')}
+      </button>
+      {user.avatarUrl && <button type="button" disabled={busy} onClick={onRemove} style={css('padding:0; border:none; background:none; cursor:pointer; font:600 12px "Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Bỏ ảnh')}</button>}
+      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile} style={{ display: 'none' }} />
+      {error && <div role="alert" style={css('max-width:180px; text-align:center; font:600 12px "Be Vietnam Pro",sans-serif; color:#D8232A;')}>{error}</div>}
+    </div>
+  )
   return (
     <div style={css(bare ? '' : 'padding:8px 6px 8px; margin-bottom:4px; border-bottom:1px solid #EEF1F7;')}>
       <div style={css(`display:flex; align-items:center; gap:${bare ? 16 : 10}px;`)}>

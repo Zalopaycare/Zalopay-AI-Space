@@ -11,11 +11,12 @@ export function anonFields(body) {
   return { anonymous, alias: alias || null }
 }
 
-export const anonName = (row) => (row && row.alias && String(row.alias).trim()) || 'Ẩn danh'
+export const ANON_DEFAULT = 'Anonymous'
+export const anonName = (row) => (row && row.alias && String(row.alias).trim()) || ANON_DEFAULT
 
 const lettersOf = (name) => {
   const w = String(name).split(/\s+/).filter((x) => /^[\p{L}\p{N}]/u.test(x))
-  if (!w.length) return 'AD'
+  if (!w.length) return 'AN'
   return (w.length === 1 ? w[0].slice(0, 2) : w[0][0] + w[w.length - 1][0]).toUpperCase()
 }
 
@@ -26,8 +27,11 @@ const lettersOf = (name) => {
 export function maskAuthor(brief, row, viewer) {
   if (!row || !row.anonymous) return brief
   const name = anonName(row)
-  if (viewer && (viewer.is_admin || viewer.id === row.author_id)) return { ...brief, anonymous: true, alias: name, realAuthor: brief.author }
-  return { ...brief, author: name, fullName: name, initials: lettersOf(name), team: '', authorId: null, avatarColor: ANON_COLOR, avatarUrl: null, anonymous: true, alias: name }
+  // Everyone sees the alias in the author's place. The author and admins also get the real name
+  // (realAuthor) and keep the id, so they can edit/moderate and admins know who posted.
+  const masked = { ...brief, author: name, fullName: name, initials: lettersOf(name), team: '', avatarColor: ANON_COLOR, avatarUrl: null, anonymous: true, alias: name }
+  if (viewer && (viewer.is_admin || viewer.id === row.author_id)) return { ...masked, realAuthor: brief.author }
+  return { ...masked, authorId: null }
 }
 
 /** The name to show in notifications/emails about a post: the alias when it was posted anonymously. */
