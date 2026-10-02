@@ -216,7 +216,9 @@ export default function HomePage() {
       onLike: (e) => { e.stopPropagation(); requireLogin(() => api.reactQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
       onOpen: () => setOpenQ(q.id),
       onSave: (e) => { e.stopPropagation(); requireLogin(() => api.saveQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
-      canDelete: !!user && q.authorId === user.id,
+      canEdit: !!user && q.authorId === user.id,
+      // Admins can remove any question (the server allows it); only the author can edit.
+      canDelete: !!user && (q.authorId === user.id || !!user.isAdmin),
     }))
 
   // ---- question detail modal ----
@@ -438,7 +440,7 @@ export default function HomePage() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saved ? '#00A352' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                             {q.saved ? t('Bỏ lưu') : t('Lưu câu hỏi')}
                           </button>
-                          {q.canDelete && (
+                          {q.canEdit && (
                             <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); navigate('/questions#edit=' + encodeURIComponent(q.id)) }} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
                               {t('Chỉnh sửa')}
@@ -691,7 +693,7 @@ export default function HomePage() {
             <div style={css('width:52px; height:52px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
             </div>
-            <div style={css(`margin-top:16px; font:800 16px ${FONT}; color:#0F172A;`)}>{t('Bạn muốn xóa vĩnh viễn bài viết này?')}</div>
+            <div style={css(`margin-top:16px; font:800 16px ${FONT}; color:#0F172A;`)}>{t('Bạn muốn xoá vĩnh viễn bài viết này?')}</div>
             <div style={css(`margin-top:8px; font:400 13.5px/1.5 ${FONT}; color:#64748b;`)}>{t('Hành động này không thể hoàn tác.')}</div>
             <div style={css('display:flex; gap:10px; margin-top:22px;')}>
               <button onClick={() => setConfirmDeleteId(null)} style={css(`flex:1; height:44px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px ${FONT}; cursor:pointer;`)}>{t('Quay lại')}</button>
