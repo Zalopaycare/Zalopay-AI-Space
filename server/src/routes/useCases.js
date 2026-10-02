@@ -1,6 +1,6 @@
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { anonFields, maskAuthor } from '../anon.js'
-import { removalCheck, notifyRemoval } from '../moderation.js'
+import { removalCheck, afterRemoval } from '../moderation.js'
 import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
@@ -96,7 +96,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM use_case_saves WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_ratings WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_submissions WHERE id = ?').run(id)
-  notifyRemoval(req, { authorId: row.author_id, what: 'use case', title: row.title, content: row.problem })
+  afterRemoval(req, { authorId: row.author_id, what: 'use case', title: row.title, content: row.problem })
   res.json({ ok: true })
 })
 
@@ -291,7 +291,7 @@ router.delete('/submissions/:id', requireAuth, (req, res) => {
   const block = removalCheck(req, row.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   db.prepare('DELETE FROM use_case_submissions WHERE id = ?').run(req.params.id)
-  notifyRemoval(req, { authorId: row.author_id, what: 'use case', title: row.title, content: row.problem })
+  afterRemoval(req, { authorId: row.author_id, what: 'use case', title: row.title, content: row.problem })
   res.json({ ok: true })
 })
 
@@ -354,7 +354,7 @@ router.delete('/:id/comments/:commentId', requireAuth, (req, res) => {
   const block = removalCheck(req, c.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   deleteUseCaseCommentTx(c.id)
-  notifyRemoval(req, { authorId: c.author_id, what: 'bình luận', title: '', content: c.body })
+  afterRemoval(req, { authorId: c.author_id, what: 'bình luận', title: '', content: c.body })
   res.json({ ok: true })
 })
 

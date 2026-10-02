@@ -6,7 +6,7 @@ import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
 import { anonFields, maskAuthor, anonName } from '../anon.js'
-import { removalCheck, notifyRemoval } from '../moderation.js'
+import { removalCheck, afterRemoval } from '../moderation.js'
 
 const router = express.Router()
 
@@ -72,7 +72,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   const block = removalCheck(req, q.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   deleteQuestionTx(req.params.id)
-  notifyRemoval(req, { authorId: q.author_id, what: 'câu hỏi', title: qTitle(q), content: q.body })
+  afterRemoval(req, { authorId: q.author_id, what: 'câu hỏi', title: qTitle(q), content: q.body })
   res.json({ ok: true })
 })
 
@@ -283,7 +283,7 @@ router.delete('/:id/answers/:answerId', requireAuth, (req, res) => {
   const block = removalCheck(req, a.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   deleteAnswerTx(a.id)
-  notifyRemoval(req, { authorId: a.author_id, what: 'câu trả lời', title: '', content: a.body })
+  afterRemoval(req, { authorId: a.author_id, what: 'câu trả lời', title: '', content: a.body })
   res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 
@@ -309,7 +309,7 @@ router.delete('/:id/answers/:answerId/comments/:commentId', requireAuth, (req, r
   const block = removalCheck(req, c.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   deleteCommentTx(c.id)
-  notifyRemoval(req, { authorId: c.author_id, what: 'bình luận', title: '', content: c.body })
+  afterRemoval(req, { authorId: c.author_id, what: 'bình luận', title: '', content: c.body })
   res.json({ question: loadQuestion(req.params.id, req.user) })
 })
 

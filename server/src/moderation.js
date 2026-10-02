@@ -3,7 +3,7 @@
 import { db } from './db.js'
 import { notify } from './notifications.js'
 import { sendMail } from './mailer.js'
-import { appUrl } from './mentions.js'
+import { appUrl, domainName } from './mentions.js'
 
 const excerptOf = (text) => { const t = String(text || '').replace(/\s+/g, ' ').trim(); return t.length > 300 ? t.slice(0, 300) + '…' : t }
 
@@ -32,4 +32,24 @@ export function notifyRemoval(req, { authorId, what, title, content }) {
     subject: `Nội dung của bạn trên Zalopay AI Space đã bị xoá`,
     text: `Chào ${author.name || 'bạn'},\n\nAdmin đã xoá ${label} của bạn trên Zalopay AI Space.\n\nLý do: ${reason}\n\nNội dung đã xoá:\n"${excerptOf(content)}"\n\nNếu bạn có thắc mắc, hãy phản hồi lại cho admin.\n${appUrl(req)}`,
   }).catch((e) => console.error('[moderation] mail failed:', e.message))
+}
+
+const adminEmails = (exceptEmail) => {
+  const env = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
+  return [...new Set([...env, ...dbAdmins])].filter((e) => e !== String(exceptEmail || '').toLowerCase())
+}
+
+/** Someone deleted their own post: let the admins know (in-app), with what it was. Admins deleting their own: nothing. */
+export function notifySelfRemoval(req, { authorId, what, title, content }) {
+  if (authorId !== req.user.id || req.user.is_admin) return
+  const who = domainName(req.user.email, req.user.name)
+  const label = title ? `${what} "${String(title).slice(0, 120)}"` : `${what}: "${excerptOf(content).slice(0, 120)}"`
+  for (const to of adminEmails(req.user.email)) notify(to, { kind: 'removed', text: `${who} đã tự xoá ${label}`, href: '/admin', actor: req.user.name })
+}
+
+/** Either case after a delete: the author is told when an admin removed it; admins are told when the author did. */
+export function afterRemoval(req, post) {
+  if (post.authorId === req.user.id) notifySelfRemoval(req, post)
+  else notifyRemoval(req, post)
 }
