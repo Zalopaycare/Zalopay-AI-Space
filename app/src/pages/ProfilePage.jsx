@@ -135,11 +135,12 @@ function UseCaseCard({ c }) {
       className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
       style={css('position:relative; border:1px solid rgba(60,120,255,.45); border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 0 0 1px rgba(60,120,255,.10), 0 0 16px rgba(60,120,255,.22), 0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
     >
-      <div style={css('display:flex; margin-bottom:8px;')}>
+      <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;')}>
         <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#E4ECFF; color:#2c5fff; font:800 11.5px ${FONT};`)}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
           {t('Use case')}
         </span>
+        {c.menu && <QuestionMenu m={c.menu} kind="use case" />}
       </div>
       <div style={css('display:flex; gap:13px;')}>
         <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
@@ -342,6 +343,15 @@ export default function ProfilePage() {
       onOpenComments: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}#comments`) },
       toolsR: c.tools.map((name) => ({ name })),
       onOpen: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}`) },
+      menu: {
+        saved: true,
+        canEdit: !!c.authorId && c.authorId === user.id,
+        canDelete: false,
+        onCopy: () => copyWithToast(window.location.origin + '/use-cases/' + encodeURIComponent(c.id), 'Đã sao chép link ✓'),
+        onSave: () => api.saveUseCase(c.id).then(() => setSavedUseCaseIds((ids) => ids.filter((x) => x !== c.id))).catch(() => {}),
+        onEdit: () => navigate('/use-cases?edit=' + encodeURIComponent(c.id)),
+        onDelete: () => {},
+      },
     }))
 
   let qDraft = null
@@ -586,7 +596,7 @@ function StatusTabs({ tabs, active, onPick }) {
 }
 
 /** ⋯ menu on a question card: copy link, save, and (own posts) edit / delete with a confirm step. */
-function QuestionMenu({ m }) {
+function QuestionMenu({ m, kind = 'câu hỏi' }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [confirm, setConfirm] = useState(false)
@@ -608,7 +618,7 @@ function QuestionMenu({ m }) {
         <div role="menu" style={css('position:absolute; right:0; top:36px; width:210px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:5px; z-index:90;')}>
           {confirm ? (
             <div style={css('padding:8px;')}>
-              <div style={css(`font:700 13px ${FONT}; color:#0F172A;`)}>{t('Xoá vĩnh viễn câu hỏi này?')}</div>
+              <div style={css(`font:700 13px ${FONT}; color:#0F172A;`)}>{t('Xoá vĩnh viễn ' + kind + ' này?')}</div>
               <div style={css('display:flex; gap:6px; margin-top:10px;')}>
                 <button onClick={() => setConfirm(false)} style={css(`flex:1; height:32px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Huỷ')}</button>
                 <button onClick={pick(m.onDelete)} style={css(`flex:1; height:32px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Xoá')}</button>
@@ -617,9 +627,9 @@ function QuestionMenu({ m }) {
           ) : (
             <>
               <button role="menuitem" onClick={pick(m.onCopy)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{t('Sao chép link')}</button>
-              <button role="menuitem" onClick={pick(m.onSave)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{m.saved ? t('Bỏ lưu') : t('Lưu câu hỏi')}</button>
+              <button role="menuitem" onClick={pick(m.onSave)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{m.saved ? t('Bỏ lưu') : t('Lưu ' + kind)}</button>
               {m.canEdit && <button role="menuitem" onClick={pick(m.onEdit)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{t('Chỉnh sửa')}</button>}
-              {m.canDelete && <button role="menuitem" onClick={(e) => { e.stopPropagation(); setConfirm(true) }} className={hoverClass('background:#FFF4F4;')} style={css(item('#D8232A'))}>{t('Xoá câu hỏi')}</button>}
+              {m.canDelete && <button role="menuitem" onClick={(e) => { e.stopPropagation(); setConfirm(true) }} className={hoverClass('background:#FFF4F4;')} style={css(item('#D8232A'))}>{t('Xoá ' + kind)}</button>}
             </>
           )}
         </div>

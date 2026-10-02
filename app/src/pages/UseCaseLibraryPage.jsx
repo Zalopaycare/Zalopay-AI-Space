@@ -1045,10 +1045,10 @@ export default function UseCaseLibraryPage() {
                           {shareTopics.map((tp) => (
                             <button key={tp.label} onClick={tp.onPick} style={css(`height:36px; padding:0 15px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; opacity:${tp.opacity};`)}>{tp.label}</button>
                           ))}
+                          {shareTopicSel.indexOf('Khác') >= 0 && (
+                            <input autoFocus value={shareTopicOtherText} onChange={(e) => setShareTopicOtherText(e.target.value)} placeholder="Nhập topic khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
+                          )}
                         </div>
-                        {shareTopicSel.indexOf('Khác') >= 0 && (
-                          <input value={shareTopicOtherText} onChange={(e) => setShareTopicOtherText(e.target.value)} placeholder="Nhập topic khác, cách nhau bằng dấu phẩy" style={css('width:100%; box-sizing:border-box; height:40px; margin-top:10px; padding:0 14px; border:1px solid #DDE3EC; border-radius:10px; background:#fff; font-family:inherit; font-size:13.5px; color:#0F172A; outline:none;')} />
-                        )}
 
                         <div style={css('display:flex; align-items:center; gap:8px; margin-top:24px;')}>
                           <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Công cụ AI')}</label>
@@ -1058,10 +1058,10 @@ export default function UseCaseLibraryPage() {
                           {shareTools.map((tl) => (
                             <button key={tl.label} onClick={tl.onPick} style={css(`height:36px; padding:0 15px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{tl.label}</button>
                           ))}
+                          {shareToolSel.indexOf('Khác') >= 0 && (
+                            <input autoFocus value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} placeholder="Nhập công cụ AI khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
+                          )}
                         </div>
-                        {shareToolSel.indexOf('Khác') >= 0 && (
-                          <input value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} placeholder="Nhập công cụ AI khác, cách nhau bằng dấu phẩy" style={css('width:100%; box-sizing:border-box; height:40px; margin-top:10px; padding:0 14px; border:1px solid #DDE3EC; border-radius:10px; background:#fff; font-family:inherit; font-size:13.5px; color:#0F172A; outline:none;')} />
-                        )}
 
                       </>
                     )}

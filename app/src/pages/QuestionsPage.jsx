@@ -897,19 +897,19 @@ export default function QuestionsPage() {
                         {askTopics.map((tp) => (
                           <button key={tp.label} onClick={tp.onPick} style={css(`height:30px; padding:0 13px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tp.label}</button>
                         ))}
+                        {askTopicsSel.indexOf(OTHER) >= 0 && (
+                          <input autoFocus value={askTopicOtherText} onChange={(e) => setAskTopicOtherText(e.target.value)} placeholder={t('Nhập topic của bạn...')} style={css('flex:1 1 200px; min-width:160px; height:30px; box-sizing:border-box; padding:0 12px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; outline:none;')} />
+                        )}
                       </div>
-                      {askTopicsSel.indexOf(OTHER) >= 0 && (
-                        <input autoFocus value={askTopicOtherText} onChange={(e) => setAskTopicOtherText(e.target.value)} placeholder={t('Nhập topic của bạn...')} style={css('width:100%; box-sizing:border-box; margin-top:10px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; padding:10px 14px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0f172a; outline:none;')} />
-                      )}
                       <div style={css('font:700 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:.04em; color:#94a3b8; margin-top:16px;')}>{t('Công cụ AI (không bắt buộc)')}</div>
                       <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
                         {askTools.map((tl) => (
                           <button key={tl.label} onClick={tl.onPick} style={css(`height:30px; padding:0 13px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tl.label}</button>
                         ))}
+                        {askToolsSel.indexOf(OTHER) >= 0 && (
+                          <input autoFocus value={askToolOtherText} onChange={(e) => setAskToolOtherText(e.target.value)} placeholder={t('Nhập công cụ AI của bạn...')} style={css('flex:1 1 200px; min-width:160px; height:30px; box-sizing:border-box; padding:0 12px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; outline:none;')} />
+                        )}
                       </div>
-                      {askToolsSel.indexOf(OTHER) >= 0 && (
-                        <input autoFocus value={askToolOtherText} onChange={(e) => setAskToolOtherText(e.target.value)} placeholder={t('Nhập công cụ AI của bạn...')} style={css('width:100%; box-sizing:border-box; margin-top:10px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; padding:10px 14px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0f172a; outline:none;')} />
-                      )}
                       {askError && <div style={css('margin-top:10px; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{askError}</div>}
                     </div>
                   </div>
