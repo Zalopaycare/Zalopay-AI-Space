@@ -22,3 +22,16 @@ async function load() {
 
 export const showcaseCases = await load()
 export const SHOWCASE_IDS = new Set(showcaseCases.map((c) => c.id))
+
+// Admins can remove a showcase case from the site. The case files stay in the code; the removed ids
+// are kept in a small JSON file next to the database (same volume), so no schema change is needed.
+const HIDDEN_FILE = path.join(process.env.DATA_DIR || '/data', 'hidden-showcase.json')
+let hidden = new Set()
+try { hidden = new Set(JSON.parse(fs.readFileSync(HIDDEN_FILE, 'utf8'))) } catch { /* none hidden yet */ }
+export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id))
+export function hideShowcase(id) {
+  if (!SHOWCASE_IDS.has(id)) return false
+  hidden.add(id)
+  fs.writeFileSync(HIDDEN_FILE, JSON.stringify([...hidden]))
+  return true
+}

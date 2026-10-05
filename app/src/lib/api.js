@@ -60,6 +60,7 @@ export const api = {
   presence: (path) => request('/auth/presence', { method: 'POST', body: JSON.stringify({ path }) }),
   adminLive: () => request('/admin/live'),
   adminPublished: () => request('/admin/published'),
+  adminHideShowcase: (id) => request(`/admin/showcase/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   toggleApplied: (id) => request(`/use-cases/${id}/applied`, { method: 'POST' }),
   rateUseCase: (id, stars) => request(`/use-cases/${id}/rate`, { method: 'POST', body: JSON.stringify({ stars }) }),
   saveUseCase: (id) => request(`/use-cases/${id}/save`, { method: 'POST' }),

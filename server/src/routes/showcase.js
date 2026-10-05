@@ -1,12 +1,12 @@
 import express from 'express'
 import { requireAuth } from '../auth.js'
-import { showcaseCases, MEDIA_DIR } from '../showcase.js'
+import { visibleShowcase, MEDIA_DIR } from '../showcase.js'
 
 const router = express.Router()
 
 router.get('/', requireAuth, (req, res) => {
   res.set('Cache-Control', 'private, no-store')
-  res.json({ cases: showcaseCases })
+  res.json({ cases: visibleShowcase() })
 })
 
 // Images only for signed-in users; `private` keeps shared caches from storing them.

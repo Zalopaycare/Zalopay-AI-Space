@@ -298,8 +298,8 @@ export default function AdminConsolePage() {
   const headRow = (cols) => css(grid(cols) + 'padding:11px 20px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
   const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
-  const UC_COLS = 'minmax(0,2fr) 108px 96px 118px minmax(272px,auto)'
-  const P_COLS = 'minmax(0,1fr) 70px 80px 56px 90px 130px'
+  const UC_COLS = 'minmax(0,2fr) 100px 92px 100px 112px minmax(272px,auto)'
+  const P_COLS = 'minmax(0,1fr) 104px 66px 76px 52px 84px 118px'
   const Q_COLS = 'minmax(0,1fr) 110px 58px 62px 128px 118px'
   const U_COLS = 'minmax(0,1fr) 100px 96px 118px 64px 64px 72px'
   const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
@@ -493,7 +493,7 @@ export default function AdminConsolePage() {
               </div>
               {ucStatus === 'published' ? (
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG · {sortHead('postedAt', 'NGÀY ĐĂNG')}</span><span>{sortHead('upvotes', 'UPVOTE')}</span><span>{sortHead('comments', 'BÌNH LUẬN')}</span><span>{sortHead('saves', 'LƯU')}</span><span>{sortHead('applied', 'ĐÃ ÁP DỤNG')}</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG · {sortHead('postedAt', 'NGÀY ĐĂNG')}</span><span>DUYỆT BỞI</span><span>{sortHead('upvotes', 'UPVOTE')}</span><span>{sortHead('comments', 'BÌNH LUẬN')}</span><span>{sortHead('saves', 'LƯU')}</span><span>{sortHead('applied', 'ĐÃ ÁP DỤNG')}</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {pubRows.map((c) => {
                   const sub = c.source === 'community' ? submissions.find((x) => x.id === c.id) : null
                   return (
@@ -502,13 +502,15 @@ export default function AdminConsolePage() {
                         <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; overflow-wrap:anywhere; text-decoration:none;' + clamp2)}>{c.title}</a>
                         <div style={css('margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; overflow-wrap:anywhere;' + font(400, 12) + ';color:#94a3b8;')}>
                           <span style={css(c.source === 'showcase' ? pill('#EEF3FF', '#2c5fff') : pill('#F1F4FA', '#3A4757'))}>{c.source === 'showcase' ? 'Showcase' : 'Cộng đồng gửi'}</span>
-                          {[c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : '', c.source === 'community' ? 'Duyệt bởi ' + (c.approvedBy || 'Không rõ') : ''].filter(Boolean).join(' · ')}
+                          {[c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : ''].filter(Boolean).join(' · ')}
                         </div>
                       </div>
+                      <span style={css(font(600, 12.5) + ';color:' + (c.approvedBy ? '#3A4757' : '#94a3b8') + '; overflow-wrap:anywhere;')}>{c.source === 'showcase' ? '—' : c.approvedBy || 'Không rõ'}</span>
                       {[c.upvotes, c.comments, c.saves, c.applied].map((v, j) => <span key={j} style={css(font(800, 14) + ';color:#3A4757;')}>{v}</span>)}
                       <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
                         <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Mở ↗</a>
                         {sub && <button onClick={() => remove(sub)} style={css(btn('reject'))}>Xoá</button>}
+                        {c.source === 'showcase' && <button onClick={() => setConfirm({ text: `Gỡ use case mẫu "${c.title}" khỏi web? Bài sẽ không còn hiện trong Use Case Library.`, run: () => api.adminHideShowcase(c.id).then(reloadPublished).catch(() => {}) })} style={css(btn('reject'))}>Xoá</button>}
                       </div>
                     </div>
                   )
@@ -517,7 +519,7 @@ export default function AdminConsolePage() {
               </div>
               ) : (
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>NGÀY GỬI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>NGÀY GỬI</span><span>REVIEW BỞI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {ucRows.map((s) => {
                   const st = UC_STATUS[s.reviewStatus] || UC_STATUS.pending
                   return (
@@ -531,6 +533,7 @@ export default function AdminConsolePage() {
                       </div>
                       <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; overflow-wrap:anywhere;')}>{s.author}</div>
                       <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{fmtDate(s.time)}<div style={css(font(500, 11.5) + ';color:#94a3b8;')}>{relativeTime(s.time)}</div></div>
+                      <div style={css(font(600, 12.5) + ';color:' + (s.reviewedBy ? '#3A4757' : '#94a3b8') + '; overflow-wrap:anywhere;')}>{s.reviewedBy || (s.reviewedAt ? 'Không rõ' : '—')}</div>
                       <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
                       <div style={css('display:flex; justify-content:flex-end; gap:6px; flex-wrap:nowrap;')}>
                         <button onClick={() => setDetailId(s.id)} style={css(btn('plain'))}>Xem</button>
