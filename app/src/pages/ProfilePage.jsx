@@ -641,15 +641,12 @@ function QuestionMenu({ m, kind = 'câu hỏi' }) {
 /** Profile header: photo, name, department, and the default name for anonymous posts — all editable. */
 function ProfileCard({ user, setUser }) {
   const { t } = useI18n()
-  const [name, setName] = useState(user.name || '')
-  const [team, setTeam] = useState(user.team || '')
   const [alias, setAlias] = useState(user.anonAlias || '')
   const [state, setState] = useState('') // '' | 'saving' | 'saved' | 'error'
-  const dirty = name.trim() !== (user.name || '') || team.trim() !== (user.team || '') || alias.trim() !== (user.anonAlias || '')
+  const dirty = alias.trim() !== (user.anonAlias || '')
   const save = () => {
-    if (!name.trim()) { setState('error'); return }
     setState('saving')
-    api.updateMe({ name: name.trim(), team: team.trim(), anonAlias: alias.trim() })
+    api.updateMe({ anonAlias: alias.trim() })
       .then((d) => { if (d?.user) setUser(d.user); setState('saved') })
       .catch(() => setState('error'))
   }
@@ -670,17 +667,23 @@ function ProfileCard({ user, setUser }) {
           <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{user.email}</div>
         </div>
       </div>
+      {/* Name and department come from the Microsoft account and can't be edited, so nobody can pose as someone else. */}
       <div className="zp-profile-fields" style={{ marginTop: 20 }}>
-        {field(t('Họ và tên'), '', name, setName, 'Nguyễn Văn A', 60)}
-        {field(t('Phòng ban / Team'), '', team, setTeam, 'Ví dụ: Zalopay HR', 60)}
+        {[[t('Họ và tên'), user.name], [t('Phòng ban / Team'), user.team]].map(([label, value]) => (
+          <div key={label}>
+            <div style={css(`font:800 13px ${FONT}; color:#0F172A;`)}>{label}</div>
+            <div style={css(`margin-top:7px; min-height:40px; display:flex; align-items:center; padding:0 12px; border:1px solid #EEF1F7; border-radius:11px; background:#F8FAFE; font:500 14px ${FONT}; color:${value ? '#0F172A' : '#94a3b8'};`)}>{value || t('Chưa có')}</div>
+          </div>
+        ))}
       </div>
+      <div style={css(`margin-top:6px; font:500 12px ${FONT}; color:#94a3b8;`)}>{t('Họ tên và phòng ban lấy tự động từ tài khoản Microsoft công ty khi bạn đăng nhập, không chỉnh sửa được.')}</div>
       <div style={{ marginTop: 14 }}>
         {field(t('Tên hiển thị khi ẩn danh'), t('Tự điền mỗi khi bạn bật "Đăng ẩn danh". Để trống thì hiện "Anonymous" kèm một số riêng của bạn (ví dụ Anonymous 4821). Admin vẫn biết bạn là ai.'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
       </div>
       <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
         <button onClick={save} disabled={!dirty || state === 'saving'} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:${dirty ? 'pointer' : 'default'}; opacity:${dirty && state !== 'saving' ? 1 : 0.5};`)}>{state === 'saving' ? t('Đang lưu...') : t('Lưu thay đổi')}</button>
         {state === 'saved' && !dirty && <span style={css(`font:700 12.5px ${FONT}; color:#00893F;`)}>✓ {t('Đã lưu')}</span>}
-        {state === 'error' && <span style={css(`font:700 12.5px ${FONT}; color:#D8232A;`)}>{name.trim() ? t('Không lưu được, thử lại.') : t('Họ và tên không được để trống.')}</span>}
+        {state === 'error' && <span style={css(`font:700 12.5px ${FONT}; color:#D8232A;`)}>{t('Không lưu được, thử lại.')}</span>}
       </div>
     </div>
   )

@@ -2,7 +2,7 @@ import { touch } from '../presence.js'
 import express from 'express'
 import * as client from 'openid-client'
 import { db } from '../db.js'
-import { isCompanyEmail, getOrCreateUser, autoNameFor, issueSession, clearSession, publicUser } from '../auth.js'
+import { isCompanyEmail, getOrCreateUser, issueSession, clearSession, publicUser } from '../auth.js'
 import { sendMail, devLoginCodeAllowed } from '../mailer.js'
 import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_SCOPE_BASE, SSO_REDIRECT_URI } from '../sso.js'
 import { saveGraphTokens, dropGraphTokens } from '../graphTokens.js'
@@ -118,9 +118,8 @@ router.get('/sso/callback', async (req, res) => {
       return res.status(403).send('Tài khoản Microsoft này không thuộc domain công ty được phép.')
     }
     const user = getOrCreateUser(email)
-    // Take the Microsoft name only while the account still has its automatic one: a name the person
-    // set in their profile must survive the next sign-in.
-    if (claims.name && user.name !== claims.name && user.name === autoNameFor(email)) {
+    // Name and department always come from Microsoft (people can't edit them, so nobody can pose as someone else).
+    if (claims.name && user.name !== claims.name) {
       db.prepare('UPDATE users SET name = ? WHERE id = ?').run(claims.name, user.id)
     }
     if (graph) {
@@ -162,13 +161,7 @@ router.get('/me', (req, res) => {
 
 router.patch('/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'login_required' })
-  const name = String(req.body?.name || '').replace(/\s+/g, ' ').trim().slice(0, 60)
-  const team = String(req.body?.team || '').replace(/\s+/g, ' ').trim().slice(0, 60)
-  if (name) {
-    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0]).join('').toUpperCase() || req.user.initials
-    db.prepare('UPDATE users SET name = ?, initials = ? WHERE id = ?').run(name, initials, req.user.id)
-  }
-  if (team) db.prepare('UPDATE users SET team = ? WHERE id = ?').run(team, req.user.id)
+  // Name and team are not editable here: they come from the Microsoft account at sign-in (anti-impersonation).
   if (req.body?.anonAlias !== undefined) {
     const alias = String(req.body.anonAlias || '').replace(/\s+/g, ' ').trim().slice(0, 40)
     db.prepare('UPDATE users SET anon_alias = ? WHERE id = ?').run(alias || null, req.user.id)
