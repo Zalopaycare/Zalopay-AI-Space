@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
+import TrendCard from '../components/TrendCard.jsx'
 import { useTitle } from '../hooks/useTitle.js'
 import { Link } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
-import { builtinCases as allCases, prdMeta } from '../data/useCases.js'
 import { usePublishedUseCases } from '../lib/publishedUseCases.js'
 import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
@@ -20,7 +20,7 @@ const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
 const font = (weight, size, lh) => `font:${weight} ${size}px${lh ? '/' + lh : ''} "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif`
 const card = 'background:#fff; border:1px solid #E6EBF3; border-radius:18px; box-shadow:0 14px 34px rgba(0,0,0,.30);'
 const UC_STATUS = {
-  pending: { label: 'Chờ duyệt', bg: '#FFF1E0', fg: '#B45300' },
+  pending: { label: 'Đang chờ duyệt', bg: '#FFF1E0', fg: '#B45300' },
   approved: { label: 'Đã đăng', bg: '#E7F9F0', fg: '#00893F' },
   changes_requested: { label: 'Cần chỉnh sửa', bg: '#FFF4E3', fg: '#9A5B00' },
   rejected: { label: 'Từ chối', bg: '#FFECEC', fg: '#D8232A' },
@@ -71,21 +71,6 @@ function Heading({ title, sub }) {
       <h1 style={css('margin:0;' + font(800, 30, 1.15) + ';letter-spacing:-.01em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 50%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{title}</h1>
       <p style={css('margin:6px 0 0;' + font(400, 14) + ';color:rgba(206,219,245,.72);')}>{sub}</p>
     </>
-  )
-}
-
-function Bars({ rows, color }) {
-  const max = rows.reduce((m, r) => Math.max(m, r[1]), 1)
-  if (!rows.length) return <div style={css(font(600, 13) + ';color:#94a3b8; padding:10px 0;')}>Chưa có dữ liệu.</div>
-  return (
-    <div style={css('display:flex; flex-direction:column; gap:10px;')}>
-      {rows.slice(0, 6).map(([label, value]) => (
-        <div key={label}>
-          <div style={css('display:flex; justify-content:space-between; gap:12px;' + font(600, 12.5) + ';color:#3A4757;')}><span>{label}</span><span style={{ color: '#94a3b8' }}>{value}</span></div>
-          <div style={css('margin-top:6px; height:9px; border-radius:999px; background:#EDF0FA; overflow:hidden;')}><div style={css(`height:9px; border-radius:999px; background:${color}; width:${Math.round((value / max) * 100)}%;`)}></div></div>
-        </div>
-      ))}
-    </div>
   )
 }
 
@@ -175,9 +160,13 @@ export default function AdminConsolePage() {
   const unanswered = questions.filter((q) => !q.answers.length)
 
 
-  const count = (lists) => { const t = {}; lists.forEach((l) => l.forEach((x) => { if (x) t[x] = (t[x] || 0) + 1 })); return Object.entries(t).sort((a, b) => b[1] - a[1]).slice(0, 8) }
-  const topTopics = count([...questions.map((q) => q.topics || []), ...approved.map((s) => s.topics || []), ...allCases.map((c) => prdMeta[c.id]?.topics || [])])
-  const topTools = count([...questions.map((q) => q.tools || []), ...approved.map((s) => s.tools || []), ...allCases.map((c) => c.tools || [])])
+  // Every tag mention with its date (question / use case publish time), for the trend cards.
+  const mentionsOf = (field) => [
+    ...questions.flatMap((q) => (q[field] || []).map((label) => ({ label, time: q.time }))),
+    ...approved.flatMap((s) => (s[field] || []).map((label) => ({ label, time: s.publishedAt || s.time }))),
+  ]
+  const topicMentions = mentionsOf('topics')
+  const toolMentions = mentionsOf('tools')
 
   const now = new Date()
   // Daily movement: what was added today vs. how big the total was before today.
@@ -235,8 +224,6 @@ export default function AdminConsolePage() {
   const ucq = fold(ucQuery.trim())
   const ucRows = submissions.filter((s) => (ucStatus === 'all' || s.reviewStatus === ucStatus) && (!ucq || fold(s.title + ' ' + s.author + ' ' + s.team).includes(ucq)))
     .sort((a, b) => (ucSort === 'waiting' ? toDate(a.time) - toDate(b.time) : toDate(b.time) - toDate(a.time)))
-  const waitHours = (s) => (now.getTime() - toDate(s.time).getTime()) / 3_600_000
-  const waitLabel = (h) => (h >= 48 ? `Chờ ${Math.floor(h / 24)} ngày` : h >= 1 ? `Chờ ${Math.floor(h)} giờ` : 'Vừa gửi')
   const pubRows = published.filter((c) => !ucq || fold(c.title + ' ' + c.author + ' ' + c.team).includes(ucq))
   const detail = submissions.find((s) => s.id === detailId)
   const submitReview = () => {
@@ -272,8 +259,6 @@ export default function AdminConsolePage() {
   const csvDate = new Date().toISOString().slice(0, 10)
   const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Câu hỏi', 'Use case được duyệt'],
     (adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => [i + 1, u.domain, cleanName(u.name), u.team, u.answers, u.comments, u.likes, u.questions, u.useCases]))
-  const exportDepartments = () => downloadCsv(`theo-phong-ban_${periodName}_${csvDate}.csv`, ['Phòng ban', 'Thành viên', 'Hoạt động 7 ngày', '% thành viên đã đăng nhập hoạt động', 'Câu hỏi', 'Comment', 'Use case'],
-    (adminStats?.departments?.[lbPeriod] || []).map((d) => [d.team || 'Chưa rõ phòng ban', d.members, d.active7, d.members ? Math.round((d.active7 / d.members) * 100) : 0, d.questions, d.comments, d.useCases]))
   const exportUsers = () => downloadCsv(`thanh-vien_${csvDate}.csv`, ['Tên', 'Tên hiển thị', 'Email', 'Phòng ban', 'Vai trò', 'Tham gia', 'Hoạt động gần nhất', 'Câu hỏi', 'Trả lời', 'Use case'],
     userRows.map((u) => [cleanName(u.name), u.domain, u.email, u.team, u.isAdmin ? 'Admin' : 'Thành viên', fmtDate(u.joined), fmtDay(u.lastActive), u.questions, u.answers, u.useCases]))
   const csvBtn = (onClick) => <button onClick={onClick} title="Tải bảng này dưới dạng CSV (mở bằng Excel)" style={css(btn('plain') + 'display:inline-flex; align-items:center; gap:6px; height:36px;')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>Xuất CSV</button>
@@ -297,13 +282,12 @@ export default function AdminConsolePage() {
   const headRow = (cols) => css(grid(cols) + 'padding:11px 20px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
   const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
-  const UC_COLS = 'minmax(0,1fr) 140px 120px 330px'
+  const UC_COLS = 'minmax(0,2fr) 120px 104px 104px minmax(200px,1.3fr)'
   const P_COLS = 'minmax(0,1fr) 70px 80px 56px 90px 130px'
   const Q_COLS = 'minmax(0,1fr) 110px 58px 62px 128px 118px'
   const U_COLS = 'minmax(0,1fr) 100px 96px 118px 64px 64px 72px'
   const R_COLS = 'minmax(0,1fr) 190px 120px 250px'
   const LB_COLS = '34px minmax(0,1fr) 80px 90px 90px 80px 80px'
-  const D_COLS = 'minmax(0,1fr) 100px 190px 90px 90px 90px'
   const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
   const repRows = reports.filter((r) => repStatus === 'all' || (repStatus === 'open' ? r.status === 'open' : r.status !== 'open'))
   const resolveReport = (r, action) => api.resolveReport(r.id, action).then(() => { reloadReports(); if (action === 'delete') reloadQuestions() }).catch(() => {})
@@ -449,7 +433,7 @@ export default function AdminConsolePage() {
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
                     <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp <span style={css(font(600, 13) + ';color:#64748b;')}>· {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Xếp theo tổng số đóng góp. Trả lời + Comment ở đây = cột Comment ở bảng phòng ban.</p>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Xếp theo tổng số đóng góp: trả lời, comment, câu hỏi và use case.</p>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px;')}>{csvBtn(exportLeaderboard)}<Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} /></div>
                 </div>
@@ -472,37 +456,12 @@ export default function AdminConsolePage() {
                 </div>
               </div>
 
-              <div style={css('padding:18px 20px; margin-top:14px;' + card)}>
-                <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
-                  <div>
-                    <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Theo phòng ban <span style={css(font(600, 13) + ';color:#64748b;')}>· câu hỏi, comment, use case trong {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5, 1.55) + ';color:#94a3b8;')}>Cùng khoảng thời gian với "Top người đóng góp". Cột Hoạt động luôn là 7 ngày gần nhất. Comment = trả lời + reply + comment ở use case (cùng cách đếm với thẻ "Comment &amp; reply"). Use case = số bài đã gửi, mọi trạng thái. Phòng ban lấy từ Microsoft khi đăng nhập bằng SSO; người chưa đăng nhập lại nằm ở "Chưa rõ phòng ban".</p>
-                  </div>
-                  <div style={css('display:flex; align-items:center; gap:10px;')}>{csvBtn(exportDepartments)}<Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} /></div>
-                </div>
-                <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow:hidden;')}>
-                  <div style={headRow(D_COLS)}><span>PHÒNG BAN</span><span>THÀNH VIÊN</span><span title="Số thành viên có hoạt động trong 7 ngày qua; % tính trên số thành viên đã đăng nhập của phòng ban (chưa có số nhân sự thật)">HOẠT ĐỘNG 7 NGÀY<br /><span style={{ fontWeight: 500, letterSpacing: 0, textTransform: 'none' }}>% thành viên đã đăng nhập hoạt động</span></span><span>CÂU HỎI</span><span>COMMENT</span><span>USE CASE</span></div>
-                  {(adminStats?.departments?.[lbPeriod] || []).map((d) => (
-                    <div key={d.team || '_'} style={bodyRow(D_COLS)}>
-                      <span style={css(font(700, 13.5) + `;color:${d.team ? '#0f172a' : '#94a3b8'};`)}>{d.team || 'Chưa rõ phòng ban'}</span>
-                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.members}</span>
-                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.active7}<span style={css(font(500, 11.5) + ';color:#94a3b8;')}> ({d.members ? Math.round((d.active7 / d.members) * 100) : 0}%)</span></span>
-                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.questions}</span>
-                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.comments}</span>
-                      <span style={css(font(700, 13.5) + ';color:#3A4757;')}>{d.useCases}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               <div style={css('display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;')}>
                 <div style={css('padding:18px 20px;' + card)}>
-                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Topic được gắn nhiều nhất <span style={css(font(600, 12.5) + ';color:#64748b;')}>· tất cả thời gian</span></h2>
-                  <Bars rows={topTopics} color="linear-gradient(90deg,#8B5CF6,#6F0CE2)" />
+                  <TrendCard title="Topic được quan tâm" mentions={topicMentions} color="#6F0CE2" />
                 </div>
                 <div style={css('padding:18px 20px;' + card)}>
-                  <h2 style={css('margin:0 0 14px;' + font(800, 16) + ';color:#0f172a;')}>Công cụ AI được nhắc nhiều nhất <span style={css(font(600, 12.5) + ';color:#64748b;')}>· tất cả thời gian</span></h2>
-                  <Bars rows={topTools} color="linear-gradient(90deg,#4480ff,#2c5fff)" />
+                  <TrendCard title="Công cụ AI được quan tâm" mentions={toolMentions} color="#2c5fff" />
                 </div>
               </div>
             </div>
@@ -518,14 +477,14 @@ export default function AdminConsolePage() {
               </div>
               {ucStatus === 'published' ? (
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(P_COLS)}><span>USE CASE ĐANG HIỆN TRÊN THƯ VIỆN</span><span>UPVOTE</span><span>BÌNH LUẬN</span><span>LƯU</span><span>ĐÃ ÁP DỤNG</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG</span><span>UPVOTE</span><span>BÌNH LUẬN</span><span>LƯU</span><span>ĐÃ ÁP DỤNG</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {pubRows.map((c) => {
                   const sub = c.source === 'community' ? submissions.find((x) => x.id === c.id) : null
                   return (
                     <div key={c.id} style={bodyRow(P_COLS)}>
                       <div style={{ minWidth: 0 }}>
-                        <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; text-decoration:none;' + clamp2)}>{c.title}</a>
-                        <div style={css('margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;' + font(400, 12) + ';color:#94a3b8;')}>
+                        <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; overflow-wrap:anywhere; text-decoration:none;' + clamp2)}>{c.title}</a>
+                        <div style={css('margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; overflow-wrap:anywhere;' + font(400, 12) + ';color:#94a3b8;')}>
                           <span style={css(c.source === 'showcase' ? pill('#EEF3FF', '#2c5fff') : pill('#F1F4FA', '#3A4757'))}>{c.source === 'showcase' ? 'Showcase' : 'Cộng đồng gửi'}</span>
                           {[c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : '', c.source === 'community' ? 'Duyệt bởi ' + (c.approvedBy || 'Không rõ') : ''].filter(Boolean).join(' · ')}
                         </div>
@@ -542,25 +501,21 @@ export default function AdminConsolePage() {
               </div>
               ) : (
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>NGÀY GỬI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {ucRows.map((s) => {
                   const st = UC_STATUS[s.reviewStatus] || UC_STATUS.pending
                   return (
                     <div key={s.id} style={bodyRow(UC_COLS)}>
                       <div style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => setDetailId(s.id)}>
-                        <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a;')}>{s.title}</div>
-                        <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0], relativeTime(s.time)].filter(Boolean).join(' · ')}</div>
+                        <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a; overflow-wrap:anywhere;')}>{s.title}</div>
+                        <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0]].filter(Boolean).join(' · ')}</div>
                         {REVIEWED_BY[s.reviewStatus] && <div style={css('margin-top:4px;' + font(600, 12) + ';color:#475569;')}>{REVIEWED_BY[s.reviewStatus]} <b style={{ color: '#0f172a' }}>{s.reviewedBy || 'Không rõ'}</b>{s.reviewedAt ? ' · ' + relativeTime(s.reviewedAt) : ''}</div>}
                         {s.reviewStatus === 'rejected' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFECEC;' + font(600, 12, 1.5) + ';color:#B4232A;')}>Lý do từ chối: {s.adminNote}</div>}
                         {s.reviewStatus === 'changes_requested' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF4E3;' + font(600, 12, 1.5) + ';color:#7A4700; white-space:pre-wrap;')}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div>}
                       </div>
-                      <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis;')}>{s.author}</div>
-                      <div style={css('display:flex; flex-direction:column; align-items:flex-start; gap:5px;')}>
-                        <span style={css(pill(st.bg, st.fg))}>{st.label}</span>
-                        {s.reviewStatus === 'pending' && (waitHours(s) >= 48
-                          ? <span title="Chờ duyệt quá 48 giờ" style={css(pill('#D8232A', '#fff'))}>{waitLabel(waitHours(s))}</span>
-                          : <span style={css(font(600, 11.5) + ';color:#94a3b8;')}>{waitLabel(waitHours(s))}</span>)}
-                      </div>
+                      <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; overflow-wrap:anywhere;')}>{s.author}</div>
+                      <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{fmtDate(s.time)}<div style={css(font(500, 11.5) + ';color:#94a3b8;')}>{relativeTime(s.time)}</div></div>
+                      <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
                       <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
                         <button onClick={() => setDetailId(s.id)} style={css(btn('plain'))}>Xem</button>
                         {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'approved')} style={css(btn('approve'))}>Duyệt</button>}
