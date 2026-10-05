@@ -215,13 +215,14 @@ function cleanExtra(e) {
 const parseExtra = (v) => { try { return v ? JSON.parse(v) : null } catch { return null } }
 
 const SUBMISSION_FIELDS = ['title', 'audience', 'team', 'problem', 'solution', 'prep', 'prompt', 'result']
-const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.kind && f.status && f.level
+// Loại / Người thực hiện / Trạng thái are no longer asked in the share form, so they're optional here.
+const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.level
 
 router.post('/submissions', requireAuth, (req, res) => {
   const f = req.body || {}
   const required = ['title', 'audience', 'team', 'problem', 'solution', 'prep', 'prompt', 'result']
   if (required.some((k) => !String(f[k] || '').trim())) return res.status(400).json({ error: 'missing_fields' })
-  if (!Array.isArray(f.category) || !f.category.length || !f.kind || !f.status || !f.level) {
+  if (!Array.isArray(f.category) || !f.category.length || !f.level) {
     return res.status(400).json({ error: 'missing_fields' })
   }
   const cover = decodeCover(f.cover)

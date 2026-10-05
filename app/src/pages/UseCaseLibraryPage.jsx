@@ -55,8 +55,6 @@ const SHARE_STEPS = [
   { key: 'apply', label: 'Ứng dụng ngay', part: 'Phần Ứng dụng ngay' },
   { key: 'more', label: 'Lưu ý & liên hệ', part: 'Phần An toàn, Kỹ thuật, Liên hệ' },
 ]
-const TYPE_OPTS = [['tool', 'Công cụ dùng ngay'], ['guide', 'Hướng dẫn'], ['case', 'Câu chuyện thực tế'], ['proposal', 'Đề xuất']]
-const KIND_LABEL = { 'By tech': 'Người làm kỹ thuật', 'By non-tech': 'Người không làm kỹ thuật' }
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
 
@@ -473,9 +471,9 @@ export default function UseCaseLibraryPage() {
   // What's still missing, per step (labels), so the stepper can point at it.
   const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
     ...shareFields.filter((f) => f.step === st.key && f.req === 'Required' && !f.value.trim()).map((f) => f.label),
-    ...(st.key === 'intro' ? [!shareType && 'Loại', !shareKind && 'Người thực hiện', !shareStatus && 'Trạng thái', !shareLevel && 'Độ khó', !shareCategory.length && 'Category'].filter(Boolean) : []),
+    ...(st.key === 'intro' ? [!shareLevel && 'Độ khó', !shareCategory.length && 'Category'].filter(Boolean) : []),
   ]]))
-  const valid = !!(shareType && shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.team.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && shareForm.prompt.trim() && shareForm.result.trim() && shareCategory.length && shareKind && shareStatus && shareLevel)
+  const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.team.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && shareForm.prompt.trim() && shareForm.result.trim() && shareCategory.length && shareLevel)
   const oneOf = (val, setVal, opts, labels = {}) => opts.map((o) => ({ label: labels[o] || o, ...chip(val === o), onPick: () => setVal(val === o ? '' : o) }))
 
   const shareCategories = CATS.map((c) => ({ label: c, ...chip(shareCategory.indexOf(c) >= 0), onPick: () => setShareCategory((s) => (s.indexOf(c) >= 0 ? s.filter((x) => x !== c) : s.concat([c]))) }))
@@ -484,9 +482,6 @@ export default function UseCaseLibraryPage() {
     return { label: tp, ...chip(on), opacity: !on && shareTopicSel.length >= 3 ? 0.45 : 1, onPick: () => setShareTopicSel((s) => { const has = s.indexOf(tp) >= 0; if (!has && s.length >= 3) return s; return has ? s.filter((x) => x !== tp) : [...s, tp] }) }
   })
   const shareTools = TOOLS.map((tl) => ({ label: tl, ...chip(shareToolSel.indexOf(tl) >= 0), onPick: () => setShareToolSel((s) => (s.indexOf(tl) >= 0 ? s.filter((x) => x !== tl) : [...s, tl])) }))
-  const shareKinds = oneOf(shareKind, setShareKind, ['By tech', 'By non-tech'], KIND_LABEL)
-  const shareTypes = oneOf(shareType, setShareType, TYPE_OPTS.map((o) => o[0]), Object.fromEntries(TYPE_OPTS))
-  const shareStatuses = oneOf(shareStatus, setShareStatus, ['Ý tưởng', 'Prototype', 'Đang dùng thật'])
   const shareLevels = oneOf(shareLevel, setShareLevel, ['Dễ', 'Trung bình', 'Khó'])
 
   const previewTitle = shareForm.title || 'Chưa có tiêu đề'
@@ -985,7 +980,6 @@ export default function UseCaseLibraryPage() {
                           </div>
                           {coverError && <div style={css('margin-top:8px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
                         </div>
-                        <ChipGroup title="Loại" required="Bắt buộc · chọn một" options={shareTypes} />
                         <div style={css(`margin:-4px 0 24px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon ? '#F2F6FF' : '#F8FAFE'};`)}>
                           <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Người đăng')}</div>
                           <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật. Admin vẫn biết bạn là ai.')}</div>
@@ -1025,8 +1019,6 @@ export default function UseCaseLibraryPage() {
                     )}
                     {SHARE_STEPS[shareStep].key === 'intro' && (
                       <>
-                        <ChipGroup title="Người thực hiện" required="Bắt buộc · chọn một" options={shareKinds} />
-                        <ChipGroup title="Trạng thái" required="Bắt buộc · chọn một" options={shareStatuses} />
                         <ChipGroup title="Độ khó khi làm lại" required="Bắt buộc · chọn một" options={shareLevels} last />
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>Category</label>
