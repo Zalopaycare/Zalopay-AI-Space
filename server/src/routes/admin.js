@@ -2,7 +2,8 @@ import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import express from 'express'
 import { db } from '../db.js'
 import { requireAuth } from '../auth.js'
-import { domainName, initialsOf } from '../mentions.js'
+import { domainName, initialsOf, handleOf } from '../mentions.js'
+import { anonName } from '../anon.js'
 import { adminReportRoutes } from '../reports.js'
 import { directoryStatus } from '../directory.js'
 import { vnDay } from '../auth.js'
@@ -158,7 +159,7 @@ router.get('/published', (req, res) => {
   const subs = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved'").all().map((r) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
     const rv = r.reviewed_by ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(r.reviewed_by) : null
-    return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, approvedBy: rv ? domainName(rv.email, rv.name) : null, ...stats(r.id) }
+    return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', account: u ? handleOf(u.email) : '', anonymous: !!r.anonymous, alias: r.anonymous ? anonName(r) : null, team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, approvedBy: rv ? domainName(rv.email, rv.name) : null, ...stats(r.id) }
   })
   res.json({ useCases: [...subs, ...showcase].sort((a, b) => String(b.postedAt || '').localeCompare(String(a.postedAt || '')) || b.id.localeCompare(a.id, undefined, { numeric: true })) })
 })

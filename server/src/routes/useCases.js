@@ -160,6 +160,7 @@ router.get('/submissions', requireAuth, (req, res) => {
         reviewStatus: r.review_status, adminNote: r.admin_note,
         author: who.author, authorAvatarColor: who.avatarColor, authorAvatarUrl: who.avatarUrl, authorDomain: who.anonymous && who.authorId === null ? who.author : who.fullName, authorId: who.authorId, time: r.created_at,
         anonymous: !!who.anonymous, alias: who.anonymous ? who.alias : null, realAuthor: who.realAuthor || null,
+        authorAccount: req.user && req.user.is_admin && author ? handleOf(author.email) : undefined,
         publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
         // Only admins learn which admin reviewed it.
         reviewedBy: req.user && req.user.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,

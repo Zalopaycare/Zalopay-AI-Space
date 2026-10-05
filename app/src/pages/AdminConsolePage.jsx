@@ -30,6 +30,9 @@ const REVIEWED_BY = { approved: 'Duyệt bởi', changes_requested: 'Yêu cầu 
 const toDate = (t) => new Date(String(t || '').replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(t)) ? '' : 'Z'))
 const fmtDate = (t) => { const d = toDate(t); return isNaN(d) ? '—' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) }
 // Microsoft display names look like "Hải. Trần Thanh (5)": drop the "(5)" suffix and the dot after the given name.
+// Admin tables show the real domain account (the email handle — people can't edit it). An anonymous post
+// shows its public name first with the account in brackets: "Anonymous 5314 (thyndm)".
+const realWho = (shown, account, anonymous) => (anonymous ? `${shown || 'Anonymous'} (${account || '?'})` : account || shown || '—')
 const cleanName = (n) => String(n || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^([^\s.]+)\.\s+/, '$1 ').trim()
 const fmtDay = (d) => (d ? d.split('-').reverse().join('/') : '—') // "2026-09-30" -> "30/09/2026"
 // "/use-cases/c7" -> "Đang xem use case: Chuẩn bị pentest…" for the online list.
@@ -502,7 +505,7 @@ export default function AdminConsolePage() {
                         <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; overflow-wrap:anywhere; text-decoration:none;' + clamp2)}>{c.title}</a>
                         <div style={css('margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; overflow-wrap:anywhere;' + font(400, 12) + ';color:#94a3b8;')}>
                           <span style={css(c.source === 'showcase' ? pill('#EEF3FF', '#2c5fff') : pill('#F1F4FA', '#3A4757'))}>{c.source === 'showcase' ? 'Showcase' : 'Cộng đồng gửi'}</span>
-                          {[c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : ''].filter(Boolean).join(' · ')}
+                          {[c.source === 'community' ? realWho(c.alias || c.author, c.account, c.anonymous) : c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : ''].filter(Boolean).join(' · ')}
                         </div>
                       </div>
                       <span style={css(font(600, 12.5) + ';color:' + (c.approvedBy ? '#3A4757' : '#94a3b8') + '; overflow-wrap:anywhere;')}>{c.source === 'showcase' ? '—' : c.approvedBy || 'Không rõ'}</span>
@@ -531,7 +534,7 @@ export default function AdminConsolePage() {
                         {s.reviewStatus === 'rejected' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFECEC;' + font(600, 12, 1.5) + ';color:#B4232A;')}>Lý do từ chối: {s.adminNote}</div>}
                         {s.reviewStatus === 'changes_requested' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF4E3;' + font(600, 12, 1.5) + ';color:#7A4700; white-space:pre-wrap;')}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div>}
                       </div>
-                      <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; overflow-wrap:anywhere;')}>{s.author}</div>
+                      <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; overflow-wrap:anywhere;')} title={s.anonymous ? 'Đăng ẩn danh' : s.author}>{realWho(s.anonymous ? s.alias || s.authorDomain : s.authorDomain, s.authorAccount, s.anonymous)}</div>
                       <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{fmtDate(s.time)}<div style={css(font(500, 11.5) + ';color:#94a3b8;')}>{relativeTime(s.time)}</div></div>
                       <div style={css(font(600, 12.5) + ';color:' + (s.reviewedBy ? '#3A4757' : '#94a3b8') + '; overflow-wrap:anywhere;')}>{s.reviewedBy || (s.reviewedAt ? 'Không rõ' : '—')}</div>
                       <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
@@ -566,7 +569,7 @@ export default function AdminConsolePage() {
                       <div title={q.title} onClick={() => setQDetailId(q.id)} className={hoverClass('color:#2c5fff;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; cursor:pointer;' + clamp2)}>{q.title}</div>
                       <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[relativeTime(q.time), ...(q.topics || [])].join(' · ')}</div>
                     </div>
-                    <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')} title={[cleanName(q.fullName), q.author].filter(Boolean).join(' · ')}>{q.author}</div>
+                    <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')} title={q.anonymous ? `Đăng ẩn danh với tên "${q.author}" · tài khoản thật: ${q.account || q.realAuthor}` : [cleanName(q.fullName), q.account].filter(Boolean).join(' · ')}>{realWho(q.author, q.account || q.realAuthor, q.anonymous)}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{q.answers.length}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{helpful(q)}</div>
                     <div><span style={css(q.resolved ? pill('#E7F9F0', '#00893F') : q.answers.length ? pill('#EAF0FF', '#2c5fff') : pill('#FFF1E0', '#B45300'))}>{q.resolved ? 'Đã giải quyết' : q.answers.length ? 'Chờ chọn đáp án' : 'Chưa có trả lời'}</span></div>

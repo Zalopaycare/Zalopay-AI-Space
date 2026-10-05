@@ -37,7 +37,7 @@ export function maskAuthor(brief, row, viewer) {
   // (realAuthor) and keep the id, so they can edit/moderate and admins know who posted.
   const masked = { ...brief, author: name, fullName: name, initials: lettersOf(name), team: '', avatarColor: ANON_COLOR, avatarUrl: null, anonymous: true, alias: name }
   if (viewer && (viewer.is_admin || viewer.id === row.author_id)) return { ...masked, realAuthor: brief.author }
-  return { ...masked, authorId: null }
+  return { ...masked, authorId: null, account: undefined }
 }
 
 /** The name to show in notifications/emails about a post: the alias when it was posted anonymously. */

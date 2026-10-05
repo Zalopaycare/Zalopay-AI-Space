@@ -3,7 +3,7 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
-import { notifyMentions, appUrl, domainName, initialsOf } from '../mentions.js'
+import { notifyMentions, appUrl, domainName, initialsOf, handleOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
 import { anonFields, maskAuthor, anonName } from '../anon.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
@@ -17,7 +17,8 @@ const qTitle = (q) => {
   const first = String(q.body || '').split('\n').find((l) => l.trim()) || ''
   return first.length > 90 ? first.slice(0, 90).trimEnd() + '…' : first
 }
-const userBrief = (u) => (u ? { author: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), team: u.team, authorId: u.id, avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : { author: 'Người dùng đã xoá', fullName: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
+// `account` = the real domain account (email handle), which nobody can edit; only admins get it (see maskAuthor / listing).
+const userBrief = (u) => (u ? { account: handleOf(u.email), author: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), team: u.team, authorId: u.id, avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : { author: 'Người dùng đã xoá', fullName: 'Người dùng đã xoá', initials: '??', team: '', authorId: null, avatarColor: null })
 
 
 // `viewer` = req.user (anonymous posts are masked for everyone but their author and admins).
