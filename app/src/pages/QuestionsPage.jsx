@@ -97,6 +97,8 @@ export default function QuestionsPage() {
   const [askAlias, setAskAlias] = useState('')
   const [ansAnon, setAnsAnon] = useState(false) // answer boxes: post the next answer anonymously
   const [ansAlias, setAnsAlias] = useState('')
+  // One switch for everything you write under a question: answers, comments and replies.
+  const anonOpts = () => ({ anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '' })
   const [askImages, setAskImages] = useState([]) // [{name, dataUrl}] — up to MAX_ASK_IMAGES, uploaded with the question
   const [askEmojiOpen, setAskEmojiOpen] = useState(false)
   const [askDraftSaved, setAskDraftSaved] = useState(false)
@@ -207,7 +209,7 @@ export default function QuestionsPage() {
     if (!commentReplyTarget) return
     const body = commentReplyDraft.trim()
     if (!body) return
-    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId).then((d) => patch(qId, d.question)).catch(() => {}))
+    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId, anonOpts()).then((d) => patch(qId, d.question)).catch(() => {}))
     cancelCommentReply()
   }
   // Put the caret back at the end of a field after picking a mention, so typing just continues.
@@ -422,7 +424,7 @@ export default function QuestionsPage() {
           const raw = (commentDrafts[a.id] || '').trim()
           if (!raw) return
           const body = takeMentions('c:' + a.id, raw)
-          requireLogin(() => api.postAnswerComment(q.id, a.id, body).then((d) => { patch(q.id, d.question); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(() => {}))
+          requireLogin(() => api.postAnswerComment(q.id, a.id, body, null, null, anonOpts()).then((d) => { patch(q.id, d.question); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(() => {}))
           setCommentDrafts((s) => ({ ...s, [a.id]: '' })); setCommentMention(null)
         },
         onReply: () => setOpenComments((s) => ({ ...s, [a.id]: !s[a.id] })),
@@ -627,7 +629,7 @@ export default function QuestionsPage() {
                                             <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</div>
                                             <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                               <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
-                                                <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span>
+                                                <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span><AnonTag p={c} />
                                                 {c.team ? <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.team}</span> : null}
                                                 <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {c.time}{c.edited ? ' · đã sửa' : ''}</span>
                                                 <span style={{ flex: 1 }}></span>
@@ -652,7 +654,7 @@ export default function QuestionsPage() {
                                               <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${r.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</div>
                                               <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                                 <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
-                                                  <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span>
+                                                  <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span><AnonTag p={r} />
                                                   <span style={css('font:400 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {r.time}{r.edited ? ' · đã sửa' : ''}</span>
                                                   <span style={{ flex: 1 }}></span>
                                                   <CommentMenu isOwner={isMine(r)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: r.id })} onDelete={() => askDeleteComment(q.id, a.id, r.id, isMine(r), r.body)} onReport={() => cmodals.askReport('comment', r.id)} />
@@ -733,7 +735,7 @@ export default function QuestionsPage() {
                                 ))}
                               </div>
                             )}
-                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời ẩn danh" />
+                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời & bình luận ẩn danh" />
                             <div style={css('display:flex; align-items:center; margin-top:8px;')}>
                               <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
                               <button onClick={q.onPostReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi bình luận')}</button>

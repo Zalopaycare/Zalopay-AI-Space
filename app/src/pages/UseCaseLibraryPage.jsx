@@ -123,6 +123,9 @@ export default function UseCaseLibraryPage() {
   const [shareStage, setShareStage] = useState('form')
   const [shareStep, setShareStep] = useState(0)
   const [shareType, setShareType] = useState('')
+  const [cmtAnon, setCmtAnon] = useState(false) // comments + replies on the detail page
+  const [cmtAlias, setCmtAlias] = useState('')
+  const cmtAnonOpts = () => ({ anonymous: cmtAnon, alias: cmtAnon ? cmtAlias.trim() : '' })
   const [shareAnon, setShareAnon] = useState(false)
   const [shareAlias, setShareAlias] = useState('')
   const [shareHighlights, setShareHighlights] = useState(EMPTY_HIGHLIGHTS)
@@ -265,7 +268,7 @@ export default function UseCaseLibraryPage() {
   const submitReply = (ucId) => {
     const text = (replyBoxRef.current ? replyBoxRef.current.expand(replyDraft) : replyDraft).trim()
     if (!text || !replyTarget) return
-    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title, { replyToId: replyTarget.replyToId, ownerHandle: (allCases.find((x) => x.id === ucId) || {}).author }).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
+    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title, { ...cmtAnonOpts(), replyToId: replyTarget.replyToId, ownerHandle: (allCases.find((x) => x.id === ucId) || {}).author }).then(() => { refreshMeta(ucId); cancelReply() }).catch(() => {}))
   }
 
   // ---- draft restore + autosave ----
@@ -523,7 +526,7 @@ export default function UseCaseLibraryPage() {
     const commentsList = live ? live.comments : []
     const postDComment = () => {
       const text = (dBoxRef.current ? dBoxRef.current.expand(dDraft) : dDraft).trim()
-      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
+      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ...cmtAnonOpts(), ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(() => {}))
     }
     const toggleApplied = () => requireLogin(() => api.toggleApplied(dsel.id).then((d) => setUcMeta((m) => ({ ...m, [dsel.id]: { ...(m[dsel.id] || {}), ...d } }))).catch(() => {}))
 
@@ -597,7 +600,8 @@ export default function UseCaseLibraryPage() {
                     placeholder={t('Viết bình luận về use case này... Gõ @ để mention đồng nghiệp.')}
                     style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; line-height:1.6; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                   />
-                  <div style={css('display:flex; justify-content:flex-end; margin-top:10px;')}>
+                  <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; margin-top:10px;')}>
+                    <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} alias={cmtAlias} onAlias={setCmtAlias} label="Bình luận ẩn danh" /></div>
                     <button
                       onClick={postDComment}
                       style={css(`height:38px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
@@ -618,7 +622,7 @@ export default function UseCaseLibraryPage() {
                         <span style={css(`width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
-                            <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{c.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
+                            <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{c.author} <AnonTag p={c} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
                             <CommentMenu isOwner={!!user && c.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(c.id)} onDelete={() => (user && c.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(c.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, c.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', c.id)} />
                           </div>
                           {editingCmt === c.id
@@ -640,7 +644,7 @@ export default function UseCaseLibraryPage() {
                           <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={css('display:flex; align-items:center; gap:8px;')}>
-                              <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{r.author} <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
+                              <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{r.author} <AnonTag p={r} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
                               <CommentMenu isOwner={!!user && r.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(r.id)} onDelete={() => (user && r.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(r.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, r.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', r.id)} />
                             </div>
                             {editingCmt === r.id

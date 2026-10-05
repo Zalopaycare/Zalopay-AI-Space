@@ -30,7 +30,7 @@ function loadQuestion(id, viewer) {
   const answers = db.prepare('SELECT * FROM question_answers WHERE question_id = ? ORDER BY created_at ASC').all(id).map((a) => {
     const aAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(a.author_id)
     const comments = db.prepare('SELECT * FROM answer_comments WHERE answer_id = ? ORDER BY created_at ASC').all(a.id).map((c) => ({
-      id: c.id, ...userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at,
+      id: c.id, ...maskAuthor(userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), c, viewer), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at,
     }))
     const helpful = db.prepare('SELECT COUNT(*) n FROM answer_reactions WHERE answer_id = ?').get(a.id).n
     const iHelped = userId ? !!db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(a.id, userId) : false
@@ -226,10 +226,11 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const answer = db.prepare('SELECT * FROM question_answers WHERE id = ? AND question_id = ?').get(answerId, id)
   if (!q || !answer) return res.status(404).json({ error: 'not_found' })
   const cid = nextId('c')
-  db.prepare('INSERT INTO answer_comments (id, answer_id, author_id, body, parent_id) VALUES (?,?,?,?,?)').run(cid, answerId, req.user.id, body, parentId)
+  const anon = anonFields(req.body)
+  db.prepare('INSERT INTO answer_comments (id, answer_id, author_id, body, parent_id, anonymous, alias) VALUES (?,?,?,?,?,?,?)').run(cid, answerId, req.user.id, body, parentId, anon.anonymous, anon.alias)
 
   // Who hears about it, most specific first; each person once, never the author themself.
-  const who = domainName(req.user.email, req.user.name)
+  const who = anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : domainName(req.user.email, req.user.name)
   const label = qTitle(q)
   const href = `/questions#q=${id}`
   const userById = (uid) => (uid ? db.prepare('SELECT * FROM users WHERE id = ?').get(uid) : null)
@@ -244,10 +245,10 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   for (const [u, text] of targets) {
     if (!u || told.has(u.email.toLowerCase())) continue
     told.add(u.email.toLowerCase())
-    notify(u.email, { kind: 'comment', text, href, actor: req.user.name })
-    sendMail({ to: u.email, subject: text, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
+    notify(u.email, { kind: 'comment', text, href, actor: anon.anonymous ? who : req.user.name })
+    sendMail({ to: u.email, subject: text, text: `${anon.anonymous ? who : req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `câu hỏi "${label}"`, path: href, skip: [...told] })
+  notifyMentions(req, { text: body, where: `câu hỏi "${label}"`, path: href, skip: [...told], as: anon.anonymous ? who : null })
 
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })

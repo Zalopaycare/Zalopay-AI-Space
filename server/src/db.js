@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS question_files (
   if (!has('users', 'avatar_data')) db.exec('ALTER TABLE users ADD COLUMN avatar_data BLOB')
   // Default display name for anonymous posts, set once in the profile.
   if (!has('users', 'anon_alias')) db.exec('ALTER TABLE users ADD COLUMN anon_alias TEXT')
-  for (const t of ['questions', 'question_answers', 'use_case_submissions']) {
+  for (const t of ['questions', 'question_answers', 'use_case_submissions', 'answer_comments', 'use_case_comments']) {
     if (!has(t, 'anonymous')) db.exec(`ALTER TABLE ${t} ADD COLUMN anonymous INTEGER NOT NULL DEFAULT 0`)
     if (!has(t, 'alias')) db.exec(`ALTER TABLE ${t} ADD COLUMN alias TEXT`)
   }

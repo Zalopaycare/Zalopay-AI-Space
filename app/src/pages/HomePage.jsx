@@ -246,7 +246,7 @@ export default function HomePage() {
     const body = (modalReplyBoxRef.current ? modalReplyBoxRef.current.expand(modalReplyDraft) : modalReplyDraft).trim()
     if (!body || !modalReply || !modalSrc) return
     const { answerId, parentId } = modalReply
-    requireLogin(() => api.postAnswerComment(modalSrc.id, answerId, body, parentId).then((d) => { patch(modalSrc.id, d.question); setModalReply(null); setModalReplyDraft('') }).catch(() => {}))
+    requireLogin(() => api.postAnswerComment(modalSrc.id, answerId, body, parentId, null, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '' }).then((d) => { patch(modalSrc.id, d.question); setModalReply(null); setModalReplyDraft('') }).catch(() => {}))
   }
   const renderModalReplyBox = (answerId, parentId) => (modalReply && modalReply.answerId === answerId && modalReply.parentId === parentId ? (
     <div style={css('display:flex; gap:9px; align-items:center; margin-top:10px;')}>
@@ -548,7 +548,7 @@ export default function HomePage() {
                                 <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarColor || AV[c.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
                                 <div style={css('flex:1; min-width:0;')}>
                                   <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                    <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{c.author}</span>
+                                    <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{c.author}</span><AnonTag p={c} />
                                     <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
                                   </div>
                                   <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(c.body)}</div>
@@ -566,7 +566,7 @@ export default function HomePage() {
                                   <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${r.avatarColor || AV[r.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9px ${FONT};${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</span>
                                   <div style={css('flex:1; min-width:0;')}>
                                     <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                      <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{r.author}</span>
+                                      <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{r.author}</span><AnonTag p={r} />
                                       <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
                                     </div>
                                     <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(r.body)}</div>
@@ -590,7 +590,7 @@ export default function HomePage() {
                     <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
                     <div style={{ flex: 1 }}>
                       <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
-                      <AnonToggle on={modalAnon} onChange={setModalAnon} alias={modalAlias} onAlias={setModalAlias} label="Trả lời ẩn danh" />
+                      <AnonToggle on={modalAnon} onChange={setModalAnon} alias={modalAlias} onAlias={setModalAlias} label="Trả lời & bình luận ẩn danh" />
                       <div style={css('display:flex; align-items:center; margin-top:10px;')}>
                         <button onClick={() => navigate(`/questions#q=${modalSrc.id}`)} style={css(`font:700 12.5px ${FONT}; color:#3366F0; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;`)}>{t('Mở trong Questions')}</button>
                         <button onClick={postModalReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; opacity:${modalDraft.trim() ? 1 : 0.5};`)}>

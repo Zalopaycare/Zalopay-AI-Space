@@ -1,5 +1,5 @@
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
-import { anonFields, maskAuthor } from '../anon.js'
+import { anonFields, maskAuthor, anonName } from '../anon.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
 import express from 'express'
 import { db, nextId } from '../db.js'
@@ -19,7 +19,8 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const saved = req.user ? !!db.prepare('SELECT 1 FROM use_case_saves WHERE use_case_id = ? AND user_id = ?').get(id, req.user.id) : false
   const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at ASC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
-    return { id: c.id, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? colorOf(u) : null, avatarUrl: u ? avatarUrlOf(u) : null, time: c.created_at, body: c.body, parentId: c.parent_id || null, authorId: c.author_id, edited: !!c.edited_at }
+    const brief = { author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? colorOf(u) : null, avatarUrl: u ? avatarUrlOf(u) : null, authorId: c.author_id }
+    return { id: c.id, ...maskAuthor(brief, c, req.user), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at }
   })
   res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
 })
@@ -106,7 +107,8 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   const parentId = req.body?.parentId ? String(req.body.parentId) : null
   if (!body) return res.status(400).json({ error: 'empty_body' })
   const cid = nextId('ucc')
-  db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body, parent_id) VALUES (?,?,?,?,?)').run(cid, id, req.user.id, body, parentId)
+  const anon = anonFields(req.body)
+  db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body, parent_id, anonymous, alias) VALUES (?,?,?,?,?,?,?)').run(cid, id, req.user.id, body, parentId, anon.anonymous, anon.alias)
   // Built-in use cases live in the frontend bundle, so the client passes the title along for the email.
   const sub = db.prepare('SELECT title, author_id FROM use_case_submissions WHERE id = ?').get(id)
   const ucTitle = sub?.title || String(req.body?.title || '').trim().slice(0, 200)
@@ -116,7 +118,7 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   // Notify, most specific first and each person once: whoever was replied to, the thread
   // starter, then the use case's owner. Built-in use cases name their owner by domain account
   // (e.g. "NamNTH"), matched only against people who have actually signed in.
-  const who = domainName(req.user.email, req.user.name)
+  const who = anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : domainName(req.user.email, req.user.name)
   const userById = (uid) => (uid ? db.prepare('SELECT * FROM users WHERE id = ?').get(uid) : null)
   const commentAuthor = (cId) => { const c = cId ? db.prepare('SELECT author_id FROM use_case_comments WHERE id = ? AND use_case_id = ?').get(cId, id) : null; return c ? userById(c.author_id) : null }
   const ownerHandle = String(req.body?.ownerHandle || '').trim().toLowerCase()
@@ -131,11 +133,11 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   for (const [u, text] of targets) {
     if (!u || told.has(u.email.toLowerCase())) continue
     told.add(u.email.toLowerCase())
-    notify(u.email, { kind: 'comment', text, href, actor: req.user.name })
-    sendMail({ to: u.email, subject: text, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
+    notify(u.email, { kind: 'comment', text, href, actor: anon.anonymous ? who : req.user.name })
+    sendMail({ to: u.email, subject: text, text: `${anon.anonymous ? who : req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where, path: href, skip: [...told] })
-  res.status(201).json({ id: cid, authorId: req.user.id, author: domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId })
+  notifyMentions(req, { text: body, where, path: href, skip: [...told], as: anon.anonymous ? who : null })
+  res.status(201).json({ id: cid, authorId: req.user.id, anonymous: !!anon.anonymous, author: anon.anonymous ? who : domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId })
 })
 
 // Share-a-use-case submissions (pending admin review).

@@ -52,7 +52,7 @@ export const api = {
   report: (type, id, reason) => request('/reports', { method: 'POST', body: JSON.stringify({ type, id, reason }) }),
   adminReports: () => request('/admin/reports'),
   resolveReport: (id, action) => request(`/admin/reports/${id}/resolve`, { method: 'POST', body: JSON.stringify({ action }) }),
-  postAnswerComment: (id, answerId, body, parentId, replyToId) => request(`/questions/${id}/answers/${answerId}/comments`, { method: 'POST', body: JSON.stringify({ body, parentId: parentId || null, replyToId: replyToId || null }) }),
+  postAnswerComment: (id, answerId, body, parentId, replyToId, opts = {}) => request(`/questions/${id}/answers/${answerId}/comments`, { method: 'POST', body: JSON.stringify({ body, parentId: parentId || null, replyToId: replyToId || null, ...opts }) }),
 
   useCaseMeta: (id) => request(`/use-cases/${id}/meta`),
   reactUseCase: (id) => request(`/use-cases/${id}/react`, { method: 'POST' }),
