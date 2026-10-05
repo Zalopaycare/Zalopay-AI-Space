@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 // Anonymous posting (questions, answers, use cases). The real author is always stored; this only
 // changes what other people see. The author and admins still see who posted (plus the alias).
 
@@ -12,9 +13,14 @@ export function anonFields(body) {
 }
 
 export const ANON_DEFAULT = 'Anonymous'
-export const anonName = (row) => (row && row.alias && String(row.alias).trim()) || ANON_DEFAULT
+// No alias → "Anonymous 4821": a number fixed per person (same on all their anonymous posts) but derived
+// with a server secret, so it can't be turned back into their account id.
+const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me'
+export const anonNumber = (userId) => 1000 + (parseInt(crypto.createHmac('sha256', SECRET).update('anon:' + userId).digest('hex').slice(0, 8), 16) % 9000)
+export const anonName = (row) => (row && row.alias && String(row.alias).trim()) || (row && row.author_id ? `${ANON_DEFAULT} ${anonNumber(row.author_id)}` : ANON_DEFAULT)
 
 const lettersOf = (name) => {
+  if (/^Anonymous( \d+)?$/.test(name)) return 'AN'
   const w = String(name).split(/\s+/).filter((x) => /^[\p{L}\p{N}]/u.test(x))
   if (!w.length) return 'AN'
   return (w.length === 1 ? w[0].slice(0, 2) : w[0][0] + w[w.length - 1][0]).toUpperCase()

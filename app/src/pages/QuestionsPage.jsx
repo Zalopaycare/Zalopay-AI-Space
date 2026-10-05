@@ -343,7 +343,7 @@ export default function QuestionsPage() {
     setAskTitle(q.hasTitle ? q.title : ''); setAskBody(q.body || '')
     setAskTopicsSel(tps); setAskTopicOtherText(tpo); setAskToolsSel(tls); setAskToolOtherText(tlo)
     setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
-    setAskAnon(!!q.anonymous); setAskAlias(q.anonymous && q.alias && q.alias !== 'Anonymous' ? q.alias : '')
+    setAskAnon(!!q.anonymous); setAskAlias(q.anonymous && q.alias && !/^Anonymous( \d+)?$/.test(q.alias) ? q.alias : '')
     setEditQId(q.id); setOpenMenuId(null); setExpanded({}); setView('ask')
   }
   // Leaving the composer drops the edit so the next "Đặt câu hỏi" starts blank.

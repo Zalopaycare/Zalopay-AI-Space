@@ -185,7 +185,7 @@ export default function UseCaseLibraryPage() {
       const ex = s.extra || {}
       setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' })
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
-      setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && s.alias !== 'Anonymous' ? s.alias : '')
+      setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && !/^Anonymous( \d+)?$/.test(s.alias) ? s.alias : '')
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       setShareCategory([].concat(s.category || []))
       const known = (list, all) => list.filter((x) => all.includes(x))

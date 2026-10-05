@@ -40,7 +40,7 @@ const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').rep
 
 const btn = (kind) => {
   const k = { approve: ['#E7F9F0', '#BEE9D3', '#00893F'], reject: ['#FFECEC', '#F5C9CB', '#D8232A'], changes: ['#FFF4E3', '#F3DCB4', '#9A5B00'], plain: ['#fff', '#DDE3EC', '#3A4757'] }[kind]
-  return `height:32px; padding:0 12px; border:1px solid ${k[1]}; border-radius:9px; background:${k[0]}; color:${k[2]}; ${font(700, 12)}; cursor:pointer; white-space:nowrap;`
+  return `height:30px; padding:0 10px; border:1px solid ${k[1]}; border-radius:9px; background:${k[0]}; color:${k[2]}; ${font(700, 11.5)}; cursor:pointer; white-space:nowrap;`
 }
 const pill = (bg, fg) => `display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${bg}; color:${fg}; ${font(700, 11.5)}; white-space:nowrap;`
 
@@ -90,6 +90,7 @@ export default function AdminConsolePage() {
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [adminStats, setAdminStats] = useState(null)
+  const [pubSort, setPubSort] = useState({ key: 'postedAt', dir: 'desc' })
   const [lbPeriod, setLbPeriod] = useState('last30') // shared by Top người đóng góp + Theo phòng ban
   const [repStatus, setRepStatus] = useState('open')
   const [submissions, setSubmissions] = useState([])
@@ -224,7 +225,22 @@ export default function AdminConsolePage() {
   const ucq = fold(ucQuery.trim())
   const ucRows = submissions.filter((s) => (ucStatus === 'all' || s.reviewStatus === ucStatus) && (!ucq || fold(s.title + ' ' + s.author + ' ' + s.team).includes(ucq)))
     .sort((a, b) => (ucSort === 'waiting' ? toDate(a.time) - toDate(b.time) : toDate(b.time) - toDate(a.time)))
+  // "Đã đăng": click a column header to sort by it (again to flip high→low / low→high).
   const pubRows = published.filter((c) => !ucq || fold(c.title + ' ' + c.author + ' ' + c.team).includes(ucq))
+    .slice().sort((a, b) => {
+      const va = pubSort.key === 'postedAt' ? String(a.postedAt || '') : a[pubSort.key] || 0
+      const vb = pubSort.key === 'postedAt' ? String(b.postedAt || '') : b[pubSort.key] || 0
+      return (va < vb ? -1 : va > vb ? 1 : 0) * (pubSort.dir === 'asc' ? 1 : -1)
+    })
+  const sortHead = (key, label, align) => {
+    const on = pubSort.key === key
+    return (
+      <button onClick={() => setPubSort((s) => (s.key === key ? { key, dir: s.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: 'desc' }))} title={on ? (pubSort.dir === 'desc' ? 'Đang xếp cao → thấp' : 'Đang xếp thấp → cao') : 'Bấm để sắp xếp'}
+        style={css(`display:inline-flex; align-items:center; gap:4px; padding:0; border:none; background:none; cursor:pointer; font:inherit; letter-spacing:inherit; color:${on ? '#2c5fff' : 'inherit'}; ${align === 'right' ? 'justify-content:flex-end;' : ''}`)}>
+        {label}<span aria-hidden="true" style={{ opacity: on ? 1 : 0.35 }}>{on && pubSort.dir === 'asc' ? '↑' : '↓'}</span>
+      </button>
+    )
+  }
   const detail = submissions.find((s) => s.id === detailId)
   const submitReview = () => {
     const note = reviewNote.trim()
@@ -282,7 +298,7 @@ export default function AdminConsolePage() {
   const headRow = (cols) => css(grid(cols) + 'padding:11px 20px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
   const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
-  const UC_COLS = 'minmax(0,2fr) 120px 104px 104px minmax(200px,1.3fr)'
+  const UC_COLS = 'minmax(0,2fr) 108px 96px 118px minmax(272px,auto)'
   const P_COLS = 'minmax(0,1fr) 70px 80px 56px 90px 130px'
   const Q_COLS = 'minmax(0,1fr) 110px 58px 62px 128px 118px'
   const U_COLS = 'minmax(0,1fr) 100px 96px 118px 64px 64px 72px'
@@ -477,7 +493,7 @@ export default function AdminConsolePage() {
               </div>
               {ucStatus === 'published' ? (
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG</span><span>UPVOTE</span><span>BÌNH LUẬN</span><span>LƯU</span><span>ĐÃ ÁP DỤNG</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG · {sortHead('postedAt', 'NGÀY ĐĂNG')}</span><span>{sortHead('upvotes', 'UPVOTE')}</span><span>{sortHead('comments', 'BÌNH LUẬN')}</span><span>{sortHead('saves', 'LƯU')}</span><span>{sortHead('applied', 'ĐÃ ÁP DỤNG')}</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {pubRows.map((c) => {
                   const sub = c.source === 'community' ? submissions.find((x) => x.id === c.id) : null
                   return (
@@ -516,7 +532,7 @@ export default function AdminConsolePage() {
                       <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; overflow-wrap:anywhere;')}>{s.author}</div>
                       <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{fmtDate(s.time)}<div style={css(font(500, 11.5) + ';color:#94a3b8;')}>{relativeTime(s.time)}</div></div>
                       <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
-                      <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                      <div style={css('display:flex; justify-content:flex-end; gap:6px; flex-wrap:nowrap;')}>
                         <button onClick={() => setDetailId(s.id)} style={css(btn('plain'))}>Xem</button>
                         {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'approved')} style={css(btn('approve'))}>Duyệt</button>}
                         {s.reviewStatus === 'pending' && <button onClick={() => askReview(s.id, 'changes_requested')} style={css(btn('changes'))}>Yêu cầu sửa</button>}

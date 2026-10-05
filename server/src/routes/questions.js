@@ -114,7 +114,7 @@ router.post('/', requireAuth, (req, res) => {
     decodedFiles.forEach((f, i) => db.prepare('INSERT INTO question_files (question_id, idx, name, mime, size, data) VALUES (?,?,?,?,?,?)').run(id, i, f.name, f.mime, f.data.length, f.data))
   })()
   const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
-  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}`, as: anon.anonymous ? anonName(anon) : null })
+  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}`, as: anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : null })
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
@@ -184,7 +184,7 @@ router.post('/:id/answers', requireAuth, (req, res) => {
   const aid = nextId('a')
   const anon = anonFields(req.body)
   db.prepare('INSERT INTO question_answers (id, question_id, author_id, body, anonymous, alias) VALUES (?,?,?,?,?,?)').run(aid, id, req.user.id, body, anon.anonymous, anon.alias)
-  const who = anon.anonymous ? anonName(anon) : domainName(req.user.email, req.user.name)
+  const who = anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : domainName(req.user.email, req.user.name)
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
