@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import AnonTag from '../components/AnonTag.jsx'
-import AnonToggle from '../components/AnonToggle.jsx'
+import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { copyWithToast } from '../lib/clipboard.js'
@@ -209,7 +209,7 @@ export default function QuestionsPage() {
     if (!commentReplyTarget) return
     const body = commentReplyDraft.trim()
     if (!body) return
-    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId, anonOpts()).then((d) => patch(qId, d.question)).catch(() => {}))
+    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId, anonOpts()).then((d) => patch(qId, d.question)).catch(alertIfAliasTaken))
     cancelCommentReply()
   }
   // Put the caret back at the end of a field after picking a mention, so typing just continues.
@@ -316,7 +316,7 @@ export default function QuestionsPage() {
         api.updateQuestion(editQId, changes).then((d) => {
           patch(editQId, d.question)
           setView('feed')
-        }).catch(() => setAskError('Không lưu được thay đổi, thử lại.'))
+        }).catch((e) => setAskError(e?.data?.message || 'Không lưu được thay đổi, thử lại.'))
         return
       }
       api.postQuestion(payload).then((d) => {
@@ -327,7 +327,7 @@ export default function QuestionsPage() {
         try { localStorage.removeItem(QUESTION_DRAFT_KEY) } catch { /* ignore */ }
         setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false); setAskAnon(false); setAskAlias('')
         window.scrollTo(0, 0)
-      }).catch(() => setAskError('Không đăng được câu hỏi, thử lại.'))
+      }).catch((e) => setAskError(e?.data?.message || 'Không đăng được câu hỏi, thử lại.'))
     })
   }
 
@@ -424,7 +424,7 @@ export default function QuestionsPage() {
           const raw = (commentDrafts[a.id] || '').trim()
           if (!raw) return
           const body = takeMentions('c:' + a.id, raw)
-          requireLogin(() => api.postAnswerComment(q.id, a.id, body, null, null, anonOpts()).then((d) => { patch(q.id, d.question); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(() => {}))
+          requireLogin(() => api.postAnswerComment(q.id, a.id, body, null, null, anonOpts()).then((d) => { patch(q.id, d.question); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(alertIfAliasTaken))
           setCommentDrafts((s) => ({ ...s, [a.id]: '' })); setCommentMention(null)
         },
         onReply: () => setOpenComments((s) => ({ ...s, [a.id]: !s[a.id] })),
@@ -471,7 +471,7 @@ export default function QuestionsPage() {
         const raw = (replyDrafts[q.id] || '').trim()
         if (!raw) return
         const body = takeMentions('q:' + q.id, raw)
-        requireLogin(() => api.postAnswer(q.id, body, { anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '' }).then((d) => patch(q.id, d.question)).catch(() => {}))
+        requireLogin(() => api.postAnswer(q.id, body, { anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '' }).then((d) => patch(q.id, d.question)).catch((e) => { if (alertIfAliasTaken(e)) setReplyDrafts((s) => ({ ...s, [q.id]: raw })) }))
         setReplyDrafts((s) => ({ ...s, [q.id]: '' })); setReplyMention(null)
       },
     }

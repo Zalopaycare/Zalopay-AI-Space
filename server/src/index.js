@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { attachUser } from './auth.js'
+import { aliasGuard } from './anon.js'
 import authRoutes from './routes/auth.js'
 import questionRoutes from './routes/questions.js'
 import useCaseRoutes from './routes/useCases.js'
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '48mb' }))
 app.use(cookieParser())
 app.use(attachUser)
+app.use('/api', aliasGuard)
 
 app.get('/api/health', (req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)

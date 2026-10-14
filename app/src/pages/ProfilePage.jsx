@@ -1,5 +1,6 @@
 import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import AnonTag from '../components/AnonTag.jsx'
+import { useAliasCheck } from '../components/AnonToggle.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import AvatarPhotoPicker from '../components/AvatarPhotoPicker.jsx'
@@ -644,11 +645,12 @@ function ProfileCard({ user, setUser }) {
   const [alias, setAlias] = useState(user.anonAlias || '')
   const [state, setState] = useState('') // '' | 'saving' | 'saved' | 'error'
   const dirty = alias.trim() !== (user.anonAlias || '')
+  const aliasTaken = useAliasCheck(dirty ? alias : '')
   const save = () => {
     setState('saving')
     api.updateMe({ anonAlias: alias.trim() })
       .then((d) => { if (d?.user) setUser(d.user); setState('saved') })
-      .catch(() => setState('error'))
+      .catch((e) => setState(e?.data?.error === 'alias_taken' ? 'taken' : 'error'))
   }
   const field = (label, hint, value, onChange, placeholder, max) => (
     <label style={css('display:block;')}>
@@ -684,6 +686,7 @@ function ProfileCard({ user, setUser }) {
         <button onClick={save} disabled={!dirty || state === 'saving'} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:${dirty ? 'pointer' : 'default'}; opacity:${dirty && state !== 'saving' ? 1 : 0.5};`)}>{state === 'saving' ? t('Đang lưu...') : t('Lưu thay đổi')}</button>
         {state === 'saved' && !dirty && <span style={css(`font:700 12.5px ${FONT}; color:#00893F;`)}>✓ {t('Đã lưu')}</span>}
         {state === 'error' && <span style={css(`font:700 12.5px ${FONT}; color:#D8232A;`)}>{t('Không lưu được, thử lại.')}</span>}
+        {(state === 'taken' || (aliasTaken && state !== 'saved')) && <span style={css(`font:700 12.5px ${FONT}; color:#D8232A;`)}>{t('Tên này trùng với một thành viên khác, hãy chọn tên khác.')}</span>}
       </div>
     </div>
   )

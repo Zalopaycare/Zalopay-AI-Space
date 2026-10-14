@@ -258,3 +258,17 @@ CREATE TABLE IF NOT EXISTS use_case_ratings (
   if (!cols.includes('cover_mime')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN cover_mime TEXT')
   if (!cols.includes('cover_data')) db.exec('ALTER TABLE use_case_submissions ADD COLUMN cover_data BLOB')
 }
+
+// Security fixes (pentest 02-10-2026). Additive only.
+// login_codes.attempts: wrong guesses against a code (it is burned after 5).
+// revoked_sessions: session tokens ended by "Đăng xuất" (kept until the token would have expired anyway).
+{
+  const cols = db.prepare('PRAGMA table_info(login_codes)').all().map((c) => c.name)
+  if (!cols.includes('attempts')) db.exec('ALTER TABLE login_codes ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0')
+  db.exec(`
+CREATE TABLE IF NOT EXISTS revoked_sessions (
+  jti TEXT PRIMARY KEY,
+  expires_at TEXT NOT NULL
+);
+`)
+}

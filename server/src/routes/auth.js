@@ -2,11 +2,13 @@ import { touch } from '../presence.js'
 import express from 'express'
 import * as client from 'openid-client'
 import { db } from '../db.js'
-import { isCompanyEmail, getOrCreateUser, issueSession, clearSession, publicUser } from '../auth.js'
+import crypto from 'node:crypto'
+import { isCompanyEmail, normalizeEmail, getOrCreateUser, issueSession, clearSession, publicUser } from '../auth.js'
 import { sendMail, devLoginCodeAllowed } from '../mailer.js'
 import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_SCOPE_BASE, SSO_REDIRECT_URI } from '../sso.js'
 import { saveGraphTokens, dropGraphTokens } from '../graphTokens.js'
 import { AVATAR_COLORS, colorOf, avatarUrlOf } from '../avatarColors.js'
+import { aliasTaken, ALIAS_TAKEN_MESSAGE } from '../anon.js'
 import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
@@ -16,17 +18,32 @@ const router = express.Router()
 const SSO_COOKIE = 'sso_pending'
 
 function genCode() {
-  return String(Math.floor(100000 + Math.random() * 900000))
+  return String(crypto.randomInt(100000, 1000000))
 }
 
+const MAX_ATTEMPTS = 5 // wrong guesses before a code is burned
+const RESEND_GAP_SEC = 60 // at most one new code per minute…
+const MAX_CODES_PER_HOUR = 5 // …and five per hour, per email
+
 router.post('/request-code', async (req, res) => {
-  const email = String(req.body?.email || '').trim().toLowerCase()
+  const email = normalizeEmail(req.body?.email)
   if (!isCompanyEmail(email)) {
     return res.status(400).json({ error: 'invalid_email', message: 'Vui lòng dùng email công ty.' })
   }
+  const recent = db.prepare(`SELECT COUNT(*) AS n, MAX(created_at) AS last FROM login_codes WHERE email = ? AND created_at > datetime('now', '-1 hour')`).get(email)
+  if (recent.n >= MAX_CODES_PER_HOUR) {
+    return res.status(429).json({ error: 'too_many_codes', message: 'Bạn đã xin mã quá nhiều lần. Vui lòng thử lại sau 1 giờ.' })
+  }
+  if (recent.last && Date.now() - new Date(recent.last.replace(' ', 'T') + 'Z').getTime() < RESEND_GAP_SEC * 1000) {
+    return res.status(429).json({ error: 'too_soon', message: 'Vui lòng đợi 1 phút rồi mới xin mã mới.' })
+  }
   const code = genCode()
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
-  db.prepare('INSERT INTO login_codes (email, code, expires_at) VALUES (?, ?, ?)').run(email, code, expiresAt)
+  // Only one valid code per email: a new code cancels every earlier one.
+  db.transaction(() => {
+    db.prepare(`UPDATE login_codes SET consumed_at = datetime('now') WHERE email = ? AND consumed_at IS NULL`).run(email)
+    db.prepare('INSERT INTO login_codes (email, code, expires_at) VALUES (?, ?, ?)').run(email, code, expiresAt)
+  })()
 
   const { sent } = await sendMail({
     to: email,
@@ -40,16 +57,25 @@ router.post('/request-code', async (req, res) => {
 })
 
 router.post('/verify-code', (req, res) => {
-  const email = String(req.body?.email || '').trim().toLowerCase()
+  const email = normalizeEmail(req.body?.email)
   const code = String(req.body?.code || '').trim()
   if (!isCompanyEmail(email) || !code) return res.status(400).json({ error: 'invalid_input' })
 
   const row = db.prepare(
-    'SELECT * FROM login_codes WHERE email = ? AND code = ? AND consumed_at IS NULL ORDER BY id DESC LIMIT 1'
-  ).get(email, code)
-  if (!row) return res.status(400).json({ error: 'invalid_code', message: 'Mã không đúng.' })
+    'SELECT * FROM login_codes WHERE email = ? AND consumed_at IS NULL ORDER BY id DESC LIMIT 1'
+  ).get(email)
+  if (!row) return res.status(400).json({ error: 'no_code', message: 'Mã đã hết hiệu lực, vui lòng lấy mã mới.' })
   if (new Date(row.expires_at).getTime() < Date.now()) {
     return res.status(400).json({ error: 'expired_code', message: 'Mã đã hết hạn, vui lòng lấy mã mới.' })
+  }
+  const ok = code.length === row.code.length && crypto.timingSafeEqual(Buffer.from(code), Buffer.from(row.code))
+  if (!ok) {
+    const attempts = row.attempts + 1
+    const burned = attempts >= MAX_ATTEMPTS
+    db.prepare(`UPDATE login_codes SET attempts = ?, consumed_at = CASE WHEN ? THEN datetime('now') ELSE consumed_at END WHERE id = ?`).run(attempts, burned ? 1 : 0, row.id)
+    return burned
+      ? res.status(429).json({ error: 'too_many_attempts', message: `Bạn đã nhập sai ${MAX_ATTEMPTS} lần, mã này đã bị huỷ. Vui lòng lấy mã mới.` })
+      : res.status(400).json({ error: 'invalid_code', message: `Mã không đúng. Bạn còn ${MAX_ATTEMPTS - attempts} lần thử.` })
   }
   db.prepare('UPDATE login_codes SET consumed_at = datetime(\'now\') WHERE id = ?').run(row.id)
 
@@ -113,7 +139,7 @@ router.get('/sso/callback', async (req, res) => {
       expectedState: state,
     })
     const claims = tokens.claims()
-    const email = String(claims.email || claims.preferred_username || '').trim().toLowerCase()
+    const email = normalizeEmail(claims.email || claims.preferred_username)
     if (!isCompanyEmail(email)) {
       return res.status(403).send('Tài khoản Microsoft này không thuộc domain công ty được phép.')
     }
@@ -144,7 +170,7 @@ router.get('/sso/callback', async (req, res) => {
 
 router.post('/logout', (req, res) => {
   if (req.user) dropGraphTokens(req.user.id)
-  clearSession(res)
+  clearSession(req, res)
   res.json({ ok: true })
 })
 
@@ -196,6 +222,12 @@ router.get('/avatar/:id', (req, res) => {
   if (!u || !u.avatar_data) return res.status(404).end()
   // URLs carry a content hash (?v=), so the browser can keep each version for a long time.
   res.set('Content-Type', u.avatar_mime).set('Cache-Control', 'private, max-age=31536000, immutable').send(u.avatar_data)
+})
+
+// Live check while typing an anonymous display name (the server also blocks it on save).
+router.get('/alias-check', requireAuth, (req, res) => {
+  const taken = aliasTaken(String(req.query.alias || '').slice(0, 40), req.user.id)
+  res.json({ taken, message: taken ? ALIAS_TAKEN_MESSAGE : '' })
 })
 
 router.get('/avatar-colors', (req, res) => {

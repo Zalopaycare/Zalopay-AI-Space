@@ -21,6 +21,7 @@ async function request(path, options = {}) {
 export const api = {
   config: () => request('/auth/config'),
   requestCode: (email) => request('/auth/request-code', { method: 'POST', body: JSON.stringify({ email }) }),
+  aliasCheck: (alias) => request('/auth/alias-check?alias=' + encodeURIComponent(alias)),
   verifyCode: (email, code) => request('/auth/verify-code', { method: 'POST', body: JSON.stringify({ email, code }) }),
   me: () => request('/auth/me'),
   updateMe: (patch) => request('/auth/me', { method: 'PATCH', body: JSON.stringify(patch) }),

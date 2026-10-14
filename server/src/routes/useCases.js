@@ -259,8 +259,8 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (!row) return res.status(404).json({ error: 'not_found' })
   if (row.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
   if (!['changes_requested', 'pending', 'approved'].includes(row.review_status)) return res.status(409).json({ error: 'not_editable' })
-  // A published use case stays published when its author edits it; admins get a heads-up to look it over.
-  const nextStatus = row.review_status === 'approved' ? 'approved' : 'pending'
+  // Every edit goes back through review, published ones included: the post leaves the library until an admin approves it again.
+  const nextStatus = 'pending'
   const f = req.body || {}
   if (!validSubmission(f)) return res.status(400).json({ error: 'missing_fields' })
   const cover = decodeCover(f.cover)
@@ -276,7 +276,10 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (f.anonymous !== undefined) { const an = anonFields(f); db.prepare('UPDATE use_case_submissions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, row.id) }
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
-    for (const to of adminEmailsFor(req)) notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng: "${f.title.trim()}"`, href: `/use-cases/${row.id}`, actor: req.user.name })
+    for (const to of adminEmailsFor(req)) {
+      notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng, chờ duyệt lại: "${f.title.trim()}"`, href: '/admin', actor: req.user.name })
+      sendMail({ to, subject: `Use case đã đăng vừa được chỉnh sửa, chờ duyệt lại: ${f.title.trim()}`, text: `${req.user.name} đã chỉnh sửa use case "${f.title.trim()}". Bài đã tạm ẩn khỏi Use Case Library cho đến khi được duyệt lại.\n\nDuyệt tại: ${appUrl(req)}/admin` }).catch(() => {})
+    }
   }
   if (row.review_status === 'changes_requested') {
     const who = domainName(req.user.email, req.user.name)

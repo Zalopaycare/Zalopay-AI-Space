@@ -1,6 +1,6 @@
 import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import AnonTag from '../components/AnonTag.jsx'
-import AnonToggle from '../components/AnonToggle.jsx'
+import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { Fragment, useEffect, useRef, useState } from 'react'
@@ -246,7 +246,7 @@ export default function HomePage() {
     const body = (modalReplyBoxRef.current ? modalReplyBoxRef.current.expand(modalReplyDraft) : modalReplyDraft).trim()
     if (!body || !modalReply || !modalSrc) return
     const { answerId, parentId } = modalReply
-    requireLogin(() => api.postAnswerComment(modalSrc.id, answerId, body, parentId, null, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '' }).then((d) => { patch(modalSrc.id, d.question); setModalReply(null); setModalReplyDraft('') }).catch(() => {}))
+    requireLogin(() => api.postAnswerComment(modalSrc.id, answerId, body, parentId, null, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '' }).then((d) => { patch(modalSrc.id, d.question); setModalReply(null); setModalReplyDraft('') }).catch(alertIfAliasTaken))
   }
   const renderModalReplyBox = (answerId, parentId) => (modalReply && modalReply.answerId === answerId && modalReply.parentId === parentId ? (
     <div style={css('display:flex; gap:9px; align-items:center; margin-top:10px;')}>
@@ -269,7 +269,7 @@ export default function HomePage() {
   const postModalReply = () => {
     const body = (modalBoxRef.current ? modalBoxRef.current.expand(modalDraft) : modalDraft).trim()
     if (!body || !modalSrc) return
-    requireLogin(() => api.postAnswer(modalSrc.id, body, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '' }).then((d) => { patch(modalSrc.id, d.question); setModalDraft('') }).catch(() => {}))
+    requireLogin(() => api.postAnswer(modalSrc.id, body, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '' }).then((d) => { patch(modalSrc.id, d.question); setModalDraft('') }).catch(alertIfAliasTaken))
   }
 
   // ---- featured use cases (real data, live helpful/save counts) ----

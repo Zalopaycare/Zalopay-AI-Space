@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { css } from '../lib/style.js'
+import { api } from '../lib/api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 
 /**
@@ -9,6 +11,7 @@ export default function AnonToggle({ on, onChange: setOn, alias, onAlias, label 
   const { user } = useAuth()
   // Turning it on fills in the default name set once in the profile (still editable per post).
   const onChange = (v) => { setOn(v); if (v && !alias && user?.anonAlias) onAlias(user.anonAlias) }
+  const taken = useAliasCheck(on ? alias : '')
   return (
     <div style={css(`display:flex; align-items:center; gap:8px; flex-wrap:wrap; ${compact ? '' : 'margin-top:8px;'}`)}>
       <label style={css('display:inline-flex; align-items:center; gap:7px; cursor:pointer; font-size:12.5px; font-weight:700; color:#3A4757; user-select:none;')}>
@@ -27,7 +30,29 @@ export default function AnonToggle({ on, onChange: setOn, alias, onAlias, label 
           style={css('height:30px; min-width:0; width:220px; max-width:100%; padding:0 10px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none; box-sizing:border-box;')}
         />
       )}
-      {on && <span style={css('font-size:11.5px; color:#94a3b8;')}>Chỉ admin biết người đăng thật.</span>}
+      {on && (taken
+        ? <span role="alert" style={css('font-size:11.5px; font-weight:700; color:#D8232A;')}>Tên này trùng với một thành viên khác, hãy chọn tên khác.</span>
+        : <span style={css('font-size:11.5px; color:#94a3b8;')}>Chỉ admin biết người đăng thật.</span>)}
     </div>
   )
+}
+
+/** Whether `alias` would pass for another member (checked on the server, debounced). */
+export function useAliasCheck(alias) {
+  const [taken, setTaken] = useState(false)
+  const value = String(alias || '').trim()
+  useEffect(() => {
+    if (!value) { setTaken(false); return }
+    let live = true
+    const timer = setTimeout(() => api.aliasCheck(value).then((d) => { if (live) setTaken(!!d.taken) }).catch(() => {}), 300)
+    return () => { live = false; clearTimeout(timer) }
+  }, [value])
+  return taken
+}
+
+/** For posts that fail because the anonymous name passes for someone else: say so (true when handled). */
+export function alertIfAliasTaken(e) {
+  if (e?.data?.error !== 'alias_taken') return false
+  window.alert(e.data.message)
+  return true
 }

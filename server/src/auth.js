@@ -1,6 +1,7 @@
 import { colorOf, avatarUrlOf } from './avatarColors.js'
 import { touch } from './presence.js'
 import jwt from 'jsonwebtoken'
+import crypto from 'node:crypto'
 import { db } from './db.js'
 import { domainName, initialsOf } from './mentions.js'
 
@@ -11,6 +12,16 @@ const ALLOWED_DOMAINS = String(process.env.COMPANY_EMAIL_DOMAINS || 'zalopay.vn,
   .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 
 export const companyDomains = () => ALLOWED_DOMAINS
+
+/** One account per mailbox: lower-case and drop Outlook "+tag" aliases (an+1@vng.com.vn → an@vng.com.vn). */
+export function normalizeEmail(email) {
+  const e = String(email || '').trim().toLowerCase()
+  const at = e.lastIndexOf('@')
+  if (at < 1) return e
+  return e.slice(0, at).replace(/\+.*$/, '') + e.slice(at)
+}
+// Accounts created before normalisation existed (an+1@…) can no longer be used.
+const isAliasEmail = (email) => /\+[^@]*@/.test(String(email || ''))
 
 export function isCompanyEmail(email) {
   const e = String(email || '').trim().toLowerCase()
@@ -44,7 +55,7 @@ export function getOrCreateUser(email) {
 }
 
 export function issueSession(res, user) {
-  const token = jwt.sign({ uid: user.id }, JWT_SECRET, { expiresIn: '30d' })
+  const token = jwt.sign({ uid: user.id }, JWT_SECRET, { expiresIn: '30d', jwtid: crypto.randomUUID() })
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
@@ -53,7 +64,19 @@ export function issueSession(res, user) {
   })
 }
 
-export function clearSession(res) {
+// Revoked tokens are stored by hash (works for tokens issued before this existed too).
+const tokenKey = (token) => crypto.createHash('sha256').update(token).digest('hex')
+
+/** "Đăng xuất": end this session on the server too, so a copied cookie stops working. */
+export function clearSession(req, res) {
+  const token = req.cookies?.[COOKIE_NAME]
+  if (token) {
+    try {
+      const { exp } = jwt.verify(token, JWT_SECRET)
+      db.prepare("INSERT OR IGNORE INTO revoked_sessions (jti, expires_at) VALUES (?, datetime(?, 'unixepoch'))").run(tokenKey(token), exp)
+      db.prepare("DELETE FROM revoked_sessions WHERE expires_at < datetime('now')").run()
+    } catch { /* invalid/expired token: nothing to revoke */ }
+  }
   res.clearCookie(COOKIE_NAME)
 }
 
@@ -62,7 +85,9 @@ export function currentUser(req) {
   if (!token) return null
   try {
     const payload = jwt.verify(token, JWT_SECRET)
-    return db.prepare('SELECT * FROM users WHERE id = ?').get(payload.uid) || null
+    if (db.prepare('SELECT 1 FROM revoked_sessions WHERE jti = ?').get(tokenKey(token))) return null
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(payload.uid)
+    return user && !isAliasEmail(user.email) ? user : null
   } catch {
     return null
   }
