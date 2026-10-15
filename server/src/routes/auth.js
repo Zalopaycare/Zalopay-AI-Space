@@ -9,7 +9,6 @@ import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_SCOPE_BASE, SSO_REDIRECT_U
 import { saveGraphTokens, dropGraphTokens } from '../graphTokens.js'
 import { AVATAR_COLORS, colorOf, avatarUrlOf } from '../avatarColors.js'
 import { aliasTaken, ALIAS_TAKEN_MESSAGE } from '../anon.js'
-import { siteSettings } from '../site.js'
 import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
@@ -86,7 +85,7 @@ router.post('/verify-code', (req, res) => {
 })
 
 router.get('/config', (req, res) => {
-  res.json({ ssoEnabled: ssoConfigured, trailer: siteSettings().trailer })
+  res.json({ ssoEnabled: ssoConfigured })
 })
 
 router.get('/sso/login', async (req, res) => {

@@ -1,7 +1,3 @@
-/* Aeonik (Zalopay brand font, bold) for display text such as the Coming soon title. Own family name so it
-   doesn't replace body text, whose Vietnamese glyphs come from the fallback fonts. */
-@font-face { font-family: 'ZP Aeonik'; src: url('./assets/fonts/aeonik-bold.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
-
 /* Page side gutter: 40px on desktop, 16px on phones. */
 :root { --zp-gutter: 40px; }
 @media (max-width: 699px) { :root { --zp-gutter: 16px; } }
