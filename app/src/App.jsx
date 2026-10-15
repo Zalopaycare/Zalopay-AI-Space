@@ -6,6 +6,7 @@ import Toaster from './components/Toaster.jsx'
 import PresenceBeat from './components/PresenceBeat.jsx'
 import PageFade from './components/PageFade.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
+import TrailerGate from './components/TrailerGate.jsx'
 import HomePage from './pages/HomePage.jsx'
 import UseCaseLibraryPage from './pages/UseCaseLibraryPage.jsx'
 import QuestionsPage from './pages/QuestionsPage.jsx'
@@ -19,6 +20,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <PageFade>
+            <TrailerGate>
             <Routes>
               <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
               <Route path="/use-cases" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
@@ -30,6 +32,7 @@ export default function App() {
               {/* hidden — no nav link, direct URL only; has its own login + admin-role gate */}
               <Route path="/admin" element={<AdminConsolePage />} />
             </Routes>
+            </TrailerGate>
           </PageFade>
           <LoginModal />
           <Toaster />

@@ -71,6 +71,7 @@ export const api = {
   submitUseCase: (payload) => request('/use-cases/submissions', { method: 'POST', body: JSON.stringify(payload) }),
   listSubmissions: (params = '') => request(`/use-cases/submissions${params}`),
   updateSubmission: (id, payload) => request(`/use-cases/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  setSite: (patch) => request('/admin/site', { method: 'PUT', body: JSON.stringify(patch) }),
   getReview: (id) => request(`/review/${encodeURIComponent(id)}`),
   addReviewComment: (id, c) => request(`/review/${encodeURIComponent(id)}/comments`, { method: 'POST', body: JSON.stringify(c) }),
   resolveReviewComment: (id, cid, resolved) => request(`/review/${encodeURIComponent(id)}/comments/${cid}`, { method: 'PATCH', body: JSON.stringify({ resolved }) }),

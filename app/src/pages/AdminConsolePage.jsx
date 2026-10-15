@@ -87,7 +87,7 @@ const Field = ({ label, value }) => (value ? (
 export default function AdminConsolePage() {
   useTitle('Admin')
   usePublishedUseCases() // loads the showcase use cases so topic / AI tool counts include them
-  const { user, openLogin, logout } = useAuth()
+  const { user, openLogin, logout, trailer, setTrailer } = useAuth()
   const navigate = useNavigate()
   const isAdmin = !!user?.isAdmin
   const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
@@ -403,6 +403,17 @@ export default function AdminConsolePage() {
                   <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>{updatedAt ? 'Cập nhật lúc ' + updatedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Đang tải…'}</span>
                   <button onClick={reloadAll} style={css(btn('plain'))}>Làm mới</button>
                 </div>
+              </div>
+
+              <div style={css(`margin-top:18px; padding:14px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; border-radius:18px; border:1px solid ${trailer ? 'rgba(255,200,60,.45)' : 'rgba(0,163,82,.45)'}; background:${trailer ? 'rgba(255,200,60,.10)' : 'rgba(0,163,82,.10)'};`)}>
+                <span style={css(`width:10px; height:10px; border-radius:50%; background:${trailer ? '#FFC83C' : '#00C163'}; box-shadow:0 0 10px ${trailer ? '#FFC83C' : '#00C163'};`)}></span>
+                <div style={css('flex:1; min-width:240px;')}>
+                  <div style={css(font(800, 14.5) + ';color:#fff;')}>{trailer ? 'Chế độ Trailer đang BẬT' : 'Trang đang mở cho mọi người'}</div>
+                  <div style={css('margin-top:2px;' + font(500, 12.5, 1.5) + ';color:#b4c3e8;')}>{trailer ? 'Chỉ admin xem được nội dung bên trong. Mọi người khác đăng nhập vào chỉ thấy màn hình "Coming soon".' : 'Mọi nhân viên đăng nhập đều xem và dùng được toàn bộ trang.'}</div>
+                </div>
+                <a href="/?preview=coming-soon" style={css('height:34px; display:inline-flex; align-items:center; padding:0 14px; border-radius:999px; border:1px solid rgba(255,255,255,.22); color:#dbe6ff; text-decoration:none;' + font(700, 12.5))}>Xem trang Coming soon</a>
+                <button onClick={() => { const next = !trailer; if (window.confirm(next ? 'Bật chế độ Trailer? Mọi người (trừ admin) sẽ chỉ thấy "Coming soon".' : 'Mở trang cho mọi người? Tất cả nhân viên đăng nhập sẽ xem được toàn bộ nội dung.')) api.setSite({ trailer: next }).then((d) => setTrailer(d.trailer)).catch(() => {}) }}
+                  style={css(`height:34px; padding:0 16px; border:none; border-radius:999px; background:${trailer ? '#00A352' : '#E0A100'}; color:#fff; cursor:pointer; white-space:nowrap;` + font(700, 12.5))}>{trailer ? 'Mở cho mọi người' : 'Bật lại Trailer'}</button>
               </div>
 
               <div style={css('margin-top:18px; padding:16px 18px;' + card)}>

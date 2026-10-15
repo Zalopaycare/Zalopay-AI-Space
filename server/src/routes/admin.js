@@ -10,6 +10,7 @@ import { vnDay } from '../auth.js'
 import { onlineNow, lastSeen } from '../presence.js'
 import { visibleShowcase, hideShowcase } from '../showcase.js'
 
+import { siteSettings, saveSiteSettings } from '../site.js'
 const router = express.Router()
 
 router.use(requireAuth, (req, res, next) => (req.user.is_admin ? next() : res.status(403).json({ error: 'admin_only' })))
@@ -176,5 +177,12 @@ router.delete('/showcase/:id', (req, res) => {
 router.get('/directory-status', async (req, res) => res.json(await directoryStatus(req.user.id)))
 
 router.use('/reports', adminReportRoutes)
+
+// Trailer mode on/off (see site.js).
+router.get('/site', (req, res) => res.json(siteSettings()))
+router.put('/site', (req, res) => {
+  if (typeof req.body?.trailer !== 'boolean') return res.status(400).json({ error: 'invalid' })
+  res.json(saveSiteSettings({ trailer: req.body.trailer }))
+})
 
 export default router
