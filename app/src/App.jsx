@@ -11,6 +11,7 @@ import UseCaseLibraryPage from './pages/UseCaseLibraryPage.jsx'
 import QuestionsPage from './pages/QuestionsPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import AdminConsolePage from './pages/AdminConsolePage.jsx'
+import ReviewPage from './pages/ReviewPage.jsx'
 
 export default function App() {
   return (
@@ -24,6 +25,8 @@ export default function App() {
               <Route path="/use-cases/:id" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
               <Route path="/questions" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
               <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+              {/* review page for a submitted use case: admins comment, the author replies (others get "not found") */}
+              <Route path="/review/:id" element={<RequireAuth><ReviewPage /></RequireAuth>} />
               {/* hidden — no nav link, direct URL only; has its own login + admin-role gate */}
               <Route path="/admin" element={<AdminConsolePage />} />
             </Routes>

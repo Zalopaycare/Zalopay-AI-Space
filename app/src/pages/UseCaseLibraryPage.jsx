@@ -145,6 +145,12 @@ export default function UseCaseLibraryPage() {
   const [shareError, setShareError] = useState('')
   // Editing a submission the admin sent back ("Yêu cầu chỉnh sửa"): { id, note } | null
   const [editing, setEditing] = useState(null)
+  // Open review comments on the post being edited, shown under the fields they're about.
+  const [editReviewNotes, setEditReviewNotes] = useState([])
+  useEffect(() => {
+    if (!editing?.id) { setEditReviewNotes([]); return }
+    api.getReview(editing.id).then((d) => setEditReviewNotes((d.comments || []).filter((c) => !c.resolved))).catch(() => setEditReviewNotes([]))
+  }, [editing?.id])
   const [draftSavedAt, setDraftSavedAt] = useState('')
   const [hasDraft, setHasDraft] = useState(false)
 
@@ -911,12 +917,13 @@ export default function UseCaseLibraryPage() {
 
               {shareStage === 'form' && (
                 <div>
-                  {editing?.note && (
+                  {(editing?.note || editReviewNotes.length > 0) && (
                     <div style={css('display:flex; gap:12px; margin-bottom:16px; padding:14px 18px; border-radius:16px; background:#FFF7E8; border:1px solid #F3DCB4;')}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A5B00" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: 2 }}><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
                       <div>
                         <div style={css('font:800 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#7A4700;')}>Admin cần bạn chỉnh sửa / bổ sung</div>
-                        <div style={css('margin-top:4px; font:500 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#5C3A00; white-space:pre-wrap;')}>{editing.note}</div>
+                        {editing.note && <div style={css('margin-top:4px; font:500 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#5C3A00; white-space:pre-wrap;')}>{editing.note}</div>}
+                        {editReviewNotes.length > 0 && <div style={css('margin-top:4px; font:500 13px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#5C3A00;')}>{editReviewNotes.length} góp ý chưa xử lý, hiện ngay dưới từng mục cần sửa. <a href={'/review/' + encodeURIComponent(editing.id)} target="_blank" rel="noopener" style={css('color:#2c5fff; font-weight:700;')}>Xem trên bài ↗</a></div>}
                       </div>
                     </div>
                   )}
@@ -998,6 +1005,11 @@ export default function UseCaseLibraryPage() {
                           <span style={css(`font-size:11px; font-weight:700; color:${f.reqColor};`)}>{f.req === 'Required' ? t('Bắt buộc') : t('Không bắt buộc')}</span>
                         </div>
                         <div style={css('margin-top:5px; font-size:12.5px; color:#94a3b8;')}>{f.hint}</div>
+                        {editReviewNotes.filter((c) => c.field === f.key).map((c) => (
+                          <div key={c.id} style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF8E1; border-left:3px solid #F5C542; font-size:13px; line-height:1.55; color:#5C3A00;')}>
+                            <b>Góp ý của {c.author.name}:</b> {c.quote ? <i>“{c.quote}” </i> : null}{c.body}
+                          </div>
+                        ))}
                         {f.isInput && (
                           <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:13px 15px; font-family:inherit; font-size:15px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;')} />
                         )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
+import { safeHref } from '../lib/safeHref.js'
 import { css, hoverClass } from '../lib/style.js'
 import AnonTag from './AnonTag.jsx'
 import { Blocks, CopyButton, Figure, Placeholders, Prompt, PromptTargetContext } from './UseCaseGuide.jsx'
@@ -439,7 +440,7 @@ export function TechSection({ tech, t, num = '8' }) {
           {tech.images && tech.images.length > 0 && <div style={css('padding:16px; border-radius:14px; background:#fff;')}><Images images={tech.images} style={{ marginTop: 0 }} /></div>}
           {tech.repo && !tech.repo.href && <div style={css('font-size:13px; color:#cfe0ff;')}>Repo: <b>{tech.repo.label}</b></div>}
           {tech.repo && tech.repo.href && (
-            <a href={tech.repo.href} target="_blank" rel="noopener" className={hoverClass('background:rgba(255,255,255,.14) !important;')} style={css('align-self:flex-start; display:inline-flex; align-items:center; gap:9px; padding:10px 16px; border:1px solid rgba(130,170,255,.4); border-radius:999px; color:#fff; text-decoration:none; font-size:13px; font-weight:700;')}>
+            <a href={safeHref(tech.repo.href) || undefined} target="_blank" rel="noopener" className={hoverClass('background:rgba(255,255,255,.14) !important;')} style={css('align-self:flex-start; display:inline-flex; align-items:center; gap:9px; padding:10px 16px; border:1px solid rgba(130,170,255,.4); border-radius:999px; color:#fff; text-decoration:none; font-size:13px; font-weight:700;')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
               {t('Mở repo')} · {tech.repo.label}
             </a>

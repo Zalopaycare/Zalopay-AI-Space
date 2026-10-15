@@ -6,6 +6,7 @@ import { attachUser } from './auth.js'
 import { aliasGuard } from './anon.js'
 import authRoutes from './routes/auth.js'
 import questionRoutes from './routes/questions.js'
+import reviewRoutes from './routes/review.js'
 import useCaseRoutes from './routes/useCases.js'
 import notificationRoutes from './notifications.js'
 import adminRoutes from './routes/admin.js'
@@ -40,6 +41,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/use-cases', useCaseRoutes)
+app.use('/api/review', reviewRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/reports', reportRoutes)

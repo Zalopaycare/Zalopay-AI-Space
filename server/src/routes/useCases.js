@@ -9,6 +9,8 @@ import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../men
 import { notify, notifyUpvotes } from '../notifications.js'
 
 const router = express.Router()
+// Only http(s) links are stored (a "javascript:…" link would run code when clicked).
+const safeLink = (v) => { const u = String(v || '').trim().slice(0, 1000); return /^https?:\/\/\S+$/i.test(u) ? u : '' }
 const asArr = (s) => { try { const v = JSON.parse(s); return Array.isArray(v) ? v : [] } catch { return [] } }
 
 // Reactions + comments for ANY use case id (the 5 seed cases c1..c5, or a submitted+approved one).
@@ -140,6 +142,28 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   res.status(201).json({ id: cid, authorId: req.user.id, anonymous: !!anon.anonymous, author: anon.anonymous ? who : domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId })
 })
 
+/** A submission as `viewer` may see it (anonymous authors masked; reviewer/account only for admins). */
+export function serializeSubmission(r, viewer) {
+  const author = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
+  // Anonymous posts: everyone but the author and admins sees the alias, a grey avatar and no id.
+  const who = maskAuthor({ author: author ? author.name : '—', fullName: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, avatarColor: colorOf(author), avatarUrl: avatarUrlOf(author), team: r.team }, r, viewer)
+  return {
+    id: r.id, title: r.title, audience: r.audience, team: who.anonymous && who.authorId === null ? '' : r.team, problem: r.problem, solution: r.solution,
+    prep: r.prep, prompt: r.prompt_text, result: r.result, limits: r.limits, contact: r.contact, link: r.link,
+    kind: r.kind, status: r.status_field, level: r.level,
+    category: asArr(r.category), topics: asArr(r.topics), tools: asArr(r.tools),
+    reviewStatus: r.review_status, adminNote: r.admin_note,
+    author: who.author, authorAvatarColor: who.avatarColor, authorAvatarUrl: who.avatarUrl, authorDomain: who.anonymous && who.authorId === null ? who.author : who.fullName, authorId: who.authorId, time: r.created_at,
+    anonymous: !!who.anonymous, alias: who.anonymous ? who.alias : null, realAuthor: who.realAuthor || null,
+    authorAccount: viewer && viewer.is_admin && author ? handleOf(author.email) : undefined,
+    publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
+    // Only admins learn which admin reviewed it.
+    reviewedBy: viewer && viewer.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
+    extra: parseExtra(r.extra),
+    coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
+  }
+}
+
 // Share-a-use-case submissions (pending admin review).
 router.get('/submissions', requireAuth, (req, res) => {
   const onlyMine = req.query.mine === '1' && req.user
@@ -149,28 +173,7 @@ router.get('/submissions', requireAuth, (req, res) => {
   else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' ORDER BY COALESCE(published_at, created_at) DESC").all()
   else if (req.user.is_admin) rows = db.prepare('SELECT * FROM use_case_submissions ORDER BY created_at DESC').all()
   else return res.status(403).json({ error: 'admin_only' })
-  res.json({
-    submissions: rows.map((r) => {
-      const author = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
-      // Anonymous posts: everyone but the author and admins sees the alias, a grey avatar and no id.
-      const who = maskAuthor({ author: author ? author.name : '—', fullName: author ? domainName(author.email, author.name) : '—', authorId: r.author_id, avatarColor: colorOf(author), avatarUrl: avatarUrlOf(author), team: r.team }, r, req.user)
-      return {
-        id: r.id, title: r.title, audience: r.audience, team: who.anonymous && who.authorId === null ? '' : r.team, problem: r.problem, solution: r.solution,
-        prep: r.prep, prompt: r.prompt_text, result: r.result, limits: r.limits, contact: r.contact, link: r.link,
-        kind: r.kind, status: r.status_field, level: r.level,
-        category: asArr(r.category), topics: asArr(r.topics), tools: asArr(r.tools),
-        reviewStatus: r.review_status, adminNote: r.admin_note,
-        author: who.author, authorAvatarColor: who.avatarColor, authorAvatarUrl: who.avatarUrl, authorDomain: who.anonymous && who.authorId === null ? who.author : who.fullName, authorId: who.authorId, time: r.created_at,
-        anonymous: !!who.anonymous, alias: who.anonymous ? who.alias : null, realAuthor: who.realAuthor || null,
-        authorAccount: req.user && req.user.is_admin && author ? handleOf(author.email) : undefined,
-        publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
-        // Only admins learn which admin reviewed it.
-        reviewedBy: req.user && req.user.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
-        extra: parseExtra(r.extra),
-        coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
-      }
-    }),
-  })
+  res.json({ submissions: rows.map((r) => serializeSubmission(r, req.user)) })
 })
 
 const reviewerName = (uid) => { const u = uid ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(uid) : null; return u ? domainName(u.email, u.name) : null }
@@ -235,7 +238,7 @@ router.post('/submissions', requireAuth, (req, res) => {
     (id, title, audience, team, problem, solution, prep, prompt_text, result, limits, contact, link, kind, status_field, level, category, topics, tools, author_id)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(id, f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
-      f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(),
+      f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link),
       f.kind, f.status, f.level, JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), req.user.id)
   saveCover(id, cover)
   const anon = anonFields(f)
@@ -268,7 +271,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
     limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = ?, edited_at = datetime('now') WHERE id = ?`)
     .run(f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
-      String(f.limits || '').trim(), String(f.contact || '').trim(), String(f.link || '').trim(), f.kind, f.status, f.level,
+      String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link), f.kind, f.status, f.level,
       JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), nextStatus, row.id)
   saveCover(row.id, cover)
   // Older clients don't send `extra`; leave what's stored untouched then.
@@ -298,6 +301,7 @@ router.delete('/submissions/:id', requireAuth, (req, res) => {
   const block = removalCheck(req, row.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   db.prepare('DELETE FROM use_case_submissions WHERE id = ?').run(req.params.id)
+  db.prepare('DELETE FROM review_comments WHERE submission_id = ?').run(req.params.id)
   afterRemoval(req, { authorId: row.author_id, what: 'use case', title: row.title, content: row.problem })
   res.json({ ok: true })
 })
@@ -308,7 +312,9 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
   const status = req.body?.status
   const note = String(req.body?.note || '').trim().slice(0, 2000)
   if (!['approved', 'rejected', 'changes_requested'].includes(status)) return res.status(400).json({ error: 'invalid_status' })
-  if (status !== 'approved' && !note) return res.status(400).json({ error: 'note_required' })
+  // "Yêu cầu chỉnh sửa" may rely on the comments pinned on the review page instead of a note.
+  const openComments = db.prepare('SELECT COUNT(*) n FROM review_comments WHERE submission_id = ? AND parent_id IS NULL AND resolved_at IS NULL').get(id).n
+  if (status !== 'approved' && !note && !(status === 'changes_requested' && openComments)) return res.status(400).json({ error: 'note_required' })
   const before = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
   if (!before) return res.status(404).json({ error: 'not_found' })
   db.prepare(`UPDATE use_case_submissions SET review_status = ?, admin_note = ?, reviewed_at = datetime('now'), reviewed_by = ?,
@@ -329,9 +335,9 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
         text: `Use case "${row.title}" chưa được duyệt.\n\nLý do: ${note}\n\nXem tại: ${link}`,
       },
       changes_requested: {
-        n: { kind: 'changes', text: `Use case "${row.title}" cần bổ sung trước khi duyệt: ${note}`, href: '/profile#usecase' },
+        n: { kind: 'changes', text: `Use case "${row.title}" cần bổ sung trước khi duyệt${openComments ? ` (${openComments} góp ý)` : ''}${note ? `: ${note}` : ''}`, href: `/review/${encodeURIComponent(row.id)}` },
         subject: 'Use case của bạn cần chỉnh sửa / bổ sung',
-        text: `Admin đã xem use case "${row.title}" và cần bạn chỉnh sửa / bổ sung trước khi duyệt:\n\n${note}\n\nVào "Use case của tôi", bấm "Chỉnh sửa & gửi lại" để cập nhật: ${link}`,
+        text: `Admin đã xem use case "${row.title}" và cần bạn chỉnh sửa / bổ sung trước khi duyệt.${note ? `\n\n${note}` : ''}${openComments ? `\n\nCó ${openComments} góp ý được ghi ngay trên từng đoạn của bài.` : ''}\n\nXem góp ý và chỉnh sửa tại: ${appUrl(req)}/review/${encodeURIComponent(row.id)}`,
       },
     }[status]
     notify(author.email, msg.n)

@@ -71,6 +71,10 @@ export const api = {
   submitUseCase: (payload) => request('/use-cases/submissions', { method: 'POST', body: JSON.stringify(payload) }),
   listSubmissions: (params = '') => request(`/use-cases/submissions${params}`),
   updateSubmission: (id, payload) => request(`/use-cases/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  getReview: (id) => request(`/review/${encodeURIComponent(id)}`),
+  addReviewComment: (id, c) => request(`/review/${encodeURIComponent(id)}/comments`, { method: 'POST', body: JSON.stringify(c) }),
+  resolveReviewComment: (id, cid, resolved) => request(`/review/${encodeURIComponent(id)}/comments/${cid}`, { method: 'PATCH', body: JSON.stringify({ resolved }) }),
+  deleteReviewComment: (id, cid) => request(`/review/${encodeURIComponent(id)}/comments/${cid}`, { method: 'DELETE' }),
   reviewSubmission: (id, status, note) => request(`/use-cases/submissions/${id}/review`, { method: 'POST', body: JSON.stringify({ status, note }) }),
   deleteSubmission: (id, reason) => request(`/use-cases/submissions/${id}`, delBody(reason)),
 }

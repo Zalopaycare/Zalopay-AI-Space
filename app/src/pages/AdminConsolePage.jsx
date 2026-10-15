@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import TrendCard from '../components/TrendCard.jsx'
 import { useTitle } from '../hooks/useTitle.js'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
@@ -88,6 +88,7 @@ export default function AdminConsolePage() {
   useTitle('Admin')
   usePublishedUseCases() // loads the showcase use cases so topic / AI tool counts include them
   const { user, openLogin, logout } = useAuth()
+  const navigate = useNavigate()
   const isAdmin = !!user?.isAdmin
   const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
   const [reports, setReports] = useState([])
@@ -555,7 +556,7 @@ export default function AdminConsolePage() {
                   const st = UC_STATUS[s.reviewStatus] || UC_STATUS.pending
                   return (
                     <div key={s.id} style={bodyRow(UC_COLS)}>
-                      <div style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => setDetailId(s.id)}>
+                      <div style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => navigate('/review/' + encodeURIComponent(s.id))}>
                         <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a; overflow-wrap:anywhere;')}>{s.title}</div>
                         <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0]].filter(Boolean).join(' · ')}</div>
                         {REVIEWED_BY[s.reviewStatus] && <div style={css('margin-top:4px;' + font(600, 12) + ';color:#475569;')}>{REVIEWED_BY[s.reviewStatus]} <b style={{ color: '#0f172a' }}>{s.reviewedBy || 'Không rõ'}</b>{s.reviewedAt ? ' · ' + relativeTime(s.reviewedAt) : ''}</div>}
@@ -567,7 +568,7 @@ export default function AdminConsolePage() {
                       <div style={css(font(600, 12.5) + ';color:' + (s.reviewedBy ? '#3A4757' : '#94a3b8') + '; overflow-wrap:anywhere;')}>{s.reviewedBy || (s.reviewedAt ? 'Không rõ' : '—')}</div>
                       <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
                       <div style={css('display:flex; justify-content:flex-end; gap:6px; flex-wrap:nowrap;')}>
-                        <button onClick={() => setDetailId(s.id)} style={css(btn('plain'))}>Xem</button>
+                        <button onClick={() => navigate('/review/' + encodeURIComponent(s.id))} style={css(btn('plain'))}>{['pending', 'changes_requested'].includes(s.reviewStatus) ? 'Xem & góp ý' : 'Xem'}</button>
                         {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'approved')} style={css(btn('approve'))}>Duyệt</button>}
                         {s.reviewStatus === 'pending' && <button onClick={() => askReview(s.id, 'changes_requested')} style={css(btn('changes'))}>Yêu cầu sửa</button>}
                         {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'rejected')} style={css(btn('reject'))}>Từ chối</button>}

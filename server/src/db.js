@@ -272,3 +272,21 @@ CREATE TABLE IF NOT EXISTS revoked_sessions (
 );
 `)
 }
+
+// Review comments: an admin's notes pinned to a field (and optionally a quoted passage) of a submission
+// under review, Google-Docs style; the author replies and marks them done. Additive only.
+db.exec(`
+CREATE TABLE IF NOT EXISTS review_comments (
+  id TEXT PRIMARY KEY,
+  submission_id TEXT NOT NULL,
+  field TEXT NOT NULL DEFAULT '',
+  quote TEXT NOT NULL DEFAULT '',
+  body TEXT NOT NULL,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  parent_id TEXT,
+  resolved_at TEXT,
+  resolved_by INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS review_comments_sub ON review_comments (submission_id);
+`)

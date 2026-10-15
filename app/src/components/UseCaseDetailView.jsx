@@ -1,4 +1,5 @@
 import { css } from '../lib/style.js'
+import { safeHref } from '../lib/safeHref.js'
 import { Section, ProblemSolution, ResultBody, ApplySection, TechSection, BulletList, PlainTable, Images } from './UseCaseDetailParts.jsx'
 
 // The body of a use case detail page (parts 2–9 of the template), shared by the real page and the
@@ -62,7 +63,7 @@ export function DetailSections({ id, tp, t, layout }) {
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>
             {tp.next.steps.length > 0 && <div><div style={css(SUBHEAD)}>{t('Sắp làm')}</div><BulletList items={tp.next.steps} dot="#2c5fff" /></div>}
             {tp.next.contact.length > 0 && <div><div style={css(SUBHEAD)}>{t('Liên hệ')}</div><BulletList items={tp.next.contact} dot="#9FB6E8" /></div>}
-            {tp.next.link && <a href={tp.next.link} target="_blank" rel="noopener" style={css('align-self:flex-start; font-size:13.5px; font-weight:700; color:#2c5fff;')}>{t('Tài liệu gốc')} ↗</a>}
+            {safeHref(tp.next.link) && <a href={safeHref(tp.next.link)} target="_blank" rel="noopener" style={css('align-self:flex-start; font-size:13.5px; font-weight:700; color:#2c5fff;')}>{t('Tài liệu gốc')} ↗</a>}
           </div>
         </Section>
       )}
