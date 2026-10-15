@@ -25,7 +25,7 @@ export default function ComingSoon({ preview = false }) {
           <HeroWordmark />
         </div>
         <p className="zp-tagline" style={css(`margin:40px auto 0; max-width:560px; font:500 15px/1.6 ${FONT}; color:rgba(214,226,250,.8); text-wrap:balance;`)}>Không gian cho các Zalopay Starter trao đổi kiến thức và khám phá cách ứng dụng AI trong công việc. Hẹn gặp bạn sớm!</p>
-        <h1 className="zp-tagline zp-coming" style={css(`margin:34px 0 0; font:700 clamp(34px, 6vw, 64px)/1.05 'ZP Aeonik','Aeonik Pro',${FONT}; letter-spacing:.06em; text-transform:uppercase; background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:0 0 40px rgba(80,140,255,.35);`)}>COMING SOON</h1>
+        <h1 className="zp-tagline zp-coming" style={css(`margin:34px 0 0; font:700 clamp(34px, 6vw, 64px)/1.05 'ZP Aeonik','Aeonik Pro',${FONT}; letter-spacing:-.01em; word-spacing:-.08em; text-transform:uppercase; background:linear-gradient(180deg,#ffffff 0%,#9fc0ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:0 0 40px rgba(80,140,255,.35);`)}>COMING SOON</h1>
       </main>
     </div>
   )
