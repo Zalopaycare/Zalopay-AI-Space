@@ -993,7 +993,7 @@ export default function UseCaseLibraryPage() {
                         </div>
                         <div style={css(`margin:-4px 0 24px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon ? '#F2F6FF' : '#F8FAFE'};`)}>
                           <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Người đăng')}</div>
-                          <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật. Admin vẫn biết bạn là ai.')}</div>
+                          <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật.')}</div>
                           <AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
                         </div>
                       </>

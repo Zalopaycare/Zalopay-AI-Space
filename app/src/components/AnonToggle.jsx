@@ -30,9 +30,7 @@ export default function AnonToggle({ on, onChange: setOn, alias, onAlias, label 
           style={css('height:30px; min-width:0; width:220px; max-width:100%; padding:0 10px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none; box-sizing:border-box;')}
         />
       )}
-      {on && (taken
-        ? <span role="alert" style={css('font-size:11.5px; font-weight:700; color:#D8232A;')}>Tên này trùng với một thành viên khác, hãy chọn tên khác.</span>
-        : <span style={css('font-size:11.5px; color:#94a3b8;')}>Chỉ admin biết người đăng thật.</span>)}
+      {on && taken && <span role="alert" style={css('font-size:11.5px; font-weight:700; color:#D8232A;')}>Tên này trùng với một thành viên khác, hãy chọn tên khác.</span>}
     </div>
   )
 }

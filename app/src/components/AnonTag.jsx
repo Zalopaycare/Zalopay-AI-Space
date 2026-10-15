@@ -12,7 +12,7 @@ export default function AnonTag({ p, dark = false }) {
   // Everyone else just sees the Anonymous name, no chip; the chip is for the author and admins.
   if (!mine && !p.realAuthor) return null
   const label = mine ? 'Ẩn danh · bài của bạn' : p.realAuthor ? `Ẩn danh · ${p.realAuthor}` : 'Ẩn danh'
-  const title = mine ? 'Người khác chỉ thấy tên ẩn danh. Admin vẫn biết bạn là người đăng.' : p.realAuthor ? 'Chỉ admin thấy người đăng thật.' : 'Người đăng chọn ẩn danh'
+  const title = mine ? 'Người khác chỉ thấy tên ẩn danh.' : p.realAuthor ? 'Chỉ admin thấy người đăng thật.' : 'Người đăng chọn ẩn danh'
   return (
     <span
       title={title}

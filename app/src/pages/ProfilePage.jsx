@@ -680,7 +680,7 @@ function ProfileCard({ user, setUser }) {
       </div>
       <div style={css(`margin-top:6px; font:500 12px ${FONT}; color:#94a3b8;`)}>{t('Họ tên và phòng ban lấy tự động từ tài khoản Microsoft công ty khi bạn đăng nhập, không chỉnh sửa được.')}</div>
       <div style={{ marginTop: 14 }}>
-        {field(t('Tên hiển thị khi ẩn danh'), t('Tự điền mỗi khi bạn bật "Đăng ẩn danh". Để trống thì hiện "Anonymous" kèm một số riêng của bạn (ví dụ Anonymous 4821). Admin vẫn biết bạn là ai.'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
+        {field(t('Tên hiển thị khi ẩn danh'), t('Tự điền mỗi khi bạn bật "Đăng ẩn danh". Để trống thì hiện "Anonymous" kèm một số riêng của bạn (ví dụ Anonymous 4821).'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
       </div>
       <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
         <button onClick={save} disabled={!dirty || state === 'saving'} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:${dirty ? 'pointer' : 'default'}; opacity:${dirty && state !== 'saving' ? 1 : 0.5};`)}>{state === 'saving' ? t('Đang lưu...') : t('Lưu thay đổi')}</button>
