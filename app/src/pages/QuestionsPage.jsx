@@ -8,6 +8,7 @@ import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
 import { AI_TOOLS, OTHER as TOOL_OTHER, normalizeTool } from '../lib/taxonomy.js'
 import { createPortal } from 'react-dom'
+import { markOtherPick, focusIfJustPicked } from '../lib/focusOther.js'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -813,8 +814,8 @@ export default function QuestionsPage() {
         )}
 
         {view === 'ask' && createPortal(
-          <div onClick={() => setView('feed')} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:44px 24px; overflow-y:auto;')}>
-            <div ref={askDialog.ref} {...askDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:760px; max-width:100%;')}>
+          <div className="zp-overlay-in" onClick={() => setView('feed')} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:44px 24px; overflow-y:auto;')}>
+            <div ref={askDialog.ref} {...askDialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('width:760px; max-width:100%; margin:auto 0;')}>
               <div style={css('display:flex; align-items:flex-start; gap:16px; margin-bottom:20px;')}>
                 <div style={{ flex: 1 }}>
                   <h1 style={css('margin:0; font:800 30px/1.2 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#fff; letter-spacing:-.01em;')}>{editQId ? t('Chỉnh sửa câu hỏi') : t('Đặt câu hỏi')}</h1>
@@ -903,19 +904,19 @@ export default function QuestionsPage() {
                       <div style={css('font:700 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:.04em; color:#94a3b8; margin-top:16px;')}>{t('Topic (không bắt buộc)')}</div>
                       <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
                         {askTopics.map((tp) => (
-                          <button key={tp.label} onClick={tp.onPick} style={css(`height:30px; padding:0 13px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tp.label}</button>
+                          <button key={tp.label} onClick={() => { if (tp.label === OTHER) markOtherPick(); tp.onPick() }} style={css(`height:30px; padding:0 13px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tp.label}</button>
                         ))}
                         {askTopicsSel.indexOf(OTHER) >= 0 && (
-                          <input autoFocus value={askTopicOtherText} onChange={(e) => setAskTopicOtherText(e.target.value)} placeholder={t('Nhập topic của bạn...')} style={css('flex:1 1 200px; min-width:160px; height:30px; box-sizing:border-box; padding:0 12px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; outline:none;')} />
+                          <input ref={focusIfJustPicked} value={askTopicOtherText} onChange={(e) => setAskTopicOtherText(e.target.value)} placeholder={t('Nhập topic của bạn...')} style={css('flex:1 1 200px; min-width:160px; height:30px; box-sizing:border-box; padding:0 12px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; outline:none;')} />
                         )}
                       </div>
                       <div style={css('font:700 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:.04em; color:#94a3b8; margin-top:16px;')}>{t('Công cụ AI (không bắt buộc)')}</div>
                       <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
                         {askTools.map((tl) => (
-                          <button key={tl.label} onClick={tl.onPick} style={css(`height:30px; padding:0 13px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tl.label}</button>
+                          <button key={tl.label} onClick={() => { if (tl.label === OTHER) markOtherPick(); tl.onPick() }} style={css(`height:30px; padding:0 13px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{tl.label}</button>
                         ))}
                         {askToolsSel.indexOf(OTHER) >= 0 && (
-                          <input autoFocus value={askToolOtherText} onChange={(e) => setAskToolOtherText(e.target.value)} placeholder={t('Nhập công cụ AI của bạn...')} style={css('flex:1 1 200px; min-width:160px; height:30px; box-sizing:border-box; padding:0 12px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; outline:none;')} />
+                          <input ref={focusIfJustPicked} value={askToolOtherText} onChange={(e) => setAskToolOtherText(e.target.value)} placeholder={t('Nhập công cụ AI của bạn...')} style={css('flex:1 1 200px; min-width:160px; height:30px; box-sizing:border-box; padding:0 12px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; outline:none;')} />
                         )}
                       </div>
                       {askError && <div style={css('margin-top:10px; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{askError}</div>}

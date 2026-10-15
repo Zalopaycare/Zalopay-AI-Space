@@ -11,6 +11,7 @@ import { renderMentions } from '../components/MentionField.jsx'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useDialog } from '../hooks/useDialog.js'
+import { markOtherPick, focusIfJustPicked } from '../lib/focusOther.js'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -849,10 +850,11 @@ export default function UseCaseLibraryPage() {
 
     return (
       <div
+        className="zp-overlay-in"
         onClick={closeShare}
         style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,8,20,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:48px 24px; overflow-y:auto; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}
       >
-        <div ref={shareDialog.ref} {...shareDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:880px; max-width:100%; background:#eef1f9; border-radius:24px; outline:none; box-shadow:0 44px 110px rgba(2,8,30,.6); overflow:hidden;')}>
+        <div ref={shareDialog.ref} {...shareDialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('width:880px; max-width:100%; background:#eef1f9; border-radius:24px; outline:none; box-shadow:0 44px 110px rgba(2,8,30,.6); overflow:hidden;')}>
           <div style={css('position:relative; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%); padding:26px 32px 28px;')}>
             <button onClick={closeShare} title="Đóng" aria-label="Đóng" style={css('position:absolute; top:22px; right:22px; width:36px; height:36px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#dbe6ff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
@@ -1052,10 +1054,10 @@ export default function UseCaseLibraryPage() {
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareTopics.map((tp) => (
-                            <button key={tp.label} onClick={tp.onPick} style={css(`height:36px; padding:0 15px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; opacity:${tp.opacity};`)}>{tp.label}</button>
+                            <button key={tp.label} onClick={() => { if (tp.label === 'Khác') markOtherPick(); tp.onPick() }} style={css(`height:36px; padding:0 15px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; opacity:${tp.opacity};`)}>{tp.label}</button>
                           ))}
                           {shareTopicSel.indexOf('Khác') >= 0 && (
-                            <input autoFocus value={shareTopicOtherText} onChange={(e) => setShareTopicOtherText(e.target.value)} placeholder="Nhập topic khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
+                            <input ref={focusIfJustPicked} value={shareTopicOtherText} onChange={(e) => setShareTopicOtherText(e.target.value)} placeholder="Nhập topic khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
                           )}
                         </div>
 
@@ -1065,10 +1067,10 @@ export default function UseCaseLibraryPage() {
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareTools.map((tl) => (
-                            <button key={tl.label} onClick={tl.onPick} style={css(`height:36px; padding:0 15px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{tl.label}</button>
+                            <button key={tl.label} onClick={() => { if (tl.label === 'Khác') markOtherPick(); tl.onPick() }} style={css(`height:36px; padding:0 15px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{tl.label}</button>
                           ))}
                           {shareToolSel.indexOf('Khác') >= 0 && (
-                            <input autoFocus value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} placeholder="Nhập công cụ AI khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
+                            <input ref={focusIfJustPicked} value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} placeholder="Nhập công cụ AI khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
                           )}
                         </div>
 

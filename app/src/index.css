@@ -204,3 +204,10 @@ html.zp-vt .zp-page-in { animation: none; }
 
 /* A card whose ⋯ menu is open sits above its neighbours, so the menu is never hidden under the next card. */
 .zp-card:has([role="menu"]) { z-index: 40; }
+
+/* Modal open: the backdrop fades in and the box rises in slightly, instead of popping in. */
+@keyframes zp-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zp-dialog-in { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+.zp-overlay-in { animation: zp-overlay-in .18s ease-out both; }
+.zp-dialog-in { animation: zp-dialog-in .24s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .zp-overlay-in, .zp-dialog-in { animation: none; } }
