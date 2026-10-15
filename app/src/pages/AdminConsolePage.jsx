@@ -11,7 +11,7 @@ import { useNotifications, markNotificationsRead } from '../lib/notifications.js
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import { downloadCsv } from '../lib/csv.js'
-import { avatarPhotoCss } from '../components/Avatar.jsx'
+import Avatar, { avatarPhotoCss } from '../components/Avatar.jsx'
 
 // Admin console: review use case submissions and look at the community's real numbers.
 // Everything here comes from the API — no sample data.
@@ -95,6 +95,15 @@ export default function AdminConsolePage() {
   const [adminStats, setAdminStats] = useState(null)
   const [pubSort, setPubSort] = useState({ key: 'postedAt', dir: 'desc' })
   const [lbPeriod, setLbPeriod] = useState('last30') // shared by Top người đóng góp + Theo phòng ban
+  const [acctOpen, setAcctOpen] = useState(false)
+  const acctRef = useRef(null)
+  useEffect(() => {
+    if (!acctOpen) return
+    const close = (e) => { if (acctRef.current && !acctRef.current.contains(e.target)) setAcctOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [acctOpen])
+  const [memberQ, setMemberQ] = useState('') // search in the "Đã đăng nhập" list
   const [repStatus, setRepStatus] = useState('open')
   const [submissions, setSubmissions] = useState([])
   const [questions, setQuestions] = useState([])
@@ -344,17 +353,12 @@ export default function AdminConsolePage() {
                 </div>
               )}
             </div>
-            <div style={css('display:flex; align-items:center; gap:10px; padding:4px 6px 4px 4px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);')}>
-              <span style={css(`width:30px; height:30px; border-radius:50%; background:${user.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';' + avatarPhotoCss(user.avatarUrl))}>{user.initials}</span>
-              <span style={css(font(600, 13) + ';color:#fff; white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>
-              <button onClick={() => logout()} className={hoverClass('background:rgba(255,59,48,.28);')} style={css('height:30px; padding:0 12px; border:none; border-radius:999px; background:rgba(255,59,48,.16); color:#ffb4ae;' + font(700, 12) + ';cursor:pointer;')}>Đăng xuất</button>
-            </div>
           </div>
         </div>
       </header>
 
       <div style={css('display:grid; grid-template-columns:224px minmax(0,1fr); align-items:start;')}>
-        <aside style={css('position:sticky; top:58px; height:calc(100vh - 58px); box-sizing:border-box; padding:20px 12px; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.26), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.62) 0%, rgba(9,16,46,.74) 50%, rgba(5,9,26,.86) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16);')}>
+        <aside style={css('position:sticky; top:58px; height:calc(100vh - 58px); box-sizing:border-box; display:flex; flex-direction:column; padding:20px 12px 16px; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.26), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.62) 0%, rgba(9,16,46,.74) 50%, rgba(5,9,26,.86) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16);')}>
           <div style={css('padding:0 12px 10px;' + font(700, 11.5) + ';letter-spacing:.04em;color:#8aa0d6;')}>QUẢN TRỊ</div>
           <div style={css('display:flex; flex-direction:column; gap:2px;')}>
             {menu.map(([k, label, dot, badge]) => (
@@ -364,6 +368,28 @@ export default function AdminConsolePage() {
                 {badge > 0 && <span style={css('display:flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#FF3B30; color:#fff;' + font(800, 11) + ';')}>{badge}</span>}
               </button>
             ))}
+          </div>
+          <div style={{ flex: 1 }}></div>
+          {/* Account: bottom-left, same place and look as on the rest of the site. */}
+          <div ref={acctRef} style={css('position:relative;')}>
+            {acctOpen && (
+              <div style={css('position:absolute; left:0; right:0; bottom:calc(100% + 8px); background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:700;')}>
+                <Link to="/profile" className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none;' + font(700, 13.5) + ';color:#0F172A; white-space:nowrap;')}>
+                  <svg style={{ flex: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+                  Hồ sơ của tôi
+                </Link>
+                <Link to="/" className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none;' + font(700, 13.5) + ';color:#2c5fff; white-space:nowrap;')}>
+                  <svg style={{ flex: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
+                  Về trang chính
+                </Link>
+                <button onClick={() => { setAcctOpen(false); logout() }} className={hoverClass('background:#FFF1F0 !important;')} style={css('display:block; width:100%; text-align:left; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer;' + font(700, 13.5) + ';color:#D8232A;')}>Đăng xuất</button>
+              </div>
+            )}
+            <button onClick={() => setAcctOpen((o) => !o)} aria-expanded={acctOpen} className={hoverClass('background:rgba(255,255,255,.1);')} style={css('display:flex; align-items:center; gap:10px; width:100%; padding:5px 10px 5px 5px; border-radius:14px; background:rgba(80,130,255,.10); border:1px solid rgba(130,170,255,.22); cursor:pointer; font-family:inherit;')}>
+              <Avatar user={user} size={30} fontSize={11.5} />
+              <span style={css('flex:1; min-width:0; text-align:left; font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3d0f5" strokeWidth="2.2" style={{ flex: 'none' }}><path d="m18 15-6-6-6 6"></path></svg>
+            </button>
           </div>
         </aside>
 
@@ -417,18 +443,20 @@ export default function AdminConsolePage() {
               <div style={css('display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; margin-top:14px;')}>
                 {[
                   { title: 'Đang online', sub: 'Có mở trang trong 2 phút gần nhất · tự cập nhật 20 giây/lần', rows: live?.online || [], empty: 'Chưa có ai đang online.', online: true },
-                  { title: 'Đăng nhập hôm nay', sub: 'Mọi người đã vào trang hôm nay (giờ Việt Nam)', rows: live?.today || [], empty: 'Hôm nay chưa có ai đăng nhập.', online: false },
+                  { title: 'Đã đăng nhập', sub: `Tất cả thành viên đã từng đăng nhập · ${live ? (live.today || []).length : '…'} người vào hôm nay`, rows: (live?.members || []).filter((u) => !memberQ.trim() || (u.name + ' ' + u.domain + ' ' + u.email + ' ' + (u.team || '')).toLowerCase().includes(memberQ.trim().toLowerCase())), total: (live?.members || []).length, empty: memberQ.trim() ? 'Không có ai khớp tìm kiếm.' : 'Chưa có ai đăng nhập.', online: false },
                 ].map((box) => (
                   <div key={box.title} style={css('padding:16px 18px; min-width:0;' + card)}>
                     <div style={css('display:flex; align-items:baseline; justify-content:space-between; gap:10px;')}>
-                      <h2 style={css('margin:0;' + font(800, 16) + ';color:#0f172a;')}>{box.title} <span style={css(font(700, 14) + ';color:#2c5fff;')}>· {live ? box.rows.length : '…'}</span></h2>
+                      <h2 style={css('margin:0;' + font(800, 16) + ';color:#0f172a;')}>{box.title} <span style={css(font(700, 14) + ';color:#2c5fff;')}>· {live ? (box.total ?? box.rows.length) : '…'}</span></h2>
+                      {!box.online && <input value={memberQ} onChange={(e) => setMemberQ(e.target.value)} placeholder="Tìm tên, email, phòng ban…" aria-label="Tìm thành viên" style={css('width:200px; max-width:50%; height:30px; padding:0 10px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; color-scheme:light;' + font(500, 12.5) + ';color:#0f172a; outline:none; box-sizing:border-box;')} />}
                     </div>
                     <p style={css('margin:4px 0 12px;' + font(400, 12) + ';color:#94a3b8;')}>{box.sub}</p>
                     {live && box.rows.length === 0 && <div style={css('padding:14px 0;' + font(600, 13) + ';color:#94a3b8;')}>{box.empty}</div>}
                     <div style={css('display:flex; flex-direction:column; max-height:300px; overflow-y:auto;')}>
                       {box.rows.map((u, i) => {
                         const on = (live?.online || []).some((o) => o.id === u.id)
-                        const at = box.online ? u.at : u.lastAt
+                        const at = box.online ? u.at : u.lastDay === live.todayDay ? u.lastAt : null
+                        const dayLabel = !box.online && !at && u.lastDay ? (u.lastDay === live.todayDay ? 'hôm nay' : u.lastDay.slice(8, 10) + '/' + u.lastDay.slice(5, 7) + '/' + u.lastDay.slice(0, 4)) : ''
                         return (
                           <div key={u.id} style={css('display:flex; align-items:center; gap:10px; padding:8px 0;' + (i ? 'border-top:1px solid #F3F5FA;' : ''))}>
                             <span style={css('position:relative; flex:none;')}>
@@ -439,7 +467,7 @@ export default function AdminConsolePage() {
                               <div title={u.email} style={css(font(700, 13) + ';color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{cleanName(u.name)} <span style={css(font(500, 12) + ';color:#94a3b8;')}>· {u.domain}</span></div>
                               <div style={css(font(400, 11.5) + ';color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{box.online ? pageLabel(u.path) : (u.team || 'Chưa rõ phòng ban')}</div>
                             </div>
-                            <span style={css('flex:none;' + font(500, 11.5) + ';color:#94a3b8;')}>{at ? agoLabel(live.now, at) : ''}</span>
+                            <span style={css('flex:none;' + font(500, 11.5) + ';color:#94a3b8;')}>{at ? agoLabel(live.now, at) : dayLabel}</span>
                           </div>
                         )
                       })}

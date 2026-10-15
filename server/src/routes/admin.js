@@ -142,7 +142,11 @@ router.get('/live', (req, res) => {
   const today = db.prepare('SELECT u.* FROM user_days d JOIN users u ON u.id = d.user_id WHERE d.day = ?').all(vnDay())
     .map((u) => ({ ...brief(u), lastAt: lastSeen(u.id)?.at || null }))
     .sort((a, b) => (b.lastAt || 0) - (a.lastAt || 0) || a.domain.localeCompare(b.domain))
-  res.json({ online, today, now: Date.now() })
+  // Everyone who has ever signed in (old "+tag" alias accounts left out), most recently active first.
+  const members = db.prepare(`SELECT u.*, (SELECT MAX(day) FROM user_days d WHERE d.user_id = u.id) AS last_day FROM users u WHERE u.email NOT LIKE '%+%@%'`).all()
+    .map((u) => ({ ...brief(u), lastAt: lastSeen(u.id)?.at || null, lastDay: u.last_day || String(u.created_at || '').slice(0, 10) || null }))
+    .sort((a, b) => String(b.lastDay || '').localeCompare(String(a.lastDay || '')) || (b.lastAt || 0) - (a.lastAt || 0) || a.domain.localeCompare(b.domain))
+  res.json({ online, today, members, todayDay: vnDay(), now: Date.now() })
 })
 
 // Every use case that is live on the site (same list as the Use Case library): the showcase cases
