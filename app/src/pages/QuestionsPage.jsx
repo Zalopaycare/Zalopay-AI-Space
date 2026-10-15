@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import AnonTag from '../components/AnonTag.jsx'
 import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
+import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
@@ -76,6 +77,8 @@ export default function QuestionsPage() {
   const [replyMention, setReplyMention] = useState(null)
   const [openComments, setOpenComments] = useState({})
   const [commentDrafts, setCommentDrafts] = useState({})
+  // Files picked for an answer / comment / reply before sending (keyed per composer).
+  const att = useCommentAttachments()
   const [commentReplyTarget, setCommentReplyTarget] = useState(null) // { answerId, parentId, authorName } | null
   const [editing, setEditing] = useState(null) // { kind: 'answer' | 'comment', id }
   // Per-field map of short @handle → full email for people picked from the directory.
@@ -209,8 +212,9 @@ export default function QuestionsPage() {
   const submitCommentReply = (qId) => {
     if (!commentReplyTarget) return
     const body = commentReplyDraft.trim()
-    if (!body) return
-    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId, anonOpts()).then((d) => patch(qId, d.question)).catch(alertIfAliasTaken))
+    const key = 'rep:' + commentReplyTarget.answerId + ':' + commentReplyTarget.parentId
+    if (!body && !att.files(key).length) return
+    requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId, { ...anonOpts(), files: att.payload(key) }).then((d) => { patch(qId, d.question); att.clear(key) }).catch(alertIfAliasTaken))
     cancelCommentReply()
   }
   // Put the caret back at the end of a field after picking a mention, so typing just continues.
@@ -423,9 +427,10 @@ export default function QuestionsPage() {
         onCommentChange: (e) => { const v = e.target.value, mq = mentionScan(v); setCommentDrafts((s) => ({ ...s, [a.id]: v })); setCommentMention(mq === null ? null : { id: a.id, query: mq }) },
         onPostComment: () => {
           const raw = (commentDrafts[a.id] || '').trim()
-          if (!raw) return
+          const key = 'cmt:' + a.id
+          if (!raw && !att.files(key).length) return
           const body = takeMentions('c:' + a.id, raw)
-          requireLogin(() => api.postAnswerComment(q.id, a.id, body, null, null, anonOpts()).then((d) => { patch(q.id, d.question); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(alertIfAliasTaken))
+          requireLogin(() => api.postAnswerComment(q.id, a.id, body, null, null, { ...anonOpts(), files: att.payload(key) }).then((d) => { patch(q.id, d.question); att.clear(key); setExpandedCommentThreads((s) => new Set(s).add('a:' + a.id)) }).catch(alertIfAliasTaken))
           setCommentDrafts((s) => ({ ...s, [a.id]: '' })); setCommentMention(null)
         },
         onReply: () => setOpenComments((s) => ({ ...s, [a.id]: !s[a.id] })),
@@ -467,12 +472,13 @@ export default function QuestionsPage() {
       onReplyChange: (e) => { const v = e.target.value, mq = mentionScan(v); setReplyDrafts((s) => ({ ...s, [q.id]: v })); setReplyMention(mq === null ? null : { id: q.id, query: mq }) },
       replyMentionOpen: rm !== null && mentionList(rm, () => {}).length > 0,
       replyMentions: mentionList(rm, (tok) => { const name = rememberMention('q:' + q.id, tok); setReplyDrafts((s) => ({ ...s, [q.id]: insertMention(s[q.id] || '', name) })); setReplyMention(null); focusEnd('ans-in-' + q.id) }),
-      replyOpacity: draft.trim() ? 1 : 0.5,
+      replyOpacity: draft.trim() || att.files('ans:' + q.id).length ? 1 : 0.5,
       onPostReply: () => {
         const raw = (replyDrafts[q.id] || '').trim()
-        if (!raw) return
+        const key = 'ans:' + q.id
+        if (!raw && !att.files(key).length) return
         const body = takeMentions('q:' + q.id, raw)
-        requireLogin(() => api.postAnswer(q.id, body, { anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '' }).then((d) => patch(q.id, d.question)).catch((e) => { if (alertIfAliasTaken(e)) setReplyDrafts((s) => ({ ...s, [q.id]: raw })) }))
+        requireLogin(() => api.postAnswer(q.id, body, { anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '', files: att.payload(key) }).then((d) => { patch(q.id, d.question); att.clear(key) }).catch((e) => { if (alertIfAliasTaken(e)) setReplyDrafts((s) => ({ ...s, [q.id]: raw })) }))
         setReplyDrafts((s) => ({ ...s, [q.id]: '' })); setReplyMention(null)
       },
     }
@@ -598,6 +604,7 @@ export default function QuestionsPage() {
                                   {editing?.kind === 'answer' && editing.id === a.id
                                     ? <InlineEdit initial={a.body} onSave={(b) => saveAnswerEdit(q.id, a.id, b)} onCancel={() => setEditing(null)} />
                                     : <div style={css('margin-top:1px; font:400 14px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E293B; white-space:pre-wrap; text-wrap:pretty;')}>{a.bodyEl}</div>}
+                                  <CommentFiles files={a.files} />
                                 </div>
                                 <div style={css('display:flex; align-items:center; gap:16px; margin:5px 0 0; flex-wrap:wrap;')}>
                                   <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:${a.helpColor};`)}>
@@ -639,6 +646,7 @@ export default function QuestionsPage() {
                                               {editing?.kind === 'comment' && editing.id === c.id
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
                                                 : <div style={css('margin-top:1px; font:400 13.5px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E293B;')}>{c.bodyEl}</div>}
+                                              <CommentFiles files={c.files} />
                                               <button onClick={() => startCommentReply(a.id, c.id, c.author, c.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                                             </div>
                                           </div>
@@ -663,6 +671,7 @@ export default function QuestionsPage() {
                                                 {editing?.kind === 'comment' && editing.id === r.id
                                                   ? <InlineEdit initial={r.body} onSave={(b) => saveCommentEdit(q.id, a.id, r.id, b)} onCancel={() => setEditing(null)} />
                                                   : <div style={css('margin-top:1px; font:400 13px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E293B;')}>{r.bodyEl}</div>}
+                                                <CommentFiles files={r.files} />
                                                 <button onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                                               </div>
                                             </div>
@@ -681,9 +690,13 @@ export default function QuestionsPage() {
                                                   style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')}
                                                 />
                                               </div>
+                                              <AttachButton onFiles={(fl) => att.add('rep:' + a.id + ':' + c.id, fl)} size={32} />
                                               <button onClick={cancelCommentReply} style={css('flex:none; height:32px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
                                               <button onClick={() => submitCommentReply(q.id)} style={css('flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
                                             </div>
+                                          )}
+                                          {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (
+                                            <div style={css('margin-left:70px;')}><PendingAttachments files={att.files('rep:' + a.id + ':' + c.id)} onRemove={(i) => att.remove('rep:' + a.id + ':' + c.id, i)} error={att.errorFor('rep:' + a.id + ':' + c.id)} /></div>
                                           )}
                                         </div>
                                       )
@@ -706,8 +719,10 @@ export default function QuestionsPage() {
                                           </div>
                                         )}
                                       </div>
+                                      <AttachButton onFiles={(fl) => att.add('cmt:' + a.id, fl)} size={34} />
                                       <button onClick={a.onPostComment} style={css('flex:none; height:34px; padding:0 15px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
                                     </div>
+                                    <div style={css('margin-left:36px;')}><PendingAttachments files={att.files('cmt:' + a.id)} onRemove={(k) => att.remove('cmt:' + a.id, k)} error={att.errorFor('cmt:' + a.id)} /></div>
                                   </div>
                                 )}
                               </div>
@@ -736,10 +751,13 @@ export default function QuestionsPage() {
                                 ))}
                               </div>
                             )}
+                            <PendingAttachments files={att.files('ans:' + q.id)} onRemove={(k) => att.remove('ans:' + q.id, k)} error={att.errorFor('ans:' + q.id)} />
                             <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời & bình luận ẩn danh" />
-                            <div style={css('display:flex; align-items:center; margin-top:8px;')}>
+                            <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px;')}>
                               <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
-                              <button onClick={q.onPostReply} style={css(`margin-left:auto; height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi bình luận')}</button>
+                              <span style={{ marginLeft: 'auto' }}></span>
+                              <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={40} />
+                              <button onClick={q.onPostReply} style={css(` height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi bình luận')}</button>
                             </div>
                           </div>
                         </div>

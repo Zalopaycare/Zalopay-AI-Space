@@ -290,3 +290,18 @@ CREATE TABLE IF NOT EXISTS review_comments (
 );
 CREATE INDEX IF NOT EXISTS review_comments_sub ON review_comments (submission_id);
 `)
+
+// Files attached to answers and comments (questions and use cases). Additive only.
+// kind: 'answer' (question_answers) | 'acomment' (answer_comments) | 'uccomment' (use_case_comments)
+db.exec(`
+CREATE TABLE IF NOT EXISTS comment_files (
+  kind TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  idx INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  data BLOB NOT NULL,
+  PRIMARY KEY (kind, target_id, idx)
+);
+`)

@@ -1,5 +1,6 @@
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import express from 'express'
+import { decodeCommentFiles, saveCommentFiles, commentFilesOf, dropCommentFiles } from '../commentFiles.js'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
@@ -30,11 +31,11 @@ function loadQuestion(id, viewer) {
   const answers = db.prepare('SELECT * FROM question_answers WHERE question_id = ? ORDER BY created_at ASC').all(id).map((a) => {
     const aAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(a.author_id)
     const comments = db.prepare('SELECT * FROM answer_comments WHERE answer_id = ? ORDER BY created_at ASC').all(a.id).map((c) => ({
-      id: c.id, ...maskAuthor(userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), c, viewer), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at,
+      id: c.id, ...maskAuthor(userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), c, viewer), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at, files: commentFilesOf('acomment', c.id),
     }))
     const helpful = db.prepare('SELECT COUNT(*) n FROM answer_reactions WHERE answer_id = ?').get(a.id).n
     const iHelped = userId ? !!db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(a.id, userId) : false
-    return { id: a.id, ...maskAuthor(userBrief(aAuthor), a, viewer), time: a.created_at, helpful, iHelped, accepted: !!a.accepted, body: a.body, edited: !!a.edited_at, comments }
+    return { id: a.id, ...maskAuthor(userBrief(aAuthor), a, viewer), time: a.created_at, helpful, iHelped, accepted: !!a.accepted, body: a.body, edited: !!a.edited_at, files: commentFilesOf('answer', a.id), comments }
   })
   const qHelpful = db.prepare('SELECT COUNT(*) n FROM question_reactions WHERE question_id = ?').get(id).n
   const iHelpedQ = userId ? !!db.prepare('SELECT 1 FROM question_reactions WHERE question_id = ? AND user_id = ?').get(id, userId) : false
@@ -56,6 +57,8 @@ router.get('/', requireAuth, (req, res) => {
 const deleteQuestionTx = db.transaction((id) => {
   const answerIds = db.prepare('SELECT id FROM question_answers WHERE question_id = ?').all(id).map((r) => r.id)
   for (const aid of answerIds) {
+    dropCommentFiles('acomment', db.prepare('SELECT id FROM answer_comments WHERE answer_id = ?').all(aid).map((r) => r.id))
+    dropCommentFiles('answer', aid)
     db.prepare('DELETE FROM answer_comments WHERE answer_id = ?').run(aid)
     db.prepare('DELETE FROM answer_reactions WHERE answer_id = ?').run(aid)
   }
@@ -179,12 +182,15 @@ router.post('/:id/save', requireAuth, (req, res) => {
 router.post('/:id/answers', requireAuth, (req, res) => {
   const { id } = req.params
   const body = String(req.body?.body || '').trim()
-  if (!body) return res.status(400).json({ error: 'empty_body' })
+  const files = decodeCommentFiles(req.body?.files)
+  if (!files) return res.status(400).json({ error: 'bad_file', message: 'File không hợp lệ hoặc lớn hơn 10MB.' })
+  if (!body && !files.length) return res.status(400).json({ error: 'empty_body' })
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
   if (!q) return res.status(404).json({ error: 'not_found' })
   const aid = nextId('a')
   const anon = anonFields(req.body)
   db.prepare('INSERT INTO question_answers (id, question_id, author_id, body, anonymous, alias) VALUES (?,?,?,?,?,?)').run(aid, id, req.user.id, body, anon.anonymous, anon.alias)
+  saveCommentFiles('answer', aid, files)
   const who = anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : domainName(req.user.email, req.user.name)
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
@@ -221,13 +227,16 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const body = String(req.body?.body || '').trim()
   const parentId = req.body?.parentId ? String(req.body.parentId) : null
   const replyToId = req.body?.replyToId ? String(req.body.replyToId) : parentId
-  if (!body) return res.status(400).json({ error: 'empty_body' })
+  const files = decodeCommentFiles(req.body?.files)
+  if (!files) return res.status(400).json({ error: 'bad_file', message: 'File không hợp lệ hoặc lớn hơn 10MB.' })
+  if (!body && !files.length) return res.status(400).json({ error: 'empty_body' })
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
   const answer = db.prepare('SELECT * FROM question_answers WHERE id = ? AND question_id = ?').get(answerId, id)
   if (!q || !answer) return res.status(404).json({ error: 'not_found' })
   const cid = nextId('c')
   const anon = anonFields(req.body)
   db.prepare('INSERT INTO answer_comments (id, answer_id, author_id, body, parent_id, anonymous, alias) VALUES (?,?,?,?,?,?,?)').run(cid, answerId, req.user.id, body, parentId, anon.anonymous, anon.alias)
+  saveCommentFiles('acomment', cid, files)
 
   // Who hears about it, most specific first; each person once, never the author themself.
   const who = anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : domainName(req.user.email, req.user.name)
@@ -259,12 +268,15 @@ const canEdit = (req, row) => row && row.author_id === req.user.id
 export const deleteAnswerTx = db.transaction((answerId) => {
   const a = db.prepare('SELECT * FROM question_answers WHERE id = ?').get(answerId)
   if (!a) return
+  dropCommentFiles('acomment', db.prepare('SELECT id FROM answer_comments WHERE answer_id = ?').all(answerId).map((r) => r.id))
+  dropCommentFiles('answer', answerId)
   db.prepare('DELETE FROM answer_comments WHERE answer_id = ?').run(answerId)
   db.prepare('DELETE FROM answer_reactions WHERE answer_id = ?').run(answerId)
   db.prepare('DELETE FROM question_answers WHERE id = ?').run(answerId)
   if (a.accepted) db.prepare('UPDATE questions SET resolved = 0, accepted_answer_id = NULL WHERE id = ?').run(a.question_id)
 })
 export const deleteCommentTx = db.transaction((commentId) => {
+  dropCommentFiles('acomment', [commentId, ...db.prepare('SELECT id FROM answer_comments WHERE parent_id = ?').all(commentId).map((r) => r.id)])
   db.prepare('DELETE FROM answer_comments WHERE parent_id = ?').run(commentId)
   db.prepare('DELETE FROM answer_comments WHERE id = ?').run(commentId)
 })

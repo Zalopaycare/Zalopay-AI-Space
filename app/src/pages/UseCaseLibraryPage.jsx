@@ -29,6 +29,7 @@ import { buildTemplate } from '../data/useCaseTemplate.js'
 import { submissionTpl } from '../data/submissionTpl.js'
 import AnonTag from '../components/AnonTag.jsx'
 import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
+import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
@@ -80,6 +81,7 @@ export default function UseCaseLibraryPage() {
   const replyBoxRef = useRef(null)
   const [replyTarget, setReplyTarget] = useState(null) // { parentId, authorName } | null
   const [replyDraft, setReplyDraft] = useState('')
+  const att = useCommentAttachments() // files picked for a comment / reply before sending
   const [editingCmt, setEditingCmt] = useState(null) // comment id being edited
   const ucModals = useCommentModals(api)
   const [expandedThreads, setExpandedThreads] = useState(() => new Set())
@@ -274,8 +276,10 @@ export default function UseCaseLibraryPage() {
   const cancelReply = () => { setReplyTarget(null); setReplyDraft('') }
   const submitReply = (ucId) => {
     const text = (replyBoxRef.current ? replyBoxRef.current.expand(replyDraft) : replyDraft).trim()
-    if (!text || !replyTarget) return
-    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title, { ...cmtAnonOpts(), replyToId: replyTarget.replyToId, ownerHandle: (allCases.find((x) => x.id === ucId) || {}).author }).then(() => { refreshMeta(ucId); cancelReply() }).catch(alertIfAliasTaken))
+    if (!replyTarget) return
+    const key = 'rep:' + replyTarget.parentId
+    if (!text && !att.files(key).length) return
+    requireLogin(() => api.commentUseCase(ucId, text, replyTarget.parentId, (allCases.find((x) => x.id === ucId) || {}).title, { ...cmtAnonOpts(), replyToId: replyTarget.replyToId, ownerHandle: (allCases.find((x) => x.id === ucId) || {}).author, files: att.payload(key) }).then(() => { refreshMeta(ucId); att.clear(key); cancelReply() }).catch(alertIfAliasTaken))
   }
 
   // ---- draft restore + autosave ----
@@ -533,7 +537,8 @@ export default function UseCaseLibraryPage() {
     const commentsList = live ? live.comments : []
     const postDComment = () => {
       const text = (dBoxRef.current ? dBoxRef.current.expand(dDraft) : dDraft).trim()
-      if (text) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ...cmtAnonOpts(), ownerHandle: dsel.author }).then(() => { refreshMeta(dsel.id); setDDraft('') }).catch(alertIfAliasTaken))
+      const key = 'cmt:' + dsel.id
+      if (text || att.files(key).length) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ...cmtAnonOpts(), ownerHandle: dsel.author, files: att.payload(key) }).then(() => { refreshMeta(dsel.id); att.clear(key); setDDraft('') }).catch(alertIfAliasTaken))
     }
     const toggleApplied = () => requireLogin(() => api.toggleApplied(dsel.id).then((d) => setUcMeta((m) => ({ ...m, [dsel.id]: { ...(m[dsel.id] || {}), ...d } }))).catch(() => {}))
 
@@ -607,8 +612,10 @@ export default function UseCaseLibraryPage() {
                     placeholder={t('Viết bình luận về use case này... Gõ @ để mention đồng nghiệp.')}
                     style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; line-height:1.6; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                   />
+                  <PendingAttachments files={att.files('cmt:' + dsel.id)} onRemove={(x) => att.remove('cmt:' + dsel.id, x)} error={att.errorFor('cmt:' + dsel.id)} />
                   <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; margin-top:10px;')}>
                     <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} alias={cmtAlias} onAlias={setCmtAlias} label="Bình luận ẩn danh" /></div>
+                    <AttachButton onFiles={(fl) => att.add('cmt:' + dsel.id, fl)} size={38} />
                     <button
                       onClick={postDComment}
                       style={css(`height:38px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
@@ -635,6 +642,7 @@ export default function UseCaseLibraryPage() {
                           {editingCmt === c.id
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
                             : <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{renderMentions(c.body)}</div>}
+                          <CommentFiles files={c.files} />
                           <button onClick={() => startReply(c.id, c.author, c.id)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                         </div>
                       </div>
@@ -657,6 +665,7 @@ export default function UseCaseLibraryPage() {
                             {editingCmt === r.id
                               ? <InlineEdit initial={r.body} onSave={(b) => api.editUseCaseComment(dsel.id, r.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
                               : <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{renderMentions(r.body)}</div>}
+                            <CommentFiles files={r.files} />
                             <button onClick={() => startReply(c.id, r.author, r.id)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                           </div>
                         </div>
@@ -678,7 +687,9 @@ export default function UseCaseLibraryPage() {
                               placeholder={t('Trả lời') + ' ' + replyTarget.authorName + ', ' + t('gõ @ để mention...')}
                               style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font-family:inherit; font-size:13px; line-height:1.5; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                             />
+                            <PendingAttachments files={att.files('rep:' + replyTarget.parentId)} onRemove={(x) => att.remove('rep:' + replyTarget.parentId, x)} error={att.errorFor('rep:' + replyTarget.parentId)} />
                             <div style={css('display:flex; justify-content:flex-end; gap:8px; margin-top:8px;')}>
+                              <AttachButton onFiles={(fl) => att.add('rep:' + replyTarget.parentId, fl)} size={32} />
                               <button onClick={cancelReply} style={css('height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
                               <button onClick={() => submitReply(dsel.id)} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${replyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>
                             </div>

@@ -7,6 +7,7 @@ import { aliasGuard } from './anon.js'
 import authRoutes from './routes/auth.js'
 import questionRoutes from './routes/questions.js'
 import reviewRoutes from './routes/review.js'
+import commentFileRoutes from './commentFiles.js'
 import useCaseRoutes from './routes/useCases.js'
 import notificationRoutes from './notifications.js'
 import adminRoutes from './routes/admin.js'
@@ -32,7 +33,8 @@ app.use((req, res, next) => {
 })
 
 // Up to 3 × 10 MB question attachments (base64 adds ~37%), plus images.
-app.use(express.json({ limit: '48mb' }))
+// 5 attachments × 10 MB, base64-encoded in JSON, plus the text.
+app.use(express.json({ limit: '72mb' }))
 app.use(cookieParser())
 app.use(attachUser)
 app.use('/api', aliasGuard)
@@ -42,6 +44,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/questions', questionRoutes)
 app.use('/api/use-cases', useCaseRoutes)
 app.use('/api/review', reviewRoutes)
+app.use('/api/files', commentFileRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/reports', reportRoutes)

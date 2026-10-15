@@ -2,6 +2,7 @@ import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { anonFields, maskAuthor, anonName } from '../anon.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
 import express from 'express'
+import { decodeCommentFiles, saveCommentFiles, commentFilesOf, dropCommentFiles } from '../commentFiles.js'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
@@ -22,7 +23,7 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at ASC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
     const brief = { author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? colorOf(u) : null, avatarUrl: u ? avatarUrlOf(u) : null, authorId: c.author_id }
-    return { id: c.id, ...maskAuthor(brief, c, req.user), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at }
+    return { id: c.id, ...maskAuthor(brief, c, req.user), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at, files: commentFilesOf('uccomment', c.id) }
   })
   res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
 })
@@ -94,6 +95,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   if (!row) return res.status(404).json({ error: 'not_found' })
   const block = removalCheck(req, row.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
+  dropCommentFiles('uccomment', db.prepare('SELECT id FROM use_case_comments WHERE use_case_id = ?').all(id).map((r) => r.id))
   db.prepare('DELETE FROM use_case_comments WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_reactions WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_saves WHERE use_case_id = ?').run(id)
@@ -107,10 +109,13 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   const { id } = req.params
   const body = String(req.body?.body || '').trim()
   const parentId = req.body?.parentId ? String(req.body.parentId) : null
-  if (!body) return res.status(400).json({ error: 'empty_body' })
+  const files = decodeCommentFiles(req.body?.files)
+  if (!files) return res.status(400).json({ error: 'bad_file', message: 'File không hợp lệ hoặc lớn hơn 10MB.' })
+  if (!body && !files.length) return res.status(400).json({ error: 'empty_body' })
   const cid = nextId('ucc')
   const anon = anonFields(req.body)
   db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body, parent_id, anonymous, alias) VALUES (?,?,?,?,?,?,?)').run(cid, id, req.user.id, body, parentId, anon.anonymous, anon.alias)
+  saveCommentFiles('uccomment', cid, files)
   // Built-in use cases live in the frontend bundle, so the client passes the title along for the email.
   const sub = db.prepare('SELECT title, author_id FROM use_case_submissions WHERE id = ?').get(id)
   const ucTitle = sub?.title || String(req.body?.title || '').trim().slice(0, 200)
@@ -139,7 +144,7 @@ router.post('/:id/comments', requireAuth, (req, res) => {
     sendMail({ to: u.email, subject: text, text: `${anon.anonymous ? who : req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
   notifyMentions(req, { text: body, where, path: href, skip: [...told], as: anon.anonymous ? who : null })
-  res.status(201).json({ id: cid, authorId: req.user.id, anonymous: !!anon.anonymous, author: anon.anonymous ? who : domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId })
+  res.status(201).json({ id: cid, authorId: req.user.id, anonymous: !!anon.anonymous, author: anon.anonymous ? who : domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId, files: commentFilesOf('uccomment', cid) })
 })
 
 /** A submission as `viewer` may see it (anonymous authors masked; reviewer/account only for admins). */
@@ -347,6 +352,7 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
 })
 
 export const deleteUseCaseCommentTx = db.transaction((commentId) => {
+  dropCommentFiles('uccomment', [commentId, ...db.prepare('SELECT id FROM use_case_comments WHERE parent_id = ?').all(commentId).map((r) => r.id)])
   db.prepare('DELETE FROM use_case_comments WHERE parent_id = ?').run(commentId)
   db.prepare('DELETE FROM use_case_comments WHERE id = ?').run(commentId)
 })
