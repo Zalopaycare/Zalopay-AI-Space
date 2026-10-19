@@ -252,3 +252,9 @@ html.zp-vt .zp-page-in { animation: none; }
 /* no card frame at all on the question page: the post sits straight on the page */
 .zp-qdark > div { border: none !important; box-shadow: none !important; border-radius: 0 !important; background: transparent !important; }
 .zp-qdark mark, .zp-qdark [style*="background: rgb(219, 231, 255)"], .zp-qdark [style*="background: rgb(220, 232, 255)"] { background: rgba(68, 128, 255, .25) !important; color: inherit !important; }
+/* AI Questions list as one Threads-style feed */
+.zp-qfeed .zp-card-q { background: transparent !important; border: none !important; border-radius: 0 !important; box-shadow: none !important; transform: none !important; }
+.zp-qfeed .zp-card-q + .zp-card-q { border-top: 1px solid rgba(255, 255, 255, .08) !important; }
+.zp-qfeed .zp-card-q:hover { background: rgba(255, 255, 255, .025) !important; }
+.zp-qfeed .zp-card-q:first-child { border-radius: 24px 24px 0 0 !important; }
+.zp-qfeed .zp-card-q:last-child { border-radius: 0 0 24px 24px !important; }
