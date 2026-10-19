@@ -18,7 +18,7 @@ import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Avatar, { avatarPhotoCss } from '../components/Avatar.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import { useDialog } from '../hooks/useDialog.js'
@@ -51,7 +51,6 @@ const insertMention = (v, handle) => v.replace(/@([\p{L}\w.-]*)$/u, '@' + handle
 const renderBody = renderMentions
 
 export default function QuestionsPage() {
-  useTitle('AI Questions')
   const { t } = useI18n()
   const { user, requireLogin } = useAuth()
   const navigate = useNavigate()
@@ -71,7 +70,12 @@ export default function QuestionsPage() {
     return () => document.removeEventListener('click', close)
   }, [openDrop])
   const [quick, setQuick] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'all')
-  const [expanded, setExpanded] = useState({})
+  // /questions/<id>: the question on its own page (Threads-style), answers and replies below it.
+  const { id: detailId } = useParams()
+  const [expanded, setExpanded] = useState(() => (detailId ? { [detailId]: true } : {}))
+  useEffect(() => { setExpanded(detailId ? { [detailId]: true } : {}); if (detailId) window.scrollTo(0, 0) }, [detailId])
+  const detailTitle = detailId ? (questions.find((q) => q.id === detailId) || {}).title : ''
+  useTitle(detailTitle ? String(detailTitle).slice(0, 60) + ' · AI Questions' : 'AI Questions')
   const [fullBody, setFullBody] = useState({})
   const [replyDrafts, setReplyDrafts] = useState({})
   const [replyMention, setReplyMention] = useState(null)
@@ -155,49 +159,26 @@ export default function QuestionsPage() {
     return items
   }
 
-  // deep-link: #q=<id> expands and scrolls to that question
+  // Old links (#q=<id>, from notifications and shared links) open the question's own page.
   useEffect(() => {
-    if (!loaded) return
     const m = /[#&]q=([^&]+)/.exec(location.hash || '')
-    if (!m) return
-    const id = decodeURIComponent(m[1])
-    if (!questions.some((q) => q.id === id)) return
-    setView('feed')
-    setExpanded((s) => ({ ...s, [id]: true }))
-    setFullBody((s) => ({ ...s, [id]: true }))
-    let tries = 0
-    const seek = () => {
-      const el = document.querySelector('[data-qid="' + id + '"]')
-      if (el) {
-        const y = Math.max(0, el.getBoundingClientRect().top + window.pageYOffset - 90)
-        window.scrollTo(0, y)
-      } else if (tries++ < 20) setTimeout(seek, 80)
-    }
-    setTimeout(seek, 120)
+    if (m) navigate('/questions/' + m[1], { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, location.hash])
+  }, [location.hash])
 
-  const toggle = (id) => { setExpanded((s) => (s[id] ? {} : { [id]: true })); setFullBody((s) => ({ ...s, [id]: true })) }
-  // Popup behaviour while a question is open: Esc closes it (unless a field inside handled Esc), page behind doesn't scroll.
-  useEffect(() => {
-    if (!Object.values(expanded).some(Boolean)) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [expanded])
-  // Esc in a comment box first leaves the box (keeps what you typed); Esc again closes the popup.
-  const qDialog = useDialog(Object.values(expanded).some(Boolean), () => setExpanded({}), t('Câu hỏi'), { escInFields: false, focusField: false })
+  const toggle = (id) => { if (id !== detailId) navigate('/questions/' + encodeURIComponent(id)) }
   const askDialog = useDialog(view === 'ask', () => setView('feed'), t('Đặt câu hỏi'))
   const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
   const accept = (qid, aid) => requireLogin(() => api.acceptAnswer(qid, aid).then((d) => patch(qid, d.question)).catch(() => {}))
 
   const copyLink = (id) => {
-    const url = window.location.origin + '/questions#q=' + encodeURIComponent(id)
+    const url = window.location.origin + '/questions/' + encodeURIComponent(id)
     copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
   }
   const deleteQuestion = (id, reason) => {
     api.deleteQuestion(id, reason).then(() => {
+      if (id === detailId) navigate('/questions', { replace: true })
       setQuestions((qs) => qs.filter((q) => q.id !== id))
       setConfirmDeleteId(null)
     }).catch(() => setConfirmDeleteId(null))
@@ -368,7 +349,7 @@ export default function QuestionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, location.hash])
   // Search, status tab and sort live in the URL (?q=&tab=&sort=) — shareable, restored by Back.
-  useUrlFilters({ q: [query, setQuery, ''], tab: [quick, setQuick, 'all'], sort: [sort, setSort, 'latest'] })
+  useUrlFilters({ q: [query, setQuery, ''], tab: [quick, setQuick, 'all'], sort: [sort, setSort, 'latest'] }, !detailId)
   // Closing the composer / a question popup drops its #ask / #q= hash (only on an open → closed change).
   const wasOpen = useRef({ ask: false, q: false })
   const anyExpanded = Object.values(expanded).some(Boolean)
@@ -391,7 +372,8 @@ export default function QuestionsPage() {
     return fold([q.title, q.body, q.author, q.fullName, [].concat(q.category).join(' '), q.topics.join(' '), q.tools.join(' ')].join(' ')).indexOf(qs) >= 0
   }
   const helpfulSum = (q) => q.answers.reduce((n, a) => n + a.helpful, 0)
-  let list = questions.filter(match)
+  // On a question's own page only that question is built, whatever the list filters say.
+  let list = detailId ? questions.filter((q) => q.id === detailId) : questions.filter(match)
   const tsNum = (v) => new Date(String(v).includes('T') ? v : String(v).replace(' ', 'T') + 'Z').getTime()
   // "Nổi bật nhất": most upvotes (question + its answers), then most comments, then newest.
   const score = (q) => helpfulSum(q) + (q.qHelpful || 0)
@@ -400,7 +382,7 @@ export default function QuestionsPage() {
 
   const feed = list.map((q) => {
     const isExpanded = !!expanded[q.id]
-    const full = !!fullBody[q.id]
+    const full = !!fullBody[q.id] || q.id === detailId
     const long = q.body.length > CLAMP
     const draft = replyDrafts[q.id] || ''
     const ordered = q.answers.slice().sort((a, b) => (b.accepted ? 1 : 0) - (a.accepted ? 1 : 0))
@@ -574,7 +556,34 @@ export default function QuestionsPage() {
                     </div>
 
                     {inModal && (
-                      <div style={css('margin-top:12px; padding:14px 18px 16px; background:#F8FAFE; border-top:1px solid #EEF1F7;')}>
+                      <div style={css('margin-top:12px; padding:14px 18px 16px; background:#fff; border-top:1px solid #EEF1F7;')}>
+                        <div style={css('display:flex; gap:10px; padding-bottom:16px; margin-bottom:4px; border-bottom:1px solid #E6EBF3;')}>
+                          <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
+                          <div style={{ flex: 1, position: 'relative' }}>
+                            <MentionField multiline id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onBlur={() => setReplyMention(null)} onKeyDown={withEsc(q.replyMentionOpen, () => setReplyMention(null), enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false }))} rows={2} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')} />
+                            {q.replyMentionOpen && (
+                              <div style={css('position:absolute; left:0; top:calc(100% + 6px); width:340px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
+                                {q.replyMentions.map((m) => (
+                                  <div key={m.key} onMouseDown={(e) => e.preventDefault()} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;')}>
+                                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
+                                    <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
+                                      <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
+                                      <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <PendingAttachments files={att.files('ans:' + q.id)} onRemove={(k) => att.remove('ans:' + q.id, k)} error={att.errorFor('ans:' + q.id)} />
+                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời & bình luận ẩn danh" />
+                            <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px;')}>
+                              <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
+                              <span style={{ marginLeft: 'auto' }}></span>
+                              <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={40} />
+                              <button onClick={q.onPostReply} style={css(` height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi bình luận')}</button>
+                            </div>
+                          </div>
+                        </div>
                         {q.isOwner && (
                           <div style={css('display:flex; align-items:center; gap:11px; margin-bottom:14px; padding:12px 16px; background:#EEF3FF; border:1px solid #D7E4FF; border-radius:14px;')}>
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16h.01"></path></svg>
@@ -582,10 +591,13 @@ export default function QuestionsPage() {
                           </div>
                         )}
 
-                        <div style={css('display:flex; flex-direction:column; gap:14px;')}>
-                          {q.answers.map((a) => (
-                            <div key={a.id} style={css('display:flex; gap:10px;')}>
-                              <div style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(a.avatarUrl)}`)}>{a.initials}</div>
+                        <div style={css('display:flex; flex-direction:column;')}>
+                          {q.answers.map((a, ai) => (
+                            <div key={a.id} style={css(`display:flex; gap:10px; padding:16px 0; ${ai ? 'border-top:1px solid #EEF1F7;' : ''}`)}>
+                              <div style={css('flex:none; display:flex; flex-direction:column; align-items:center;')}>
+                                <div style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(a.avatarUrl)}`)}>{a.initials}</div>
+                                {a.comments.length > 0 && <div aria-hidden="true" style={css('flex:1; width:2px; margin-top:6px; border-radius:2px; background:#E3E8F1;')}></div>}
+                              </div>
                               <div style={css('flex:1; min-width:0;')}>
                                 <div className="zp-cmt" style={css(a.accepted ? 'background:#F1FBF6; border:1px solid #BEE9D3; border-radius:12px; padding:8px 12px;' : '')}>
                                   {a.accepted && (
@@ -622,15 +634,15 @@ export default function QuestionsPage() {
 
                                 {a.showComments && (
                                   <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:10px;')}>
-                                    {a.comments.filter((c) => !c.parentId).length > 1 && (
+                                    {!inModal && a.comments.filter((c) => !c.parentId).length > 1 && (
                                       <button onClick={() => toggleCommentThread('a:' + a.id)} style={css('align-self:flex-start; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
                                         <Chevron up={expandedCommentThreads.has('a:' + a.id)} />
                                         {expandedCommentThreads.has('a:' + a.id) ? t('Ẩn replies') : t('Xem thêm') + ' ' + a.comments.filter((c) => !c.parentId).length + ' ' + t('replies')}
                                       </button>
                                     )}
-                                    {a.comments.filter((c) => !c.parentId).filter((c, i, arr) => arr.length <= 1 || expandedCommentThreads.has('a:' + a.id)).map((c) => {
+                                    {a.comments.filter((c) => !c.parentId).filter((c, i, arr) => inModal || arr.length <= 1 || expandedCommentThreads.has('a:' + a.id)).map((c) => {
                                       const replies = a.comments.filter((r) => r.parentId === c.id)
-                                      const expanded = replies.length <= 1 || expandedCommentThreads.has(c.id)
+                                      const expanded = inModal || replies.length <= 1 || expandedCommentThreads.has(c.id)
                                       return (
                                         <div key={c.id}>
                                           <div style={css('display:flex; gap:10px;')}>
@@ -651,7 +663,7 @@ export default function QuestionsPage() {
                                             </div>
                                           </div>
 
-                                          {replies.length > 1 && (
+                                          {!inModal && replies.length > 1 && (
                                             <button onClick={() => toggleCommentThread(c.id)} style={css('margin:8px 0 0 36px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
                                               <Chevron up={expanded} />
                                               {expanded ? t('Ẩn replies') : t('Xem thêm') + ' ' + replies.length + ' ' + t('replies')}
@@ -734,38 +746,12 @@ export default function QuestionsPage() {
                           )}
                         </div>
 
-                        <div style={css('display:flex; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid #E6EBF3;')}>
-                          <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
-                          <div style={{ flex: 1, position: 'relative' }}>
-                            <MentionField multiline id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onBlur={() => setReplyMention(null)} onKeyDown={withEsc(q.replyMentionOpen, () => setReplyMention(null), enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false }))} rows={2} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#ffffff; outline:none; resize:vertical; display:block; box-sizing:border-box;')} />
-                            {q.replyMentionOpen && (
-                              <div style={css('position:absolute; left:0; bottom:calc(100% + 6px); width:340px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
-                                {q.replyMentions.map((m) => (
-                                  <div key={m.key} onMouseDown={(e) => e.preventDefault()} onClick={m.onPick} className={hoverClass('background:#F4F7FE;')} style={css('display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;')}>
-                                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
-                                    <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
-                                      <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
-                                      <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <PendingAttachments files={att.files('ans:' + q.id)} onRemove={(k) => att.remove('ans:' + q.id, k)} error={att.errorFor('ans:' + q.id)} />
-                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời & bình luận ẩn danh" />
-                            <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px;')}>
-                              <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
-                              <span style={{ marginLeft: 'auto' }}></span>
-                              <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={40} />
-                              <button onClick={q.onPostReply} style={css(` height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi bình luận')}</button>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     )}
                   </div>
   )
-  const openQ = feed.find((q) => q.expanded)
+  const detailQ = detailId ? feed.find((q) => q.id === detailId) : null
+  const detailMissing = detailId && loaded && !questions.some((q) => q.id === detailId)
 
   return (
     <Layout active="question">
@@ -775,6 +761,23 @@ export default function QuestionsPage() {
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:relative; z-index:1;')}>
 
+        {detailId ? (
+          <div style={css('padding:22px var(--zp-gutter) 60px;')}>
+            <div style={css('max-width:760px; margin:0 auto;')}>
+              <button onClick={() => (window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/questions'))} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 14px; padding:4px 0; border:none; background:none; cursor:pointer; color:#a9b8dc; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                {t('AI Questions')}
+              </button>
+              {detailQ ? (
+                <div style={css('background:#fff; border-radius:22px; overflow:visible; box-shadow:0 24px 60px rgba(3,12,40,.35);')}>{renderQCard(detailQ, true)}</div>
+              ) : (
+                <div style={css('padding:60px 20px; text-align:center; border-radius:22px; background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.18); color:#a9b8dc; font:600 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
+                  {detailMissing ? t('Không tìm thấy câu hỏi này. Có thể câu hỏi đã bị xoá.') : t('Đang tải câu hỏi…')}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
         <div>
           <div style={css('position:relative; background:transparent; padding:22px var(--zp-gutter) 0;')}>
             <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
@@ -814,6 +817,7 @@ export default function QuestionsPage() {
             </div>
           </div>
         </div>
+        )}
 
         {confirmDeleteId && (
           <div onClick={() => setConfirmDeleteId(null)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,10,26,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px;')}>
@@ -956,16 +960,6 @@ export default function QuestionsPage() {
       </div>
     </div>
       {cmodals.modals}
-      {openQ && createPortal((
-        <div onClick={() => setExpanded({})} style={css('position:fixed; inset:0; z-index:3000; background:rgba(4,10,26,.62); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:flex-start; justify-content:center; padding:40px 24px; overflow-y:auto;')}>
-          <div ref={qDialog.ref} {...qDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('position:relative; width:760px; max-width:100%; margin:auto 0; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
-            <button onClick={() => setExpanded({})} title={t('Đóng')} aria-label={t('Đóng')} style={css('position:absolute; top:-14px; right:-14px; z-index:5; width:38px; height:38px; border:none; border-radius:50%; background:#ffffff; color:#3A4757; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 22px rgba(0,0,0,.28);')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-            </button>
-            {renderQCard(openQ, true)}
-          </div>
-        </div>
-      ), document.body)}
     </Layout>
   )
 }

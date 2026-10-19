@@ -1,7 +1,5 @@
 import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import AnonTag from '../components/AnonTag.jsx'
-import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
-import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import FileLinks from '../components/FileLinks.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { Fragment, useEffect, useRef, useState } from 'react'
@@ -9,10 +7,8 @@ import { copyWithToast } from '../lib/clipboard.js'
 import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
-import MentionInput from '../components/MentionInput.jsx'
 import { useDialog } from '../hooks/useDialog.js'
 import { useNavigate } from 'react-router-dom'
-import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -69,12 +65,6 @@ export default function HomePage() {
   const { user, requireLogin } = useAuth()
 
   const [questions, setQuestions] = useState([])
-  const [openQ, setOpenQ] = useState(null)
-  const [modalDraft, setModalDraft] = useState('')
-  const [modalAnon, setModalAnon] = useState(false)
-  const [modalAlias, setModalAlias] = useState('')
-  const modalBoxRef = useRef(null)
-  const modalReplyBoxRef = useRef(null)
   const [ucMeta, setUcMeta] = useState({})
   const [homeQuery, setHomeQuery] = useState('')
   // Search results panel: closes on Esc / click outside, reopens on focus or typing.
@@ -102,10 +92,6 @@ export default function HomePage() {
   useEffect(() => { introPlayed = true }, [])
   const [openMenuId, setOpenMenuId] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
-  const [modalReply, setModalReply] = useState(null) // { answerId, parentId, authorName } | null
-  const [modalReplyDraft, setModalReplyDraft] = useState('')
-  const att = useCommentAttachments() // files picked in the popup's comment / reply boxes
-  const [modalThreads, setModalThreads] = useState(() => new Set())
 
   const patch = (id, updated) => setQuestions((qs) => qs.map((q) => (q.id === id ? updated : q)))
 
@@ -158,7 +144,7 @@ export default function HomePage() {
   const searchUc = searchNeedle ? pick(allCases.filter((c) => matches(searchNeedle, c.title, c.desc, c.author, c.tools || [], (prdMeta[c.id] || {}).topics || []))
     .map((c) => ({ id: c.id, title: c.title, sub: [c.author, ...(c.tools || [])].filter(Boolean).join(' · '), href: '/use-cases/' + c.id }))) : []
   const searchQ = searchNeedle ? pick(questions.filter((q) => matches(searchNeedle, q.title, q.body, q.author, q.topics || [], q.tools || []))
-    .map((q) => ({ id: q.id, title: q.title, sub: [q.author, relativeTime(q.time), ...(q.topics || [])].filter(Boolean).join(' · '), href: '/questions#q=' + encodeURIComponent(q.id) }))) : []
+    .map((q) => ({ id: q.id, title: q.title, sub: [q.author, relativeTime(q.time), ...(q.topics || [])].filter(Boolean).join(' · '), href: '/questions/' + encodeURIComponent(q.id) }))) : []
 
   // Keyboard: ↑/↓ walk the results, Enter opens the highlighted one, or (none highlighted) the page
   // with more matches pre-filtered by the query; Esc closes the panel.
@@ -192,69 +178,14 @@ export default function HomePage() {
       qHelpBg: q.iHelpedQ ? '#EAF1FF' : '#fff',
       qHelpFill: q.iHelpedQ ? '#2c5fff' : 'none',
       onLike: (e) => { e.stopPropagation(); requireLogin(() => api.reactQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
-      onOpen: () => setOpenQ(q.id),
+      onOpen: () => navigate('/questions/' + encodeURIComponent(q.id)),
       onSave: (e) => { e.stopPropagation(); requireLogin(() => api.saveQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
       canEdit: !!user && q.authorId === user.id,
       // Admins can remove any question (the server allows it); only the author can edit.
       canDelete: !!user && (q.authorId === user.id || !!user.isAdmin),
     }))
 
-  // ---- question detail modal ----
-  const modalSrc = openQ ? questions.find((q) => q.id === openQ) : null
-  const modalAnswers = modalSrc ? (modalSrc.answers || []).map((a) => ({
-    ...a,
-    timeLabel: relativeTime(a.time),
-    avatarBg: a.avatarColor || AV[a.author.charCodeAt(0) % AV.length],
-    helpColor: a.iHelped ? '#2c5fff' : '#64748b',
-    helpFill: a.iHelped ? '#2c5fff' : 'none',
-    onHelpful: () => requireLogin(() => api.reactAnswer(modalSrc.id, a.id).then((d) => patch(modalSrc.id, d.question)).catch(() => {})),
-  })) : []
-
-  const closeModal = () => { setOpenQ(null); setModalDraft(''); setModalReply(null); setModalReplyDraft('') }
-  const homeQDialog = useDialog(!!openQ, () => closeModal(), t('Câu hỏi'), { escInFields: false, focusField: false })
   const homeDelDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
-  const startModalReply = (answerId, parentId, authorName) => {
-    setModalReply({ answerId, parentId, authorName })
-    setModalReplyDraft('')
-    if (parentId) setModalThreads((s) => new Set(s).add(parentId))
-  }
-  const toggleModalThread = (cid) => setModalThreads((s) => { const n = new Set(s); if (n.has(cid)) n.delete(cid); else n.add(cid); return n })
-  const submitModalReply = () => {
-    const body = (modalReplyBoxRef.current ? modalReplyBoxRef.current.expand(modalReplyDraft) : modalReplyDraft).trim()
-    if (!modalReply || !modalSrc) return
-    const { answerId, parentId } = modalReply
-    const key = 'rep:' + answerId + ':' + (parentId || '')
-    if (!body && !att.files(key).length) return
-    requireLogin(() => api.postAnswerComment(modalSrc.id, answerId, body, parentId, null, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '', files: att.payload(key) }).then((d) => { patch(modalSrc.id, d.question); att.clear(key); setModalReply(null); setModalReplyDraft('') }).catch(alertIfAliasTaken))
-  }
-  const renderModalReplyBox = (answerId, parentId) => (modalReply && modalReply.answerId === answerId && modalReply.parentId === parentId ? (
-    <>
-    <div style={css('display:flex; gap:9px; align-items:center; margin-top:10px;')}>
-      <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <MentionInput
-          ref={modalReplyBoxRef}
-          autoFocus
-          value={modalReplyDraft}
-          onChange={setModalReplyDraft}
-          onEnter={submitModalReply}
-          placeholder={t('Trả lời') + ' ' + modalReply.authorName + ', ' + t('gõ @ để mention...')}
-          style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:999px; padding:8px 14px; font:400 13px ${FONT}; color:#0F172A; background:#fff; outline:none;`)}
-        />
-      </div>
-      <AttachButton onFiles={(fl) => att.add('rep:' + answerId + ':' + (parentId || ''), fl)} size={32} />
-      <button onClick={() => { setModalReply(null); setModalReplyDraft('') }} style={css(`flex:none; height:32px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12px ${FONT}; cursor:pointer;`)}>{t('Hủy')}</button>
-      <button onClick={submitModalReply} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12px ${FONT}; cursor:pointer; opacity:${modalReplyDraft.trim() || att.files('rep:' + answerId + ':' + (parentId || '')).length ? 1 : 0.5};`)}>{t('Gửi')}</button>
-    </div>
-    <div style={css('margin-left:35px;')}><PendingAttachments files={att.files('rep:' + answerId + ':' + (parentId || ''))} onRemove={(x) => att.remove('rep:' + answerId + ':' + (parentId || ''), x)} error={att.errorFor('rep:' + answerId + ':' + (parentId || ''))} /></div>
-    </>
-  ) : null)
-  const postModalReply = () => {
-    const body = (modalBoxRef.current ? modalBoxRef.current.expand(modalDraft) : modalDraft).trim()
-    const key = 'ans:' + (modalSrc && modalSrc.id)
-    if (!modalSrc || (!body && !att.files(key).length)) return
-    requireLogin(() => api.postAnswer(modalSrc.id, body, { anonymous: modalAnon, alias: modalAnon ? modalAlias.trim() : '', files: att.payload(key) }).then((d) => { patch(modalSrc.id, d.question); att.clear(key); setModalDraft('') }).catch(alertIfAliasTaken))
-  }
 
   // ---- featured use cases (real data, live helpful/save counts) ----
   const featured = featuredCases.map((c) => {
@@ -386,7 +317,7 @@ export default function HomePage() {
                       </button>
                       {openMenuId === 'q:' + q.id && (
                         <div role="menu" onClick={(e) => e.stopPropagation()} style={css('position:absolute; right:0; top:38px; width:200px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(15,23,42,.2); overflow:hidden; z-index:60; padding:6px;')}>
-                          <button onClick={(e) => copyLink(e, '/questions#q=' + encodeURIComponent(q.id), 'q:' + q.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
+                          <button onClick={(e) => copyLink(e, '/questions/' + encodeURIComponent(q.id), 'q:' + q.id)} style={css(`display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px ${FONT}; color:#0F172A; text-align:left;`)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                             {t('Sao chép link')}
                           </button>
@@ -413,7 +344,7 @@ export default function HomePage() {
                   <div style={css('flex:1; padding:6px 16px 0;')}>
                     {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
                     <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 13.5px' : '500 15px'}/1.55 ${FONT}; color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{renderMentions(q.body)}</p>
-                    <button onClick={(e) => { e.stopPropagation(); navigate('/questions#q=' + encodeURIComponent(q.id)) }} className={hoverClass('color:#5B21B6 !important;')} style={css(`display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#7C3AED;`)}>
+                    <button onClick={(e) => { e.stopPropagation(); navigate('/questions/' + encodeURIComponent(q.id)) }} className={hoverClass('color:#5B21B6 !important;')} style={css(`display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#7C3AED;`)}>
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
@@ -434,134 +365,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {modalSrc && createPortal((
-            <div onClick={closeModal} style={css('position:fixed; inset:0; z-index:3000; background:rgba(4,10,26,.62); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:40px 24px;')}>
-              <div ref={homeQDialog.ref} {...homeQDialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:720px; max-width:100%; max-height:100%; overflow-y:auto; background:#ffffff; border-radius:22px; box-shadow:0 40px 100px rgba(3,12,40,.55);')}>
-                <div style={css('display:flex; gap:14px; padding:24px 26px 0;')}>
-                  <span style={css(`flex:none; width:44px; height:44px; border-radius:50%; background:${modalSrc.avatarColor || AV[modalSrc.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px ${FONT};${avatarPhotoCss(modalSrc.avatarUrl)}`)}>{modalSrc.initials}</span>
-                  <div style={css('flex:1; min-width:0;')}>
-                    <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                      <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{modalSrc.author}</span><AnonTag p={modalSrc} />
-                      <span style={css(`font:400 13px ${FONT}; color:#94a3b8;`)}>{relativeTime(modalSrc.time)}</span>
-                      <span style={css(`display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${modalSrc.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${modalSrc.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{modalSrc.resolved ? t('Đã trả lời') : t('Đang chờ trả lời')}</span>
-                    </div>
-                  </div>
-                  <button onClick={closeModal} aria-label={t('Đóng')} style={css('flex:none; width:36px; height:36px; border:1px solid #E6EBF3; border-radius:11px; background:#fff; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center;')}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                  </button>
-                </div>
-
-                <div style={css('padding:16px 26px 0;')}>
-                  {modalSrc.hasTitle !== false && <h3 style={css(`margin:0; font:800 21px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{modalSrc.title}</h3>}
-                  <p style={css(`margin:${modalSrc.hasTitle !== false ? 11 : 0}px 0 0; font:400 15px/1.65 ${FONT}; color:#3A4757; white-space:pre-wrap;`)}>{renderMentions(modalSrc.body)}</p>
-                  <FileLinks files={modalSrc.files} />
-                  <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px; flex-wrap:wrap;')}>
-                    {[].concat(modalSrc.category).filter(Boolean).map((c) => (
-                      <span key={c} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:8px; background:#EAF0FF; color:#2c5fff; font:700 12px ${FONT};`)}>{c}</span>
-                    ))}
-                    {(modalSrc.tools || []).map((tl) => (
-                      <span key={tl} style={css(`display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:8px; background:#F1F4FA; color:#3A4757; font:700 12px ${FONT};`)}>{tl}</span>
-                    ))}
-                  </div>
-                  <div style={css('display:flex; align-items:center; gap:10px; margin-top:16px; padding:13px 0 0; border-top:1px solid #EEF1F7;')}>
-                    <span style={css(`display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px; border:1px solid #E6EBF3; border-radius:999px; background:#F8FAFE; font:700 12.5px ${FONT}; color:#3A4757;`)}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                      <span style={css('color:#2c5fff;')}>{helpfulTotal(modalSrc)}</span> {t('Upvote')}
-                    </span>
-                    <span style={css(`margin-left:auto; font:700 12.5px ${FONT}; color:#64748b;`)}>{replyLabel(modalAnswers.length)}</span>
-                  </div>
-                </div>
-
-                <div style={css('margin-top:18px; padding:18px 26px 22px; background:#F8FAFE; border-top:1px solid #EEF1F7;')}>
-                  {modalAnswers.map((a) => (
-                    <div key={a.id} style={css('display:flex; gap:12px; padding:14px 0; border-bottom:1px solid #EEF1F7;')}>
-                      <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(a.avatarUrl)}`)}>{a.initials}</span>
-                      <div style={css('flex:1; min-width:0;')}>
-                        <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-                          <span style={css(`font:600 12.5px ${FONT}; color:#0F172A;`)}>{a.author}</span><AnonTag p={a} />
-                          <span style={css(`font:400 12px ${FONT}; color:#94a3b8;`)}>{a.timeLabel}</span>
-                        </div>
-                        <p style={css(`margin:7px 0 0; font:400 14px/1.6 ${FONT}; color:#3A4757;`)}>{renderMentions(a.body)}</p>
-                        <CommentFiles files={a.files} />
-                        <div style={css('display:flex; align-items:center; gap:16px; margin-top:9px;')}>
-                          <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:${a.helpColor};`)}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-                            {t('Upvote')} · {a.helpful}
-                          </button>
-                          <button onClick={() => startModalReply(a.id, null, a.author)} style={css(`display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#64748b;`)}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            {t('Trả lời')}{a.comments && a.comments.length ? ' · ' + a.comments.length : ''}
-                          </button>
-                        </div>
-                        {(a.comments || []).filter((c) => !c.parentId).map((c) => {
-                          const replies = a.comments.filter((r) => r.parentId === c.id)
-                          const open = modalThreads.has(c.id)
-                          return (
-                            <div key={c.id} style={css('margin-top:12px; padding-left:12px; border-left:2px solid #E2E8F5;')}>
-                              <div style={css('display:flex; gap:9px;')}>
-                                <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarColor || AV[c.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px ${FONT};${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
-                                <div style={css('flex:1; min-width:0;')}>
-                                  <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                    <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{c.author}</span><AnonTag p={c} />
-                                    <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8;`)}>{relativeTime(c.time)}</span>
-                                  </div>
-                                  <div style={css(`margin-top:3px; font:400 13.5px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(c.body)}</div>
-                                  <CommentFiles files={c.files} />
-                                  <button onClick={() => startModalReply(a.id, c.id, c.author)} style={css(`margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
-                                </div>
-                              </div>
-                              {replies.length > 0 && (
-                                <button onClick={() => toggleModalThread(c.id)} style={css(`margin:8px 0 0 35px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px ${FONT}; color:#2c5fff;`)}>
-                                  <span style={css('width:20px; height:1px; background:#CBD5E1; display:inline-block;')}></span>
-                                  {open ? t('Ẩn bình luận') : t('Xem') + ' ' + replies.length + ' ' + t('bình luận')}
-                                </button>
-                              )}
-                              {open && replies.map((r) => (
-                                <div key={r.id} style={css('display:flex; gap:9px; margin:10px 0 0 35px;')}>
-                                  <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${r.avatarColor || AV[r.author.charCodeAt(0) % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9px ${FONT};${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</span>
-                                  <div style={css('flex:1; min-width:0;')}>
-                                    <div style={css('display:flex; align-items:center; gap:8px;')}>
-                                      <span style={css(`font:600 12px ${FONT}; color:#0F172A;`)}>{r.author}</span><AnonTag p={r} />
-                                      <span style={css(`font:400 11px ${FONT}; color:#94a3b8;`)}>{relativeTime(r.time)}</span>
-                                    </div>
-                                    <div style={css(`margin-top:3px; font:400 13px/1.55 ${FONT}; color:#3A4757;`)}>{renderMentions(r.body)}</div>
-                                    <CommentFiles files={r.files} />
-                                    <button onClick={() => startModalReply(a.id, c.id, r.author)} style={css(`margin-top:4px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px ${FONT}; color:#64748b;`)}>{t('Trả lời')}</button>
-                                  </div>
-                                </div>
-                              ))}
-                              <div style={css('margin-left:35px;')}>{renderModalReplyBox(a.id, c.id)}</div>
-                            </div>
-                          )
-                        })}
-                        {renderModalReplyBox(a.id, null)}
-                      </div>
-                    </div>
-                  ))}
-                  {modalAnswers.length === 0 && (
-                    <div style={css(`padding:16px 0 6px; text-align:center; font:600 13px ${FONT}; color:#94a3b8;`)}>{t('Chưa có bình luận nào. Bình luận đầu tiên thường giúp ích nhất.')}</div>
-                  )}
-
-                  <div style={css('display:flex; gap:12px; margin-top:16px;')}>
-                    <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
-                    <div style={{ flex: 1 }}>
-                      <MentionInput ref={modalBoxRef} multiline rows={2} popupWidth={340} value={modalDraft} onChange={setModalDraft} onEnter={postModalReply} placeholder={t('Viết bình luận của bạn. Gõ @ để nhắc tên đồng nghiệp.')} style={css(`width:100%; box-sizing:border-box; border:1px solid #DDE3EC; border-radius:14px; padding:10px 14px; font-size:14px; line-height:1.55; color:#0F172A; background:#fff; outline:none; resize:vertical; display:block;`)} />
-                      <PendingAttachments files={att.files('ans:' + modalSrc.id)} onRemove={(x) => att.remove('ans:' + modalSrc.id, x)} error={att.errorFor('ans:' + modalSrc.id)} />
-                      <AnonToggle on={modalAnon} onChange={setModalAnon} alias={modalAlias} onAlias={setModalAlias} label="Trả lời & bình luận ẩn danh" />
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:10px;')}>
-                        <button onClick={() => navigate(`/questions#q=${modalSrc.id}`)} style={css(`font:700 12.5px ${FONT}; color:#3366F0; text-decoration:none; background:none; border:none; cursor:pointer; padding:0;`)}>{t('Mở trong Questions')}</button>
-                        <span style={{ marginLeft: 'auto' }}></span>
-                        <AttachButton onFiles={(fl) => att.add('ans:' + modalSrc.id, fl)} size={40} />
-                        <button onClick={postModalReply} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; opacity:${modalDraft.trim() || att.files('ans:' + modalSrc.id).length ? 1 : 0.5};`)}>
-                          {t('Gửi bình luận')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ), document.body)}
         </section>
 
         {/* ============ FEATURED USE CASES ============ */}

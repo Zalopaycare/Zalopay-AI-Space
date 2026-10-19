@@ -13,12 +13,12 @@ import { deleteUseCaseCommentTx } from './routes/useCases.js'
 const TYPES = {
   answer: {
     row: (id) => db.prepare('SELECT * FROM question_answers WHERE id = ?').get(id),
-    path: (r) => `/questions#q=${r.question_id}`,
+    path: (r) => `/questions/${r.question_id}`,
     remove: (id) => deleteAnswerTx(id),
   },
   comment: {
     row: (id) => db.prepare('SELECT c.*, a.question_id FROM answer_comments c JOIN question_answers a ON a.id = c.answer_id WHERE c.id = ?').get(id),
-    path: (r) => `/questions#q=${r.question_id}`,
+    path: (r) => `/questions/${r.question_id}`,
     remove: (id) => deleteCommentTx(id),
   },
   uc_comment: {

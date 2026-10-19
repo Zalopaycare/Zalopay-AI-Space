@@ -44,7 +44,7 @@ function stillExists(r) {
   const href = String(r.href || '')
   let m = /^\/use-cases\/([^/?#]+)/.exec(href)
   if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(id) }
-  m = /^\/questions#q=([^&]+)/.exec(href)
+  m = /^\/questions(?:#q=|\/)([^&/?#]+)/.exec(href) // old "#q=" links and the new /questions/<id>
   if (m) return !!db.prepare('SELECT 1 FROM questions WHERE id = ?').get(decodeURIComponent(m[1]))
   return true
 }

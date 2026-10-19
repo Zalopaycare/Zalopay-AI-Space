@@ -266,13 +266,13 @@ export default function ProfilePage() {
       setMyQuestions(swap); setSavedQuestions(swap)
     }).catch(() => {}),
     answers: q.answers.length,
-    onOpen: () => navigate(`/questions#q=${encodeURIComponent(q.id)}`),
+    onOpen: () => navigate(`/questions/${encodeURIComponent(q.id)}`),
     // ⋯ menu, same actions as the Questions page card
     menu: {
       saved: !!q.saved,
       canEdit: q.authorId === user.id,
       canDelete: q.authorId === user.id || !!user.isAdmin,
-      onCopy: () => copyWithToast(window.location.origin + '/questions#q=' + encodeURIComponent(q.id), 'Đã sao chép link ✓'),
+      onCopy: () => copyWithToast(window.location.origin + '/questions/' + encodeURIComponent(q.id), 'Đã sao chép link ✓'),
       onSave: () => api.saveQuestion(q.id).then((d) => {
         if (d && d.question) setMyQuestions((list) => list.map((x) => (x.id === q.id ? d.question : x)))
         setSavedQuestions((list) => (d && d.question && d.question.saved ? [d.question, ...list.filter((x) => x.id !== q.id)] : list.filter((x) => x.id !== q.id)))
@@ -371,7 +371,7 @@ export default function ProfilePage() {
       statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
       statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0', statusColor: q.answers.length ? '#00893F' : '#B45300',
       cta: t('Xem chi tiết'), primary: false,
-      onOpen: () => navigate(`/questions#q=${encodeURIComponent(q.id)}`),
+      onOpen: () => navigate(`/questions/${encodeURIComponent(q.id)}`),
     })))
     .concat(myUseCases.map((c) => {
       const st = UC_STATUS[c.reviewStatus] || UC_STATUS.pending

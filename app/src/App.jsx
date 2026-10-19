@@ -24,6 +24,7 @@ export default function App() {
               <Route path="/use-cases" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
               <Route path="/use-cases/:id" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
               <Route path="/questions" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
+              <Route path="/questions/:id" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
               <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
               {/* review page for a submitted use case: admins comment, the author replies (others get "not found") */}
               <Route path="/review/:id" element={<RequireAuth><ReviewPage /></RequireAuth>} />

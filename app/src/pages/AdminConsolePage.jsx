@@ -755,7 +755,7 @@ export default function AdminConsolePage() {
                 ))}
               </div>
               <div style={css('display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
-                <a href={`/questions#q=${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(font(700, 13) + ';color:#2c5fff; text-decoration:none;')}>Mở trang câu hỏi ↗</a>
+                <a href={`/questions/${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(font(700, 13) + ';color:#2c5fff; text-decoration:none;')}>Mở trang câu hỏi ↗</a>
                 <button onClick={() => removeQuestion(q, () => { reloadQuestions(); setQDetailId(null) })} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá câu hỏi</button>
               </div>
             </div>

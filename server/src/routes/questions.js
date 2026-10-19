@@ -119,7 +119,7 @@ router.post('/', requireAuth, (req, res) => {
     decodedFiles.forEach((f, i) => db.prepare('INSERT INTO question_files (question_id, idx, name, mime, size, data) VALUES (?,?,?,?,?,?)').run(id, i, f.name, f.mime, f.data.length, f.data))
   })()
   const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
-  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions#q=${id}`, as: anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : null })
+  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions/${id}`, as: anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : null })
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
@@ -166,7 +166,7 @@ router.post('/:id/react', requireAuth, (req, res) => {
   if (owner && owner.id !== req.user.id) {
     const voters = db.prepare('SELECT u.email, u.name FROM question_reactions x JOIN users u ON u.id = x.user_id WHERE x.question_id = ? AND x.user_id != ?').all(id, owner.id)
     const one = voters.length === 1 ? voters[0] : req.user
-    notifyUpvotes(owner.email, { ref: 'q:' + id, count: voters.length, lastVoter: domainName(one.email, one.name), title: qTitle(q), href: `/questions#q=${id}` })
+    notifyUpvotes(owner.email, { ref: 'q:' + id, count: voters.length, lastVoter: domainName(one.email, one.name), title: qTitle(q), href: `/questions/${id}` })
   }
   res.json({ question: loadQuestion(id, req.user) })
 })
@@ -195,10 +195,10 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
-    notify(qAuthor.email, { kind: 'answer', text: `${who} đã comment vào câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions#q=${id}`, actor: anon.anonymous ? who : req.user.name })
-    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${anon.anonymous ? who : req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions#q=${id}` }).catch(() => {})
+    notify(qAuthor.email, { kind: 'answer', text: `${who} đã comment vào câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
+    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${anon.anonymous ? who : req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions/${id}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions#q=${id}`, skip: [qAuthor?.email], as: anon.anonymous ? who : null })
+  notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions/${id}`, skip: [qAuthor?.email], as: anon.anonymous ? who : null })
 
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
@@ -241,7 +241,7 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   // Who hears about it, most specific first; each person once, never the author themself.
   const who = anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : domainName(req.user.email, req.user.name)
   const label = qTitle(q)
-  const href = `/questions#q=${id}`
+  const href = `/questions/${id}`
   const userById = (uid) => (uid ? db.prepare('SELECT * FROM users WHERE id = ?').get(uid) : null)
   const commentAuthor = (cId) => { const c = cId ? db.prepare('SELECT author_id FROM answer_comments WHERE id = ?').get(cId) : null; return c ? userById(c.author_id) : null }
   const targets = [
