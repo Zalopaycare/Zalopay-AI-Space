@@ -19,9 +19,13 @@ export function removalCheck(req, authorId) {
   return null
 }
 
+// An admin clearing out test posts sends this as the reason: nobody is notified.
+export const TEST_REMOVAL = '[test]'
+
 /** After deleting someone else's post: tell its author. `what` e.g. 'câu hỏi', `title` the post's title/opening. */
 export function notifyRemoval(req, { authorId, what, title, content }) {
   if (!authorId || authorId === req.user.id) return
+  if (String(req.body?.reason || '').trim() === TEST_REMOVAL) return
   const author = db.prepare('SELECT email, name FROM users WHERE id = ?').get(authorId)
   if (!author) return
   const reason = String(req.body?.reason || '').trim().slice(0, 1000)

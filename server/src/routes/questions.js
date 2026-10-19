@@ -1,5 +1,6 @@
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import express from 'express'
+import { tagList } from '../tags.js'
 import { decodeCommentFiles, saveCommentFiles, commentFilesOf, dropCommentFiles } from '../commentFiles.js'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
@@ -113,7 +114,7 @@ router.post('/', requireAuth, (req, res) => {
   const anon = anonFields(req.body)
   db.transaction(() => {
     db.prepare('INSERT INTO questions (id, title, body, category, topics, tools, author_id, anonymous, alias) VALUES (?,?,?,?,?,?,?,?,?)')
-      .run(id, String(title || '').trim(), body.trim(), JSON.stringify(category), JSON.stringify(topics), JSON.stringify(tools), req.user.id, anon.anonymous, anon.alias)
+      .run(id, String(title || '').trim(), body.trim(), JSON.stringify(tagList(category)), JSON.stringify(tagList(topics)), JSON.stringify(tagList(tools)), req.user.id, anon.anonymous, anon.alias)
     decoded.forEach((img, i) => db.prepare('INSERT INTO question_images (question_id, idx, mime, data) VALUES (?,?,?,?)').run(id, i, img.mime, img.data))
     decodedFiles.forEach((f, i) => db.prepare('INSERT INTO question_files (question_id, idx, name, mime, size, data) VALUES (?,?,?,?,?,?)').run(id, i, f.name, f.mime, f.data.length, f.data))
   })()
@@ -129,9 +130,8 @@ router.patch('/:id', requireAuth, (req, res) => {
   if (q.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
   const { title = '', body, topics = [], tools = [] } = req.body || {}
   if (!String(body || '').trim()) return res.status(400).json({ error: 'missing_fields' })
-  const clean = (a) => (Array.isArray(a) ? a.map((x) => String(x).trim()).filter(Boolean).slice(0, 12) : [])
   db.prepare("UPDATE questions SET title = ?, body = ?, topics = ?, tools = ?, edited_at = datetime('now') WHERE id = ?")
-    .run(String(title).trim(), String(body).trim(), JSON.stringify(clean(topics)), JSON.stringify(clean(tools)), q.id)
+    .run(String(title).trim(), String(body).trim(), JSON.stringify(tagList(topics)), JSON.stringify(tagList(tools)), q.id)
   if (req.body && req.body.anonymous !== undefined) { const an = anonFields(req.body); db.prepare('UPDATE questions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, q.id) }
   res.json({ question: loadQuestion(q.id, req.user) })
 })

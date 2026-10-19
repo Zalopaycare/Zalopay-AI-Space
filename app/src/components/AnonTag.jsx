@@ -3,7 +3,8 @@ import { useAuth } from '../auth/AuthContext.jsx'
 
 /**
  * "Ẩn danh" chip next to an author name. The alias is already shown in the name's place; the chip
- * tells the author it's their own anonymous post, and tells admins who really posted (`realAuthor`).
+ * tells the author it's their own anonymous post. Admins see who really posted (`realAuthor`) only on
+ * hover, so a screenshot of a public page never shows it (the admin console lists it openly).
  */
 export default function AnonTag({ p, dark = false }) {
   const { user } = useAuth()
@@ -11,11 +12,12 @@ export default function AnonTag({ p, dark = false }) {
   const mine = !!user && p.authorId != null && p.authorId === user.id
   // Everyone else just sees the Anonymous name, no chip; the chip is for the author and admins.
   if (!mine && !p.realAuthor) return null
-  const label = mine ? 'Ẩn danh · bài của bạn' : p.realAuthor ? `Ẩn danh · ${p.realAuthor}` : 'Ẩn danh'
-  const title = mine ? 'Người khác chỉ thấy tên ẩn danh.' : p.realAuthor ? 'Chỉ admin thấy người đăng thật.' : 'Người đăng chọn ẩn danh'
+  const label = mine ? 'Ẩn danh · bài của bạn' : 'Ẩn danh'
+  const title = mine ? 'Người khác chỉ thấy tên ẩn danh.' : p.realAuthor ? `Người đăng thật: ${p.realAuthor} (chỉ admin thấy)` : 'Người đăng chọn ẩn danh'
   return (
     <span
       title={title}
+      tabIndex={!mine && p.realAuthor ? 0 : undefined}
       style={css(`flex:none; display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; ${dark ? 'background:rgba(255,255,255,.12); color:#dbe6ff;' : 'background:#EEF1F6; color:#475569;'}`)}
     >
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7"></path><path d="m3 3 18 18"></path></svg>

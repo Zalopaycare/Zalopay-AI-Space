@@ -115,11 +115,13 @@ export function registerTemplateCases(list) {
     for (const arr of [allCases, builtinCases]) { const i = arr.findIndex((c) => c.id === m.id); if (i >= 0) arr.splice(i, 1) }
     KIND_BY_ID[m.id] = m.kind || 'tech'
     STATUS_BY_ID[m.id] = m.status || 'inuse'
-    authorInfo[m.author] = { name: m.ownerName || m.author, role: m.ownerTeam || 'Zalopay' }
+    // Owner / team still "[cần bổ sung]" in the source doc fall back to the poster / nothing.
+    const known = (v) => (v && !/cần bổ sung/i.test(String(v)) ? String(v) : '')
+    authorInfo[m.author] = { name: known(m.ownerName) || m.author, role: known(m.ownerTeam) || 'Zalopay' }
     prdMeta[m.id] = { problem: m.problem?.text || (m.tldr?.[0]?.[1] || ''), result: m.tldr?.[2]?.[1] || '', topics: m.topics || [], helpful: 0, comments: 0 }
     caseDetail[m.id] = { tpl: m, difficulty: m.difficulty || '', audience: m.audience || '', level: m.level || 'ready', summary: m.desc }
     const card = {
-      id: m.id, postedAt: m.postedAt || '', title: m.title, desc: m.desc, author: m.author, team: m.ownerTeam || '', category: m.category || 'Other',
+      id: m.id, postedAt: m.postedAt || '', title: m.title, desc: m.desc, author: m.author, team: known(m.ownerTeam), category: m.category || 'Other',
       tools: normalizeTools(m.tools || []), repo: m.tech?.repo?.label || '', repoHref: m.tech?.repo?.href || '',
       audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null,
     }

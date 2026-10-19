@@ -6,6 +6,9 @@ import { hlList, statusOf } from './useCases.js'
 // Built-in cases get their template-only fields from EXTRA below (all taken from the source docs
 // already in useCases.js — nothing new is claimed). Parts with no data come back empty and are hidden.
 
+// Header facts (owner, team, date) still marked "[cần bổ sung]" in the source doc are left out instead of shown.
+const known = (v) => (v && !/cần bổ sung/i.test(String(v)) ? String(v) : '')
+
 export const TYPE_LABEL = { tool: 'Công cụ dùng ngay', guide: 'Hướng dẫn', case: 'Câu chuyện thực tế', proposal: 'Đề xuất' }
 export const STATUS_LABEL = { inuse: 'Đang dùng', pilot: 'Thử nghiệm', prototype: 'Thử nghiệm', building: 'Đang làm', planning: 'Ý tưởng' }
 
@@ -45,7 +48,7 @@ function fromTpl(c, m) {
       type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
       toolName: m.toolName || '', audience: m.audience || '', difficulty: m.difficulty || '', access: m.access || '',
       // owner drops Microsoft's "(8)" counters
-      tools: c.tools || [], owner: String(m.ownerName || c.author).replace(/\s*\(\d+\)/g, ''), ownerTeam: m.ownerTeam || c.team || '', updated: m.updated || '[cần bổ sung]',
+      tools: c.tools || [], owner: String(known(m.ownerName) || c.author).replace(/\s*\(\d+\)/g, ''), ownerTeam: known(m.ownerTeam) || known(c.team), updated: known(m.updated),
     },
     stats: arr(m.stats).slice(0, 3),
     tldr: arr(m.tldr).filter((row) => row && row[1]),

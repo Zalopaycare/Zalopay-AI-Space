@@ -2,6 +2,7 @@ import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { anonFields, maskAuthor, anonName } from '../anon.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
 import express from 'express'
+import { tagList } from '../tags.js'
 import { decodeCommentFiles, saveCommentFiles, commentFilesOf, dropCommentFiles } from '../commentFiles.js'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
@@ -244,7 +245,7 @@ router.post('/submissions', requireAuth, (req, res) => {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(id, f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
       f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link),
-      f.kind, f.status, f.level, JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), req.user.id)
+      f.kind || '', f.status || '', f.level || '', JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), req.user.id)
   saveCover(id, cover)
   const anon = anonFields(f)
   db.prepare('UPDATE use_case_submissions SET extra = ?, anonymous = ?, alias = ? WHERE id = ?').run(cleanExtra(f.extra), anon.anonymous, anon.alias, id)
@@ -276,8 +277,8 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
     limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = ?, edited_at = datetime('now') WHERE id = ?`)
     .run(f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
-      String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link), f.kind, f.status, f.level,
-      JSON.stringify(f.category), JSON.stringify(f.topics || []), JSON.stringify(f.tools || []), nextStatus, row.id)
+      String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link), f.kind || '', f.status || '', f.level || '',
+      JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)
   // Older clients don't send `extra`; leave what's stored untouched then.
   if (f.extra !== undefined) db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra), row.id)

@@ -1,10 +1,11 @@
 import { css } from '../lib/style.js'
-import { normalizeTools } from '../lib/taxonomy.js'
+import { normalizeTools, repairLabels } from '../lib/taxonomy.js'
 
 const base = 'display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; white-space:nowrap;'
 
 /** Topic + AI tool tags, the one tag scheme shared by use case and question cards. */
-export default function TagRow({ topics = [], tools: rawTools = [], style }) {
+export default function TagRow({ topics: rawTopics = [], tools: rawTools = [], style }) {
+  const topics = repairLabels(rawTopics)
   const tools = normalizeTools(rawTools)
   if (!topics.length && !tools.length) return null
   return (

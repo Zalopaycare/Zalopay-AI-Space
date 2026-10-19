@@ -95,8 +95,9 @@ export default function UseCaseLibraryPage() {
   const [libKind, setLibKind] = useState(null)
   const [libSort, setLibSort] = useState(() => new URLSearchParams(window.location.search).get('sort') || 'new')
   // Filters, sort and search live in the URL (?q=&cat=&tool=&sort=) so a view can be shared and Back restores it.
-  useUrlFilters({ q: [query, setQuery, ''], cat: [libCat, setLibCat, null], tool: [libTool, setLibTool, null], sort: [libSort, setLibSort, 'new'] }, !id)
-  const [libPage, setLibPage] = useState(() => pendingReturn()?.page || 1)
+  // Page number too (?page=2), so the link always matches the page shown and can be opened directly.
+  const [libPage, setLibPage] = useState(() => pendingReturn()?.page || Math.max(1, parseInt(new URLSearchParams(window.location.search).get('page'), 10) || 1))
+  useUrlFilters({ q: [query, setQuery, ''], cat: [libCat, setLibCat, null], tool: [libTool, setLibTool, null], sort: [libSort, setLibSort, 'new'], page: [String(libPage), (v) => setLibPage(Math.max(1, parseInt(v, 10) || 1)), '1'] }, !id)
   const [openDrop, setOpenDrop] = useState(null)
 
   const [shareOpen, setShareOpen] = useState(false)
@@ -430,7 +431,19 @@ export default function UseCaseLibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [libCat, libTopic, libGroup, libTool, libKind, libSort, q, ucMeta, pubV])
 
-  useEffect(() => { setLibPage(1) }, [query, libCat, libTool, libSort, libGroup, libTopic])
+  // A filter/search change goes back to page 1 — but not when the change came from the URL itself
+  // (first load, Back/Forward), or "?page=2" would never open on page 2.
+  const urlKey = JSON.stringify([query || '', libCat || null, libTool || null, libSort || 'new'])
+  const localKey = JSON.stringify([libGroup, libTopic]) // filters that aren't in the URL
+  // Done during render (not in an effect) so the URL is written once with the right page; an effect
+  // would write "?q=a&page=2" first and then read it back.
+  const [prevKeys, setPrevKeys] = useState([urlKey, localKey])
+  if (prevKeys[0] !== urlKey || prevKeys[1] !== localKey) {
+    const qs = new URLSearchParams(location.search)
+    const urlNow = JSON.stringify([qs.get('q') || '', qs.get('cat') || null, qs.get('tool') || null, qs.get('sort') || 'new'])
+    setPrevKeys([urlKey, localKey])
+    if ((prevKeys[1] !== localKey || urlNow !== urlKey) && libPage !== 1) setLibPage(1)
+  }
   const PAGE_SIZE = 6
   const pageCount = Math.max(1, Math.ceil(libCases.length / PAGE_SIZE))
   const curPage = Math.min(libPage, pageCount)

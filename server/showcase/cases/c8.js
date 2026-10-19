@@ -179,12 +179,6 @@ export default {
         title: 'Đưa lên môi trường thử (deploy) chưa tự động hoàn toàn',
         text: 'Việc upload, thay đổi FP Tool, activate hoặc publish vẫn cần xác nhận và kiểm soát. Hãy nhờ developer khi muốn đưa lên develop/staging.',
       },
-      {
-        type: 'note',
-        tone: 'info',
-        title: 'Lỗi hay gặp',
-        text: '[cần bổ sung]',
-      },
     ],
     code: [
       {

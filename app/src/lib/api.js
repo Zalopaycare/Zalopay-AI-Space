@@ -1,5 +1,18 @@
+import { repairLabels } from './taxonomy.js'
 // DELETE with an optional reason (required when an admin removes someone else's post).
 const delBody = (reason) => (reason ? { method: 'DELETE', body: JSON.stringify({ reason }) } : { method: 'DELETE' })
+
+// Tags saved with a broken encoding ("T�i li�u d�i") are fixed up as they arrive, so every page shows them right.
+const TAG_KEYS = ['topics', 'tools', 'category']
+function repairTags(o, depth = 0) {
+  if (!o || typeof o !== 'object' || depth > 6) return
+  if (Array.isArray(o)) { for (const x of o) repairTags(x, depth + 1); return }
+  for (const k of Object.keys(o)) {
+    const v = o[k]
+    if (TAG_KEYS.includes(k) && Array.isArray(v) && v.some((x) => typeof x === 'string' && x.includes('\uFFFD'))) o[k] = repairLabels(v)
+    else if (v && typeof v === 'object') repairTags(v, depth + 1)
+  }
+}
 
 async function request(path, options = {}) {
   const res = await fetch('/api' + path, {
@@ -9,6 +22,7 @@ async function request(path, options = {}) {
   })
   let data = null
   try { data = await res.json() } catch { /* no body */ }
+  if (data) repairTags(data)
   if (!res.ok) {
     const err = new Error((data && (data.message || data.error)) || 'request_failed')
     err.status = res.status
