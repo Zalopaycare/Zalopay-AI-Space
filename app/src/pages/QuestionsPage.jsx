@@ -769,7 +769,7 @@ export default function QuestionsPage() {
                 {t('AI Questions')}
               </button>
               {detailQ ? (
-                <div className="zp-qdark" style={css('background:#17191f; border:1px solid rgba(255,255,255,.1); border-radius:22px; overflow:visible; box-shadow:0 24px 60px rgba(0,0,0,.45);')}>{renderQCard(detailQ, true)}</div>
+                <div className="zp-qdark" style={css('background:transparent; margin:0 -16px;')}>{renderQCard(detailQ, true)}</div>
               ) : (
                 <div style={css('padding:60px 20px; text-align:center; border-radius:22px; background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.18); color:#a9b8dc; font:600 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
                   {detailMissing ? t('Không tìm thấy câu hỏi này. Có thể câu hỏi đã bị xoá.') : t('Đang tải câu hỏi…')}

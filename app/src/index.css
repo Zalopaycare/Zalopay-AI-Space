@@ -218,7 +218,10 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-qdark { color-scheme: dark; }
 .zp-qdark [style*="background: rgb(255, 255, 255)"], .zp-qdark [style*="background-color: rgb(255, 255, 255)"],
 .zp-qdark [style*="background: rgb(248, 250, 254)"], .zp-qdark [style*="background: rgb(246, 248, 252)"],
-.zp-qdark [style*="background: rgb(247, 249, 253)"] { background: #17191f !important; }
+.zp-qdark [style*="background: rgb(247, 249, 253)"] { background: transparent !important; }
+/* menus and popups still need a solid backing */
+.zp-qdark [role="menu"], .zp-qdark [role="listbox"], .zp-qdark [role="dialog"],
+.zp-qdark [style*="position: absolute"][style*="background: rgb(255, 255, 255)"], .zp-qdark [style*="position: fixed"][style*="background: rgb(255, 255, 255)"] { background: #1b1e25 !important; border-color: rgba(255, 255, 255, .14) !important; }
 .zp-qdark [style*="background: rgb(241, 244, 250)"], .zp-qdark [style*="background: rgb(237, 240, 250)"],
 .zp-qdark [style*="background: rgb(238, 241, 246)"], .zp-qdark [style*="background: rgb(241, 245, 249)"] { background: rgba(255, 255, 255, .08) !important; }
 .zp-qdark [style*="background: rgb(234, 240, 255)"], .zp-qdark [style*="background: rgb(238, 243, 255)"],
@@ -243,6 +246,9 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-qdark [style*="rgb(227, 232, 241)"], .zp-qdark [style*="rgb(225, 231, 242)"], .zp-qdark [style*="rgb(240, 243, 248)"],
 .zp-qdark [style*="rgb(215, 228, 255)"], .zp-qdark [style*="rgb(185, 204, 248)"], .zp-qdark [style*="rgb(227, 232, 242)"] { border-color: rgba(255, 255, 255, .12) !important; }
 .zp-qdark [style*="background: rgb(227, 232, 241)"] { background: rgba(255, 255, 255, .14) !important; }
-.zp-qdark textarea, .zp-qdark input:not([type="checkbox"]) { background: #0f1116 !important; color: #f3f5f8 !important; border-color: rgba(255, 255, 255, .14) !important; }
+.zp-qdark textarea, .zp-qdark input:not([type="checkbox"]) { background: rgba(255, 255, 255, .05) !important; color: #f3f5f8 !important; border-color: rgba(255, 255, 255, .14) !important; }
 .zp-qdark textarea::placeholder, .zp-qdark input::placeholder { color: #6b7380 !important; }
 .zp-qdark a[download] { background: rgba(255, 255, 255, .06) !important; border-color: rgba(255, 255, 255, .14) !important; color: #8fb0ff !important; }
+/* no card frame at all on the question page: the post sits straight on the page */
+.zp-qdark > div { border: none !important; box-shadow: none !important; border-radius: 0 !important; background: transparent !important; }
+.zp-qdark mark, .zp-qdark [style*="background: rgb(219, 231, 255)"], .zp-qdark [style*="background: rgb(220, 232, 255)"] { background: rgba(68, 128, 255, .25) !important; color: inherit !important; }
