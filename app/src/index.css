@@ -211,3 +211,38 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-overlay-in { animation: zp-overlay-in .18s ease-out both; }
 .zp-dialog-in { animation: zp-dialog-in .24s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { .zp-overlay-in, .zp-dialog-in { animation: none; } }
+
+/* ---- Question page (/questions/<id>) in dark, Threads-style ----
+   The question card is built with light inline colours shared with the list; inside .zp-qdark they
+   are remapped here (inline styles serialise as rgb(), so they can be matched). */
+.zp-qdark { color-scheme: dark; }
+.zp-qdark [style*="background: rgb(255, 255, 255)"], .zp-qdark [style*="background-color: rgb(255, 255, 255)"],
+.zp-qdark [style*="background: rgb(248, 250, 254)"], .zp-qdark [style*="background: rgb(246, 248, 252)"],
+.zp-qdark [style*="background: rgb(247, 249, 253)"] { background: #17191f !important; }
+.zp-qdark [style*="background: rgb(241, 244, 250)"], .zp-qdark [style*="background: rgb(237, 240, 250)"],
+.zp-qdark [style*="background: rgb(238, 241, 246)"], .zp-qdark [style*="background: rgb(241, 245, 249)"] { background: rgba(255, 255, 255, .08) !important; }
+.zp-qdark [style*="background: rgb(234, 240, 255)"], .zp-qdark [style*="background: rgb(238, 243, 255)"],
+.zp-qdark [style*="background: rgb(231, 236, 251)"], .zp-qdark [style*="background: rgb(244, 247, 254)"], .zp-qdark [style*="background: rgb(234, 241, 255)"], .zp-qdark [style*="background: rgb(242, 246, 255)"] { background: rgba(68, 128, 255, .16) !important; }
+.zp-qdark [style*="background: rgb(241, 251, 246)"], .zp-qdark [style*="background: rgb(231, 249, 240)"] { background: rgba(0, 163, 82, .14) !important; }
+.zp-qdark [style*="background: rgb(241, 231, 255)"] { background: rgba(160, 90, 255, .18) !important; }
+.zp-qdark [style*="background: rgb(255, 241, 224)"] { background: rgba(255, 150, 40, .16) !important; }
+.zp-qdark [style*=" color: rgb(15, 23, 42)"], .zp-qdark [style^="color: rgb(15, 23, 42)"] { color: #f3f5f8 !important; }
+.zp-qdark [style*=" color: rgb(30, 41, 59)"], .zp-qdark [style^="color: rgb(30, 41, 59)"] { color: #e6e9ef !important; }
+.zp-qdark [style*=" color: rgb(58, 71, 87)"], .zp-qdark [style^="color: rgb(58, 71, 87)"],
+.zp-qdark [style*=" color: rgb(42, 58, 87)"], .zp-qdark [style^="color: rgb(42, 58, 87)"],
+.zp-qdark [style*=" color: rgb(71, 85, 105)"], .zp-qdark [style^="color: rgb(71, 85, 105)"] { color: #cfd5de !important; }
+.zp-qdark [style*=" color: rgb(100, 116, 139)"], .zp-qdark [style^="color: rgb(100, 116, 139)"],
+.zp-qdark [style*=" color: rgb(91, 102, 117)"], .zp-qdark [style^="color: rgb(91, 102, 117)"] { color: #9aa3b0 !important; }
+.zp-qdark [style*=" color: rgb(148, 163, 184)"], .zp-qdark [style^="color: rgb(148, 163, 184)"] { color: #7d8693 !important; }
+.zp-qdark [style*=" color: rgb(44, 95, 255)"], .zp-qdark [style^="color: rgb(44, 95, 255)"],
+.zp-qdark [style*=" color: rgb(30, 68, 168)"], .zp-qdark [style^="color: rgb(30, 68, 168)"] { color: #8fb0ff !important; }
+.zp-qdark [style*=" color: rgb(111, 12, 226)"], .zp-qdark [style^="color: rgb(111, 12, 226)"] { color: #c9a2ff !important; }
+.zp-qdark [style*=" color: rgb(180, 83, 0)"], .zp-qdark [style^="color: rgb(180, 83, 0)"] { color: #ffb469 !important; }
+.zp-qdark [style*=" color: rgb(0, 137, 63)"], .zp-qdark [style^="color: rgb(0, 137, 63)"] { color: #4fd18b !important; }
+.zp-qdark [style*="rgb(230, 235, 243)"], .zp-qdark [style*="rgb(238, 241, 247)"], .zp-qdark [style*="rgb(221, 227, 236)"],
+.zp-qdark [style*="rgb(227, 232, 241)"], .zp-qdark [style*="rgb(225, 231, 242)"], .zp-qdark [style*="rgb(240, 243, 248)"],
+.zp-qdark [style*="rgb(215, 228, 255)"], .zp-qdark [style*="rgb(185, 204, 248)"], .zp-qdark [style*="rgb(227, 232, 242)"] { border-color: rgba(255, 255, 255, .12) !important; }
+.zp-qdark [style*="background: rgb(227, 232, 241)"] { background: rgba(255, 255, 255, .14) !important; }
+.zp-qdark textarea, .zp-qdark input:not([type="checkbox"]) { background: #0f1116 !important; color: #f3f5f8 !important; border-color: rgba(255, 255, 255, .14) !important; }
+.zp-qdark textarea::placeholder, .zp-qdark input::placeholder { color: #6b7380 !important; }
+.zp-qdark a[download] { background: rgba(255, 255, 255, .06) !important; border-color: rgba(255, 255, 255, .14) !important; color: #8fb0ff !important; }
