@@ -15,6 +15,7 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
+import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -479,17 +480,23 @@ export default function QuestionsPage() {
   // One question card; inModal adds the full comment thread (the popup opened by clicking a card).
   const renderQCard = (q, inModal) => (
                   <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : 'zp-card zp-card-q ' + hoverClass('transform:translateY(-3px); border-color:rgba(168,85,247,.75); box-shadow:0 0 0 1px rgba(168,85,247,.18), 0 0 22px rgba(168,85,247,.34), 0 22px 48px rgba(0,0,0,.36);')} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`background:#ffffff; border-radius:20px; ${inModal ? 'border:1px solid #E6EBF3;' : 'border:1px solid rgba(168,85,247,.45); box-shadow:0 0 0 1px rgba(168,85,247,.10), 0 0 16px rgba(168,85,247,.22), 0 14px 36px rgba(0,0,0,.28); cursor:pointer; transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;'} overflow:${openMenuId === q.id ? 'visible' : 'hidden'};`)}>
-                    {/* Threads-style: avatar on the left, everything else in one column beside it */}
-                    <div style={css('display:flex; gap:12px; padding:16px 20px 14px;')}>
-                      <div style={css(`flex:none; width:38px; height:38px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</div>
+                    <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
+                      <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
+                        {t('Câu hỏi')}
+                      </span>
+                      <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
+                    </div>
+                    <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
+                      <div style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
-                        <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:32px;')}>
+                        <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
                           <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span><AnonTag p={q} />
                           <span style={css('font:400 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.team}</span>
                           <span style={css('color:#CDD5DD;')}>·</span>
                           <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{q.time}{q.edited ? ' · đã sửa' : ''}</span>
-                          <span style={css(`display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusFg}; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;`)}>{q.statusLabel}</span>
-                          <span style={{ flex: 1 }}></span>
+                        </div>
+                      </div>
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setOpenMenuId((id) => (id === q.id ? null : q.id)) }}
@@ -523,8 +530,9 @@ export default function QuestionsPage() {
                           </div>
                         )}
                       </div>
-                        </div>
-                    <div style={css('padding:4px 0 0;')}>
+                    </div>
+
+                    <div style={css('padding:6px 16px 0;')}>
                       {q.hasTitle !== false && <h3 className="zp-card-title" style={css('margin:0; font:800 16px/1.35 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-wrap:pretty;')}>{q.title}</h3>}
                       <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(q.hasTitle !== false ? 'margin:5px 0 0; font:400 13.5px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757; white-space:pre-wrap;' : 'margin:2px 0 0; font:500 15px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:pre-wrap;')}>
                         {renderMentions(q.bodyShown)}
@@ -536,7 +544,7 @@ export default function QuestionsPage() {
                       <FileLinks files={q.files} />
                     </div>
 
-                    <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 0 0;')}>
+                    <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
                       <TagRow topics={q.topics} tools={q.tools} />
                       {q.hasAccepted && (
                         <span style={css('display:inline-flex; align-items:center; gap:7px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#00893F;')}>
@@ -545,8 +553,6 @@ export default function QuestionsPage() {
                         </span>
                       )}
                       <CardActions compact helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={q.expanded} onReply={q.onToggle} />
-                    </div>
-                      </div>
                     </div>
 
                     {inModal && (
@@ -750,6 +756,9 @@ export default function QuestionsPage() {
   return (
     <Layout active="question">
     <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow:clip;')}>
+      <SpaceBackdrop arcTop={190} />
+      <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
+      <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:relative; z-index:1;')}>
 
         {detailId ? (
@@ -760,7 +769,7 @@ export default function QuestionsPage() {
                 {t('AI Questions')}
               </button>
               {detailQ ? (
-                <div className="zp-qdark" style={css('background:transparent; margin:0 -16px;')}>{renderQCard(detailQ, true)}</div>
+                <div style={css('background:#fff; border-radius:22px; overflow:visible; box-shadow:0 24px 60px rgba(3,12,40,.35);')}>{renderQCard(detailQ, true)}</div>
               ) : (
                 <div style={css('padding:60px 20px; text-align:center; border-radius:22px; background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.18); color:#a9b8dc; font:600 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
                   {detailMissing ? t('Không tìm thấy câu hỏi này. Có thể câu hỏi đã bị xoá.') : t('Đang tải câu hỏi…')}
@@ -794,8 +803,7 @@ export default function QuestionsPage() {
           } />
           <div style={css('padding:16px var(--zp-gutter) 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              {/* One continuous Threads-style feed: posts separated by thin lines, no card per post */}
-              <div className="zp-qdark zp-qfeed" style={css('display:flex; flex-direction:column; margin-top:0; background:#101216; border:1px solid rgba(255,255,255,.08); border-radius:24px;')}>
+              <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:0;')}>
                 {feed.map((q) => renderQCard(q, false))}
 
                 {isEmpty && (
