@@ -96,6 +96,8 @@ export function buildTemplate(c, cd, info) {
   tp.apply = { ...tp.apply, links, empty: tp.apply.empty && !links.length }
   tp.hero = { ...tp.hero, contact: people }
   tp.tech = { ...tp.tech, repo: null }
+  // No "Tóm tắt" (Vấn đề / Giải pháp / Kết quả / Dùng khi) box: the page goes straight to Bài toán | Giải pháp.
+  tp.tldr = []
   return tp
 }
 

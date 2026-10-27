@@ -29,28 +29,10 @@ export default {
     ['Dùng khi', 'Bạn có ứng dụng hoặc AI agent tự làm và muốn đưa lên chạy thật mà không cần biết lập trình, server.'],
   ],
 
-  problem: {
-    text: 'Agent Base là hệ thống nội bộ của ZaloPay để đưa ứng dụng của bạn lên chạy thật trên internet. Bình thường việc này cần người kỹ thuật làm.',
-    bullets: [
-      'Ai gặp: người mới hoặc chưa rành kỹ thuật, muốn tự đưa AI agent của mình lên chạy thật.',
-      'Việc tốn công: phải biết lập trình, biết server và gõ lệnh phức tạp mới tự làm được.',
-      'Tốn bao nhiêu: [cần bổ sung]',
-    ],
-    tables: [],
-    images: [],
-  },
+  // Vấn đề + Giải pháp: lấy nguyên văn từ booth 2 của Zalopay AI Exhibition 2026.
+  problem: { text: 'Ngày càng nhiều các team non-tech như Product, Biz, Designer...  tự làm được prototype và công cụ nội bộ nhờ vibe-code. Nhưng app chỉ chạy trên máy mình. Muốn gửi link cho team dùng thì gặp ngay một bức tường kỹ thuật:\n\nPhải biết Docker, server, tên miền, HTTPS, biến môi trường, database. Đây là những thứ người không làm kỹ thuật chưa từng phải học.\nCách duy nhất là tạo ticket nhờ dev hoặc SRE rồi chờ vài ngày. Ý tưởng nguội dần, còn đội kỹ thuật bị kéo khỏi việc chính.\n\nKết quả là nhiều ý tưởng hay dừng lại ở laptop của người làm ra nó.' },
 
-  solution: {
-    analogy: 'Hiểu đơn giản: bạn ra lệnh bằng tiếng Việt, AI làm theo hướng dẫn trong bộ skill rồi tự thao tác trên Agent Base.',
-    steps: [
-      'Bạn: xin SRE file cấu hình riêng, rồi nhờ AI cài bộ skill vào Claude Code, Codex hoặc Cursor.',
-      'Bạn: mở công cụ AI ngay tại thư mục chứa code, gõ một câu nhờ deploy.',
-      'AI: hỏi lại vài câu (tên ứng dụng, có cần địa chỉ web, có đặt mật khẩu không), rồi tự đưa ứng dụng lên.',
-      'Bạn kiểm tra: mở đường link AI trả về và lưu lại mật khẩu bảo vệ (chỉ hiện một lần).',
-      'Bạn: sau này sửa code, kiểm tra, đổi tên miền, tạm dừng hay xoá đều bằng một câu tiếng Việt.',
-    ],
-    images: [],
-  },
+  solution: { text: 'Zalopay Agent Base skills là bộ skill ra đời với phương châm "Không cần biết kĩ thuật, không cần tạo ticket, không chờ SRE. Bạn chat tiếng Việt, AI đưa app lên agent base, gắn tên miền và bạn có thể sử dụng ngay".\n\nHiện tại đã có hơn 30 ứng dụng từ các ý tưởng trong ai week, claw-a-thon đến các web mà các bạn sử dụng của HR đều đang được triển khai trên agent base thông qua Zalopay Agent Base skills này mà không cần có kiến thức gì về kĩ thuật.' },
 
   result: {
     beforeAfter: null,
