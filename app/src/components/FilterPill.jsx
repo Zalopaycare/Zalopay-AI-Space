@@ -61,7 +61,7 @@ export default function FilterPill({ label, name, openDrop, setOpenDrop, options
     <div style={{ position: 'relative', flex: 'none' }}>
       <div
         className={hoverClass('border-color:#B9CCF8 !important;')}
-        style={css(`display:inline-flex; align-items:center; height:46px; box-sizing:border-box; border-radius:999px; border:1px solid ${active ? '#B9CCF8' : '#E6EBF3'}; background:${active ? '#EEF3FF' : '#ffffff'}; box-shadow:0 10px 26px rgba(0,0,0,.25); transition:border-color .15s;`)}
+        style={css(`display:inline-flex; align-items:center; height:38px; box-sizing:border-box; border-radius:999px; border:1px solid ${active ? '#B9CCF8' : '#E6EBF3'}; background:${active ? '#EEF3FF' : '#ffffff'}; box-shadow:0 10px 26px rgba(0,0,0,.25); transition:border-color .15s;`)}
       >
         <button
           ref={btnRef}
@@ -70,7 +70,7 @@ export default function FilterPill({ label, name, openDrop, setOpenDrop, options
           aria-expanded={open}
           onClick={(e) => { e.stopPropagation(); setOpenDrop(open ? null : name) }}
           onKeyDown={(e) => { if (e.key === 'ArrowDown' && !open) { e.preventDefault(); setOpenDrop(name) } }}
-          style={css(`display:inline-flex; align-items:center; gap:8px; height:100%; padding:0 ${active && onClear ? 6 : 14}px 0 18px; border:none; border-radius:999px; background:transparent; color:${active ? '#2c5fff' : '#1E293B'}; font:600 13.5px ${FONT}; cursor:pointer; white-space:nowrap;`)}
+          style={css(`display:inline-flex; align-items:center; gap:8px; height:100%; padding:0 ${active && onClear ? 5 : 12}px 0 14px; border:none; border-radius:999px; background:transparent; color:${active ? '#2c5fff' : '#1E293B'}; font:600 12.5px ${FONT}; cursor:pointer; white-space:nowrap;`)}
         >
           <span style={css('max-width:150px; overflow:hidden; text-overflow:ellipsis;')}>{label}</span>
           <svg style={{ flex: 'none', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="m6 9 6 6 6-6"></path></svg>
@@ -82,7 +82,7 @@ export default function FilterPill({ label, name, openDrop, setOpenDrop, options
             title="Bỏ lọc"
             onClick={(e) => { e.stopPropagation(); onClear() }}
             className={hoverClass('background:#D6E2FF !important;')}
-            style={css('flex:none; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; margin-right:9px; border:none; border-radius:50%; background:#E0E9FF; color:#2c5fff; cursor:pointer;')}
+            style={css('flex:none; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; margin-right:8px; border:none; border-radius:50%; background:#E0E9FF; color:#2c5fff; cursor:pointer;')}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
           </button>
@@ -108,7 +108,7 @@ export default function FilterPill({ label, name, openDrop, setOpenDrop, options
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); opt.onClick(); btnRef.current?.focus() }}
               onMouseEnter={() => setFocusIdx(i)}
               className={hoverClass('background:#F3F6FC;')}
-              style={css(`display:block; width:100%; text-align:left; border:none; outline:none; padding:9px 12px; border-radius:10px; cursor:pointer; font:${opt.active ? 700 : 500} 13.5px ${FONT}; color:${opt.active ? '#2c5fff' : '#1E293B'}; background:${opt.active ? '#EEF3FF' : i === focusIdx ? '#F3F6FC' : 'transparent'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}
+              style={css(`display:block; width:100%; text-align:left; border:none; outline:none; padding:9px 12px; border-radius:10px; cursor:pointer; font:${opt.active ? 700 : 500} 12.5px ${FONT}; color:${opt.active ? '#2c5fff' : '#1E293B'}; background:${opt.active ? '#EEF3FF' : i === focusIdx ? '#F3F6FC' : 'transparent'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}
             >
               {opt.label}
             </button>
