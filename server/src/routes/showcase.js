@@ -7,14 +7,15 @@ import { visibleShowcase, MEDIA_DIR, pendingCases, PENDING_BY_ID } from '../show
 const router = express.Router()
 
 const interestCount = (id) => db.prepare('SELECT COUNT(*) n FROM use_case_interest WHERE use_case_id = ?').get(id).n
-// Tells every member of a booth how many people are interested so far, at each company domain since
+// Tells a booth's PIC and members how many people are interested so far, at each company domain since
 // the exhibition only knows account names (whichever mailbox they sign in with shows it).
+const accountsOf = (p) => [...new Set([...(p.pic || []), ...(p.members || [])].map((a) => a.toLowerCase()))]
 const pingOwners = (p) => {
   const count = interestCount(p.id)
-  for (const acc of p.members || []) for (const d of companyDomains()) notifyInterest(`${acc.toLowerCase()}@${d}`, { ref: 'interest:' + p.id, count, title: p.title })
+  for (const acc of accountsOf(p)) for (const d of companyDomains()) notifyInterest(`${acc}@${d}`, { ref: 'interest:' + p.id, count, title: p.title })
 }
-// Members added to pending.js after people already clicked "Quan tâm" get their notification on start.
-for (const p of pendingCases) if ((p.members || []).length) pingOwners(p)
+// People added to pending.js after others already clicked "Quan tâm" get their notification on start.
+for (const p of pendingCases) if (accountsOf(p).length) pingOwners(p)
 
 const pendingFor = (userId) => pendingCases.map((p) => ({
   id: p.id, booth: p.booth, title: p.title, team: p.team, label: p.label, category: p.category, members: p.members || [],

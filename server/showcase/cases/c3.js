@@ -17,6 +17,8 @@ export default {
   difficulty: 'Dễ',
   access: 'Cần xin quyền: tài khoản CRM tool (xin ở đâu: [cần bổ sung])',
   author: 'KietTT8',
+  // Owner: dòng "Member" của booth 10 trên Zalopay AI Exhibition 2026.
+  members: ['kiettt8', 'trongdd2', 'hoangnv6', 'thanghm3'],
   ownerName: 'Kiệt. Tô Thế (8), Hoàng. Nguyễn Việt (6), Thắng. Hoàng Mạnh (3), Trọng. Dương Đức (2)',
   ownerTeam: '[cần bổ sung]',
   updated: '',

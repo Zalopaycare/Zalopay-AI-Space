@@ -20,6 +20,8 @@ export default {
   access: 'Cần xin quyền: [cần bổ sung] — chỉ email @vng.com.vn, chỉ hỏi được project cùng squad',
   // Người làm: PIC booth 4 trên Zalopay AI Exhibition 2026 (tài liệu gốc không ghi).
   author: 'HienVT3',
+  // Owner: dòng "Member" của booth 4 trên Zalopay AI Exhibition 2026.
+  members: ['hienvt3'],
   ownerName: 'HienVT3, PhuNN4',
   ownerTeam: 'Platform',
   updated: '05/08/2026',

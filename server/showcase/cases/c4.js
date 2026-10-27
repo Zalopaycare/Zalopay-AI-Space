@@ -16,6 +16,8 @@ export default {
   difficulty: 'Trung bình',
   access: 'Cần xin quyền: liên hệ SRE để được cấp file cấu hình <tên_bạn>_zlpagentbase.env',
   author: 'LuânPD',
+  // Owner: dòng "Member" của booth 2 trên Zalopay AI Exhibition 2026.
+  members: ['luanpd'],
   ownerName: 'LuânPD',
   ownerTeam: 'SRE',
   updated: '',

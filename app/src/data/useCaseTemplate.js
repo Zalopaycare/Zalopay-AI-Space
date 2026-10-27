@@ -49,7 +49,9 @@ function fromTpl(c, m) {
       type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
       toolName: m.toolName || '', audience: m.audience || '', difficulty: m.difficulty || '', access: m.access || '',
       // owner drops Microsoft's "(8)" counters
-      tools: c.tools || [], owner: String(known(m.ownerName) || c.author).replace(/\s*\(\d+\)/g, ''), ownerTeam: known(m.ownerTeam) || known(c.team), updated: known(m.updated),
+      tools: c.tools || [], owner: String(known(m.ownerName) || (m.author === 'AI Space' || m.author === m.ownerTeam ? '' : c.author)).replace(/\s*\(\d+\)/g, ''), ownerTeam: known(m.ownerTeam) || known(c.team), updated: known(m.updated),
+      // everyone who built it, as the booth's "Member:" line on AI Exhibition shows them
+      members: arr(m.members),
     },
     stats: arr(m.stats).slice(0, 3),
     tldr: arr(m.tldr).filter((row) => row && row[1]),

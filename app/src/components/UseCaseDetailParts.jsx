@@ -6,7 +6,6 @@ import { css, hoverClass } from '../lib/style.js'
 import AnonTag from './AnonTag.jsx'
 import { Blocks, CopyButton, Figure, Placeholders, Prompt, PromptTargetContext } from './UseCaseGuide.jsx'
 import Fill from './Fill.jsx'
-import { avatarPhotoCss } from './Avatar.jsx'
 
 // Building blocks of the use case detail page, laid out as the template:
 // hero (owner, contacts) + info row + "Ứng dụng ngay →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp ·
@@ -38,9 +37,9 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
   )
 }
 
-/** Title block on the dark hero: Loại + Trạng thái chips, title, tool name, one-line description,
- *  one horizontal info row and the "Ứng dụng ngay →" button that jumps to part 5. */
-export function DetailHero({ c, h, avatarBg, avatarUrl, onBack, onStart, startLabel, tldr = [], t }) {
+/** Title block on the dark hero: title, "Owner" line, one-line summary, one horizontal info row and
+ *  the "Ứng dụng ngay →" button that jumps to part 5. */
+export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) {
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:12.5px; font-weight:700; line-height:1.45; color:#fff;'
   const diff = DIFF[h.difficulty]
@@ -75,19 +74,14 @@ export function DetailHero({ c, h, avatarBg, avatarUrl, onBack, onStart, startLa
         {t('Quay lại')}
       </button>}
       <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
-      {/* Who owns / posted it, right under the title: avatar + name + team. */}
-      <div style={css('display:flex; align-items:center; gap:10px; margin-top:14px; min-width:0; flex-wrap:wrap;')}>
-        <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; color:#fff; background:${avatarBg};${avatarPhotoCss(avatarUrl)}`)}>{c.author.slice(0, 1).toUpperCase()}</span>
-        <span style={css('font-size:13.5px; font-weight:700; color:#fff;')}><Fill text={h.owner} /></span>
-        {h.ownerTeam && <span style={css('font-size:12.5px; color:#a9b8dc;')}>· <Fill text={h.ownerTeam} /></span>}
-        <AnonTag p={c} dark />
-      </div>
-      {(() => {
-        // the owner is already shown right above, so a contact line that is just the owner is skipped
-        const contact = (h.contact || []).filter((x) => !h.owner || !x.startsWith(h.owner))
-        return contact.length > 0 && <div style={css('margin-top:8px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Liên hệ')}: <span style={css('color:#fff; font-weight:600;')}><Fill text={contact.join(' · ')} /></span></div>
-      })()}
-      {h.toolName && <div style={css('margin-top:10px; font-size:12.5px; font-weight:600; color:#8fb4ff;')}>{t('Tên công cụ')}: <span style={css('color:#fff; font-weight:800;')}>{h.toolName}</span></div>}
+      {/* Everyone who built it (or the poster), right under the title. */}
+      {(h.members?.length > 0 || h.owner) && (
+        <div style={css('display:flex; align-items:baseline; gap:8px; margin-top:12px; flex-wrap:wrap; font-size:13px; line-height:1.5;')}>
+          <span style={css('font-weight:600; color:#a9b8dc;')}>Owner:</span>
+          <span style={css('font-weight:700; color:#fff;')}><Fill text={h.members?.length ? h.members.join(', ') : h.owner} /></span>
+          <AnonTag p={c} dark />
+        </div>
+      )}
       <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>
       {/* One overview box: the info row, then the 30-second summary (part 1) right under it. */}
       <div id="uc-overview" className="zp-overview" style={{ marginTop: 22 }}>

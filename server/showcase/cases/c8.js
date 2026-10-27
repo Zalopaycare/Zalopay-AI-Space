@@ -19,6 +19,8 @@ export default {
   difficulty: 'Trung bình',
   access: '[cần bổ sung]',
   author: 'ToanNTT',
+  // Owner: dòng "Member" của booth 5 trên Zalopay AI Exhibition 2026.
+  members: ['khangth2', 'toanntt', 'linhpn3', 'liennn', 'thupn2', 'viennd', 'khangpb'],
   ownerName: 'Toàn. Nguyễn Trần Thiện',
   ownerTeam: 'PCT-CX',
   updated: '',

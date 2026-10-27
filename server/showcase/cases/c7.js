@@ -16,6 +16,8 @@ export default {
   difficulty: 'Dễ',
   access: 'Chỉ trong team AppSec',
   author: 'NghiaTG',
+  // Owner: dòng "Member" của booth 1 trên Zalopay AI Exhibition 2026.
+  members: ['nghiatg', 'haunk'],
   ownerName: 'Nghĩa. Trần Gia',
   ownerTeam: 'Security (AppSec)',
   updated: '',

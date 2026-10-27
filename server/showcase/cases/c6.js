@@ -17,6 +17,8 @@ export default {
   access: 'Chỉ trong team: skill nằm trong repo dp-segment-etl (branch feature/apply-ai); xin quyền ở đâu [cần bổ sung]',
   // Người làm: PIC + thành viên booth 24 trên Zalopay AI Exhibition 2026 (tài liệu gốc không ghi).
   author: 'TuanLT2',
+  // Owner: dòng "Member" của booth 24 trên Zalopay AI Exhibition 2026.
+  members: ['tuanlt2', 'quynhvm'],
   ownerName: 'TuanLT2',
   ownerTeam: 'Data Platform',
   updated: '',

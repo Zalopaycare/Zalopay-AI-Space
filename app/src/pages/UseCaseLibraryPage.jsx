@@ -580,8 +580,6 @@ export default function UseCaseLibraryPage() {
                 t={t}
                 c={dsel}
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
-                avatarBg={avatarColor(dsel.author)}
-                avatarUrl={avatarPhoto(dsel.author)}
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Ứng dụng ngay')}
@@ -924,7 +922,7 @@ export default function UseCaseLibraryPage() {
                     {t('Xem trước: đây đúng là trang chi tiết người đọc sẽ thấy sau khi bài được duyệt.')}
                   </div>
                   <div className="zp-detail-wrap" style={css('margin-top:16px; border-radius:20px; overflow:hidden; background:#07070c; color:#fff; padding:22px 22px 30px;')}>
-                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} avatarBg={user?.avatarColor || avatarColor(pv.c.author)} avatarUrl={user?.avatarUrl} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
+                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
                   <div style={css('margin-top:16px; padding:12px 16px; border-radius:14px; background:#fff; border:1px solid #E6EBF3;')}>

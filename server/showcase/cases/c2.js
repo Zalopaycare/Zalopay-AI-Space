@@ -17,6 +17,8 @@ export default {
   access: 'Cài từ kho code GitLab nội bộ aqr/bill/us-hive; cách xin quyền [cần bổ sung]',
   // Người làm: PIC + thành viên booth 3 trên Zalopay AI Exhibition 2026 (tài liệu gốc không ghi).
   author: 'AnhTVH',
+  // Owner: dòng "Member" của booth 3 trên Zalopay AI Exhibition 2026.
+  members: ['anhtvh', 'minhln9', 'namnth3', 'yenhtt', 'dangphh'],
   ownerName: 'AnhTVH',
   ownerTeam: 'Utility Solutions (US)',
   updated: '',

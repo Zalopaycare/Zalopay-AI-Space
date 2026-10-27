@@ -47,7 +47,7 @@ export default function PendingCases({ items, t, requireLogin }) {
                 <div style={css('font-size:13.5px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;')}>{p.title}</div>
                 {p.members?.length > 0 && (
                   <div style={css('margin-top:3px; font-size:12px; line-height:1.45; color:#5B6B82;')}>
-                    <span style={css('font-weight:600; color:#3A4757;')}>{t('Thành viên')}:</span> {p.members.join(', ')}
+                    <span style={css('font-weight:600; color:#3A4757;')}>Owner:</span> {p.members.join(', ')}
                   </div>
                 )}
                 <div style={css('display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px;')}>

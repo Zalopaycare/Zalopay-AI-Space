@@ -17,6 +17,8 @@ export default {
   difficulty: 'Trung bình',
   access: '[cần bổ sung]',
   author: 'LuanNA',
+  // Owner: dòng "Member" của booth 27 trên Zalopay AI Exhibition 2026.
+  members: ['luanna'],
   ownerName: 'Luân. Nguyễn Anh',
   ownerTeam: 'MS',
   updated: '',
