@@ -354,6 +354,63 @@ function CodeBlock({ cb }) {
   )
 }
 
+/** Detailed steps as a journey: the whole path in one row (1 → 2 → 3…), one step's details at a time,
+ *  with "Bước trước / Bước tiếp" to walk through. The row scrolls sideways on narrow screens. */
+function StepJourney({ sections, t }) {
+  const [on, setOn] = useState(0)
+  const topRef = useRef(null)
+  const go = (i) => {
+    setOn(i)
+    // keep the row in view when a long step pushed it off the top of the screen
+    const el = topRef.current
+    if (el && el.getBoundingClientRect().top < 70) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  const s = sections[on]
+  const last = sections.length - 1
+  const navBtn = (primary) => `display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:7px 16px; border-radius:18px; text-align:left; line-height:1.35; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; ${primary
+    ? 'border:none; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; box-shadow:0 6px 16px rgba(44,95,255,.3);'
+    : 'border:1px solid #D5E0F7; background:#fff; color:#2c5fff;'}`
+  return (
+    <div ref={topRef} style={css('scroll-margin-top:84px; border:1px solid #D5E0F7; border-radius:16px; overflow:hidden; background:#fff;')}>
+      <div role="tablist" aria-label={t('Các bước')} className="zp-journey" style={css('display:flex; padding:14px 10px 12px; background:linear-gradient(180deg,#EEF3FF,#F8FAFF); border-bottom:1px solid #DFE7F8; overflow-x:auto;')}>
+        {sections.map((x, i) => {
+          const state = i === on ? 'on' : i < on ? 'done' : 'todo'
+          return (
+            <button
+              key={x.id}
+              role="tab"
+              aria-selected={i === on}
+              onClick={() => go(i)}
+              style={css('position:relative; flex:1 0 108px; display:flex; flex-direction:column; align-items:center; gap:7px; padding:0 6px; border:none; background:none; cursor:pointer; font-family:inherit;')}
+            >
+              {/* the line to the next step */}
+              {i < last && <span aria-hidden="true" style={css(`position:absolute; top:16px; left:calc(50% + 20px); right:calc(-50% + 20px); height:2px; border-radius:2px; background:${i < on ? '#2c5fff' : '#CFDAF2'};`)}></span>}
+              <span style={css(`position:relative; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; ${state === 'on'
+                ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; box-shadow:0 0 0 5px rgba(44,95,255,.16), 0 4px 10px rgba(44,95,255,.35);'
+                : state === 'done' ? 'background:#E1E9FF; color:#2c5fff; border:2px solid #2c5fff;' : 'background:#fff; color:#8A9AB8; border:2px solid #CFDAF2;'}`)}>
+                {state === 'done'
+                  ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                  : i + 1}
+              </span>
+              <span style={css(`max-width:150px; font-size:12px; line-height:1.35; text-align:center; font-weight:${i === on ? 800 : 600}; color:${i === on ? '#0B1F5C' : '#5B6B86'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{x.title}</span>
+            </button>
+          )
+        })}
+      </div>
+      <div role="tabpanel" style={css('padding:16px 18px 18px;')}>
+        <div style={css('font-size:10.5px; font-weight:800; letter-spacing:.08em; color:#5B7BD6;')}>{t('BƯỚC')} {on + 1}/{sections.length}</div>
+        <div style={css('margin:2px 0 12px; font-size:16px; font-weight:800; line-height:1.35; color:#0B1F5C;')}>{s.title}</div>
+        {s.sub && <div style={css('margin:0 0 12px; font-size:12.5px; color:#64748b;')}>{s.sub}</div>}
+        <Blocks blocks={s.blocks} />
+        <div style={css('display:flex; align-items:center; gap:10px; margin-top:18px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
+          {on > 0 && <button onClick={() => go(on - 1)} style={css(navBtn(false))}>← {t('Bước trước')}</button>}
+          {on < last && <button onClick={() => go(on + 1)} style={css(navBtn(true) + 'margin-left:auto;')}>{t('Bước tiếp')}: {sections[on + 1].title} →</button>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** 5 Tự áp dụng — the one highlighted block: fit, checklist, steps with copyable prompts, what success
  *  looks like, and the common-errors table (always open, in red). */
 export function ApplySection({ id, a, t, num = '5' }) {
@@ -384,21 +441,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
       <div style={css(SUB)}>{t('Các bước')}</div>
       <div style={css('display:flex; flex-direction:column; gap:16px;')}>
         {a.steps.length > 0 && <BulletList items={a.steps} numbered />}
-        {a.stepSections.map((s, i) => (
-          <div key={s.id} style={css('border:1px solid #D5E0F7; border-radius:16px; overflow:hidden; background:#fff;')}>
-            <div style={css('display:flex; align-items:center; gap:12px; padding:12px 16px; background:linear-gradient(90deg,#EAF0FF,#F7F9FF); border-bottom:1px solid #DFE7F8;')}>
-              <span style={css('flex:none; width:32px; height:32px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14.5px; font-weight:800; box-shadow:0 4px 10px rgba(44,95,255,.32);')}>{i + 1}</span>
-              <div style={css('min-width:0;')}>
-                <div style={css('font-size:10.5px; font-weight:800; letter-spacing:.08em; color:#5B7BD6;')}>{t('BƯỚC')} {i + 1}</div>
-                <div style={css('font-size:15px; font-weight:800; line-height:1.35; color:#0B1F5C;')}>{s.title}</div>
-              </div>
-            </div>
-            <div style={css('padding:14px 16px 16px;')}>
-              {s.sub && <div style={css('margin:0 0 12px; font-size:12.5px; color:#64748b;')}>{s.sub}</div>}
-              <Blocks blocks={s.blocks} />
-            </div>
-          </div>
-        ))}
+        {a.stepSections.length > 0 && <StepJourney sections={a.stepSections} t={t} />}
         {a.blocks.length > 0 && <Blocks blocks={a.blocks} />}
         {a.code.map((cb, i) => <CodeBlock key={i} cb={cb} />)}
         {a.refTables.map((tb, i) => <PlainTable flat key={i} table={tb} />)}
