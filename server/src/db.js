@@ -250,6 +250,14 @@ CREATE TABLE IF NOT EXISTS use_case_ratings (
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (use_case_id, user_id)
 );
+
+-- "Quan tâm" on an AI Exhibition booth that has no write-up yet (server/showcase/pending.js), one per person.
+CREATE TABLE IF NOT EXISTS use_case_interest (
+  use_case_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (use_case_id, user_id)
+);
 `)
 
 // Optional cover image for a use case (stored with the submission so every viewer sees it).

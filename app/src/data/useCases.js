@@ -107,6 +107,13 @@ export function hlList(arr) {
 
 export const builtinCases = allCases.slice()
 
+// AI Exhibition booths with no write-up yet ({ id, booth, title, team, label, category, interest, mine }),
+// shown as small "Chưa có thông tin" tiles under the library. Arrive with /api/showcase.
+export const pendingCases = []
+export function registerPending(list) {
+  pendingCases.splice(0, pendingCases.length, ...(Array.isArray(list) ? list : []))
+}
+
 // Showcase use cases written in the 9-part template shape from the teams' own docs. They live on the
 // server (login only) and arrive through /api/showcase after sign-in; registered here like the
 // built-ins above so every page lists and renders them. Safe to call again (replaces by id).

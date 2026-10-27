@@ -169,8 +169,12 @@ html.zp-vt .zp-page-in { animation: none; }
   .zp-info-row > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
+/* "Chưa có thông tin" booth tiles under the library: two per row, one on phones. */
+.zp-pending-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
 /* Phones: search box on its own line with the filter pills below; detail blocks go to one column. */
 @media (max-width: 699px) {
+  .zp-pending-grid { grid-template-columns: minmax(0, 1fr); }
   .zp-search-row { flex-wrap: wrap; }
   .zp-search-row > form { flex: 1 1 100% !important; }
   .zp-stats, .zp-bars { grid-template-columns: minmax(0, 1fr); }

@@ -72,6 +72,7 @@ export const api = {
   useCaseMeta: (id) => request(`/use-cases/${id}/meta`),
   reactUseCase: (id) => request(`/use-cases/${id}/react`, { method: 'POST' }),
   showcase: () => request('/showcase'),
+  interestPending: (id) => request(`/showcase/pending/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
   presence: (path) => request('/auth/presence', { method: 'POST', body: JSON.stringify({ path }) }),
   adminLive: () => request('/admin/live'),
   adminPublished: () => request('/admin/published'),

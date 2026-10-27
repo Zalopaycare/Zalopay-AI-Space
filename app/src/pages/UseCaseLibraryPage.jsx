@@ -37,8 +37,9 @@ import { avatarPhotoCss } from '../components/Avatar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, avatarPhoto, statusMeta, kindOf, statusOf, levelMeta, levelChip,
-  newestFirst, postedLabel,
+  newestFirst, postedLabel, pendingCases,
 } from '../data/useCases.js'
+import PendingCases from '../components/PendingCases.jsx'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
 const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
@@ -406,7 +407,7 @@ export default function UseCaseLibraryPage() {
   // ---- library filter/sort/derivations ----
   const q = fold(query.trim())
   const meta = prdMeta
-  const catList = useMemo(() => Array.from(new Set(allCases.map((c) => c.category))).sort((a, b) => a.localeCompare(b, 'vi')), [pubV])
+  const catList = useMemo(() => Array.from(new Set([...allCases, ...pendingCases].map((c) => c.category))).sort((a, b) => a.localeCompare(b, 'vi')), [pubV])
 
   const libCases = useMemo(() => {
     let list = allCases.map((c) => {
@@ -444,6 +445,10 @@ export default function UseCaseLibraryPage() {
     setPrevKeys([urlKey, localKey])
     if ((prevKeys[1] !== localKey || urlNow !== urlKey) && libPage !== 1) setLibPage(1)
   }
+  // "Chưa có thông tin" booth tiles follow the search box and Category; they have no tools, topics or
+  // kind, so any of those filters hides them.
+  const pendingList = (libTool || libTopic || libKind || libGroup) ? [] : pendingCases.filter((p) =>
+    (!libCat || p.category === libCat) && (!q || fold([p.title, p.team, p.label, p.category].join(' ')).includes(q)))
   const PAGE_SIZE = 6
   const pageCount = Math.max(1, Math.ceil(libCases.length / PAGE_SIZE))
   const curPage = Math.min(libPage, pageCount)
@@ -753,7 +758,7 @@ export default function UseCaseLibraryPage() {
               )}
 
             <div id="lib-grid">
-              {libCards.length === 0 && (
+              {libCards.length === 0 && pendingList.length === 0 && (
                 <div style={css('padding:74px 0; text-align:center; color:#8a8a9e; font-size:15px;')}>{t('Không tìm thấy use case phù hợp. Thử đổi bộ lọc hoặc từ khóa khác nhé.')}</div>
               )}
 
@@ -838,7 +843,7 @@ export default function UseCaseLibraryPage() {
                   <button disabled={curPage === pageCount} onClick={() => { setLibPage(curPage + 1); document.getElementById('lib-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} style={css(`height:36px; padding:0 14px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; font:700 13px inherit; cursor:pointer; opacity:${curPage === pageCount ? 0.4 : 1};`)}>{t('Sau')} ›</button>
                 </div>
               )}
-
+              <PendingCases items={pendingList} t={t} requireLogin={requireLogin} />
             </div>
           </div>
         </section>

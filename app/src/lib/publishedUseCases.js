@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
-import { registerPublished, registerTemplateCases } from '../data/useCases.js'
+import { registerPublished, registerTemplateCases, registerPending } from '../data/useCases.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 
 // Loads approved community use cases once per page load and merges them into data/useCases.js.
@@ -16,7 +16,7 @@ export function loadPublishedUseCases(force = false) {
   if (inflight && !force) return inflight
   inflight = Promise.all([
     // showcase first: registerPublished keeps whatever is registered as built-in
-    api.showcase().then((d) => registerTemplateCases(d.cases || [])).catch(() => {}),
+    api.showcase().then((d) => { registerTemplateCases(d.cases || []); registerPending(d.pending) }).catch(() => {}),
     api.listSubmissions('?status=approved').catch(() => null),
   ])
     .then(([, d]) => { if (d) registerPublished(d.submissions || []) })

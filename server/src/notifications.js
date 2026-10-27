@@ -39,6 +39,27 @@ export function notifyUpvotes(ownerEmail, { ref, count, lastVoter, title, href }
   } catch (e) { console.error('[notifications] upvote failed:', e.message) }
 }
 
+// "Quan tâm" on a booth with no write-up yet: one notification per booth and owner, updated in place
+// like the upvote one, pointing at the share form. Safe to call again with the same count.
+export function notifyInterest(ownerEmail, { ref, count, title }) {
+  if (!ownerEmail) return
+  const email = String(ownerEmail).toLowerCase()
+  const prev = db.prepare("SELECT * FROM notifications WHERE email = ? AND kind = 'interest' AND ref = ?").get(email, ref)
+  if (count <= 0) { if (prev) db.prepare('DELETE FROM notifications WHERE id = ?').run(prev.id); return }
+  const label = String(title || '').trim()
+  const name = label ? ` "${label.length > 80 ? label.slice(0, 80).trimEnd() + '…' : label}"` : ''
+  const text = `Use case${name} của bạn nhận được ${count} lượt quan tâm. Đăng Use Case ngay!`
+  const href = '/use-cases?share=1'
+  try {
+    if (prev) {
+      const grew = count > (Number((/(\d+) lượt quan tâm/.exec(prev.text) || [])[1]) || 0)
+      db.prepare(`UPDATE notifications SET text = ?, href = ?${grew ? ", read = 0, created_at = datetime('now')" : ''} WHERE id = ?`).run(text.slice(0, 500), href, prev.id)
+    } else {
+      db.prepare("INSERT INTO notifications (email, kind, text, href, actor, ref) VALUES (?, 'interest', ?, ?, '', ?)").run(email, text.slice(0, 500), href, ref)
+    }
+  } catch (e) { console.error('[notifications] interest failed:', e.message) }
+}
+
 const BUILTIN_CASES = new Set(SHOWCASE_IDS)
 function stillExists(r) {
   const href = String(r.href || '')
