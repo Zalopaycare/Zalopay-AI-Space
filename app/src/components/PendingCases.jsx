@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../lib/api.js'
 import { css } from '../lib/style.js'
+import RichText from './RichText.jsx'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
 // list: number badge in the category colour, name, members, event label, a "Chưa có thông tin" tag and a
@@ -39,29 +40,6 @@ function InterestButton({ p, busy, onToggle, t }) {
   )
 }
 
-// The exhibition writes its text as light markdown: **bold**, "- " bullets, blank lines between parts.
-// Rendered with the detail page's look: plain paragraphs, dotted bullets, bold run-in headings.
-function Rich({ text, dot }) {
-  const bold = (s) => s.split(/(\*\*[^*]+\*\*)/g).map((part, i) => (/^\*\*[^*]+\*\*$/.test(part) ? <b key={i} style={css('font-weight:800; color:#0F172A;')}>{part.slice(2, -2)}</b> : part))
-  const blocks = []
-  for (const line of String(text || '').split('\n')) {
-    const item = /^\s*[-•]\s+(.*)$/.exec(line)
-    const last = blocks[blocks.length - 1]
-    if (item) (last && last.list ? last.items.push(item[1]) : blocks.push({ list: true, items: [item[1]] }))
-    else if (line.trim()) blocks.push({ text: line.trim() })
-  }
-  return blocks.map((b, i) => (b.list ? (
-    <div key={i} style={css(`display:flex; flex-direction:column; gap:7px; margin-top:${i ? 8 : 0}px;`)}>
-      {b.items.map((x, k) => (
-        <div key={k} style={css('display:flex; gap:10px; align-items:flex-start;')}>
-          <span style={css(`flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:${dot};`)}></span>
-          <span>{bold(x)}</span>
-        </div>
-      ))}
-    </div>
-  ) : <p key={i} style={css(`margin:${i ? 12 : 0}px 0 0;`)}>{bold(b.text)}</p>))
-}
-
 // Same card look as "Bài toán" / "Giải pháp" on a use case detail page.
 const CARD = 'min-width:0; border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:18px 20px;'
 
@@ -80,7 +58,7 @@ function PendingPopup({ p, busy, onToggle, onClose, t }) {
         {t(title)}<span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
       </div>
       <div style={css('font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty;')}>
-        {text ? <Rich text={text} dot={dot} /> : <span style={css('color:#94a3b8;')}>{t('Chưa có thông tin')}</span>}
+        {text ? <RichText text={text} dot={dot} /> : <span style={css('color:#94a3b8;')}>{t('Chưa có thông tin')}</span>}
       </div>
     </div>
   )

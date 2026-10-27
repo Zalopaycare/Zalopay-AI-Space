@@ -37,6 +37,11 @@ export default {
     ['Dùng khi', 'Team Data nhận một ticket tạo segment mới chạy theo lịch (batch).'],
   ],
 
+  // Bài toán + Giải pháp: nguyên văn booth 24 của Zalopay AI Exhibition 2026 (thay cho bản viết lại từ tài liệu).
+  exhibition: {
+    problem: 'Để phát triển mới một segment condition mới, member Data Platform phải review lại ticket xem đã đủ thông tin để build không, cũng như member này phải hiểu rõ cách thức build một segment condition mới. Thông thường việc build một segment condition mới mất khoảng 1-2 ngày làm việc để hoàn thành pipeline cũng như các setup liên quan.',
+    solution: 'Segment pipeline Agent Skill là một Agent Skill giúp tổng hợp lại quy trình phát triển một segment condition. Với đầu vào là một Jira ticket, Agent sẽ phân tích và đánh giá đã đủ thông tin để build chưa, nếu đã đủ thông tin Agent sẽ tiến hành dựa vào Skill để explore data cũng như đưa ra những recommend liên quan đến build segment condition. Kết quả quá trình phát triển một segment condition mới khoảng 2 tiếng (chưa tính thời gian migrate data), member thực hiện ticket không cần phải thật sự strong về cách phát triển segment condition như hiện tại.',
+  },
   problem: {
     text: 'Mỗi "segment condition" là một nhóm người dùng theo điều kiện, ví dụ "đã nhận tiền qua QR". Mỗi nhóm cần một đường ống xử lý dữ liệu (pipeline) riêng, chạy theo lịch.',
     bullets: [

@@ -6,6 +6,7 @@ import { css, hoverClass } from '../lib/style.js'
 import AnonTag from './AnonTag.jsx'
 import { Blocks, CopyButton, Figure, Placeholders, Prompt, PromptTargetContext } from './UseCaseGuide.jsx'
 import Fill from './Fill.jsx'
+import RichText from './RichText.jsx'
 
 // Building blocks of the use case detail page, laid out as the template:
 // hero (owner, contacts) + info row + "Ứng dụng ngay →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp ·
@@ -196,14 +197,18 @@ export function ProblemSolution({ problem, solution, result, t, num: partNum }) 
         {hasProblem && (
           <>
             {head(t('Bài toán'), '#E0353F', true)}
-            {problem.text && <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>}
+            {problem.text && (problem.rich
+              ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={problem.text} dot="#E0353F" /></div>
+              : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>)}
             {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
           </>
         )}
         <div style={css(hasProblem ? 'margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;' : '')}>
           {head(t('Giải pháp'), '#00A352', !hasProblem)}
           {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:12.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
-          {solution.text && <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>}
+          {solution.text && (solution.rich
+            ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={solution.text} dot="#00A352" /></div>
+            : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>)}
           <BulletList items={solution.steps} numbered />
           <Images images={solution.images} />
           {result && (

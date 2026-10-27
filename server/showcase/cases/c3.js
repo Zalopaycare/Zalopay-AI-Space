@@ -33,6 +33,11 @@ export default {
     ['Dùng khi', 'Bạn cấu hình nhóm khách hàng hoặc ưu đãi voucher trong CRM tool và muốn tự kiểm tra trước khi chạy.'],
   ],
 
+  // Bài toán + Giải pháp: nguyên văn booth 10 của Zalopay AI Exhibition 2026 (thay cho bản viết lại từ tài liệu).
+  exhibition: {
+    problem: 'Business users phải tự cấu hình các campaign Promotion trên CRM và tự kiểm tra những thiết lập có quy tắc phức tạp như điều kiện áp dụng voucher với hàng loạt các rule phức tạp. Một số lỗi khó nhận biết hoặc xác thực trước khi live campaign. Khi gặp vướng mắc, họ cần Product hoặc Tech hỗ trợ giải đáp và điều tra.\n\n**Ai đang gặp:** Business users, Product và Tech, End users, CS team.\n\n**Tác động:** Tool khó vận hành khiến cho business teams vận hành campaign promotion sai sót ảnh hưởng tới end users. Thời gian của tech & product phải bỏ ra support trả lời câu hỏi lặp đi lặp lại nhiều.',
+    solution: 'Một chatbot AI tích hợp trong CRM, kèm công cụ giải thích cấu hình Segment và kiểm tra cấu hình Voucher. Chatbot xuất hiện ở trang chủ CRM.\n\n**AI làm được gì:**\n- Hướng dẫn thao tác CRM: Trả lời câu hỏi bằng hướng dẫn nội bộ đã được duyệt, kèm đường dẫn và hình ảnh để người dùng làm theo.\n- Giải thích cấu hình Segment: Diễn giải điều kiện lọc thành ngôn ngữ dễ hiểu, giúp người dùng kiểm tra cấu hình có khớp với nhu cầu không và phát hiện vấn đề về logic.\n- Rà soát cấu hình Voucher: Tóm tắt cách voucher đang được thiết lập và chỉ ra điểm chưa khớp giữa quy tắc áp dụng với điều khoản chương trình để người dùng xem xét.\n\n**Kết quả:** Đang tiếp tục improve, hiện đang trên SBQC & dự kiến sẽ có phiên bản beta đầu tiên vào cuối tháng 10.',
+  },
   problem: {
     text: 'Người làm nghiệp vụ (Business) có thể nhập sai khi thiết lập chiến dịch khuyến mãi (Promotion) trong CRM tool. Lỗi khó phát hiện trước khi chiến dịch chạy, nhất là khi điều kiện phức tạp, khó hiểu.',
     bullets: [

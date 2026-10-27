@@ -36,6 +36,11 @@ export default {
     ['Dùng khi', 'Bạn nhận một yêu cầu pentest (ticket SECREQ).'],
   ],
 
+  // Bài toán + Giải pháp: nguyên văn booth 1 của Zalopay AI Exhibition 2026 (thay cho bản viết lại từ tài liệu).
+  exhibition: {
+    problem: 'Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence (kể cả sơ đồ/ảnh), tìm đúng version đang deploy và source trên GitLab, rồi tự dò endpoint/host và gõ tay từng lệnh curl để test. Rất nhiều thao tác thủ công, lặp đi lặp lại, và thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester (đồng thời giảm việc qua lại với Dev/PO).\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint (nhất là API mới trong bản release), test nhầm version, hoặc thiếu ngữ cảnh khiến test không đầy đủ.',
+    solution: 'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence liên quan + kéo đúng source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test. Dùng qua giao diện web.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API ngay từ source code (đúng bản đã deploy) — pentester copy-dán test được ngay, khỏi phải tự mò.\n- Đọc được cả sơ đồ/ảnh trong tài liệu, tự tìm "cách vào flow" (link, deeplink, . . .), và đánh dấu API nào là mới trong bản release này để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin, tự che thông tin nhạy cảm, và gom hết endpoint / host / môi trường / câu hỏi cho dev vào một chỗ.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest. Trạng thái: MVP/pilot, đã go-live nội bộ, có dashboard theo dõi lượng sử dụng. Rút ngắn thời gian chuẩn bị pentest từ vài tiếng xuống còn vài phút, giảm sót endpoint và đảm bảo test đúng version đang chạy.',
+  },
   problem: {
     text: 'Khi có tính năng mới cần kiểm thử xâm nhập (pentest), dev tạo ticket cho team AppSec. Nhưng thông tin để bắt đầu test hầu như không nằm trong ticket.',
     bullets: [

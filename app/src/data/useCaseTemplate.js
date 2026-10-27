@@ -29,6 +29,7 @@ const arr = (v) => (Array.isArray(v) ? v : [])
 
 /** Cases written directly in the template shape (data/cases/*.js) — fill defaults so every field exists. */
 function fromTpl(c, m) {
+  const ex = m.exhibition && m.exhibition.problem ? m.exhibition : null
   const p = m.problem || {}, so = m.solution || {}, r = m.result || {}, a = m.apply || {}, sa = m.safety || {}, te = m.tech || {}, n = m.next || {}
   // Lỗi hay gặp is optional: shown only when the source lists some.
   const pit = arr(a.pitfalls).map((x) => (typeof x === 'string' ? pitfallRow(x) : x))
@@ -54,8 +55,9 @@ function fromTpl(c, m) {
     },
     stats: arr(m.stats).slice(0, 3),
     tldr: arr(m.tldr).filter((row) => row && row[1]),
-    problem: { text: p.text || '', bullets: arr(p.bullets), tables: arr(p.tables), images: arr(p.images) },
-    solution: { analogy: so.analogy || '', text: so.text || '', steps: arr(so.steps), images: arr(so.images) },
+    // A booth's own Vấn đề / Giải pháp from the AI Exhibition (m.exhibition) replaces the rewritten ones.
+    problem: { text: ex ? ex.problem : p.text || '', rich: !!ex, bullets: ex ? [] : arr(p.bullets), tables: arr(p.tables), images: arr(p.images) },
+    solution: { analogy: ex ? '' : so.analogy || '', text: ex ? ex.solution : so.text || '', rich: !!ex, steps: ex ? [] : arr(so.steps), images: arr(so.images) },
     result: { highlights: arr(r.highlights), bullets: arr(r.bullets), beforeAfter: r.beforeAfter && arr(r.beforeAfter.rows).length ? r.beforeAfter : null, tables: arr(r.tables), note: r.note || '', images: arr(r.images) },
     apply,
     safety: { rules: arr(sa.rules), limits: arr(sa.limits), tables: arr(sa.tables) },
