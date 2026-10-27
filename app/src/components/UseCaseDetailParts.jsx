@@ -25,8 +25,8 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
     <div style={css('display:flex; flex-direction:column; gap:8px;')}>
       {items.map((text, i) => numbered ? (
         <div key={i} style={css('display:flex; gap:12px; align-items:flex-start;')}>
-          <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:#E7ECFB; border:1px solid #B9CCF8; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;')}>{i + 1}</span>
-          <span style={css(`font-size:13px; line-height:1.55; color:${color}; text-wrap:pretty;`)}><Fill text={text} /></span>
+          <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800; box-shadow:0 3px 8px rgba(44,95,255,.3);')}>{i + 1}</span>
+          <span style={css(`padding-top:3px; font-size:13.5px; line-height:1.55; color:${numbered ? '#0F172A' : color}; text-wrap:pretty;`)}><Fill text={text} /></span>
         </div>
       ) : (
         <div key={i} style={css(`display:flex; gap:10px; font-size:13px; line-height:1.55; color:${color}; text-wrap:pretty;`)}>
@@ -180,7 +180,7 @@ export function Tldr({ rows }) {
 }
 
 /** 2 Bài toán | 3 Giải pháp on one row (one column on phones). */
-export function ProblemSolution({ problem, solution, t, num: partNum }) {
+export function ProblemSolution({ problem, solution, result, t, num: partNum }) {
   return (
     <section id="uc-problem" data-toc style={css('scroll-margin-top:84px; margin-top:18px;')}>
       <div className="zp-ps">
@@ -199,9 +199,11 @@ export function ProblemSolution({ problem, solution, t, num: partNum }) {
               <Images images={solution.images} />
             </>
           )],
-        ].map(([num, title, dot, body], i) => (
+          // Kết quả is part of the same story: what the solution brought, right under it.
+          result && ['4', t('Kết quả'), '#2c5fff', <ResultBody r={result} t={t} />],
+        ].filter(Boolean).map(([num, title, dot, body], i) => (
           <div key={num} style={{ display: 'contents' }}>
-            {i === 1 && (
+            {i > 0 && (
               <div className="zp-ps-arrow" aria-hidden="true">
                 <span style={css('width:36px; height:36px; border-radius:50%; background:#0f1a3a; border:1px solid rgba(130,170,255,.4); color:#cfe0ff; display:flex; align-items:center; justify-content:center;')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
@@ -387,10 +389,19 @@ export function ApplySection({ id, a, t, num = '5' }) {
       <div style={css('display:flex; flex-direction:column; gap:16px;')}>
         {a.steps.length > 0 && <BulletList items={a.steps} numbered />}
         {a.stepSections.map((s, i) => (
-          <Collapsible key={s.id} title={`${i + 1}. ${s.title}`} defaultOpen={s.open ?? i < 2}>
-            {s.sub && <div style={css('margin:0 0 12px; font-size:12.5px; color:#64748b;')}>{s.sub}</div>}
-            <Blocks blocks={s.blocks} />
-          </Collapsible>
+          <div key={s.id} style={css('border:1px solid #D5E0F7; border-radius:16px; overflow:hidden; background:#fff;')}>
+            <div style={css('display:flex; align-items:center; gap:12px; padding:12px 16px; background:linear-gradient(90deg,#EAF0FF,#F7F9FF); border-bottom:1px solid #DFE7F8;')}>
+              <span style={css('flex:none; width:32px; height:32px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14.5px; font-weight:800; box-shadow:0 4px 10px rgba(44,95,255,.32);')}>{i + 1}</span>
+              <div style={css('min-width:0;')}>
+                <div style={css('font-size:10.5px; font-weight:800; letter-spacing:.08em; color:#5B7BD6;')}>{t('BƯỚC')} {i + 1}</div>
+                <div style={css('font-size:15px; font-weight:800; line-height:1.35; color:#0B1F5C;')}>{s.title}</div>
+              </div>
+            </div>
+            <div style={css('padding:14px 16px 16px;')}>
+              {s.sub && <div style={css('margin:0 0 12px; font-size:12.5px; color:#64748b;')}>{s.sub}</div>}
+              <Blocks blocks={s.blocks} />
+            </div>
+          </div>
         ))}
         {a.blocks.length > 0 && <Blocks blocks={a.blocks} />}
         {a.code.map((cb, i) => <CodeBlock key={i} cb={cb} />)}

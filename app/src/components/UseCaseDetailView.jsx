@@ -1,5 +1,5 @@
 import { css } from '../lib/style.js'
-import { Section, ProblemSolution, ResultBody, ApplySection, BulletList, PlainTable, Images } from './UseCaseDetailParts.jsx'
+import { Section, ProblemSolution, ApplySection, BulletList, PlainTable, Images } from './UseCaseDetailParts.jsx'
 
 // The body of a use case detail page (parts 2–7 of the template; technical details are left out), shared by the real page and the
 // share form's "Xem trước" so both look identical. Parts with no data are hidden and the rest are
@@ -10,6 +10,7 @@ export function detailLayout(tp, t) {
   const has = {
     tldr: tp.tldr.length > 0,
     ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.text || tp.solution.steps.length),
+    // Kết quả shows inside the Bài toán & giải pháp section, under Giải pháp
     result: !!((tp.result.highlights || []).length || tp.result.bullets.length || tp.result.beforeAfter || tp.result.tables.length || tp.result.note || tp.result.images.length),
     apply: !tp.apply.empty,
     safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),
@@ -18,12 +19,11 @@ export function detailLayout(tp, t) {
   // "Tự áp dụng" comes before "Kết quả": once the reader gets the idea, the links and steps are next.
   const parts = [
     ['tldr', 'uc-tldr', 'Tóm tắt'],
-    ['ps', 'uc-problem', 'Bài toán & giải pháp'],
+    ['ps', 'uc-problem', has.result ? 'Bài toán, giải pháp & kết quả' : 'Bài toán & giải pháp'],
     ['apply', 'uc-apply', tp.apply.title],
-    ['result', 'uc-result', 'Kết quả'],
     ['safety', 'uc-safety', 'An toàn & giới hạn'],
     ['demo', 'uc-demo', 'Demo'],
-  ].filter(([k]) => has[k])
+  ].filter(([k]) => has[k] || (k === 'ps' && has.result))
   const num = {}
   parts.forEach(([k], i) => { num[k] = String(i + 1) })
   const toc = parts.map(([k, id, label]) => ({ id, label: num[k] + '. ' + t(label), hot: k === 'apply' }))
@@ -36,9 +36,8 @@ export function DetailSections({ id, tp, t, layout }) {
   const { has, num } = layout
   return (
     <>
-      {has.ps && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} num={num.ps} />}
+      {(has.ps || has.result) && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} result={has.result ? tp.result : null} num={num.ps} />}
       {has.apply && <ApplySection id={id} a={tp.apply} t={t} num={num.apply} />}
-      {has.result && <Section id="uc-result" num={num.result} title={t('Kết quả')}><ResultBody r={tp.result} t={t} /></Section>}
       {has.safety && (
         <Section id="uc-safety" num={num.safety} title={t('An toàn & giới hạn')}>
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>

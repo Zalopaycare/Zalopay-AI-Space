@@ -50,12 +50,11 @@ const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', so
 const EMPTY_HIGHLIGHTS = [{ value: '', label: '' }, { value: '', label: '' }, { value: '', label: '' }]
 const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((list || [])[i] || {}) }))
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
-// One step per part of the published page, in the page's order: header, then sections 1–4.
+// One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
   { key: 'intro', label: 'Đầu trang', part: 'Phần đầu trang: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
-  { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp' },
+  { key: 'ps', label: 'Bài toán, giải pháp & kết quả', part: 'Phần Bài toán, Giải pháp và Kết quả (hiện ngay dưới Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
-  { key: 'result', label: 'Kết quả', part: 'Phần Kết quả' },
   { key: 'safety', label: 'An toàn & giới hạn', part: 'Phần An toàn & giới hạn' },
 ]
 // Inputs in the share form (kept small so a step fits without much scrolling).
@@ -496,13 +495,13 @@ export default function UseCaseLibraryPage() {
     ['audience', 'Ai dùng được', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Ví dụ: QC / QE, team mobile', 'input', 0, 'intro'],
     ['problem', 'Bài toán', 'Required', 'Vấn đề bạn gặp và bối cảnh công việc, trước khi có AI.', 'Mỗi tuần cần đọc hàng trăm phản hồi từ khảo sát và ticket...', 'area', 4, 'ps'],
     ['solution', 'Giải pháp', 'Required', 'AI giúp thế nào. Mỗi dòng một bước.', 'Gom dữ liệu về một file\nNhờ AI phân nhóm theo chủ đề\n...', 'area', 5, 'ps'],
+    ['result', 'Kết quả', 'Required', 'Thay đổi sau khi dùng: thời gian, chất lượng, số liệu nếu có. Mỗi dòng một ý.', 'Giảm từ 4 giờ xuống 30 phút mỗi tuần...', 'area', 3, 'ps'],
     ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file mẫu để người khác tự xem.', 'https://...', 'input', 0, 'apply'],
     ['fitYes', 'Phù hợp với bạn nếu', 'Optional', 'Mỗi dòng một trường hợp nên dùng.', 'Bạn phải đọc nhiều phản hồi dạng chữ mỗi tuần', 'area', 3, 'apply'],
     ['fitNo', 'Chưa phù hợp nếu', 'Optional', 'Mỗi dòng một trường hợp chưa nên dùng.', 'Dữ liệu có thông tin khách hàng chưa được che', 'area', 2, 'apply'],
     ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', 'Tài khoản Claude nội bộ\nQuyền xem dashboard CSAT', 'area', 3, 'apply'],
     ['prompt', 'Prompt / quy trình', 'Required', 'Prompt hoặc các bước cụ thể để người khác copy và làm lại được.', 'Dán prompt hoặc mô tả quy trình ở đây...', 'area', 5, 'apply'],
     ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', 'AI tóm tắt thiếu ý → chia file thành nhiều phần nhỏ rồi gửi lần lượt', 'area', 3, 'apply'],
-    ['result', 'Kết quả', 'Required', 'Thay đổi sau khi dùng: thời gian, chất lượng, số liệu nếu có. Mỗi dòng một ý.', 'Giảm từ 4 giờ xuống 30 phút mỗi tuần...', 'area', 3, 'result'],
     ['limits', 'Giới hạn & lưu ý an toàn', 'Optional', 'Chỗ nào AI còn sai, dữ liệu nào không được đưa vào, khâu nào cần người kiểm lại.', 'Không đưa dữ liệu khách hàng chưa che vào prompt...', 'area', 3, 'safety'],
   ]
   const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step]) => ({
@@ -1068,7 +1067,7 @@ export default function UseCaseLibraryPage() {
                         )}
                       </div>
                     ))}
-                    {SHARE_STEPS[shareStep].key === 'result' && (
+                    {SHARE_STEPS[shareStep].key === 'ps' && (
                       <div style={css('margin-bottom:8px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <span style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Kết quả nổi bật')}</span>

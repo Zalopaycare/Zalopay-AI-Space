@@ -11,7 +11,8 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const MONO = 'ui-monospace,SFMono-Regular,Menlo,monospace'
 const TONES = {
   info: { bg: '#EEF3FF', border: '#CFDDFB', title: '#1E44A8', text: '#2A3A57', icon: 'i' },
-  warn: { bg: '#FFF8E8', border: '#F3E0B0', title: '#B45300', text: '#5A4522', icon: '!' },
+  // a warning while installing or using the AI: red, like danger, so it is noticed at that step
+  warn: { bg: '#FFF0F0', border: '#F5C9CB', title: '#C0262D', text: '#5C1D20', icon: '!' },
   danger: { bg: '#FFF0F0', border: '#F5C9CB', title: '#C0262D', text: '#5C1D20', icon: '!' },
   ok: { bg: '#F2FBF6', border: '#CFEEDE', title: '#00893F', text: '#1F4B33', icon: '✓' },
 }
