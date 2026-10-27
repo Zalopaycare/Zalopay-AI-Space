@@ -545,7 +545,6 @@ export default function UseCaseLibraryPage() {
     )
     const dinfo = authorInfoFor(dsel.author)
     const cd = caseDetail[dsel.id] || {}
-    const dTopics = (prdMeta[dsel.id] || {}).topics || []
     const tp = buildTemplate(dsel, cd, dinfo)
     const live = ucMeta[dsel.id]
     const base = live ? live.helpful : (prdMeta[dsel.id] || {}).helpful || 0
@@ -581,7 +580,6 @@ export default function UseCaseLibraryPage() {
                 t={t}
                 c={dsel}
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
-                topics={dTopics}
                 avatarBg={avatarColor(dsel.author)}
                 avatarUrl={avatarPhoto(dsel.author)}
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
@@ -821,7 +819,7 @@ export default function UseCaseLibraryPage() {
                           {c.posted && <span style={css('flex:none; font-size:12px; font-weight:500; color:#94a3b8; white-space:nowrap;')}>· {t('Đăng')} {c.posted}</span>}
                         </div>
                       </div>
-                      <TagRow topics={c.topics || []} tools={c.tools} style={{ marginTop: 10 }} />
+                      <TagRow tools={c.tools} style={{ marginTop: 10 }} />
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
                         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
                           {t('Xem Use Case')}
@@ -926,7 +924,7 @@ export default function UseCaseLibraryPage() {
                     {t('Xem trước: đây đúng là trang chi tiết người đọc sẽ thấy sau khi bài được duyệt.')}
                   </div>
                   <div className="zp-detail-wrap" style={css('margin-top:16px; border-radius:20px; overflow:hidden; background:#07070c; color:#fff; padding:22px 22px 30px;')}>
-                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} topics={previewTopics} avatarBg={user?.avatarColor || avatarColor(pv.c.author)} avatarUrl={user?.avatarUrl} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
+                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} avatarBg={user?.avatarColor || avatarColor(pv.c.author)} avatarUrl={user?.avatarUrl} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
                   <div style={css('margin-top:16px; padding:12px 16px; border-radius:14px; background:#fff; border:1px solid #E6EBF3;')}>

@@ -40,8 +40,7 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
 
 /** Title block on the dark hero: Loại + Trạng thái chips, title, tool name, one-line description,
  *  one horizontal info row and the "Ứng dụng ngay →" button that jumps to part 5. */
-export function DetailHero({ c, h, topics, avatarBg, avatarUrl, onBack, onStart, startLabel, tldr = [], t }) {
-  const chip = 'display:inline-flex; align-items:center; gap:7px; height:28px; padding:0 12px; border-radius:999px; font-size:12px; font-weight:700;'
+export function DetailHero({ c, h, avatarBg, avatarUrl, onBack, onStart, startLabel, tldr = [], t }) {
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:12.5px; font-weight:700; line-height:1.45; color:#fff;'
   const diff = DIFF[h.difficulty]
@@ -75,9 +74,6 @@ export function DetailHero({ c, h, topics, avatarBg, avatarUrl, onBack, onStart,
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
         {t('Quay lại')}
       </button>}
-      {topics.length > 0 && <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;')}>
-        {topics.map((tp) => <span key={tp} style={css(chip + 'background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff;')}>{tp}</span>)}
-      </div>}
       <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
       {/* Who owns / posted it, right under the title: avatar + name + team. */}
       <div style={css('display:flex; align-items:center; gap:10px; margin-top:14px; min-width:0; flex-wrap:wrap;')}>

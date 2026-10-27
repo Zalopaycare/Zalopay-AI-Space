@@ -16,7 +16,7 @@ export default {
   audience: 'Business/Ops, PO/PM',
   difficulty: 'Dễ',
   access: 'Cần xin quyền: tài khoản CRM tool (xin ở đâu: [cần bổ sung])',
-  author: 'KietTT',
+  author: 'KietTT8',
   ownerName: 'Kiệt. Tô Thế (8), Hoàng. Nguyễn Việt (6), Thắng. Hoàng Mạnh (3), Trọng. Dương Đức (2)',
   ownerTeam: '[cần bổ sung]',
   updated: '',

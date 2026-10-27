@@ -433,7 +433,7 @@ export default function HomePage() {
                       <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
                     </div>
                   </div>
-                  <TagRow topics={(prdMeta[item.id] || {}).topics || []} tools={item.tools} style={{ marginTop: 10 }} />
+                  <TagRow tools={item.tools} style={{ marginTop: 10 }} />
                   <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
                     <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 12.5px ${FONT}; color:#2c5fff; white-space:nowrap; transition:gap .16s;`)}>
                       {t('Xem Use Case')}

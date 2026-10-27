@@ -18,8 +18,9 @@ export default {
   audience: 'Dev, SRE/Platform',
   difficulty: 'Dễ',
   access: 'Cần xin quyền: [cần bổ sung] — chỉ email @vng.com.vn, chỉ hỏi được project cùng squad',
-  author: 'Platform',
-  ownerName: '[cần bổ sung]',
+  // Người làm: PIC booth 4 trên Zalopay AI Exhibition 2026 (tài liệu gốc không ghi).
+  author: 'HienVT3',
+  ownerName: 'HienVT3, PhuNN4',
   ownerTeam: 'Platform',
   updated: '05/08/2026',
   cover: P + 'uc1-sonar-plugin.png',
@@ -326,7 +327,7 @@ export default {
       'Thêm đăng ký project CI/CD qua bot: đọc link GitLab, lấy tuỳ chọn từ CSM/Catalog, tạo workflow trên Gear platform, trả link cho người dùng.',
       'Báo cáo định kỳ: lỗi hay gặp nhất, thời gian build trung bình, project nhiều ticket lỗi; mở rộng sang Gear platform và các việc vận hành khác.',
     ],
-    contact: ['Người phụ trách và kênh liên hệ: [cần bổ sung]'],
+    contact: ['Người phụ trách: HienVT3, PhuNN4', 'Kênh liên hệ: [cần bổ sung]'],
     link: '',
   },
 }

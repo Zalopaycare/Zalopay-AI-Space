@@ -15,8 +15,9 @@ export default {
   audience: 'Dev, QC',
   difficulty: 'Trung bình',
   access: 'Cài từ kho code GitLab nội bộ aqr/bill/us-hive; cách xin quyền [cần bổ sung]',
-  author: 'US',
-  ownerName: '[cần bổ sung]',
+  // Người làm: PIC + thành viên booth 3 trên Zalopay AI Exhibition 2026 (tài liệu gốc không ghi).
+  author: 'AnhTVH',
+  ownerName: 'AnhTVH',
   ownerTeam: 'Utility Solutions (US)',
   updated: '',
   cover: '',
@@ -228,7 +229,8 @@ export default {
       'Sẽ có thêm trợ lý mới ("More Agents Coming Soon").',
     ],
     contact: [
-      'Team: Utility Solutions (US). Người phụ trách: [cần bổ sung]',
+      'Team: Utility Solutions (US). Người phụ trách: AnhTVH',
+      'Cùng làm: MinhLN9, NamNTH3, YenHTT, DangPHH',
       'Người đóng góp: Nam. Nguyễn Trần Hoàng (3) (bee-figma-ui); Yên. Hoàng Thị Thanh, Đăng. Phạm Hồng Hải (bee-qc).',
       'Mã nguồn, hướng dẫn cài và cách đóng góp: kho code us-hive trên GitLab.',
       'Kênh liên hệ: [cần bổ sung]',

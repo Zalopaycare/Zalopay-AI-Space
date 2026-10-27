@@ -15,8 +15,9 @@ export default {
   audience: 'Data, Dev',
   difficulty: 'Khó',
   access: 'Chỉ trong team: skill nằm trong repo dp-segment-etl (branch feature/apply-ai); xin quyền ở đâu [cần bổ sung]',
-  author: 'Data Platform',
-  ownerName: '[cần bổ sung]',
+  // Người làm: PIC + thành viên booth 24 trên Zalopay AI Exhibition 2026 (tài liệu gốc không ghi).
+  author: 'TuanLT2',
+  ownerName: 'TuanLT2',
   ownerTeam: 'Data Platform',
   updated: '',
   cover: '',
@@ -298,7 +299,8 @@ export default {
       'Dài hạn: thư viện skill cùng khuôn cho team Data Platform (migrate MongoDB, theo dõi chất lượng dữ liệu, dashboard Superset, onboarding nguồn dữ liệu mới).',
     ],
     contact: [
-      'Người phụ trách: [cần bổ sung]',
+      'Người phụ trách: TuanLT2',
+      'Cùng làm: QuynhVM',
       'Ticket Jira: PCDCM-6831 - Improve Segment pipeline Agent Skill (IN DEV)',
       'Sau AI Week: thành viên mới đọc SKILL.md + reference để nắm quy trình và các bẫy; mỗi lần thư viện segflow đổi thì cập nhật references/segflow-api.md.',
     ],
