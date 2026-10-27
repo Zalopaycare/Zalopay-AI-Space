@@ -1042,6 +1042,8 @@ export default function UseCaseLibraryPage() {
                         <div style={css('flex:1; min-width:220px;')}>
                           <div style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Thích điền bằng Word hơn?')}</div>
                           <div style={css('margin-top:3px; font-size:12px; line-height:1.55; color:#475569;')}>{t('Tải template, điền trên máy (có thể gửi team góp ý trước), rồi tải file lên. Nội dung tự điền vào form bên dưới để bạn kiểm tra và bấm Gửi duyệt.')}</div>
+                          {/* the template is a guide, not a rule: authors write it their way, admins review before it goes up */}
+                          <div style={css('margin-top:6px; padding:7px 10px; border-radius:10px; background:#fff; border:1px solid #D5E2FC; font-size:12px; line-height:1.55; color:#1E3A7A;')}>{t('Không cần theo đúng 100% template hay các bài mẫu đã đăng. Bạn cứ viết theo cách của mình, đội ngũ Admin sẽ duyệt lại và gửi bạn bản review trước khi bài được đăng.')}</div>
                         </div>
                         <div style={css('display:flex; gap:8px; flex-wrap:wrap;')}>
                           <a href={TEMPLATE_URL} download className={hoverClass('background:#F2F6FF !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:12.5px; font-weight:700; text-decoration:none; white-space:nowrap;')}>
