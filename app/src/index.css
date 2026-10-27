@@ -154,9 +154,10 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-ps2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .zp-ps2 > :first-child { padding-right: 22px; }
 .zp-ps2 > .zp-ps2-sol { padding-left: 22px; border-left: 1px solid #EEF1F7; }
-.zp-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 36px; align-items: start; }
+/* the table of contents takes only the width of its labels, so it sits at the right edge and the text column gets the rest */
+.zp-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 28px; align-items: start; }
 .zp-hero-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: center; }
-.zp-toc { position: sticky; top: 84px; margin-top: 26px; max-height: calc(100vh - 110px); overflow-y: auto; }
+.zp-toc { position: sticky; top: 84px; margin-top: 26px; max-width: 190px; max-height: calc(100vh - 110px); overflow-y: auto; }
 @container (max-width: 759px) {
   .zp-ps2 { grid-template-columns: minmax(0, 1fr); }
   .zp-ps2 > :first-child { padding-right: 0; }
