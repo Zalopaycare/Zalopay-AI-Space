@@ -214,7 +214,8 @@ export function ProblemSolution({ problem, solution, result, t, num: partNum }) 
           {result && (
             <div style={{ marginTop: 18 }}>
               <div style={css(SUB + 'display:flex; align-items:center; gap:8px; color:#1E44A8;')}>
-                {t('Kết quả')}<span style={css('width:7px; height:7px; border-radius:50%; background:#2c5fff;')}></span>
+                {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}
+                {t('Số liệu & hình ảnh')}<span style={css('width:7px; height:7px; border-radius:50%; background:#2c5fff;')}></span>
               </div>
               <ResultBody r={result} t={t} />
             </div>
