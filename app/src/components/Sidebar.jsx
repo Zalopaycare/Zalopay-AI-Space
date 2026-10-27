@@ -81,9 +81,8 @@ export default function Sidebar({ active }) {
   // #usecase / #question are parts of the profile page now, so they light up "Hồ sơ".
   const sub = active === 'profile' ? ({ usecase: 'overview', question: 'overview' }[/#(overview|activity|usecase|question|saved)\b/.exec(hash)?.[1]] || /#(activity|saved)\b/.exec(hash)?.[1] || 'overview') : null
   const { unread: unreadCount } = useNotifications(!!user)
-  // admins see how many conversations wait for an answer; everyone else, unread admin replies
-  const chatUnread = useChatUnread(!!user)
-  const chatCount = user?.isAdmin ? chatUnread.inbox : chatUnread.mine
+  // unread admin replies in my "Chat với Admin" (admins answer others from the Admin Console)
+  const chatCount = useChatUnread(!!user).mine
   const homeActive = active === 'home'
 
   return (
@@ -118,13 +117,13 @@ export default function Sidebar({ active }) {
         <NavLink to="/questions#ask" collapsed={collapsed} title={t('Đặt câu hỏi')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
         }>{t('Đặt câu hỏi')}</NavLink>
-        <NavLink to="/chat" active={active === 'chat'} collapsed={collapsed} title={user?.isAdmin ? t('Hộp thư Admin') : t('Chat với Admin')} icon={
+        <NavLink to="/chat" active={active === 'chat'} collapsed={collapsed} title={t('Chat với Admin')} icon={
           <span style={css('position:relative; display:inline-flex; flex:none;')}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></svg>
             {collapsed && chatCount > 0 && <span style={css('position:absolute; top:-6px; right:-8px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:#FF3B30; color:#fff; font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{chatCount}</span>}
           </span>
         }>
-          <span style={css('flex:1; min-width:0;')}>{user?.isAdmin ? t('Hộp thư Admin') : t('Chat với Admin')}</span>
+          <span style={css('flex:1; min-width:0;')}>{t('Chat với Admin')}</span>
           {chatCount > 0 && <span style={css('flex:none; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#FF3B30; color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{chatCount}</span>}
         </NavLink>
       </div>

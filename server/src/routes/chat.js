@@ -6,7 +6,8 @@ import { domainName, initialsOf } from '../mentions.js'
 import { notifyChat } from '../notifications.js'
 
 // "Chat với Admin": each person has one conversation with the admin team, Messenger-style.
-// People read and write their own (/me); admins share one inbox of every conversation (/threads).
+// People read and write their own (/me, the /chat page); admins share one inbox of every conversation
+// (/threads, the Admin Console's "Hộp thư").
 // Clients poll with ?after=<last id> for new messages; seen marks drive the unread badges.
 
 const router = express.Router()
@@ -57,7 +58,7 @@ router.post('/me', requireAuth, (req, res) => {
   const message = insert(req.user.id, req.user.id, false, body)
   const name = domainName(req.user.email, req.user.name)
   for (const to of adminEmails(req.user.email)) {
-    notifyChat(to, { ref: 'chat:' + req.user.id, text: `${name} nhắn Admin: "${preview(body)}"`, href: '/chat?u=' + req.user.id, actor: req.user.name })
+    notifyChat(to, { ref: 'chat:' + req.user.id, text: `${name} nhắn Admin: "${preview(body)}"`, href: '/admin#inbox/' + req.user.id, actor: req.user.name })
   }
   res.status(201).json({ message })
 })

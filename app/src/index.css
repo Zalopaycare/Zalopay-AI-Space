@@ -176,6 +176,7 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-chat-single, .zp-chat-inbox { height: calc(100vh - 58px - 120px); min-height: 440px; }
 .zp-chat-inbox { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; }
 .zp-chat-back { display: none; }
+.zp-admin-inbox .zp-chat-inbox { height: calc(100vh - 58px - 170px); }
 
 /* Phones: search box on its own line with the filter pills below; detail blocks go to one column. */
 @media (max-width: 699px) {

@@ -12,6 +12,8 @@ import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import { downloadCsv } from '../lib/csv.js'
 import Avatar, { avatarPhotoCss } from '../components/Avatar.jsx'
+import { AdminInbox } from '../components/AdminChat.jsx'
+import { useChatUnread } from '../lib/chat.js'
 
 // Admin console: review use case submissions and look at the community's real numbers.
 // Everything here comes from the API — no sample data.
@@ -90,7 +92,10 @@ export default function AdminConsolePage() {
   const { user, openLogin, logout } = useAuth()
   const navigate = useNavigate()
   const isAdmin = !!user?.isAdmin
-  const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : 'dashboard'))
+  const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : /#inbox\b/.test(window.location.hash) ? 'inbox' : 'dashboard'))
+  // "Hộp thư": the open "Chat với Admin" conversation; #inbox/<user id> (from a notification) opens one
+  const [chatUid, setChatUid] = useState(() => Number((/#inbox\/(\d+)/.exec(window.location.hash) || [])[1]) || null)
+  const chatInbox = useChatUnread(isAdmin).inbox
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [adminStats, setAdminStats] = useState(null)
@@ -305,6 +310,7 @@ export default function AdminConsolePage() {
     ['questions', 'Câu hỏi', '#FF8D00', unanswered.length],
     ['reports', 'Báo cáo', '#D8232A', reports.filter((r) => r.status === 'open').length],
     ['users', 'Thành viên', '#00B7FF', 0],
+    ['inbox', 'Hộp thư', '#6F0CE2', chatInbox],
   ]
 
   const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:14px; align-items:center;`
@@ -343,7 +349,7 @@ export default function AdminConsolePage() {
                   </div>
                   {notif.items.length === 0 && <div style={css('padding:28px 18px; text-align:center;' + font(600, 13) + ';color:#94a3b8;')}>Chưa có thông báo nào.</div>}
                   {notif.items.map((n) => (
-                    <div key={n.id} onClick={() => { if (n.unread) markNotificationsRead([n.id]); if (n.kind === 'submission') { setSection('usecases'); setUcStatus('pending') } else if (n.kind === 'report') { setSection('reports'); setRepStatus('open'); reloadReports() } else if (n.href) window.open(n.href, '_blank'); setNotifOpen(false) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F3F5FA; cursor:pointer; background:${n.unread ? '#F3F7FF' : '#fff'};`)}>
+                    <div key={n.id} onClick={() => { if (n.unread) markNotificationsRead([n.id]); if (n.kind === 'submission') { setSection('usecases'); setUcStatus('pending') } else if (n.kind === 'report') { setSection('reports'); setRepStatus('open'); reloadReports() } else if (n.kind === 'chat') { setSection('inbox'); setChatUid(Number((/#inbox\/(\d+)/.exec(n.href) || [])[1]) || null) } else if (n.href) window.open(n.href, '_blank'); setNotifOpen(false) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F3F5FA; cursor:pointer; background:${n.unread ? '#F3F7FF' : '#fff'};`)}>
                       <span style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css(font(n.unread ? 800 : 500, 13, 1.5) + `;color:${n.unread ? '#1a5fff' : '#334155'};`)}>{n.text}</div>
@@ -642,6 +648,13 @@ export default function AdminConsolePage() {
                 })}
                 {repRows.length === 0 && empty(repStatus === 'open' ? 'Không có báo cáo nào đang chờ xử lý.' : 'Chưa có báo cáo nào.')}
               </div>
+            </div>
+          )}
+
+          {section === 'inbox' && (
+            <div>
+              <Heading title="Hộp thư" sub="Tin nhắn mọi người gửi qua &quot;Chat với Admin&quot;. Admin nào trả lời cũng được, người nhắn thấy &quot;Admin · tên bạn&quot;." />
+              <div className="zp-admin-inbox" style={css('margin-top:18px;')}><AdminInbox t={(x) => x} uid={chatUid} onOpen={setChatUid} /></div>
             </div>
           )}
 
