@@ -10,7 +10,7 @@ import RichText from './RichText.jsx'
 
 // Building blocks of the use case detail page, laid out as the template:
 // hero (owner, contacts) + info row · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp ·
-// 4 Tự áp dụng (links first; the one highlighted block) · 5 Kết quả · 6 An toàn & giới hạn · 7 Demo —
+// 4 Tự áp dụng (links first; the one highlighted block) · 5 Kết quả · 6 Lưu ý khi dùng · 7 Demo —
 // with a sticky table of contents on wide screens. Technical details are not shown.
 
 export const DETAIL_COL = 'max-width:1120px; margin:0 auto;'

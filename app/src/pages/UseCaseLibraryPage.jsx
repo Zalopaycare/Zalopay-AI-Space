@@ -63,7 +63,7 @@ const SHARE_STEPS = [
   { key: 'intro', label: 'Đầu trang', part: 'Phần đầu trang: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
-  { key: 'safety', label: 'An toàn & giới hạn', part: 'Phần An toàn & giới hạn' },
+  { key: 'safety', label: 'Lưu ý khi dùng', part: 'Phần Lưu ý khi dùng (không bắt buộc)' },
 ]
 // Inputs in the share form (kept small so a step fits without much scrolling).
 const FIELD_INPUT = 'width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13.5px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;'
@@ -1171,6 +1171,11 @@ export default function UseCaseLibraryPage() {
                       )
                       return (
                         <>
+                          {key === 'safety' && (
+                            <div style={css('margin-bottom:16px; padding:10px 13px; border-radius:10px; background:#EEF3FF; border:1px solid #D6E1FF; font-size:12.5px; line-height:1.55; color:#1D3A8F;')}>
+                              {t('Chỉ điền nếu use case đụng tới dữ liệu thật (dữ liệu khách hàng, hệ thống PROD, mật khẩu…) hoặc có việc AI chưa làm được. Để trống thì phần này không hiện trên trang. Lưu ý gắn với một bước cụ thể thì ghi ở ô "Lưu ý ở bước này" trong phần Tự áp dụng.')}
+                            </div>
+                          )}
                           {shareFields.filter((f) => f.step === key).map(field)}
                           {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} />}
                           {key === 'apply' && shareFields.filter((f) => f.step === 'apply2').map(field)}

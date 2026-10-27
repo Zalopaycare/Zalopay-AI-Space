@@ -22,9 +22,9 @@ export function detailLayout(tp, t, showEmpty = false) {
     ['tldr', 'uc-tldr', 'Tóm tắt'],
     ['ps', 'uc-problem', 'Bài toán & giải pháp'],
     ['apply', 'uc-apply', tp.apply.title],
-    ['safety', 'uc-safety', 'An toàn & giới hạn'],
+    ['safety', 'uc-safety', 'Lưu ý khi dùng'],
     ['demo', 'uc-demo', 'Demo'],
-  ].filter(([k]) => has[k] || (k === 'ps' && has.result) || (showEmpty && ['ps', 'apply', 'safety'].includes(k)))
+  ].filter(([k]) => has[k] || (k === 'ps' && has.result) || (showEmpty && ['ps', 'apply'].includes(k)))
   const num = {}
   parts.forEach(([k], i) => { num[k] = String(i + 1) })
   const toc = parts.map(([k, id, label]) => ({ id, label: num[k] + '. ' + t(label), hot: k === 'apply' }))
@@ -41,9 +41,8 @@ export function DetailSections({ id, tp, t, layout }) {
       {(has.ps || has.result || showEmpty) && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} result={has.result ? tp.result : null} showEmpty={showEmpty} num={num.ps} />}
       {has.apply && <ApplySection id={id} a={tp.apply} t={t} num={num.apply} />}
       {!has.apply && showEmpty && <Section id="uc-apply" num={num.apply} title={t(tp.apply.title)}><NoInfo t={t} /></Section>}
-      {!has.safety && showEmpty && <Section id="uc-safety" num={num.safety} title={t('An toàn & giới hạn')}><NoInfo t={t} /></Section>}
       {has.safety && (
-        <Section id="uc-safety" num={num.safety} title={t('An toàn & giới hạn')}>
+        <Section id="uc-safety" num={num.safety} title={t('Lưu ý khi dùng')}>
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>
             {tp.safety.rules.length > 0 && <div><div style={css(SUBHEAD)}>{t('Nguyên tắc an toàn')}</div><BulletList items={tp.safety.rules} dot="#6F0CE2" /></div>}
             {tp.safety.limits.length > 0 && <div><div style={css(SUBHEAD)}>{t('Hiện chưa làm được')}</div><BulletList items={tp.safety.limits} dot="#E39100" /></div>}
