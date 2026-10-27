@@ -5,6 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 // Showcase use cases written from the teams' internal docs (server/showcase/cases/*.js) and their
 // original screenshots (server/showcase/media/<id>/). Kept on the server so neither the text nor
 // the images reach anyone who hasn't signed in with a company account.
+// Cases taken off the site sit in server/showcase/archive/ (cases + media); nothing loads or serves
+// that folder, so moving a file back into cases/ (and its media/) is all it takes to restore one.
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../showcase')
 export const MEDIA_DIR = path.join(ROOT, 'media')

@@ -2,7 +2,7 @@ import { normalizeTools } from '../lib/taxonomy.js'
 import { submissionTpl, submissionDesc } from './submissionTpl.js'
 // Shared use case registry: every page reads allCases / prdMeta / caseDetail from here.
 
-// The 10 showcase use cases (c1…c10) are written in the 9-part template from the teams' own docs and
+// The showcase use cases (c4, c28, c38 for now) are written in the template shape from the teams' own docs and
 // live on the server (server/showcase/cases, login only). They arrive via /api/showcase after sign-in
 // and are registered below with registerTemplateCases(); nothing about them ships in the web bundle.
 export const prdMeta = {}

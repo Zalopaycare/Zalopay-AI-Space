@@ -39,7 +39,7 @@ export function notifyUpvotes(ownerEmail, { ref, count, lastVoter, title, href }
   } catch (e) { console.error('[notifications] upvote failed:', e.message) }
 }
 
-const BUILTIN_CASES = new Set(['c1', 'c2', 'c3', 'c4', 'c5', ...SHOWCASE_IDS])
+const BUILTIN_CASES = new Set(SHOWCASE_IDS)
 function stillExists(r) {
   const href = String(r.href || '')
   let m = /^\/use-cases\/([^/?#]+)/.exec(href)
