@@ -213,6 +213,18 @@ function Block({ b }) {
       )
     case 'image': return <div className="zp-thumbs"><Figure img={b} /></div>
     case 'prompt': return <Prompt b={b} />
+    case 'code':
+      // A command to run (not a prompt for the AI): monospace, copyable, with an optional note.
+      return (
+        <div>
+          <div style={css('display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px;')}>
+            {b.label ? <Label>{b.label}</Label> : <span></span>}
+            <CopyButton text={b.code} />
+          </div>
+          <pre style={css(`margin:0; padding:12px 14px; border:1px solid #DDE3EC; border-radius:12px; background:#F7F9FD; font:400 12px/1.7 ${MONO}; color:#0F172A; white-space:pre-wrap; overflow-wrap:anywhere;`)}>{b.code}</pre>
+          {b.note && <div style={css(`margin-top:6px; font:400 12.5px/1.55 ${FONT}; color:#64748b;`)}><Fill text={b.note} /></div>}
+        </div>
+      )
     case 'result': return <Result b={b} />
     case 'table': return <Table b={b} />
     case 'note': return <Note b={b} />

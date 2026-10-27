@@ -388,7 +388,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
       <div style={css('display:flex; flex-direction:column; gap:16px;')}>
         {a.steps.length > 0 && <BulletList items={a.steps} numbered />}
         {a.stepSections.map((s, i) => (
-          <Collapsible key={s.id} title={`${i + 1}. ${s.title}`} defaultOpen={i < 2}>
+          <Collapsible key={s.id} title={`${i + 1}. ${s.title}`} defaultOpen={s.open ?? i < 2}>
             {s.sub && <div style={css('margin:0 0 12px; font-size:12.5px; color:#64748b;')}>{s.sub}</div>}
             <Blocks blocks={s.blocks} />
           </Collapsible>

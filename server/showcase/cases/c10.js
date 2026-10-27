@@ -103,32 +103,52 @@ export default {
       'Một AI có hỗ trợ kết nối MCP (ví dụ Codex).',
       'Địa chỉ trang MCP Platform và nơi đăng ký thử: [cần bổ sung]',
     ],
-    steps: [
-      'Bạn: đăng nhập MCP Platform bằng O365, mở mục "My resources" để xem tài nguyên của mình và tài nguyên nào đã sẵn sàng.',
-      'Bạn: vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên, bấm "Create key".',
-      'Bạn: chép khoá ngay (khoá chỉ hiện 1 lần) và gắn vào AI của bạn. Lệnh mẫu cho Codex nằm ở phần Chi tiết kỹ thuật.',
-      'Bạn: hỏi AI bằng lời về tài nguyên hoặc service của mình.',
-      'Bạn kiểm tra: đọc bản tóm tắt AI trả về, đối chiếu trước khi ra quyết định.',
-    ],
-    blocks: [
-      { type: 'steps', title: 'Bước 1 · Xem tài nguyên của bạn', items: [
-        'Mặc định chỉ tài nguyên bạn là OWNER trên Gear mới hiện ra.',
-        'Thẻ "Available" nghĩa là admin đã publish, dùng được; "Not published" là chưa dùng được.',
-      ] },
-      { type: 'image', src: '/use-cases/c10/my-resources.png', caption: 'Trang "My resources": 3 tài nguyên của dev, 2 cái đã sẵn sàng, 1 cái chưa được publish.' },
-      { type: 'steps', title: 'Bước 2 · Tạo 1 khoá cho nhiều tài nguyên', items: [
-        'Nhập tên khoá, tích các tài nguyên cần dùng (ở đây là 1 Redis và 1 database).',
-        'Không cần tạo mỗi tài nguyên một khoá.',
-      ] },
-      { type: 'image', src: '/use-cases/c10/create-key.png', caption: 'Tạo khoá "codex-test-key" cho cả 2 tài nguyên Redis và Percona, mỗi tài nguyên ở chế độ chỉ đọc.' },
-      { type: 'image', src: '/use-cases/c10/key-created.png', caption: 'Khoá mới tạo chỉ hiện 1 lần; bảng dưới cho thấy khoá đang hoạt động với 2 tài nguyên, 28 công cụ.' },
-      { type: 'note', tone: 'warn', title: 'Chép khoá ngay', text: 'Màn hình ghi rõ "This value is shown once": khoá chỉ hiện một lần. Không gửi khoá cho người khác.' },
-      { type: 'text', title: 'Bước 3 · Gắn khoá vào AI', text: 'Gắn khoá vào Codex bằng lệnh mẫu trong phần "Chi tiết kỹ thuật" (Dành cho dev). SRE không cần đưa bạn thêm mật khẩu nào.' },
-      { type: 'prompt', label: 'Câu hỏi mẫu dev đã gõ cho Codex (giữ nguyên bản gốc)', text: 'hey give me infomation about database clan?' },
-      { type: 'text', title: 'Bước 4 · Hỏi về cả service', text: 'Nếu service của bạn đã được dò thấy, bạn tạo 1 khoá cho service và các tài nguyên nó dùng, rồi hỏi AI về service đó và mọi thứ nó kết nối tới.' },
-      { type: 'image', src: '/use-cases/c10/topology-detected.png', caption: 'Service CSM được dò thấy đang nối tới 1 database và 1 Redis, nhưng 2 tài nguyên này chưa được publish.' },
-      { type: 'image', src: '/use-cases/c10/my-resources-service.png', caption: 'Sau khi admin publish, 2 tài nguyên của service CSM hiện "Available" trong "My resources".' },
-      { type: 'image', src: '/use-cases/c10/topology-ready.png', caption: 'Sơ đồ kết nối của service CSM: cả 2 tài nguyên đã "READY" để AI tra cứu.' },
+    // Each step once, with its details and screenshots right under it.
+    stepSections: [
+      {
+        title: 'Đăng nhập và xem tài nguyên của bạn',
+        blocks: [
+          { type: 'text', text: 'Đăng nhập MCP Platform bằng O365, mở mục "My resources" để xem tài nguyên của mình và tài nguyên nào đã sẵn sàng.' },
+          { type: 'bullets', items: [
+            'Mặc định chỉ tài nguyên bạn là OWNER trên Gear mới hiện ra.',
+            'Thẻ "Available" nghĩa là admin đã publish, dùng được; "Not published" là chưa dùng được.',
+          ] },
+          { type: 'image', src: '/use-cases/c10/my-resources.png', caption: 'Trang "My resources": 3 tài nguyên của dev, 2 cái đã sẵn sàng, 1 cái chưa được publish.' },
+        ],
+      },
+      {
+        title: 'Tạo 1 khoá cho nhiều tài nguyên',
+        blocks: [
+          { type: 'text', text: 'Vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên cần dùng (ở đây là 1 Redis và 1 database), bấm "Create key". Không cần tạo mỗi tài nguyên một khoá.' },
+          { type: 'image', src: '/use-cases/c10/create-key.png', caption: 'Tạo khoá "codex-test-key" cho cả 2 tài nguyên Redis và Percona, mỗi tài nguyên ở chế độ chỉ đọc.' },
+          { type: 'image', src: '/use-cases/c10/key-created.png', caption: 'Khoá mới tạo chỉ hiện 1 lần; bảng dưới cho thấy khoá đang hoạt động với 2 tài nguyên, 28 công cụ.' },
+          { type: 'note', tone: 'warn', title: 'Chép khoá ngay', text: 'Màn hình ghi rõ "This value is shown once": khoá chỉ hiện một lần. Không gửi khoá cho người khác.' },
+        ],
+      },
+      {
+        title: 'Gắn khoá vào AI',
+        blocks: [
+          { type: 'text', text: 'Gắn khoá vào AI của bạn, ví dụ Codex, bằng lệnh dưới đây. SRE không cần đưa bạn thêm mật khẩu nào.' },
+          { type: 'code', label: 'Thêm MCP Platform vào Codex', code: 'codex mcp add mcp-platform \\\n        --url "http://127.0.0.1:5000/mcp" \\\n    --bearer-token-env-var MCP_PLATFORM_KEY # key dev va mi to', note: 'Lệnh đọc MCP key từ biến môi trường MCP_PLATFORM_KEY (địa chỉ trong ví dụ là máy local).' },
+        ],
+      },
+      {
+        title: 'Hỏi AI về tài nguyên hoặc service',
+        blocks: [
+          { type: 'text', text: 'Hỏi AI bằng lời về tài nguyên hoặc service của mình.' },
+          { type: 'prompt', label: 'Câu hỏi mẫu dev đã gõ cho Codex (giữ nguyên bản gốc)', text: 'hey give me infomation about database clan?' },
+          { type: 'text', text: 'Nếu service của bạn đã được dò thấy, bạn tạo 1 khoá cho service và các tài nguyên nó dùng, rồi hỏi AI về service đó và mọi thứ nó kết nối tới.' },
+          { type: 'image', src: '/use-cases/c10/topology-detected.png', caption: 'Service CSM được dò thấy đang nối tới 1 database và 1 Redis, nhưng 2 tài nguyên này chưa được publish.' },
+          { type: 'image', src: '/use-cases/c10/my-resources-service.png', caption: 'Sau khi admin publish, 2 tài nguyên của service CSM hiện "Available" trong "My resources".' },
+          { type: 'image', src: '/use-cases/c10/topology-ready.png', caption: 'Sơ đồ kết nối của service CSM: cả 2 tài nguyên đã "READY" để AI tra cứu.' },
+        ],
+      },
+      {
+        title: 'Kiểm tra kết quả',
+        blocks: [
+          { type: 'text', text: 'Đọc bản tóm tắt AI trả về, đối chiếu trước khi ra quyết định.' },
+        ],
+      },
     ],
     code: [],
     success: [

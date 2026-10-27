@@ -39,11 +39,11 @@ function fromTpl(c, m) {
     intro: a.intro || '', fit: { yes: arr(a.fit?.yes), no: arr(a.fit?.no) },
     promptTarget: m.promptTarget || (c.tools || []).join(' / '),
     prep: arr(a.prep), prepPrompt: a.prepPrompt || null,
-    steps: arr(a.steps), stepSections: [], blocks: arr(a.blocks), code: arr(a.code), refTables: arr(a.refTables),
+    steps: arr(a.steps), stepSections: arr(a.stepSections).map((s, i) => ({ id: s.id || 'step' + i, title: s.title, sub: s.sub || '', blocks: arr(s.blocks), open: true })), blocks: arr(a.blocks), code: arr(a.code), refTables: arr(a.refTables),
     success: arr(a.success), samples: arr(a.samples), images: arr(a.images),
     pitfalls: pit, pitfallTable: null,
   }
-  apply.empty = !apply.intro && !apply.fit.yes.length && !apply.fit.no.length && !apply.prep.length && !apply.steps.length && !apply.blocks.length && !apply.code.length && !apply.refTables.length && !apply.success.length && !apply.images.length && !pit.length
+  apply.empty = !apply.intro && !apply.fit.yes.length && !apply.fit.no.length && !apply.prep.length && !apply.steps.length && !apply.stepSections.length && !apply.blocks.length && !apply.code.length && !apply.refTables.length && !apply.success.length && !apply.images.length && !pit.length
   return {
     hero: {
       type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
