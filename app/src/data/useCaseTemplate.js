@@ -32,7 +32,8 @@ function fromTpl(c, m) {
   const p = m.problem || {}, so = m.solution || {}, r = m.result || {}, a = m.apply || {}, sa = m.safety || {}, te = m.tech || {}, n = m.next || {}
   // The template asks every tool/guide for these; if the source doc has none, say so rather than hide it.
   const pit = arr(a.pitfalls).map((x) => (typeof x === 'string' ? pitfallRow(x) : x))
-  if (!pit.length && m.type !== 'proposal') pit.push({ meet: '[cần bổ sung]', why: '' })
+  // AI Exhibition booths only carry Vấn đề + Giải pháp; the rest stays empty rather than flagged.
+  if (!pit.length && m.type !== 'proposal' && m.source !== 'exhibition') pit.push({ meet: '[cần bổ sung]', why: '' })
   const apply = {
     title: m.type === 'case' ? 'Mang ý tưởng về team bạn' : m.type === 'proposal' ? 'Muốn thử nghiệm cùng?' : 'Tự áp dụng',
     intro: a.intro || '', fit: { yes: arr(a.fit?.yes), no: arr(a.fit?.no) },
@@ -53,7 +54,7 @@ function fromTpl(c, m) {
     stats: arr(m.stats).slice(0, 3),
     tldr: arr(m.tldr).filter((row) => row && row[1]),
     problem: { text: p.text || '', bullets: arr(p.bullets), tables: arr(p.tables), images: arr(p.images) },
-    solution: { analogy: so.analogy || '', steps: arr(so.steps), images: arr(so.images) },
+    solution: { analogy: so.analogy || '', text: so.text || '', steps: arr(so.steps), images: arr(so.images) },
     result: { highlights: arr(r.highlights), bullets: arr(r.bullets), beforeAfter: r.beforeAfter && arr(r.beforeAfter.rows).length ? r.beforeAfter : null, tables: arr(r.tables), note: r.note || '', images: arr(r.images) },
     apply,
     safety: { rules: arr(sa.rules), limits: arr(sa.limits), tables: arr(sa.tables) },

@@ -10,7 +10,7 @@ import { Section, ProblemSolution, ResultBody, ApplySection, TechSection, Bullet
 export function detailLayout(tp, t) {
   const has = {
     tldr: tp.tldr.length > 0,
-    ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.steps.length),
+    ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.text || tp.solution.steps.length),
     result: !!((tp.result.highlights || []).length || tp.result.bullets.length || tp.result.beforeAfter || tp.result.tables.length || tp.result.note || tp.result.images.length),
     apply: !tp.apply.empty,
     safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),

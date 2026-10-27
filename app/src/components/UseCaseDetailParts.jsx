@@ -182,7 +182,7 @@ export function ProblemSolution({ problem, solution, t, num: partNum }) {
         {[
           ['2', t('Bài toán'), '#E0353F', (
             <>
-              {problem.text && <p style={css('margin:0 0 14px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty;')}><Fill text={problem.text} /></p>}
+              {problem.text && <p style={css('margin:0 0 14px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>}
               {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
               <Images images={problem.images} />
             </>
@@ -190,6 +190,7 @@ export function ProblemSolution({ problem, solution, t, num: partNum }) {
           ['3', t('Giải pháp'), '#00A352', (
             <>
               {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:13.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
+              {solution.text && <p style={css('margin:0 0 14px; font-size:14px; line-height:1.65; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>}
               <BulletList items={solution.steps} numbered />
               <Images images={solution.images} />
             </>
