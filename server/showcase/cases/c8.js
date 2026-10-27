@@ -106,7 +106,6 @@ export default {
         ],
       },
     ],
-    note: 'Chưa đo: thời gian từ brief tới prototype, số vòng feedback. Dự kiến đo trong đợt pilot tiếp theo.',
     images: [
       { src: I('rune-start'), caption: 'Rune Reading · Bắt đầu phiên đọc.' },
       { src: I('rune-result'), caption: 'Rune Reading · Kết quả và diễn giải rune.' },

@@ -88,7 +88,6 @@ export default {
       'Đã test trên môi trường DEV và QC cho Redis, Percona và dò tìm service.',
     ],
     tables: [],
-    note: 'Chưa đo: chưa có số liệu vận hành thật.',
     images: [],
   },
 

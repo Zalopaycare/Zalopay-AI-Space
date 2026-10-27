@@ -84,7 +84,6 @@ export default {
         ],
       },
     ],
-    note: 'Chưa đo: mức tiết kiệm thực tế cần đo qua pilot. Mục "Số liệu đo đạc của QE" trong tài liệu gốc còn trống [cần bổ sung].',
     images: [],
   },
 

@@ -93,7 +93,6 @@ export default {
       'Năng lực chung: Dev hay QE góp cải tiến một lần là cả team được dùng; người mới bắt đầu ngay, không học lại từ đầu.',
     ],
     tables: [],
-    note: 'Chưa đo: bài gốc không có số liệu thời gian hay chất lượng. [cần bổ sung]',
     images: [],
   },
 

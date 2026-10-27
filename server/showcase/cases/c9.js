@@ -101,7 +101,6 @@ export default {
         ],
       },
     ],
-    note: 'Chưa đo: tài liệu chỉ có 10 tình huống mẫu, chưa có số thời gian trước/sau hay số ticket đã xử lý.',
     images: [
       { src: P + 'uc1-sonar-plugin.png', caption: 'Tình huống 1: bot chỉ ra build lỗi vì project Java thiếu plugin SonarQube trong pom.xml.' },
       { src: P + 'uc1-fix.png', caption: 'Tình huống 1: bảng cách sửa, ví dụ đoạn cần thêm vào pom.xml, và ghi chú lỗi báo trạng thái chỉ là lỗi phụ.' },

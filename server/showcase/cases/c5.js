@@ -104,7 +104,7 @@ export default {
         ],
       },
     ],
-    note: 'Đo trên 1–2 bài mẫu. Tỉ lệ bài AI và chi phí AI mỗi bài: chưa đo.',
+    note: 'Đo trên 1–2 bài mẫu.',
     images: [
       { src: '/use-cases/c5/human-score-ai.png', caption: 'Bài AI (review phim The Odyssey 2026): human score 6%, AI score 94%, readability 31%.' },
       { src: '/use-cases/c5/human-score-agency.png', caption: 'Bài Agency đang live (review phim Moana 2026): human score 6%, AI score 94%, readability 33%.' },

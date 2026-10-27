@@ -44,7 +44,6 @@ export default {
       'Phần kỹ thuật do AI làm; việc của bạn là ra lệnh (prompt) cho AI.',
     ],
     tables: [],
-    note: 'Chưa đo: tài liệu gốc không có số liệu về thời gian hay số ứng dụng đã deploy.',
     images: [],
   },
 

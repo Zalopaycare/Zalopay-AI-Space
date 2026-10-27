@@ -138,7 +138,6 @@ export default {
         ],
       },
     ],
-    note: 'Chưa đo: chưa có số trước/sau khi dùng trợ lý.',
     images: [],
   },
 
