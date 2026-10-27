@@ -30,12 +30,11 @@ const arr = (v) => (Array.isArray(v) ? v : [])
 /** Cases written directly in the template shape (data/cases/*.js) — fill defaults so every field exists. */
 function fromTpl(c, m) {
   const p = m.problem || {}, so = m.solution || {}, r = m.result || {}, a = m.apply || {}, sa = m.safety || {}, te = m.tech || {}, n = m.next || {}
-  // The template asks every tool/guide for these; if the source doc has none, say so rather than hide it.
+  // Lỗi hay gặp is optional: shown only when the source lists some.
   const pit = arr(a.pitfalls).map((x) => (typeof x === 'string' ? pitfallRow(x) : x))
-  // AI Exhibition booths only carry Vấn đề + Giải pháp; the rest stays empty rather than flagged.
-  if (!pit.length && m.type !== 'proposal' && m.source !== 'exhibition') pit.push({ meet: '[cần bổ sung]', why: '' })
   const apply = {
-    title: m.type === 'case' ? 'Mang ý tưởng về team bạn' : m.type === 'proposal' ? 'Muốn thử nghiệm cùng?' : 'Tự áp dụng',
+    // one name for every use case, whatever its type
+    title: 'Tự áp dụng',
     intro: a.intro || '', fit: { yes: arr(a.fit?.yes), no: arr(a.fit?.no) },
     promptTarget: m.promptTarget || (c.tools || []).join(' / '),
     prep: arr(a.prep), prepPrompt: a.prepPrompt || null,
@@ -135,7 +134,7 @@ function buildParts(c, cd, info) {
   const code = (cd.code || []).filter((cb) => !sampleTitles.includes(cb.title)).map((cb) => ({ ...cb, note: (x.codeNote || {})[cb.title] || '' }))
   const samples = (cd.code || []).filter((cb) => sampleTitles.includes(cb.title))
   const apply = {
-    title: x.type === 'case' ? 'Mang ý tưởng về team bạn' : x.type === 'proposal' ? 'Muốn thử nghiệm cùng?' : 'Tự áp dụng',
+    title: 'Tự áp dụng',
     intro: x.applyIntro || '',
     fit: x.fit || { yes: [], no: [] },
     prep, prepPrompt,

@@ -181,44 +181,40 @@ export function Tldr({ rows }) {
 
 /** 2 Bài toán | 3 Giải pháp on one row (one column on phones). */
 export function ProblemSolution({ problem, solution, result, t, num: partNum }) {
+  // One card: Bài toán, then Giải pháp; Kết quả belongs to the solution and closes it.
+  const hasProblem = !!(problem.text || problem.bullets.length)
+  // the part number sits on whichever heading comes first
+  const head = (title, dot, first) => (
+    <div style={css(H3 + 'margin-bottom:12px; display:flex; align-items:center; gap:8px;')}>
+      {first && partNum && <NumBadge n={partNum} size={26} />}{title}
+      <span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
+    </div>
+  )
   return (
     <section id="uc-problem" data-toc style={css('scroll-margin-top:84px; margin-top:18px;')}>
-      <div className="zp-ps">
-        {[
-          ['2', t('Bài toán'), '#E0353F', (
-            <>
-              {problem.text && <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>}
-              {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
-            </>
-          )],
-          ['3', t('Giải pháp'), '#00A352', (
-            <>
-              {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:12.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
-              {solution.text && <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>}
-              <BulletList items={solution.steps} numbered />
-              <Images images={solution.images} />
-            </>
-          )],
-          // Kết quả is part of the same story: what the solution brought, right under it.
-          result && ['4', t('Kết quả'), '#2c5fff', <ResultBody r={result} t={t} />],
-        ].filter(Boolean).map(([num, title, dot, body], i) => (
-          <div key={num} style={{ display: 'contents' }}>
-            {i > 0 && (
-              <div className="zp-ps-arrow" aria-hidden="true">
-                <span style={css('width:36px; height:36px; border-radius:50%; background:#0f1a3a; border:1px solid rgba(130,170,255,.4); color:#cfe0ff; display:flex; align-items:center; justify-content:center;')}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
-                </span>
+      <div style={css(CARD)}>
+        {hasProblem && (
+          <>
+            {head(t('Bài toán'), '#E0353F', true)}
+            {problem.text && <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>}
+            {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
+          </>
+        )}
+        <div style={css(hasProblem ? 'margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;' : '')}>
+          {head(t('Giải pháp'), '#00A352', !hasProblem)}
+          {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:12.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
+          {solution.text && <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>}
+          <BulletList items={solution.steps} numbered />
+          <Images images={solution.images} />
+          {result && (
+            <div style={{ marginTop: 18 }}>
+              <div style={css(SUB + 'display:flex; align-items:center; gap:8px; color:#1E44A8;')}>
+                {t('Kết quả')}<span style={css('width:7px; height:7px; border-radius:50%; background:#2c5fff;')}></span>
               </div>
-            )}
-            <div style={css(CARD)}>
-              <div style={css(H3 + 'margin-bottom:12px; display:flex; align-items:center; gap:8px;')}>
-                {i === 0 && partNum && <NumBadge n={partNum} size={26} />}{title}
-                <span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
-              </div>
-              {body}
+              <ResultBody r={result} t={t} />
             </div>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
       {problem.tables.map((tb, i) => <div key={i} style={{ marginTop: 18 }}>{isNumericTable(tb) ? <div style={css(CARD)}><BarTable table={tb} t={t} /></div> : <PlainTable table={tb} />}</div>)}
     </section>
@@ -417,14 +413,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
       <Images images={a.images} />
     </div>,
   )
-  const pitfallsMissing = !a.pitfallTable && a.pitfalls.length === 1 && /cần bổ sung/i.test(a.pitfalls[0].meet) && !a.pitfalls[0].why
-  if (pitfallsMissing) parts.push(
-    <div key="errors" style={css('padding:14px 16px; border-radius:14px; border:1px dashed #E3A33B; background:#FFFBF2;')}>
-      <div style={css(SUB + 'margin-bottom:6px;')}>{t('Lỗi hay gặp')}</div>
-      <div style={css('font-size:12.5px; line-height:1.6; color:#5A4522;')}><Fill text="[cần bổ sung]" /> {t('Tài liệu gốc chưa ghi lỗi hay gặp và cách xử lý. Tác giả bổ sung giúp: Bạn gặp · Vì sao · Nói gì với AI / làm gì.')}</div>
-    </div>,
-  )
-  else if (a.pitfalls.length || a.pitfallTable) parts.push(
+  if (a.pitfalls.length || a.pitfallTable) parts.push(
     // Always open and in red: the mistakes are what readers most need to see before they start.
     <div key="errors" style={css('padding:14px 16px 16px; border-radius:14px; border:1px solid #F5C2C2; background:#FFF5F5;')}>
       <div style={css(SUB + 'display:flex; align-items:center; gap:8px; color:#C81E1E;')}>
@@ -445,8 +434,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
       <div style={css('border-radius:24px; padding:2px; background:linear-gradient(135deg,#5b8cff,#2c5fff 45%,#00c2a8); box-shadow:0 20px 50px rgba(44,95,255,.35);')}>
         <div style={css('border-radius:22px; background:#fff; overflow:hidden; color-scheme:light;')}>
           <div style={css('padding:20px 26px 18px; background:linear-gradient(180deg,#EEF3FF,#ffffff); border-bottom:1px solid #E6EBF3;')}>
-            <div style={css('font-size:12px; font-weight:800; letter-spacing:.08em; color:#2c5fff;')}>{t('BẮT ĐẦU TỪ ĐÂY')}</div>
-            <h2 style={css('margin:6px 0 0; display:flex; align-items:center; gap:10px; font-size:20px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}><NumBadge n={num} size={30} />{t(a.title)}</h2>
+            <h2 style={css('margin:0; display:flex; align-items:center; gap:10px; font-size:20px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}><NumBadge n={num} size={30} />{t(a.title)}</h2>
           </div>
           <PromptTargetContext.Provider value={a.promptTarget || ''}>
             <div style={css('padding:22px 26px 26px; display:flex; flex-direction:column; gap:22px;')}>{parts}</div>

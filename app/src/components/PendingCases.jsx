@@ -73,8 +73,9 @@ function PendingPopup({ p, busy, onToggle, onClose, t }) {
     window.addEventListener('keydown', onKey)
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
   }, [onClose])
-  const card = (title, dot, text) => (
-    <div style={css(CARD)}>
+  // One card like a use case page: Bài toán, then Giải pháp under a divider.
+  const part = (title, dot, text, first) => (
+    <div style={css(first ? '' : 'margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
       <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:15px; font-weight:800; color:#0F172A;')}>
         {t(title)}<span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
       </div>
@@ -101,14 +102,9 @@ function PendingPopup({ p, busy, onToggle, onClose, t }) {
           </div>
         )}
         <div style={css('margin-top:6px; font-size:12.5px; color:#a9b8dc;')}>{[p.label, p.category].filter(Boolean).join(' · ')}</div>
-        <div className="zp-ps" style={{ marginTop: 20 }}>
-          {card('Bài toán', '#E0353F', p.problem)}
-          <div className="zp-ps-arrow" aria-hidden="true">
-            <span style={css('width:36px; height:36px; border-radius:50%; background:#0f1a3a; border:1px solid rgba(130,170,255,.4); color:#cfe0ff; display:flex; align-items:center; justify-content:center;')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
-            </span>
-          </div>
-          {card('Giải pháp', '#00A352', p.solution)}
+        <div style={css(CARD + 'margin-top:20px;')}>
+          {part('Bài toán', '#E0353F', p.problem, true)}
+          {part('Giải pháp', '#00A352', p.solution, false)}
         </div>
         <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:20px;')}>
           <span style={css('flex:1; min-width:200px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Use case này chưa có bài chi tiết trên AI Space. Bấm "Quan tâm" để nhắc team đăng lên.')}</span>

@@ -53,7 +53,7 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
   { key: 'intro', label: 'Đầu trang', part: 'Phần đầu trang: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
-  { key: 'ps', label: 'Bài toán, giải pháp & kết quả', part: 'Phần Bài toán, Giải pháp và Kết quả (hiện ngay dưới Giải pháp)' },
+  { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'An toàn & giới hạn', part: 'Phần An toàn & giới hạn' },
 ]
@@ -599,8 +599,9 @@ export default function UseCaseLibraryPage() {
 
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}
-              {/* Same Upvote + Bình luận pair as the use case cards; "Bình luận" jumps to the comment box. */}
-              <div style={css('display:flex;')}>
+              {/* Same Upvote + Bình luận pair as the use case cards, top-left of the comment box (the
+                  shrink-wrapped holder cancels the pair's right-alignment); "Bình luận" jumps to the box. */}
+              <div style={css('display:inline-flex;')}>
                 <CardActions
                   helpful={base}
                   helped={voted}

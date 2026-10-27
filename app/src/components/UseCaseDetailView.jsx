@@ -10,7 +10,7 @@ export function detailLayout(tp, t) {
   const has = {
     tldr: tp.tldr.length > 0,
     ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.text || tp.solution.steps.length),
-    // Kết quả shows inside the Bài toán & giải pháp section, under Giải pháp
+    // Kết quả belongs to Giải pháp: it shows inside that card, not as a part of its own
     result: !!((tp.result.highlights || []).length || tp.result.bullets.length || tp.result.beforeAfter || tp.result.tables.length || tp.result.note || tp.result.images.length),
     apply: !tp.apply.empty,
     safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),
@@ -19,7 +19,7 @@ export function detailLayout(tp, t) {
   // "Tự áp dụng" comes before "Kết quả": once the reader gets the idea, the links and steps are next.
   const parts = [
     ['tldr', 'uc-tldr', 'Tóm tắt'],
-    ['ps', 'uc-problem', has.result ? 'Bài toán, giải pháp & kết quả' : 'Bài toán & giải pháp'],
+    ['ps', 'uc-problem', 'Bài toán & giải pháp'],
     ['apply', 'uc-apply', tp.apply.title],
     ['safety', 'uc-safety', 'An toàn & giới hạn'],
     ['demo', 'uc-demo', 'Demo'],

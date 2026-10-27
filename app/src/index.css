@@ -144,10 +144,6 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-info-row > .zp-info-owner { grid-column: 1 / -1; border-left: none !important; border-top: 1px solid rgba(130,170,255,.16); padding-top: 11px; padding-bottom: 12px; }
 .zp-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .zp-tldr { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px 18px; }
-/* Bài toán, then Giải pháp, then Kết quả, each the full width, with a down arrow between them. */
-.zp-ps { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 22px; }
-.zp-ps-arrow { position: relative; z-index: 1; height: 0; display: flex; align-items: center; justify-content: center; }
-.zp-ps-arrow > span { flex: none; transform: rotate(90deg); }
 .zp-highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
 .zp-bars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
 .zp-fit { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
