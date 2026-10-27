@@ -171,10 +171,18 @@ html.zp-vt .zp-page-in { animation: none; }
 
 /* "Chưa có thông tin" booth tiles under the library: two per row, one on phones. */
 .zp-pending-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* "Chat với Admin": one tall panel for a person; inbox list + open conversation side by side for admins. */
+.zp-chat-page { max-width: 1040px; margin: 0 auto; padding: 22px var(--zp-gutter) 22px; box-sizing: border-box; }
+.zp-chat-single, .zp-chat-inbox { height: calc(100vh - 58px - 120px); min-height: 440px; }
+.zp-chat-inbox { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; }
+.zp-chat-back { display: none; }
 
 /* Phones: search box on its own line with the filter pills below; detail blocks go to one column. */
 @media (max-width: 699px) {
   .zp-pending-grid { grid-template-columns: minmax(0, 1fr); }
+  .zp-chat-inbox { grid-template-columns: minmax(0, 1fr); }
+  .zp-chat-inbox[data-open="list"] .zp-chat-thread, .zp-chat-inbox[data-open="thread"] .zp-chat-list { display: none !important; }
+  .zp-chat-back { display: flex; }
   .zp-search-row { flex-wrap: wrap; }
   .zp-search-row > form { flex: 1 1 100% !important; }
   .zp-stats, .zp-bars { grid-template-columns: minmax(0, 1fr); }

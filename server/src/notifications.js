@@ -60,6 +60,18 @@ export function notifyInterest(ownerEmail, { ref, count, title }) {
   } catch (e) { console.error('[notifications] interest failed:', e.message) }
 }
 
+// "Chat với Admin": one notification per conversation and reader, rewritten with the newest message
+// and marked unread again, so a busy chat doesn't flood the list.
+export function notifyChat(email, { ref, text, href, actor = '' }) {
+  if (!email) return
+  const to = String(email).toLowerCase()
+  try {
+    const prev = db.prepare("SELECT id FROM notifications WHERE email = ? AND kind = 'chat' AND ref = ?").get(to, ref)
+    if (prev) db.prepare("UPDATE notifications SET text = ?, href = ?, actor = ?, read = 0, created_at = datetime('now') WHERE id = ?").run(String(text).slice(0, 500), href, actor, prev.id)
+    else db.prepare("INSERT INTO notifications (email, kind, text, href, actor, ref) VALUES (?, 'chat', ?, ?, ?, ?)").run(to, String(text).slice(0, 500), href, actor, ref)
+  } catch (e) { console.error('[notifications] chat failed:', e.message) }
+}
+
 const BUILTIN_CASES = new Set(SHOWCASE_IDS)
 function stillExists(r) {
   const href = String(r.href || '')

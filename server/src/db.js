@@ -258,6 +258,23 @@ CREATE TABLE IF NOT EXISTS use_case_interest (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (use_case_id, user_id)
 );
+
+-- "Chat với Admin": one conversation per person with the admin team (any admin may answer).
+-- user_id = whose conversation; from_admin marks the admin side. Seen marks are message ids.
+CREATE TABLE IF NOT EXISTS admin_chat_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  sender_id INTEGER NOT NULL REFERENCES users(id),
+  from_admin INTEGER NOT NULL DEFAULT 0,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_admin_chat_user ON admin_chat_messages(user_id, id);
+CREATE TABLE IF NOT EXISTS admin_chat_seen (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id),
+  user_seen INTEGER NOT NULL DEFAULT 0,
+  admin_seen INTEGER NOT NULL DEFAULT 0
+);
 `)
 
 // Optional cover image for a use case (stored with the submission so every viewer sees it).

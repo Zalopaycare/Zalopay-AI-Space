@@ -73,6 +73,13 @@ export const api = {
   reactUseCase: (id) => request(`/use-cases/${id}/react`, { method: 'POST' }),
   showcase: () => request('/showcase'),
   interestPending: (id) => request(`/showcase/pending/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
+  // "Chat với Admin": my conversation, and the admins' shared inbox. `after` = last message id I have.
+  chatMine: (after = 0) => request('/chat/me?after=' + after),
+  chatSend: (body) => request('/chat/me', { method: 'POST', body: JSON.stringify({ body }) }),
+  chatUnread: () => request('/chat/unread'),
+  chatThreads: () => request('/chat/threads'),
+  chatThread: (uid, after = 0) => request(`/chat/threads/${uid}?after=${after}`),
+  chatReply: (uid, body) => request(`/chat/threads/${uid}`, { method: 'POST', body: JSON.stringify({ body }) }),
   presence: (path) => request('/auth/presence', { method: 'POST', body: JSON.stringify({ path }) }),
   adminLive: () => request('/admin/live'),
   adminPublished: () => request('/admin/published'),
