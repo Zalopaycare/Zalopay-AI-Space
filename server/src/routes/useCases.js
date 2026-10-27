@@ -221,6 +221,10 @@ function cleanExtra(e) {
     highlights: (Array.isArray(e.highlights) ? e.highlights : []).slice(0, 3)
       .map((h) => ({ value: txt(h && h.value, 40), label: txt(h && h.label, 120) })).filter((h) => h.value || h.label),
     fitYes: txt(e.fitYes), fitNo: txt(e.fitNo), pitfalls: txt(e.pitfalls), tech: txt(e.tech, 8000),
+    // Posted for a team: the byline shows the team name (showAs 'team') or everyone who built it ('members').
+    postAs: e.postAs === 'team' ? 'team' : '',
+    showAs: e.postAs === 'team' && e.showAs === 'members' ? 'members' : '',
+    members: e.postAs === 'team' ? [...new Set((Array.isArray(e.members) ? e.members : []).map((m) => txt(m, 60)).filter(Boolean))].slice(0, 30) : [],
   }
   return Object.values(out).some((v) => (Array.isArray(v) ? v.length : v)) ? JSON.stringify(out) : null
 }

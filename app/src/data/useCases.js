@@ -1,5 +1,5 @@
 import { normalizeTools } from '../lib/taxonomy.js'
-import { submissionTpl, submissionDesc } from './submissionTpl.js'
+import { submissionTpl, submissionDesc, teamByline } from './submissionTpl.js'
 // Shared use case registry: every page reads allCases / prdMeta / caseDetail from here.
 
 // The showcase use cases (c4, c28, c38 for now) are written in the template shape from the teams' own docs and
@@ -131,6 +131,8 @@ export function registerTemplateCases(list) {
       id: m.id, postedAt: m.postedAt || '', title: m.title, desc: m.desc, author: m.author, team: known(m.ownerTeam), category: m.category || 'Other',
       tools: normalizeTools(m.tools || []), repo: m.tech?.repo?.label || '', repoHref: m.tech?.repo?.href || '',
       audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null, exhibition: m.source === 'exhibition',
+      // the whole team (the AI Exhibition booth's members) instead of one poster with an avatar
+      byline: (m.members || []).join(', '),
     }
     // keep built-ins in id order (c1…c5, c6…) so "Mới nhất" puts the newest showcase first
     const at = allCases.findIndex((c) => !c.submitted && Number(c.id.slice(1)) > Number(m.id.slice(1)))
@@ -177,6 +179,7 @@ export function registerPublished(subs) {
       category: [].concat(s.category)[0] || 'Khác', tools: normalizeTools(s.tools), repo: '', repoHref: s.link || '',
       audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId, coverUrl: s.coverUrl || null,
       anonymous: !!s.anonymous, alias: s.alias || null, realAuthor: s.realAuthor || null,
+      byline: teamByline(s),
     }
   })
   allCases.unshift(...cases)

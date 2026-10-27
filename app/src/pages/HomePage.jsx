@@ -428,12 +428,11 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
-                    <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(item.avatarUrl)}`)}>{item.initials}</span>
+                    {!item.byline && <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(item.avatarUrl)}`)}>{item.initials}</span>}
                     <div style={css('display:flex; flex-direction:column; min-width:0;')}>
-                      <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{item.author}</span>
+                      <span style={css(`font:600 12.5px/1.45 ${FONT}; color:#0F172A; ${item.byline ? '' : 'white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'}`)}>{item.byline || item.author}</span>
                     </div>
                   </div>
-                  <TagRow tools={item.tools} style={{ marginTop: 10 }} />
                   <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
                     <button onClick={(e) => { e.stopPropagation(); item.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 12.5px ${FONT}; color:#2c5fff; white-space:nowrap; transition:gap .16s;`)}>
                       {t('Xem Use Case')}

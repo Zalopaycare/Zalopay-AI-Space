@@ -21,7 +21,6 @@ import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUse
 import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
-import TagRow from '../components/TagRow.jsx'
 import FilterPill from '../components/FilterPill.jsx'
 import { DETAIL_COL, DetailHero, Toc, scrollToId, FloatingBack } from '../components/UseCaseDetailParts.jsx'
 import { DetailSections, detailLayout } from '../components/UseCaseDetailView.jsx'
@@ -133,6 +132,10 @@ export default function UseCaseLibraryPage() {
   const cmtAnonOpts = () => ({ anonymous: cmtAnon, alias: cmtAnon ? cmtAlias.trim() : '' })
   const [shareAnon, setShareAnon] = useState(false)
   const [shareAlias, setShareAlias] = useState('')
+  // Posted for myself or for a team; a team post shows the team name or every member ("a, b, c").
+  const [sharePostAs, setSharePostAs] = useState('personal')
+  const [shareShowAs, setShareShowAs] = useState('team')
+  const [shareMembers, setShareMembers] = useState('')
   const [shareHighlights, setShareHighlights] = useState(EMPTY_HIGHLIGHTS)
   // Fill the form from the Word template instead of typing: { name, filled, missing } | null
   const [docxInfo, setDocxInfo] = useState(null)
@@ -198,6 +201,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' })
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
       setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && !/^Anonymous( \d+)?$/.test(s.alias) ? s.alias : '')
+      setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareShowAs(ex.showAs === 'members' ? 'members' : 'team'); setShareMembers((ex.members || []).join(', '))
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       setShareCategory([].concat(s.category || []))
       const known = (list, all) => list.filter((x) => all.includes(x))
@@ -288,7 +292,7 @@ export default function UseCaseLibraryPage() {
   const restoredRef = useRef(false)
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareShowAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
 
   useEffect(() => {
     if (restoredRef.current) return
@@ -300,6 +304,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ ...EMPTY_SHARE_FORM, ...(d.shareForm || {}) })
       setShareType(d.shareType || '')
       setShareAnon(!!d.shareAnon); setShareAlias(d.shareAlias || '')
+      setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareShowAs(d.shareShowAs === 'members' ? 'members' : 'team'); setShareMembers(d.shareMembers || '')
       setShareHighlights(padHighlights(d.shareHighlights))
       setShareKind(d.shareKind || '')
       setShareStatus(d.shareStatus || '')
@@ -332,7 +337,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareShowAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -353,7 +358,7 @@ export default function UseCaseLibraryPage() {
         kind: shareKind, status: shareStatus, level: shareLevel,
         category: shareCategory, topics: previewTopics, tools: previewTools,
         extra: shareExtra(),
-        anonymous: shareAnon, alias: shareAnon ? shareAlias.trim() : '',
+        anonymous: shareAnon && !teamPost, alias: shareAnon && !teamPost ? shareAlias.trim() : '',
         ...(shareCover?.data ? { cover: shareCover.data } : shareCover?.cleared ? { cover: null } : {}),
       }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
         .catch((e) => setShareError(e?.data?.message || 'Không gửi được use case, thử lại.'))
@@ -361,7 +366,7 @@ export default function UseCaseLibraryPage() {
   }
 
   const resetShareForm = () => {
-    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
+    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareShowAs('team'); setShareMembers(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
     setShareCover(null); setCoverError(''); setDocxInfo(null); setDocxError('')
@@ -495,10 +500,13 @@ export default function UseCaseLibraryPage() {
     isInput: kind === 'input', isArea: kind === 'area',
     value: shareForm[k] || '', onChange: setField(k),
   }))
+  const teamPost = sharePostAs === 'team'
+  const shareMemberList = shareMembers.split(/[,\n]/).map((x) => x.trim()).filter(Boolean)
   const shareExtra = () => ({
     type: shareType, oneLine: shareForm.oneLine.trim(),
     highlights: shareHighlights.map((h) => ({ value: h.value.trim(), label: h.label.trim() })).filter((h) => h.value || h.label),
     fitYes: shareForm.fitYes.trim(), fitNo: shareForm.fitNo.trim(), pitfalls: shareForm.pitfalls.trim(), tech: shareForm.tech.trim(),
+    ...(teamPost ? { postAs: 'team', showAs: shareShowAs, members: shareMemberList } : {}),
   })
   // What's still missing, per step (labels), so the stepper can point at it.
   const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
@@ -525,9 +533,9 @@ export default function UseCaseLibraryPage() {
     const sub = {
       title: previewTitle, audience: shareForm.audience, team: shareForm.team, problem: shareForm.problem, solution: shareForm.solution,
       prep: shareForm.prep, prompt: shareForm.prompt, result: shareForm.result, limits: shareForm.limits, contact: shareForm.contact, link: shareForm.link,
-      status: shareStatus, level: shareLevel, author: shareAnon ? (shareAlias.trim() || 'Anonymous') : user?.name || '', team: shareAnon ? '' : shareForm.team, extra: shareExtra(),
+      status: shareStatus, level: shareLevel, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.name || '', team: shareAnon && !teamPost ? '' : shareForm.team, extra: shareExtra(),
     }
-    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, author: shareAnon ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
+    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon && !teamPost, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
     const tp = buildTemplate(c, { tpl: submissionTpl(sub) }, { name: user?.name || '', role: shareForm.team })
     return { c, tp, layout: detailLayout(tp, t) }
   }
@@ -811,13 +819,13 @@ export default function UseCaseLibraryPage() {
                         </div>
                       </div>
                       <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
-                        <span style={css(c.avStyle)}>{c.avInitial}</span>
+                        {/* a team post names the team (or all its members) instead of one poster with an avatar */}
+                        {!c.byline && <span style={css(c.avStyle)}>{c.avInitial}</span>}
                         <div style={css('display:flex; align-items:baseline; gap:6px; min-width:0;')}>
-                          <span style={css('font-size:12.5px; font-weight:600; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{c.author}</span><AnonTag p={c} />
+                          <span style={css(`font-size:12.5px; font-weight:600; line-height:1.45; color:#0F172A; ${c.byline ? '' : 'white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'}`)}>{c.byline || c.author}</span><AnonTag p={c} />
                           {c.posted && <span style={css('flex:none; font-size:12px; font-weight:500; color:#94a3b8; white-space:nowrap;')}>· {t('Đăng')} {c.posted}</span>}
                         </div>
                       </div>
-                      <TagRow tools={c.tools} style={{ marginTop: 10 }} />
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
                         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
                           {t('Xem Use Case')}
@@ -925,9 +933,11 @@ export default function UseCaseLibraryPage() {
                     <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
-                  <div style={css('margin-top:16px; padding:12px 16px; border-radius:14px; background:#fff; border:1px solid #E6EBF3;')}>
-                    <AnonToggle compact on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
-                  </div>
+                  {!teamPost && (
+                    <div style={css('margin-top:16px; padding:12px 16px; border-radius:14px; background:#fff; border:1px solid #E6EBF3;')}>
+                      <AnonToggle compact on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
+                    </div>
+                  )}
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap;')}>
                     <button onClick={() => setShareStage('form')} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Quay lại chỉnh sửa')}</button>
                     <button
@@ -1018,10 +1028,39 @@ export default function UseCaseLibraryPage() {
                           </div>
                           {coverError && <div style={css('margin-top:8px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
                         </div>
-                        <div style={css(`margin:-4px 0 24px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon ? '#F2F6FF' : '#F8FAFE'};`)}>
+                        <div style={css(`margin:-4px 0 24px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon && !teamPost ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon && !teamPost ? '#F2F6FF' : '#F8FAFE'};`)}>
                           <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Người đăng')}</div>
-                          <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật.')}</div>
-                          <AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
+                          <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
+                          <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
+                            {[['personal', 'Cá nhân'], ['team', 'Team']].map(([v, label]) => {
+                              const ch = chip(sharePostAs === v)
+                              return <button key={v} type="button" onClick={() => setSharePostAs(v)} aria-pressed={sharePostAs === v} style={css(`height:34px; padding:0 15px; border:1px solid ${ch.border}; border-radius:999px; background:${ch.bg}; color:${ch.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{t(label)}</button>
+                            })}
+                          </div>
+                          {teamPost ? (
+                            <div style={css('margin-top:14px;')}>
+                              <div style={css('font-size:13px; font-weight:700; color:#0F172A;')}>{t('Hiển thị trên bài')}</div>
+                              <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
+                                {[['team', 'Tên team'], ['members', 'Tên toàn bộ thành viên']].map(([v, label]) => {
+                                  const ch = chip(shareShowAs === v)
+                                  return <button key={v} type="button" onClick={() => setShareShowAs(v)} aria-pressed={shareShowAs === v} style={css(`height:34px; padding:0 15px; border:1px solid ${ch.border}; border-radius:999px; background:${ch.bg}; color:${ch.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{t(label)}</button>
+                                })}
+                              </div>
+                              {shareShowAs === 'members' ? (
+                                <>
+                                  <input value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} aria-label={t('Thành viên cùng làm')} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;')} />
+                                  <div style={css('margin-top:6px; font-size:12px; color:#94a3b8;')}>{shareMemberList.length ? t('Hiển thị') + ': ' + shareMemberList.join(', ') : t('Chưa có tên nào, bài sẽ hiện tên team.')}</div>
+                                </>
+                              ) : (
+                                <div style={css('margin-top:8px; font-size:12px; color:#94a3b8;')}>{shareForm.team.trim() ? t('Hiển thị') + ': ' + shareForm.team.trim() : t('Lấy từ ô "Team / Nhóm" bên dưới.')}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              <div style={css('margin-top:12px; font-size:12.5px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật.')}</div>
+                              <AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
+                            </>
+                          )}
                         </div>
                       </>
                     )}
