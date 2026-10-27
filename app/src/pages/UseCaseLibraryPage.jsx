@@ -593,12 +593,12 @@ export default function UseCaseLibraryPage() {
   const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
     ...shareFields.filter((f) => f.step === st.key && f.req === 'Required' && !f.value.trim()).map((f) => f.label),
     ...(st.key === 'apply' && !stepsReady ? ['Các bước (mỗi bước cần tên và nội dung)'] : []),
-    ...(st.key === 'intro' ? [!(shareCover && !shareCover.cleared) && 'Ảnh bìa', !shareLevel && 'Độ khó', !shareCategory.length && 'Category', catOtherOn && !shareCatOther.trim() && 'Tên category (Other)', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
+    ...(st.key === 'intro' ? [!(shareCover && !shareCover.cleared) && 'Ảnh bìa', !shareLevel && 'Độ khó', !shareCategory.length && 'Category', catOtherOn && !shareCatOther.trim() && 'Tên category khác', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
   ]]))
   const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && (!catOtherOn || shareCatOther.trim()) && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
   const oneOf = (val, setVal, opts, labels = {}) => opts.map((o) => ({ label: labels[o] || o, ...chip(val === o), onPick: () => setVal(val === o ? '' : o) }))
 
-  const shareCategories = CATS.map((c) => ({ label: c, ...chip(shareCategory.indexOf(c) >= 0), onPick: () => setShareCategory((s) => (s.indexOf(c) >= 0 ? s.filter((x) => x !== c) : s.concat([c]))) }))
+  const shareCategories = CATS.map((c) => ({ label: c === 'Other' ? 'Khác' : c, ...chip(shareCategory.indexOf(c) >= 0), onPick: () => setShareCategory((s) => (s.indexOf(c) >= 0 ? s.filter((x) => x !== c) : s.concat([c]))) }))
   const shareTools = TOOLS.map((tl) => ({ label: tl, ...chip(shareToolSel.indexOf(tl) >= 0), onPick: () => setShareToolSel((s) => (s.indexOf(tl) >= 0 ? s.filter((x) => x !== tl) : [...s, tl])) }))
   const shareLevels = oneOf(shareLevel, setShareLevel, ['Dễ', 'Trung bình', 'Khó'])
 
@@ -1201,10 +1201,10 @@ export default function UseCaseLibraryPage() {
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareCategories.map((c) => (
-                            <button key={c.label} onClick={() => { if (c.label === 'Other') markOtherPick(); c.onPick() }} style={css(`height:32px; padding:0 13px; border:1px solid ${c.border}; border-radius:999px; background:${c.bg}; color:${c.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{c.label}</button>
+                            <button key={c.label} onClick={() => { if (c.label === 'Khác') markOtherPick(); c.onPick() }} style={css(`height:32px; padding:0 13px; border:1px solid ${c.border}; border-radius:999px; background:${c.bg}; color:${c.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{c.label}</button>
                           ))}
                           {catOtherOn && (
-                            <input ref={focusIfJustPicked} value={shareCatOther} onChange={(e) => setShareCatOther(e.target.value)} aria-label={t('Tên category khác')} placeholder={t('Nhập tên category, ví dụ: Legal & Compliance')} style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;')} />
+                            <input ref={focusIfJustPicked} value={shareCatOther} onChange={(e) => setShareCatOther(e.target.value)} aria-label={t('Tên category khác')} placeholder={t('Nhập category khác, ví dụ: Legal & Compliance')} style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;')} />
                           )}
                         </div>
 
@@ -1217,7 +1217,7 @@ export default function UseCaseLibraryPage() {
                             <button key={tl.label} onClick={() => { if (tl.label === 'Khác') markOtherPick(); tl.onPick() }} style={css(`height:32px; padding:0 13px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{tl.label}</button>
                           ))}
                           {shareToolSel.indexOf('Khác') >= 0 && (
-                            <input ref={focusIfJustPicked} value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} placeholder="Nhập công cụ AI khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;')} />
+                            <input ref={focusIfJustPicked} value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} aria-label="Công cụ AI khác" placeholder="Nhập công cụ AI khác, ví dụ: NotebookLM" style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;')} />
                           )}
                         </div>
 
