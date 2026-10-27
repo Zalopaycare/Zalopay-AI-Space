@@ -105,24 +105,35 @@ export default function UseCaseLibraryPage() {
   const [openDrop, setOpenDrop] = useState(null)
 
   const [shareOpen, setShareOpen] = useState(false)
-  // Optional cover image: { url } for display; `data` only when the author picked a new file (sent
-  // as a data URL, downscaled first); `cleared` when they removed an existing one.
+  // Required cover image, always 1920×1080 (16:9): { url } for display; `data` only when the author picked
+  // a new file (centre-cropped to 16:9, scaled to 1920×1080, sent as a JPEG data URL); `cleared` when removed.
   const [shareCover, setShareCover] = useState(null)
   const [coverError, setCoverError] = useState('')
+  const [coverNote, setCoverNote] = useState('')
   const pickCover = (file) => {
-    setCoverError('')
+    setCoverError(''); setCoverNote('')
     if (!file) return
     if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) { setCoverError('Chỉ nhận ảnh PNG, JPG, WEBP hoặc GIF.'); return }
     const img = new Image()
     const src = URL.createObjectURL(file)
     img.onload = () => {
-      const scale = Math.min(1, 1200 / Math.max(img.width, img.height))
+      const W = 1920, H = 1080
+      // largest 16:9 area in the middle of the picture
+      const sw = Math.min(img.width, img.height * W / H), sh = sw * H / W
       const cv = document.createElement('canvas')
-      cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale)
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height)
-      const data = cv.toDataURL('image/jpeg', 0.85)
+      cv.width = W; cv.height = H
+      const g = cv.getContext('2d')
+      g.imageSmoothingQuality = 'high'
+      g.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, W, H)
       URL.revokeObjectURL(src)
+      // the server takes up to 2 MB: step the quality down for busy pictures
+      let data = ''
+      for (const q of [0.85, 0.75, 0.65, 0.55]) { data = cv.toDataURL('image/jpeg', q); if (data.length <= 2.6 * 1024 * 1024) break }
       if (data.length > 2.6 * 1024 * 1024) { setCoverError('Ảnh quá lớn, chọn ảnh khác nhỏ hơn.'); return }
+      const notes = []
+      if (Math.abs(img.width / img.height - W / H) > 0.01) notes.push('Ảnh không đúng tỉ lệ 16:9 nên đã được cắt phần giữa.')
+      if (img.width < W || img.height < H) notes.push(`Ảnh gốc ${img.width}×${img.height} nhỏ hơn 1920×1080 nên có thể hơi mờ.`)
+      setCoverNote(notes.join(' '))
       setShareCover({ url: data, data })
     }
     img.onerror = () => { URL.revokeObjectURL(src); setCoverError('Không đọc được ảnh này.') }
@@ -372,7 +383,7 @@ export default function UseCaseLibraryPage() {
     setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
-    setShareCover(null); setCoverError(''); setDocxInfo(null); setDocxError('')
+    setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
   }
 
   // ---- card mapper shared by grid + list views ----
@@ -511,9 +522,9 @@ export default function UseCaseLibraryPage() {
   // What's still missing, per step (labels), so the stepper can point at it.
   const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
     ...shareFields.filter((f) => f.step === st.key && f.req === 'Required' && !f.value.trim()).map((f) => f.label),
-    ...(st.key === 'intro' ? [!shareLevel && 'Độ khó', !shareCategory.length && 'Category', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
+    ...(st.key === 'intro' ? [!(shareCover && !shareCover.cleared) && 'Ảnh bìa', !shareLevel && 'Độ khó', !shareCategory.length && 'Category', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
   ]]))
-  const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && shareForm.prompt.trim() && shareForm.result.trim() && shareCategory.length && shareLevel && (!teamPost || shareMemberList.length))
+  const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && shareForm.prompt.trim() && shareForm.result.trim() && shareCategory.length && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
   const oneOf = (val, setVal, opts, labels = {}) => opts.map((o) => ({ label: labels[o] || o, ...chip(val === o), onPick: () => setVal(val === o ? '' : o) }))
 
   const shareCategories = CATS.map((c) => ({ label: c, ...chip(shareCategory.indexOf(c) >= 0), onPick: () => setShareCategory((s) => (s.indexOf(c) >= 0 ? s.filter((x) => x !== c) : s.concat([c]))) }))
@@ -1008,11 +1019,14 @@ export default function UseCaseLibraryPage() {
                         <div style={css('margin-bottom:16px;')}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
                             <span style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Ảnh bìa')}</span>
-                            <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc')}</span>
+                            <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc')}</span>
                           </div>
-                          <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Hiện trên thẻ use case. Không có ảnh thì dùng icon theo danh mục.')}</div>
-                          <div style={css('display:flex; align-items:center; gap:14px; margin-top:10px;')}>
-                            <CoverImage c={{ coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, category: shareCategory[0] }} size={84} radius={14} forceImage />
+                          <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Kích thước 1920 × 1080 px (16:9). Ảnh khác kích thước sẽ tự được cắt phần giữa và đưa về đúng 1920 × 1080.')}</div>
+                          <div style={css('display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;')}>
+                            {/* 16:9 preview, the exact frame the cover is saved in */}
+                            <span style={css('flex:none; width:192px; height:108px; border-radius:12px; overflow:hidden; background:#F4F7FE; border:1px dashed #C9D5EC; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:11.5px; font-weight:600;')}>
+                              {shareCover && !shareCover.cleared ? <img src={shareCover.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : '1920 × 1080'}
+                            </span>
                             <label className={hoverClass('background:#F2F6FF !important; border-color:#B9CCF8 !important;')} style={css('display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
                               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = '' }} />
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m21 15-5-5L5 21"></path></svg>
@@ -1023,6 +1037,7 @@ export default function UseCaseLibraryPage() {
                             )}
                           </div>
                           {coverError && <div style={css('margin-top:8px; font-size:12px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
+                          {!coverError && coverNote && <div style={css('margin-top:8px; font-size:12px; color:#9A5B00;')}>{coverNote}</div>}
                         </div>
                         <div style={css(`margin:-4px 0 16px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon && !teamPost ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon && !teamPost ? '#F2F6FF' : '#F8FAFE'};`)}>
                           <div style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Người đăng')}</div>

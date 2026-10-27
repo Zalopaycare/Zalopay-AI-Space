@@ -242,6 +242,8 @@ router.post('/submissions', requireAuth, (req, res) => {
   }
   const cover = decodeCover(f.cover)
   if (cover === false) return res.status(400).json({ error: 'bad_cover' })
+  // A new post needs its cover (the form makes it 1920×1080); edits may keep the one already saved.
+  if (!cover) return res.status(400).json({ error: 'missing_cover', message: 'Cần tải ảnh bìa (1920 × 1080) trước khi gửi.' })
   const id = nextId('s')
   db.prepare(`INSERT INTO use_case_submissions
     (id, title, audience, team, problem, solution, prep, prompt_text, result, limits, contact, link, kind, status_field, level, category, topics, tools, author_id)
