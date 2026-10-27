@@ -72,7 +72,7 @@ export default {
     beforeAfter: {
       cols: ['Chỉ số', 'Trước', 'Sau'],
       rows: [
-        ['Thời gian từ ý tưởng tới bản bấm thử được', 'Ít nhất 2 tuần (quy trình release)', '1 lần chạy mẫu (Kế hoạch Xóa Nợ): 22 phút 30 giây'],
+        ['{{Thời gian từ ý tưởng tới bản bấm thử được}}', 'Ít nhất 2 tuần (quy trình release)', '1 lần chạy mẫu (Kế hoạch Xóa Nợ): 22 phút 30 giây'],
         ['Số Mini App demo đã làm', '—', '5 Mini App'],
         ['Cách lấy feedback', 'Đọc mô tả', 'Bấm thử bản HTML'],
       ],

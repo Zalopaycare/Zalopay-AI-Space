@@ -51,7 +51,64 @@ export function saveCoverFile(id, buf) {
   fs.mkdirSync(COVER_DIR, { recursive: true })
   fs.writeFileSync(path.join(COVER_DIR, `${id}.jpg`), buf)
 }
-export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id)).map((c) => { const own = coverOf(c.id); return own ? { ...c, cover: own } : c })
+// Admin edits of a showcase case, made through the share form on the site: <DATA_DIR>/showcase-edits/<id>.json.
+// The case file stays as written; the edit is laid over it when the case is served.
+const EDIT_DIR = path.join(process.env.DATA_DIR || '/data', 'showcase-edits')
+const edits = new Map()
+try { for (const f of fs.readdirSync(EDIT_DIR)) if (f.endsWith('.json')) edits.set(f.slice(0, -5), JSON.parse(fs.readFileSync(path.join(EDIT_DIR, f), 'utf8'))) } catch { /* no edits yet */ }
+export function saveShowcaseEdit(id, edit) {
+  fs.mkdirSync(EDIT_DIR, { recursive: true })
+  fs.writeFileSync(path.join(EDIT_DIR, `${id}.json`), JSON.stringify(edit))
+  edits.set(id, edit)
+}
+const lines = (t) => String(t || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim()).filter(Boolean)
+// A step's own words (untitled text, its first prompt or command, its first warning) are what the form edits;
+// pictures, tables, titled blocks and further prompts stay as they were, after the edited ones.
+const isOwnText = (b) => b.type === 'text' && !b.title
+function mergeStep(orig, e) {
+  const blocks = (orig && orig.blocks) || []
+  const firstPrompt = blocks.find((b) => b.type === 'prompt' || b.type === 'code')
+  const firstNote = blocks.find((b) => b.type === 'note' && (b.tone === 'warn' || b.tone === 'danger'))
+  const kept = blocks.filter((b) => !isOwnText(b) && b !== firstPrompt && b !== firstNote)
+  const prompt = e.prompt && (firstPrompt && firstPrompt.type === 'code'
+    ? { ...firstPrompt, code: e.prompt }
+    : { ...(firstPrompt || { type: 'prompt', label: 'Prompt / lệnh mẫu' }), type: 'prompt', text: e.prompt })
+  return {
+    ...(orig || {}),
+    title: e.title,
+    blocks: [e.text && { type: 'text', text: e.text }, prompt, ...kept, e.note && { ...(firstNote || {}), type: 'note', tone: (firstNote && firstNote.tone) || 'warn', text: e.note }].filter(Boolean),
+  }
+}
+function withEdit(c) {
+  const e = edits.get(c.id)
+  if (!e) return c
+  const a = c.apply || {}
+  const out = {
+    ...c,
+    title: e.title || c.title, desc: e.oneLine ?? c.desc, audience: e.audience ?? c.audience, difficulty: e.level || c.difficulty,
+    tools: e.tools || c.tools, members: e.members || c.members,
+    apply: {
+      ...a,
+      prep: e.prep != null ? lines(e.prep) : a.prep,
+      fit: { yes: e.fitYes != null ? lines(e.fitYes) : (a.fit || {}).yes || [], no: e.fitNo != null ? lines(e.fitNo) : (a.fit || {}).no || [] },
+      success: e.success != null ? lines(e.success) : a.success,
+      pitfalls: e.pitfalls != null ? lines(e.pitfalls).map((l) => { const m = /^(.*?)\s*(?:→|->)\s*(.+)$/.exec(l); return m ? { meet: m[1], why: '', fix: m[2] } : { meet: l, why: '' } }) : a.pitfalls,
+      ...(Array.isArray(e.steps) ? { stepSections: e.steps.map((s, i) => mergeStep((a.stepSections || [])[i], s)), steps: undefined, blocks: undefined } : {}),
+    },
+    safety: { ...(c.safety || {}), rules: e.safety != null ? lines(e.safety) : (c.safety || {}).rules, limits: e.limits != null ? lines(e.limits) : (c.safety || {}).limits },
+    result: e.result != null ? { ...(c.result || {}), bullets: lines(e.result) } : c.result,
+  }
+  // Bài toán / Giải pháp: the exhibition text when the case shows that, otherwise its own text
+  if (e.problem != null || e.solution != null) {
+    if (c.exhibition) out.exhibition = { problem: e.problem ?? c.exhibition.problem, solution: e.solution ?? c.exhibition.solution }
+    else {
+      if (e.problem != null) out.problem = { ...(c.problem || {}), text: e.problem, bullets: [] }
+      if (e.solution != null) out.solution = { ...(c.solution || {}), text: e.solution, steps: [], analogy: '' }
+    }
+  }
+  return out
+}
+export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id)).map((c) => { const own = coverOf(c.id); const x = withEdit(c); return own ? { ...x, cover: own } : x })
 export function hideShowcase(id) {
   if (!SHOWCASE_IDS.has(id)) return false
   hidden.add(id)

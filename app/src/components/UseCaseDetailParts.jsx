@@ -87,12 +87,6 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, onUploadCover, t
           columns, cover first). Older screenshots of other shapes are shown whole. */}
       <div className={c.coverUrl || onUploadCover ? 'zp-hero-split' : undefined}>
         <div style={css('min-width:0;')}>
-          {c.pending && (
-            <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;')}>
-              <span style={css('display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:11.5px; font-weight:700;')}>AI Exhibition · Booth {c.pending.booth}{c.pending.label ? ' · ' + c.pending.label : ''}</span>
-              <span style={css('display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:#FFF4E3; border:1px solid #F3DCB4; color:#9A5B00; font-size:11.5px; font-weight:700;')}>{t('Chưa có thông tin')}</span>
-            </div>
-          )}
           <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
           {/* Everyone who built it (or the poster), right under the title. */}
           {(h.members?.length > 0 || h.owner) && (

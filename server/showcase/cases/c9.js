@@ -28,7 +28,7 @@ export default {
   updated: '05/08/2026',
   cover: P + 'uc1-sonar-plugin.png',
   stats: [
-    { value: '10', extra: '', label: 'tình huống thật đã chạy trên Teams, mỗi tình huống có kết luận' },
+    { value: '10', extra: '', label: '{{tình huống thật đã chạy trên Teams, mỗi tình huống có kết luận}}' },
     { value: '6', extra: 'hệ thống', label: 'bot tự tra thay bạn: Jira, Jenkins, CSM, SonarQube, ArgoCD/Kubernetes, GitLab' },
   ],
 
@@ -89,7 +89,7 @@ export default {
     tables: [
       {
         title: '10 tình huống thật và kết luận của bot',
-        note: 'Ảnh chụp từng tình huống ở phần Demo.',
+        note: '{{Ảnh chụp từng tình huống ở phần Demo.}}',
         cols: ['Tình huống', 'Bot kết luận / làm gì'],
         rows: [
           ['1. Build lỗi do thiếu plugin Sonar', 'Project Java thiếu plugin SonarQube trong file pom.xml, không phải lỗi báo trạng thái (CSM callback); đưa sẵn đoạn cần thêm.'],

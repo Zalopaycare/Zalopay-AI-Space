@@ -76,6 +76,8 @@ export const api = {
   // Admin Console "Booth Exhibition": every booth's write-up status, and inviting owners to write it up
   adminBooths: () => request('/showcase/admin/booths'),
   // a 1920×1080 cover for a case or booth that had none (admins)
+  // an admin's edit of a use case already on the site (laid over its case file)
+  adminEditCase: (id, edit) => request(`/showcase/admin/edit/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify(edit) }),
   adminSetCover: (id, cover) => request(`/showcase/admin/cover/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify({ cover }) }),
   inviteBooth: (id) => request(`/showcase/admin/booths/${encodeURIComponent(id)}/invite`, { method: 'POST' }),
   inviteAllBooths: () => request('/showcase/admin/booths/invite', { method: 'POST' }),

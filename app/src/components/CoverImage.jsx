@@ -34,7 +34,8 @@ function look(category) {
 
 
 export default function CoverImage({ c, size = 76, radius = 12 }) {
-  const box = `position:relative; flex:none; width:${size}px; height:${size}px; border-radius:${radius}px; overflow:hidden;`
+  // same 16:9 frame with or without a cover, so cards line up
+  const box = `position:relative; flex:none; width:${Math.round(size * 16 / 9)}px; height:${size}px; border-radius:${radius}px; overflow:hidden;`
   // Covers are 1920×1080 (the share form makes them so): a 16:9 frame. Older showcase screenshots of
   // other shapes are shown whole, letterboxed on a soft background, rather than cropped.
   if (c.coverUrl) return (

@@ -135,6 +135,8 @@ export default function UseCaseLibraryPage() {
   // The AI Exhibition booth this post writes up (its owners open the form from the booth's page)
   const [shareBooth, setShareBooth] = useState('')
   const [shareSteps, setShareSteps] = useState([EMPTY_STEP])
+  // An admin editing one of the use cases already on the site (not a submission): its id
+  const [editingCase, setEditingCase] = useState(null)
   const [shareHighlights, setShareHighlights] = useState(EMPTY_HIGHLIGHTS)
   // Fill the form from the Word template instead of typing: { name, filled, missing } | null
   const [docxInfo, setDocxInfo] = useState(null)
@@ -245,6 +247,7 @@ export default function UseCaseLibraryPage() {
   const closeShare = () => {
     setShareOpen(false); setShareError('')
     if (editing) { setEditing(null); resetShareForm() }
+    if (editingCase) { setEditingCase(null); resetShareForm() }
     const qs = new URLSearchParams(location.search)
     if (qs.has('share') || qs.has('edit') || qs.has('booth')) { qs.delete('share'); qs.delete('edit'); qs.delete('booth'); navigate({ pathname: location.pathname, search: qs.toString() ? '?' + qs : '' }, { replace: true }) }
   }
@@ -337,7 +340,7 @@ export default function UseCaseLibraryPage() {
   }, [])
 
   useEffect(() => {
-    if (!restoredRef.current || editing) return
+    if (!restoredRef.current || editing || editingCase) return
     const payload = draftPayload()
     const json = JSON.stringify(payload)
     if (json === draftJsonRef.current) return
@@ -379,6 +382,50 @@ export default function UseCaseLibraryPage() {
       }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (shareBooth) loadPublishedUseCases(true); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
         .catch((e) => setShareError(e?.data?.message || 'Không gửi được use case, thử lại.'))
     })
+  }
+
+  // Admin "Chỉnh sửa" on a use case already on the site: the share form, filled with what the page shows now.
+  const openCaseEdit = (c) => {
+    const m = (caseDetail[c.id] || {}).tpl
+    if (!m) return
+    const a = m.apply || {}
+    const join = (xs) => (xs || []).join('\n')
+    const own = (part) => [part?.text, ...(part?.bullets || []).map((b) => '- ' + b), ...(part?.steps || []).map((x, i) => `${i + 1}. ${x}`)].filter(Boolean).join('\n')
+    setShareForm({
+      ...EMPTY_SHARE_FORM, title: m.title || '', oneLine: m.desc || '', audience: m.audience || '',
+      problem: m.exhibition?.problem ?? own(m.problem), solution: m.exhibition?.solution ?? own(m.solution),
+      result: join(m.result?.bullets), prep: join(a.prep), fitYes: join(a.fit?.yes), fitNo: join(a.fit?.no), success: join(a.success),
+      pitfalls: (a.pitfalls || []).filter((x) => x.meet && !/cần bổ sung/.test(x.meet)).map((x) => (x.fix ? `${x.meet} → ${x.fix}` : x.meet)).join('\n'),
+      safety: join(m.safety?.rules), limits: join(m.safety?.limits),
+    })
+    // a step's own words: its untitled text, first prompt or command, first warning (pictures and tables stay put)
+    const stepOf = (sec) => {
+      const b = sec.blocks || []
+      const pr = b.find((x) => x.type === 'prompt' || x.type === 'code')
+      const nt = b.find((x) => x.type === 'note' && (x.tone === 'warn' || x.tone === 'danger'))
+      return { title: sec.title || '', text: b.filter((x) => x.type === 'text' && !x.title).map((x) => x.text).join('\n\n'), prompt: pr ? pr.text || pr.code || '' : '', note: nt ? nt.text || '' : '' }
+    }
+    setShareSteps((a.stepSections || []).length ? a.stepSections.map(stepOf) : [EMPTY_STEP])
+    setShareLevel(m.difficulty || '')
+    const tools = m.tools || []
+    setShareToolSel(tools.filter((x) => TOOLS.includes(x)).concat(tools.some((x) => !TOOLS.includes(x)) ? [OTHER] : [])); setShareToolOtherText(tools.filter((x) => !TOOLS.includes(x)).join(', '))
+    setSharePostAs((m.members || []).length ? 'team' : 'personal'); setShareMembers((m.members || []).join(', '))
+    setShareCover(m.cover ? { url: m.cover } : null); setShareBooth(''); setEditing(null)
+    setEditingCase(c.id); setShareStep(0); setShareStage('form'); setShareError(''); setShareOpen(true)
+  }
+  const saveCaseEdit = () => {
+    if (!shareForm.title.trim() || !shareForm.problem.trim() || !shareForm.solution.trim()) { setShareError('Cần có Tên use case, Bài toán và Giải pháp.'); return }
+    const id = editingCase
+    api.adminEditCase(id, {
+      title: shareForm.title, oneLine: shareForm.oneLine, audience: shareForm.audience, level: shareLevel, tools: previewTools,
+      members: teamPost ? shareMemberList : [], problem: shareForm.problem, solution: shareForm.solution, result: shareForm.result,
+      prep: shareForm.prep, fitYes: shareForm.fitYes, fitNo: shareForm.fitNo, success: shareForm.success, pitfalls: shareForm.pitfalls,
+      safety: shareForm.safety, limits: shareForm.limits, steps: shareStepList,
+    })
+      .then(() => (shareCover?.data ? api.adminSetCover(id, shareCover.data) : null))
+      .then(() => loadPublishedUseCases(true))
+      .then(() => { setShareOpen(false); setEditingCase(null); resetShareForm() })
+      .catch((e) => setShareError(e?.data?.message || 'Chưa lưu được, thử lại nhé.'))
   }
 
   const resetShareForm = () => {
@@ -620,6 +667,12 @@ export default function UseCaseLibraryPage() {
                   ? (file) => cropCover(file).then(({ data }) => api.adminSetCover(dsel.id, data)).then(() => loadPublishedUseCases(true))
                   : null}
               />
+            {user?.isAdmin && !dsel.pending && !dsel.submitted && (caseDetail[dsel.id] || {}).tpl && (
+              <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(130,170,255,.22);')}>
+                <span style={css('flex:1; min-width:220px; font-size:12.5px; color:#a9b8dc;')}>{t('Admin: sửa nội dung use case này bằng form đăng bài. Lưu xong trang cập nhật ngay.')}</span>
+                <button onClick={() => openCaseEdit(dsel)} style={css('display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 15px; border:1px solid rgba(130,170,255,.45); border-radius:999px; background:rgba(60,110,255,.18); color:#dbe8ff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>✎ {t('Chỉnh sửa')}</button>
+              </div>
+            )}
             {dsel.pending && <BoothOwnerBar p={dsel.pending} t={t} />}
             {dsel.pending && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
@@ -894,9 +947,9 @@ export default function UseCaseLibraryPage() {
   function renderShareModal() {
     // Every edit goes back to review; a published one leaves the library until it is approved again.
     const liveEdit = editing?.status === 'approved'
-    const shareHeading = shareStage === 'submitted' ? (editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Xem trước use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
-    const shareSubhead = shareStage === 'submitted' ? 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.' : liveEdit ? 'Bài đang đăng sẽ tạm ẩn khỏi Use Case Library cho đến khi Admin duyệt lại bản chỉnh sửa.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
-    const shareHint = shareError || (liveEdit ? 'Sau khi gửi lại, bài tạm ẩn khỏi Use Case Library cho đến khi được duyệt lại.' : 'Sau khi gửi, bài ở trạng thái Chờ duyệt và chưa hiển thị trong Use Case Library.')
+    const shareHeading = editingCase ? (shareStage === 'preview' ? 'Xem trước bản chỉnh sửa' : 'Chỉnh sửa use case (Admin)') : shareStage === 'submitted' ? (editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Xem trước use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
+    const shareSubhead = editingCase ? 'Sửa nội dung của use case đang đăng. Lưu xong trang cập nhật ngay, không cần duyệt; ảnh, bảng và lệnh mẫu trong từng bước được giữ nguyên.' : shareStage === 'submitted' ? 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.' : liveEdit ? 'Bài đang đăng sẽ tạm ẩn khỏi Use Case Library cho đến khi Admin duyệt lại bản chỉnh sửa.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
+    const shareHint = shareError || (editingCase ? 'Bấm Lưu thay đổi để cập nhật ngay trên trang.' : (liveEdit ? 'Sau khi gửi lại, bài tạm ẩn khỏi Use Case Library cho đến khi được duyệt lại.' : 'Sau khi gửi, bài ở trạng thái Chờ duyệt và chưa hiển thị trong Use Case Library.'))
     const shareHintColor = shareError ? '#D8232A' : '#94a3b8'
 
     return (
@@ -959,10 +1012,10 @@ export default function UseCaseLibraryPage() {
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap;')}>
                     <button onClick={() => setShareStage('form')} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Quay lại chỉnh sửa')}</button>
                     <button
-                      onClick={submitShare}
+                      onClick={editingCase ? saveCaseEdit : submitShare}
                       style={css('margin-left:auto; height:40px; padding:0 26px; white-space:nowrap; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
                     >
-                      {editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
+                      {editingCase ? t('Lưu thay đổi') : editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                     </button>
                   </div>
                   {shareError && <div style={css('margin-top:10px; font-size:12px; font-weight:600; color:#D8232A;')}>{shareError}</div>}
@@ -982,7 +1035,7 @@ export default function UseCaseLibraryPage() {
                       </div>
                     </div>
                   )}
-                  {!editing && (
+                  {!editing && !editingCase && (
                     <div style={css('margin-bottom:16px; padding:16px 18px; border-radius:18px; background:linear-gradient(180deg,#F3F7FF,#EEF3FF); border:1px solid #D5E2FC;')}>
                       <div style={css('display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;')}>
                         <span style={css('flex:none; width:38px; height:34px; border-radius:11px; background:#2B579A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13.5px; font-weight:900;')}>W</span>
@@ -1167,12 +1220,14 @@ export default function UseCaseLibraryPage() {
                     <button onClick={() => { setHasDraft(true); try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })) } catch { /* ignore */ } closeShare() }} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu nháp & đóng')}</button>
                     <div style={css('margin-left:auto; display:flex; gap:12px; flex:none;')}>
                       {shareStep > 0 && <button onClick={() => setShareStep(shareStep - 1)} style={css('height:40px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>‹ {t('Bước trước')}</button>}
+                      {/* an admin editing a published case can save from any step */}
+                      {editingCase && <button onClick={saveCaseEdit} style={css('height:40px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#22b573 0%,#00893F 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap;')}>{t('Lưu thay đổi')}</button>}
                       {shareStep < SHARE_STEPS.length - 1
                         ? <button onClick={() => setShareStep(shareStep + 1)} style={css('height:40px; padding:0 24px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 12px 26px rgba(44,95,255,.4);')}>{t('Tiếp')}: {t(SHARE_STEPS[shareStep + 1].label)} ›</button>
                         : (
                           <button
                             onClick={() => {
-                              if (!valid) {
+                              if (!valid && !editingCase) {
                                 const first = SHARE_STEPS.findIndex((st) => missingByStep[st.key].length)
                                 setShareError(t('Còn thiếu') + ': ' + SHARE_STEPS.filter((st) => missingByStep[st.key].length).map((st) => t(st.label) + ' (' + missingByStep[st.key].join(', ') + ')').join(' · '))
                                 if (first >= 0) setShareStep(first)

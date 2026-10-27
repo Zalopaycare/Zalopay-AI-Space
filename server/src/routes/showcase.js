@@ -3,7 +3,7 @@ import { requireAuth } from '../auth.js'
 import { db } from '../db.js'
 import { notifyInterest, notifyOnce } from '../notifications.js'
 import { domainName } from '../mentions.js'
-import { visibleShowcase, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile } from '../showcase.js'
+import { visibleShowcase, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit } from '../showcase.js'
 import path from 'node:path'
 
 const router = express.Router()
@@ -117,6 +117,26 @@ router.post('/admin/cover/:id', requireAuth, requireAdmin, (req, res) => {
   if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) return res.status(400).json({ error: 'bad_cover' })
   saveCoverFile(req.params.id, buf)
   res.json({ cover: coverOf(req.params.id) })
+})
+
+// An admin's edit of a showcase case through the share form (laid over the case file; see showcase.js).
+const ctxt = (v, max = 8000) => (v == null ? undefined : String(v).replace(/\r\n/g, '\n').trim().slice(0, max))
+router.post('/admin/edit/:id', requireAuth, requireAdmin, (req, res) => {
+  if (!SHOWCASE_IDS.has(req.params.id)) return res.status(404).json({ error: 'not_found' })
+  const b = req.body || {}
+  if (!ctxt(b.title)) return res.status(400).json({ error: 'missing_title' })
+  const list = (v) => (Array.isArray(v) ? v.map((x) => ctxt(x, 120)).filter(Boolean).slice(0, 30) : undefined)
+  const edit = {
+    title: ctxt(b.title, 300), oneLine: ctxt(b.oneLine, 400), audience: ctxt(b.audience, 300), level: ['Dễ', 'Trung bình', 'Khó'].includes(b.level) ? b.level : undefined,
+    tools: list(b.tools), members: list(b.members),
+    problem: ctxt(b.problem), solution: ctxt(b.solution), result: ctxt(b.result),
+    prep: ctxt(b.prep), fitYes: ctxt(b.fitYes), fitNo: ctxt(b.fitNo), success: ctxt(b.success), pitfalls: ctxt(b.pitfalls),
+    safety: ctxt(b.safety), limits: ctxt(b.limits),
+    steps: Array.isArray(b.steps) ? b.steps.slice(0, 15).map((s) => ({ title: ctxt(s && s.title, 160) || '', text: ctxt(s && s.text) || '', prompt: ctxt(s && s.prompt) || '', note: ctxt(s && s.note, 800) || '' })).filter((s) => s.title || s.text || s.prompt) : undefined,
+    by: req.user.id, at: new Date().toISOString(),
+  }
+  saveShowcaseEdit(req.params.id, edit)
+  res.json({ ok: true })
 })
 
 // Images only for signed-in users; `private` keeps shared caches from storing them.
