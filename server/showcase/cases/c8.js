@@ -35,7 +35,7 @@ export default {
   tldr: [
     ['Vấn đề', 'Release một non-payment Mini App mất ít nhất 2 tuần, nên thử ý tưởng và lấy phản hồi sớm rất chậm.'],
     ['Giải pháp', 'Bạn mô tả ý tưởng hoặc gửi link Figma; AI dựng Mini App theo phong cách ZaloPay và xuất file HTML để chia sẻ.'],
-    ['Kết quả', 'Đã làm xong 5 Mini App demo. Chưa đo thời gian trung bình; 1 lần chạy mẫu mất 22 phút 30 giây.'],
+    ['Kết quả', 'Đã làm xong 5 Mini App demo. 1 lần chạy mẫu mất 22 phút 30 giây.'],
     ['Dùng khi', 'Bạn có ý tưởng Mini App không liên quan thanh toán và muốn có bản bấm thử để khảo sát trước khi nhờ dev.'],
   ],
 
@@ -67,8 +67,8 @@ export default {
     beforeAfter: {
       cols: ['Chỉ số', 'Trước', 'Sau'],
       rows: [
-        ['Thời gian từ ý tưởng tới bản bấm thử được', 'Ít nhất 2 tuần (quy trình release)', 'Chưa đo trung bình; 1 lần chạy mẫu (Kế hoạch Xóa Nợ): 22 phút 30 giây'],
-        ['Số Mini App demo đã làm', 'Chưa đo', '5 Mini App'],
+        ['Thời gian từ ý tưởng tới bản bấm thử được', 'Ít nhất 2 tuần (quy trình release)', '1 lần chạy mẫu (Kế hoạch Xóa Nợ): 22 phút 30 giây'],
+        ['Số Mini App demo đã làm', '—', '5 Mini App'],
         ['Cách lấy feedback', 'Đọc mô tả', 'Bấm thử bản HTML'],
       ],
       note: 'Số 22 phút 30 giây lấy từ ảnh chụp 1 lần chạy; chưa có phép đo trên nhiều mẫu.',
@@ -232,7 +232,6 @@ export default {
       'Luồng đưa lên môi trường thử develop/staging còn phụ thuộc công cụ bên ngoài, đang hoàn thiện.',
       'Chưa có guardrail đầy đủ về dữ liệu, bảo mật, accessibility và cổng kiểm tra chất lượng trước khi lên production.',
       'Chưa có template brief và checklist review chuẩn cho từng nhóm PO, HR, Marketing, BD.',
-      'Chưa đo thời gian từ brief tới prototype trên nhiều mẫu.',
     ],
     tables: [],
   },

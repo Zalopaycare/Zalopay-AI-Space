@@ -29,7 +29,7 @@ export default {
   tldr: [
     ['Vấn đề', 'Kết nối cho AI, bộ hướng dẫn cho AI và tiêu chuẩn kỹ thuật nằm rải rác ở máy từng người trong team.'],
     ['Giải pháp', 'Một bộ trợ lý AI dùng chung: cài một lần, gọi bằng một câu lệnh, tự làm theo quy trình của team.'],
-    ['Kết quả', 'Chưa đo bằng số; bài gốc so sánh trước/sau theo 7 khía cạnh như cài đặt, quy trình, cập nhật.'],
+    ['Kết quả', 'Bài gốc so sánh trước/sau theo 7 khía cạnh như cài đặt, quy trình, cập nhật.'],
     ['Dùng khi', 'Bạn là dev hoặc QC dùng Claude Code, Cursor hoặc Codex và muốn làm theo chuẩn chung của team.'],
   ],
 
@@ -84,7 +84,7 @@ export default {
         ['Đóng góp', 'Khó chia sẻ và gộp cải tiến', 'Có quy ước đóng góp và cách kiểm chứng thống nhất'],
         ['Mở rộng', 'Thêm quy trình là tăng chi phí quản lý', 'Trợ lý mới được tự động gắn vào bộ'],
       ],
-      note: 'So sánh định tính trong bài gốc, chưa đo bằng số.',
+      note: 'So sánh định tính trong bài gốc.',
     },
     bullets: [
       'Chuẩn hoá: người mới hay người nhiều kinh nghiệm, dùng công cụ nào, đều làm theo cùng một quy trình.',

@@ -78,9 +78,8 @@ export default {
       cols: ['Chỉ số', 'Trước (Agency)', 'Sau (AI)'],
       rows: [
         ['Human score (humalingo.com)', '6% (bài Agency đang live)', '6% (bài AI mẫu)'],
-        ['Chi phí mỗi bài', 'Hơn 300k/bài', 'Chưa đo — dự kiến đo "chi phí mỗi bài tạo bằng AI"'],
-        ['Thời gian lên 1 bài', '2–3 ngày', 'Chưa đo'],
-        ['Tỉ lệ bài tạo bằng AI', '—', 'Chưa đo — gắn cờ bài tạo qua AI, đếm trong dữ liệu trang quản trị'],
+        ['Chi phí mỗi bài', 'Hơn 300k/bài', '—'],
+        ['Thời gian lên 1 bài', '2–3 ngày', '—'],
       ],
       note: 'Human score đo bằng humalingo.com/public/detect trên 1–2 bài mẫu đầu của AI và 1 bài Agency đang live.',
     },

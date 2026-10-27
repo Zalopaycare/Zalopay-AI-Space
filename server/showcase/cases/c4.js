@@ -28,7 +28,7 @@ export default {
   tldr: [
     ['Vấn đề', 'Đưa ứng dụng lên chạy thật trên internet bình thường cần người kỹ thuật làm.'],
     ['Giải pháp', 'Cài bộ skill vào công cụ AI; bạn ra lệnh bằng tiếng Việt, AI tự làm phần kỹ thuật trên Agent Base.'],
-    ['Kết quả', 'Nhận một đường link để mở bằng trình duyệt và gửi cho người khác dùng. Chưa đo thời gian tiết kiệm.'],
+    ['Kết quả', 'Nhận một đường link để mở bằng trình duyệt và gửi cho người khác dùng.'],
     ['Dùng khi', 'Bạn có ứng dụng hoặc AI agent tự làm và muốn đưa lên chạy thật mà không cần biết lập trình, server.'],
   ],
 

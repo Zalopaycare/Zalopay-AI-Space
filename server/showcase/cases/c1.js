@@ -25,7 +25,7 @@ export default {
   tldr: [
     ['Vấn đề', 'Sau mỗi thay đổi của app, QC phải làm lại cùng một kịch bản kiểm thử (Regression Test) bằng tay trên điện thoại.'],
     ['Giải pháp', 'QC làm mẫu một lần, máy ghi lại. Các lần sau máy tự làm lại, kiểm tra màn hình trước mỗi bước.'],
-    ['Kết quả', 'Bản thử nghiệm đã chạy được nhiều kịch bản liên tiếp, có video và báo cáo lỗi. Mức tiết kiệm chưa đo.'],
+    ['Kết quả', 'Bản thử nghiệm đã chạy được nhiều kịch bản liên tiếp, có video và báo cáo lỗi.'],
     ['Dùng khi', 'Bạn phải lặp lại cùng kịch bản kiểm thử trên app Android, trình duyệt hoặc trang web nhúng trong app.'],
   ],
 
@@ -60,10 +60,7 @@ export default {
     beforeAfter: {
       cols: ['Chỉ số', 'Trước', 'Sau'],
       rows: [
-        ['Thời gian chuẩn bị, chạy và điều tra lỗi', 'Chưa đo', 'Chưa đo'],
-        ['Số liệu đo đạc của QE', '[cần bổ sung]', '[cần bổ sung]'],
       ],
-      note: 'Chưa đo: cần pilot, so sánh thời gian chuẩn bị, chạy và điều tra trên cùng một tập test case.',
     },
     bullets: [
       'Bản thử nghiệm đã ghi và tự làm lại được: chạm, vuốt, nhập chữ, nhập PIN và điểm kiểm tra.',
@@ -152,7 +149,6 @@ export default {
       'Đây vẫn là PoC, chạy trên một loại máy cố định.',
       'Chưa hỗ trợ tốt nhiều độ phân giải màn hình và cử chỉ phức tạp.',
       'Cần thêm đo thử trên máy thật trước khi mở rộng.',
-      'Chưa đo mức tiết kiệm thực tế.',
     ],
     tables: [],
   },

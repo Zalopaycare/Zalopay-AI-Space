@@ -35,7 +35,7 @@ export default {
   tldr: [
     ['Vấn đề', 'Khi build/deploy (CI/CD) lỗi, dev không đủ thông tin để tự hiểu, phải nhắn đội Platform hỏi từng case.'],
     ['Giải pháp', 'Nhắn bot Taxi trên Teams mã ticket hoặc link job; bot tự đọc log, đối chiếu các hệ thống và trả lời nguyên nhân, cách sửa.'],
-    ['Kết quả', '10 tình huống thật đã chạy, từ thiếu cấu hình đến quá thời gian chờ. Chưa đo thời gian tiết kiệm.'],
+    ['Kết quả', '10 tình huống thật đã chạy, từ thiếu cấu hình đến quá thời gian chờ.'],
     ['Dùng khi', 'Ticket CI/CD của bạn bị Failed, bạn cần retry/cập nhật trạng thái, hoặc muốn hỏi quy trình deploy.'],
   ],
 
@@ -77,9 +77,8 @@ export default {
         ['Người tìm nguyên nhân lỗi', 'Đội Platform tự mở nhiều hệ thống, đọc log', 'Bot tự tra và trả lời ngay trong Teams'],
         ['Lỗi chính và lỗi phụ', 'Dễ nhầm, ví dụ đổ cho bước báo trạng thái (CSM callback)', 'Bot tách rõ lỗi chính, lỗi phụ'],
         ['Retry / cập nhật trạng thái', 'Nhắn Platform làm tay', 'Bot chuẩn bị, người có quyền duyệt'],
-        ['Thời gian xử lý mỗi case', 'Chưa đo', 'Chưa đo'],
       ],
-      note: 'So sánh định tính từ tài liệu gốc; chưa có số đo thời gian.',
+      note: 'So sánh định tính từ tài liệu gốc.',
     },
     bullets: [],
     tables: [

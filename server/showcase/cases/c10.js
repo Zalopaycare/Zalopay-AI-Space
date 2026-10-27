@@ -22,7 +22,7 @@ export default {
   updated: '',
   cover: '/use-cases/c10/landing.png',
   stats: [
-    { value: '0', extra: '', label: 'mật khẩu PROD dev phải cầm — theo thiết kế, chưa đo thực tế' },
+    { value: '0', extra: '', label: 'mật khẩu PROD dev phải cầm (theo thiết kế)' },
     { value: '1 key', extra: '', label: 'dùng chung cho mọi tài nguyên dev chọn — theo thiết kế' },
     { value: '171', extra: '+ 1.811 service', label: 'tài nguyên bản MVP tự dò được (Redis 107, Percona 63, Kafka 1) — số trên ảnh chụp màn hình admin' },
   ],
@@ -30,7 +30,7 @@ export default {
   tldr: [
     ['Vấn đề', 'Theo quy định của PTO, AI không được nối thẳng vào PROD; thông tin hạ tầng lại rải rác nên việc gì dev cũng phải nhờ SRE.'],
     ['Giải pháp', 'Một cổng trung gian: admin mở sẵn từng tài nguyên, dev tự tạo 1 khoá cho AI, AI chỉ dùng các thao tác đã được duyệt.'],
-    ['Kết quả', 'Đã xong bản MVP, test trên DEV và QC. Chưa đo thời gian tiết kiệm.'],
+    ['Kết quả', 'Đã xong bản MVP, test trên DEV và QC.'],
     ['Dùng khi', 'Bạn cần AI xem cấu hình, trạng thái, dữ liệu Redis, database, Kafka hay service của mình để debug.'],
   ],
 
@@ -77,10 +77,8 @@ export default {
       rows: [
         ['Mật khẩu PROD dev phải cầm', 'Phải xin SRE (MCP có sẵn cần mật khẩu), bị cấm', '0, chỉ cần 1 MCP key'],
         ['Số khoá cho nhiều tài nguyên', '[cần bổ sung]', '1 khoá cho tất cả tài nguyên dev chọn'],
-        ['Việc tra config / debug phải nhờ SRE', 'Mọi lần đều qua SRE', 'Chưa đo'],
-        ['Thời gian chờ SRE trả lời', 'Chưa đo', 'Chưa đo'],
+        ['Việc tra config / debug phải nhờ SRE', 'Mọi lần đều qua SRE', '—'],
       ],
-      note: 'Chưa đo: tài liệu gốc chưa có số trước/sau. Dự kiến đo gì, đo khi nào: [cần bổ sung]',
     },
     bullets: [
       'Đã xong bản MVP: kết nối cho Redis, Percona (database), Kafka, dò tìm service; đăng nhập tập trung; công cụ có sẵn và công cụ tự tạo; trang admin.',

@@ -80,7 +80,7 @@ export default {
       'Con người vẫn kiểm soát: AI chỉ chuẩn bị thông tin, không tự nhắn dev, không tự quyết.',
     ],
     tables: [],
-    note: 'Số liệu trên ticket thật TikTok Hub (PSEC). Chưa đo trên nhiều ticket.',
+    note: 'Số liệu trên ticket thật TikTok Hub (PSEC).',
     images: [],
   },
 

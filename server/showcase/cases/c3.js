@@ -29,7 +29,7 @@ export default {
   tldr: [
     ['Vấn đề', 'Từ 01 đến 07/2026, cấu hình sai là nhóm nguyên nhân lớn nhất: 289/1.881 yêu cầu hỗ trợ về khuyến mãi (15,4%).'],
     ['Giải pháp', 'Trợ lý trong CRM tool tóm tắt cấu hình thành câu dễ đọc, so ưu đãi với điều khoản, và trả lời câu hỏi cách dùng.'],
-    ['Kết quả', 'Chưa đo. Tài liệu mới đặt chỉ số mục tiêu, mức nền còn cần đối chiếu.'],
+    ['Kết quả', 'Tài liệu mới đặt chỉ số mục tiêu, mức nền còn cần đối chiếu.'],
     ['Dùng khi', 'Bạn cấu hình nhóm khách hàng hoặc ưu đãi voucher trong CRM tool và muốn tự kiểm tra trước khi chạy.'],
   ],
 
@@ -114,12 +114,12 @@ export default {
     beforeAfter: {
       cols: ['Chỉ số', 'Trước', 'Sau'],
       rows: [
-        ['Tỉ lệ yêu cầu hỗ trợ do cấu hình sai trên số chiến dịch CRM', 'Sẽ tính sau khi chốt phạm vi CRM và số chiến dịch', 'Chưa đo. Mục tiêu: giảm X% trong 3 tháng liên tiếp (tài liệu chưa điền X)'],
-        ['Số yêu cầu hỗ trợ do cấu hình sai mỗi tháng', 'Sẽ lấy từ bộ yêu cầu 01–07/2026', 'Chưa đo. Mục tiêu: giảm từ mức A xuống B mỗi tháng (tài liệu chưa điền số)'],
-        ['Công sức Product và Tech hỗ trợ', '[cần bổ sung]', 'Chưa đo. Mục tiêu: giảm 50% thời gian trả lời tin nhắn, hỗ trợ'],
-        ['Yêu cầu tự giải quyết, không cần nhờ Product hoặc Tech', '[cần bổ sung]', 'Chưa đo. Mục tiêu: đạt X% (tài liệu chưa điền X)'],
+        ['Tỉ lệ yêu cầu hỗ trợ do cấu hình sai trên số chiến dịch CRM', 'Sẽ tính sau khi chốt phạm vi CRM và số chiến dịch', 'Mục tiêu: giảm X% trong 3 tháng liên tiếp (tài liệu chưa điền X)'],
+        ['Số yêu cầu hỗ trợ do cấu hình sai mỗi tháng', 'Sẽ lấy từ bộ yêu cầu 01–07/2026', 'Mục tiêu: giảm từ mức A xuống B mỗi tháng (tài liệu chưa điền số)'],
+        ['Công sức Product và Tech hỗ trợ', '[cần bổ sung]', 'Mục tiêu: giảm 50% thời gian trả lời tin nhắn, hỗ trợ'],
+        ['Yêu cầu tự giải quyết, không cần nhờ Product hoặc Tech', '[cần bổ sung]', 'Mục tiêu: đạt X% (tài liệu chưa điền X)'],
       ],
-      note: 'Chưa đo: tài liệu mới đặt mục tiêu. Mức nền lấy từ yêu cầu hỗ trợ 01–07/2026, còn cần đối chiếu.',
+      note: 'Mức nền lấy từ yêu cầu hỗ trợ 01–07/2026, còn cần đối chiếu.',
     },
     bullets: [
       'Phần giải pháp kỹ thuật đã xong (DONE), tài liệu ở trạng thái READY.',
@@ -200,7 +200,7 @@ export default {
       'Khi ưu đãi áp dụng cho hơn 5 ứng dụng (AppID), phần kiểm tra theo dữ liệu từng ứng dụng bị bỏ qua.',
       'Chưa dùng cho Event Tool và NBA.',
       'Demo đang chạy trên môi trường SBQC.',
-      'Chưa đo hiệu quả; cách phân loại nguyên nhân còn cần đối chiếu với bảng chi tiết.',
+      'Cách phân loại nguyên nhân còn cần đối chiếu với bảng chi tiết.',
     ],
     tables: [],
   },
