@@ -455,6 +455,8 @@ export default function UseCaseLibraryPage() {
       overview: c.desc || c.problem,
       canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
       canEdit: !!user && !!c.authorId && c.authorId === user.id,
+      // an admin edits a use case already on the site (not a submission) right from its card
+      canEditCase: !!user?.isAdmin && !c.submitted && !!(caseDetail[c.id] || {}).tpl,
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
       onOpen: () => { rememberReturn(c.id, { page: libPage }); navigate(`/use-cases/${c.id}`) },
@@ -864,10 +866,10 @@ export default function UseCaseLibraryPage() {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                                 {c.saveFill === 'currentColor' ? t('Bỏ lưu') : t('Lưu use case')}
                               </button>
-                              {c.canEdit && (
-                                <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); navigate('/use-cases?edit=' + c.id) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                              {(c.canEdit || c.canEditCase) && (
+                                <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (c.canEdit) navigate('/use-cases?edit=' + c.id); else openCaseEdit(c) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
-                                  {t('Chỉnh sửa')}
+                                  {t('Chỉnh sửa bài đăng')}
                                 </button>
                               )}
                               {c.canDelete && (
