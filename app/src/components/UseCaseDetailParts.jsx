@@ -15,8 +15,8 @@ import RichText from './RichText.jsx'
 
 export const DETAIL_COL = 'max-width:1120px; margin:0 auto;'
 const CARD = 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:18px 20px;'
-const H3 = 'font-size:15px; font-weight:800; color:#0F172A;'
-const SUB = 'font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
+// Every heading inside a card (Bài toán, Giải pháp, Cần chuẩn bị, Các bước…): one size, one color.
+const SUB = 'font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
 const DIFF = { 'Dễ': ['#4ADE80', 1], 'Trung bình': ['#FBBF24', 2], 'Khó': ['#F87171', 3] }
 
 export const scrollToId = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -184,19 +184,17 @@ export function Tldr({ rows }) {
 export function ProblemSolution({ problem, solution, result, t, num: partNum }) {
   // One card: Bài toán, then Giải pháp; Kết quả belongs to the solution and closes it.
   const hasProblem = !!(problem.text || problem.bullets.length)
-  // the part number sits on whichever heading comes first
-  const head = (title, dot, first) => (
-    <div style={css(H3 + 'margin-bottom:12px; display:flex; align-items:center; gap:8px;')}>
-      {first && partNum && <NumBadge n={partNum} size={26} />}{title}
-      <span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
+  const head = (title, dot) => (
+    <div style={css(SUB + 'display:flex; align-items:center; gap:8px;')}>
+      {title}<span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
     </div>
   )
   return (
-    <section id="uc-problem" data-toc style={css('scroll-margin-top:84px; margin-top:18px;')}>
+    <Section id="uc-problem" num={partNum} title={t('Bài toán & giải pháp')} bare>
       <div style={css(CARD)}>
         {hasProblem && (
           <>
-            {head(t('Bài toán'), '#E0353F', true)}
+            {head(t('Bài toán'), '#E0353F')}
             {problem.text && (problem.rich
               ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={problem.text} dot="#E0353F" /></div>
               : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>)}
@@ -204,7 +202,7 @@ export function ProblemSolution({ problem, solution, result, t, num: partNum }) 
           </>
         )}
         <div style={css(hasProblem ? 'margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;' : '')}>
-          {head(t('Giải pháp'), '#00A352', !hasProblem)}
+          {head(t('Giải pháp'), '#00A352')}
           {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:12.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
           {solution.text && (solution.rich
             ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={solution.text} dot="#00A352" /></div>
@@ -213,17 +211,15 @@ export function ProblemSolution({ problem, solution, result, t, num: partNum }) 
           <Images images={solution.images} />
           {result && (
             <div style={{ marginTop: 18 }}>
-              <div style={css(SUB + 'display:flex; align-items:center; gap:8px; color:#1E44A8;')}>
-                {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}
-                {t('Số liệu & hình ảnh')}<span style={css('width:7px; height:7px; border-radius:50%; background:#2c5fff;')}></span>
-              </div>
+              {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}
+              {head(t('Số liệu & hình ảnh'), '#2c5fff')}
               <ResultBody r={result} t={t} />
             </div>
           )}
         </div>
       </div>
       {problem.tables.map((tb, i) => <div key={i} style={{ marginTop: 18 }}>{isNumericTable(tb) ? <div style={css(CARD)}><BarTable table={tb} t={t} /></div> : <PlainTable table={tb} />}</div>)}
-    </section>
+    </Section>
   )
 }
 
@@ -260,15 +256,16 @@ export function BarTable({ table, t, limit = 5 }) {
   )
 }
 
-export function PlainTable({ table, flat = false }) {
+export function PlainTable({ table, flat = false, tone }) {
+  const red = tone === 'danger'
   return (
     <div style={css(flat ? '' : CARD)}>
       {table.title && <div style={css(SUB + 'margin-bottom:4px;')}>{table.title}</div>}
       {table.note && <div style={css('font-size:12px; color:#64748b; margin-bottom:12px;')}>{table.note}</div>}
-      <div style={css('overflow-x:auto; border:1px solid #E6EBF3; border-radius:12px;')}>
+      <div style={css(`overflow-x:auto; border:1px solid ${red ? '#F5C9CB' : '#E6EBF3'}; border-radius:12px; background:#fff;`)}>
         <table style={css('width:100%; border-collapse:collapse; font-size:12.5px;')}>
           <thead>
-            <tr>{table.cols.map((c, ci) => <th key={ci} style={css('padding:10px 12px; text-align:left; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#2c5fff; background:#F4F7FE; border-bottom:1px solid #E6EBF3;')}>{c}</th>)}</tr>
+            <tr>{table.cols.map((c, ci) => <th key={ci} style={css(`padding:10px 12px; text-align:left; font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:${red ? '#C0262D' : '#2c5fff'}; background:${red ? '#FFF0F0' : '#F4F7FE'}; border-bottom:1px solid #E6EBF3;`)}>{c}</th>)}</tr>
           </thead>
           <tbody>
             {table.rows.map((row, ri) => (
@@ -473,24 +470,17 @@ export function ApplySection({ id, a, t, num = '5' }) {
         ? <Blocks blocks={a.pitfallTable} />
         : a.pitfalls.some((p) => p.fix)
           ? a.pitfalls.some((p) => p.why)
-            ? <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao'), t('Nói gì với AI / làm gì')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—', p.fix || '—']) }} />
-            : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Cách xử lý')], rows: a.pitfalls.map((p) => [p.meet, p.fix || '—']) }} />
-          : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—']) }} />}
+            ? <PlainTable flat tone="danger" table={{ cols: [t('Bạn gặp'), t('Vì sao'), t('Nói gì với AI / làm gì')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—', p.fix || '—']) }} />
+            : <PlainTable flat tone="danger" table={{ cols: [t('Bạn gặp'), t('Cách xử lý')], rows: a.pitfalls.map((p) => [p.meet, p.fix || '—']) }} />
+          : <PlainTable flat tone="danger" table={{ cols: [t('Bạn gặp'), t('Vì sao')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—']) }} />}
     </div>,
   )
   return (
-    <section id="uc-apply" data-toc style={css('scroll-margin-top:84px; margin-top:30px;')}>
-      <div style={css('border-radius:24px; padding:2px; background:linear-gradient(135deg,#5b8cff,#2c5fff 45%,#00c2a8); box-shadow:0 20px 50px rgba(44,95,255,.35);')}>
-        <div style={css('border-radius:22px; background:#fff; overflow:hidden; color-scheme:light;')}>
-          <div style={css('padding:20px 26px 18px; background:linear-gradient(180deg,#EEF3FF,#ffffff); border-bottom:1px solid #E6EBF3;')}>
-            <h2 style={css('margin:0; display:flex; align-items:center; gap:10px; font-size:20px; font-weight:800; letter-spacing:-.4px; color:#0F172A;')}><NumBadge n={num} size={30} />{t(a.title)}</h2>
-          </div>
-          <PromptTargetContext.Provider value={a.promptTarget || ''}>
-            <div style={css('padding:22px 26px 26px; display:flex; flex-direction:column; gap:22px;')}>{parts}</div>
-          </PromptTargetContext.Provider>
-        </div>
-      </div>
-    </section>
+    <Section id="uc-apply" num={num} title={t(a.title)}>
+      <PromptTargetContext.Provider value={a.promptTarget || ''}>
+        <div style={css('display:flex; flex-direction:column; gap:22px; color-scheme:light;')}>{parts}</div>
+      </PromptTargetContext.Provider>
+    </Section>
   )
 }
 

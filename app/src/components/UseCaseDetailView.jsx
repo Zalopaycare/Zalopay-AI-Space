@@ -30,7 +30,8 @@ export function detailLayout(tp, t) {
   return { has, num, toc }
 }
 
-const SUBHEAD = 'font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
+// same as the card sub-headings in UseCaseDetailParts (SUB)
+const SUBHEAD = 'font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
 
 export function DetailSections({ id, tp, t, layout }) {
   const { has, num } = layout
