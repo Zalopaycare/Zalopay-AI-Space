@@ -218,45 +218,44 @@ export function Tldr({ rows }) {
   )
 }
 
-/** 2 Bài toán | 3 Giải pháp on one row (one column on phones). */
+/** Bài toán | Giải pháp side by side in one card (one column when narrow), Số liệu & hình ảnh below. */
 export function ProblemSolution({ problem, solution, result, showEmpty = false, t, num: partNum }) {
-  // One card: Bài toán, then Giải pháp; Kết quả belongs to the solution and closes it.
+  // One card, two columns: Bài toán (red) | Giải pháp (green); Số liệu & hình ảnh across the bottom.
   const hasProblem = !!(problem.text || problem.bullets.length) || showEmpty
-  const head = (title, dot) => (
-    <div style={css(SUB + 'display:flex; align-items:center; gap:8px;')}>
-      {title}<span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
-    </div>
-  )
+  const head = (title, color) => <div style={css(SUB + `color:${color};`)}>{title}</div>
+  const body = 'margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;'
   return (
     <Section id="uc-problem" num={partNum} title={t('Bài toán & giải pháp')} bare>
       <div style={css(CARD)}>
-        {hasProblem && (
-          <>
-            {head(t('Bài toán'), '#E0353F')}
-            {problem.text && (problem.rich
-              ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={problem.text} /></div>
-              : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>)}
-            {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
-            {showEmpty && !problem.text && !problem.bullets.length && <NoInfo t={t} />}
-          </>
-        )}
-        <div style={css(hasProblem ? 'margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;' : '')}>
-          {head(t('Giải pháp'), '#00A352')}
-          {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:12.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
-          {solution.text && (solution.rich
-            ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={solution.text} /></div>
-            : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>)}
-          <BulletList items={solution.steps} numbered />
-          <Images images={solution.images} />
-          {showEmpty && !solution.text && !solution.steps.length && <NoInfo t={t} />}
-          {result && (
-            <div style={{ marginTop: 18 }}>
-              {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}
-              <div style={css(SUB2 + 'display:flex; align-items:center; gap:8px;')}>{t('Số liệu & hình ảnh')}<span style={css('width:7px; height:7px; border-radius:50%; background:#2c5fff;')}></span></div>
-              <ResultBody r={result} t={t} />
+        <div className={hasProblem ? 'zp-ps2' : undefined}>
+          {hasProblem && (
+            <div style={{ minWidth: 0 }}>
+              {head(t('Bài toán'), '#C81E1E')}
+              {problem.text && (problem.rich
+                ? <div style={css(body)}><RichText text={problem.text} /></div>
+                : <p style={css(body + 'white-space:pre-line;')}><Fill text={problem.text} /></p>)}
+              {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
+              {showEmpty && !problem.text && !problem.bullets.length && <NoInfo t={t} />}
             </div>
           )}
+          <div className={hasProblem ? 'zp-ps2-sol' : undefined} style={{ minWidth: 0 }}>
+            {head(t('Giải pháp'), '#00893F')}
+            {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:12.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
+            {solution.text && (solution.rich
+              ? <div style={css(body)}><RichText text={solution.text} /></div>
+              : <p style={css(body + 'white-space:pre-line;')}><Fill text={solution.text} /></p>)}
+            <BulletList items={solution.steps} numbered />
+            <Images images={solution.images} />
+            {showEmpty && !solution.text && !solution.steps.length && <NoInfo t={t} />}
+          </div>
         </div>
+        {result && (
+          <div style={css('margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
+            {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}
+            <div style={css(SUB2 + 'display:flex; align-items:center; gap:8px;')}>{t('Số liệu & hình ảnh')}<span style={css('width:7px; height:7px; border-radius:50%; background:#2c5fff;')}></span></div>
+            <ResultBody r={result} t={t} />
+          </div>
+        )}
       </div>
       {problem.tables.map((tb, i) => <div key={i} style={{ marginTop: 18 }}>{isNumericTable(tb) ? <div style={css(CARD)}><BarTable table={tb} t={t} /></div> : <PlainTable table={tb} />}</div>)}
     </Section>

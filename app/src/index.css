@@ -151,10 +151,16 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-collapse-chev { flex: none; transition: transform .15s; }
 .zp-collapse[open] > summary .zp-collapse-chev { transform: rotate(90deg); }
 .zp-detail-wrap { container-type: inline-size; }
+.zp-ps2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.zp-ps2 > :first-child { padding-right: 22px; }
+.zp-ps2 > .zp-ps2-sol { padding-left: 22px; border-left: 1px solid #EEF1F7; }
 .zp-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 36px; align-items: start; }
 .zp-hero-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: center; }
 .zp-toc { position: sticky; top: 84px; margin-top: 26px; max-height: calc(100vh - 110px); overflow-y: auto; }
 @container (max-width: 759px) {
+  .zp-ps2 { grid-template-columns: minmax(0, 1fr); }
+  .zp-ps2 > :first-child { padding-right: 0; }
+  .zp-ps2 > .zp-ps2-sol { padding-left: 0; border-left: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid #EEF1F7; }
   .zp-hero-split { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .zp-hero-cover { order: -1; }
 }
