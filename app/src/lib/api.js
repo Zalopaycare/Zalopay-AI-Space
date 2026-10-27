@@ -75,11 +75,11 @@ export const api = {
   interestPending: (id) => request(`/showcase/pending/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
   // "Chat với Admin": my conversation, and the admins' shared inbox. `after` = last message id I have.
   chatMine: (after = 0) => request('/chat/me?after=' + after),
-  chatSend: (body) => request('/chat/me', { method: 'POST', body: JSON.stringify({ body }) }),
+  chatSend: (body, files = []) => request('/chat/me', { method: 'POST', body: JSON.stringify({ body, files }) }),
   chatUnread: () => request('/chat/unread'),
   chatThreads: () => request('/chat/threads'),
   chatThread: (uid, after = 0) => request(`/chat/threads/${uid}?after=${after}`),
-  chatReply: (uid, body) => request(`/chat/threads/${uid}`, { method: 'POST', body: JSON.stringify({ body }) }),
+  chatReply: (uid, body, files = []) => request(`/chat/threads/${uid}`, { method: 'POST', body: JSON.stringify({ body, files }) }),
   presence: (path) => request('/auth/presence', { method: 'POST', body: JSON.stringify({ path }) }),
   adminLive: () => request('/admin/live'),
   adminPublished: () => request('/admin/published'),

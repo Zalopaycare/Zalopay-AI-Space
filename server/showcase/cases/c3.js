@@ -104,7 +104,10 @@ export default {
       'AI (hỏi đáp): gõ câu hỏi về quyền, cách cấu hình; AI trả lời từng bước kèm link nguồn và ảnh, không chắc thì hỏi lại.',
       'Bạn kiểm tra: đối chiếu kết quả với nhu cầu, tự sửa và lưu. Trợ lý chỉ đọc, không tự lưu hay áp dụng cấu hình.',
     ],
-    images: [],
+    images: [
+      { src: '/use-cases/c3/segment-summarize.png', caption: 'Màn hình cấu hình nhóm khách hàng: bấm "Summarize" trong CRM Assistant để tóm tắt điều kiện.' },
+      { src: '/use-cases/c3/reward-analyze.png', caption: 'Màn hình cấu hình ưu đãi voucher: bấm "Analyze" để phân tích và nhận đề xuất.' },
+    ],
   },
 
   result: {
@@ -203,10 +206,8 @@ export default {
     tables: [],
   },
 
-  demo: [
-    { src: '/use-cases/c3/segment-summarize.png', caption: 'Màn hình cấu hình nhóm khách hàng: bấm "Summarize" trong CRM Assistant để tóm tắt điều kiện.' },
-    { src: '/use-cases/c3/reward-analyze.png', caption: 'Màn hình cấu hình ưu đãi voucher: bấm "Analyze" để phân tích và nhận đề xuất.' },
-  ],
+  // Demo pictures sit with the part they illustrate (Giải pháp).
+  demo: [],
 
   tech: {
     bullets: [

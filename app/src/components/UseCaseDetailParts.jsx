@@ -189,7 +189,6 @@ export function ProblemSolution({ problem, solution, t, num: partNum }) {
             <>
               {problem.text && <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>}
               {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
-              <Images images={problem.images} />
             </>
           )],
           ['3', t('Giải pháp'), '#00A352', (
@@ -358,7 +357,7 @@ function CodeBlock({ cb }) {
 }
 
 /** 5 Tự áp dụng — the one highlighted block: fit, checklist, steps with copyable prompts, what success
- *  looks like, and the common-errors table (collapsed). */
+ *  looks like, and the common-errors table (always open, in red). */
 export function ApplySection({ id, a, t, num = '5' }) {
   const parts = []
   const links = a.links || []
@@ -415,7 +414,12 @@ export function ApplySection({ id, a, t, num = '5' }) {
     </div>,
   )
   else if (a.pitfalls.length || a.pitfallTable) parts.push(
-    <Collapsible key="errors" title={t('Lỗi hay gặp')} count={a.pitfallTable ? null : a.pitfalls.length}>
+    // Always open and in red: the mistakes are what readers most need to see before they start.
+    <div key="errors" style={css('padding:14px 16px 16px; border-radius:14px; border:1px solid #F5C2C2; background:#FFF5F5;')}>
+      <div style={css(SUB + 'display:flex; align-items:center; gap:8px; color:#C81E1E;')}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+        {t('Lỗi hay gặp')}
+      </div>
       {a.pitfallTable
         ? <Blocks blocks={a.pitfallTable} />
         : a.pitfalls.some((p) => p.fix)
@@ -423,7 +427,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
             ? <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao'), t('Nói gì với AI / làm gì')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—', p.fix || '—']) }} />
             : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Cách xử lý')], rows: a.pitfalls.map((p) => [p.meet, p.fix || '—']) }} />
           : <PlainTable flat table={{ cols: [t('Bạn gặp'), t('Vì sao')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—']) }} />}
-    </Collapsible>,
+    </div>,
   )
   return (
     <section id="uc-apply" data-toc style={css('scroll-margin-top:84px; margin-top:30px;')}>

@@ -4,6 +4,7 @@ import { requireAuth } from '../auth.js'
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { domainName, initialsOf } from '../mentions.js'
 import { notifyChat } from '../notifications.js'
+import { decodeCommentFiles, saveCommentFiles, commentFilesOf } from '../commentFiles.js'
 
 // "Chat với Admin": each person has one conversation with the admin team, Messenger-style.
 // People read and write their own (/me, the /chat page); admins share one inbox of every conversation
@@ -20,7 +21,7 @@ function messagesOf(userId, after = 0) {
   const rows = db.prepare('SELECT * FROM admin_chat_messages WHERE user_id = ? AND id > ? ORDER BY id LIMIT 500').all(userId, Number(after) || 0)
   const people = new Map()
   const person = (id) => { if (!people.has(id)) people.set(id, who(userById(id))); return people.get(id) }
-  return rows.map((r) => ({ id: r.id, body: r.body, fromAdmin: !!r.from_admin, sender: person(r.sender_id), time: r.created_at }))
+  return rows.map((r) => ({ id: r.id, body: r.body, files: commentFilesOf('chat', String(r.id)), fromAdmin: !!r.from_admin, sender: person(r.sender_id), time: r.created_at }))
 }
 
 const lastId = (userId) => db.prepare('SELECT MAX(id) n FROM admin_chat_messages WHERE user_id = ?').get(userId).n || 0
@@ -35,11 +36,25 @@ const adminEmails = (exceptEmail) => {
   const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
   return [...new Set([...env, ...dbAdmins])].filter((e) => e !== String(exceptEmail || '').toLowerCase())
 }
-const preview = (body) => { const s = String(body).replace(/\s+/g, ' ').trim(); return s.length > 90 ? s.slice(0, 90).trimEnd() + '…' : s }
+const preview = (body, files = []) => {
+  const s = String(body).replace(/\s+/g, ' ').trim()
+  if (!s) return files.some((f) => /^image\//.test(f.mime)) ? '[Hình ảnh]' : '[File]'
+  return s.length > 90 ? s.slice(0, 90).trimEnd() + '…' : s
+}
 const cleanBody = (v) => String(v || '').replace(/\r\n/g, '\n').trim().slice(0, MAX_BODY)
 
-function insert(userId, senderId, fromAdmin, body) {
+// Text and/or attachments from a request body; null when it can't be sent (nothing in it, or a bad file).
+function readMessage(b) {
+  const body = cleanBody(b?.body)
+  const files = decodeCommentFiles(b?.files)
+  if (files === null) return { error: 'bad_files' }
+  if (!body && !files.length) return { error: 'empty' }
+  return { body, files }
+}
+
+function insert(userId, senderId, fromAdmin, body, files = []) {
   const r = db.prepare('INSERT INTO admin_chat_messages (user_id, sender_id, from_admin, body) VALUES (?, ?, ?, ?)').run(userId, senderId, fromAdmin ? 1 : 0, body)
+  if (files.length) saveCommentFiles('chat', String(r.lastInsertRowid), files)
   // the sender has obviously seen everything up to their own message
   markSeen(userId, fromAdmin ? 'admin' : 'user')
   return messagesOf(userId, Number(r.lastInsertRowid) - 1)[0]
@@ -53,12 +68,12 @@ router.get('/me', requireAuth, (req, res) => {
 })
 
 router.post('/me', requireAuth, (req, res) => {
-  const body = cleanBody(req.body?.body)
-  if (!body) return res.status(400).json({ error: 'empty' })
-  const message = insert(req.user.id, req.user.id, false, body)
+  const { body, files, error } = readMessage(req.body)
+  if (error) return res.status(400).json({ error })
+  const message = insert(req.user.id, req.user.id, false, body, files)
   const name = domainName(req.user.email, req.user.name)
   for (const to of adminEmails(req.user.email)) {
-    notifyChat(to, { ref: 'chat:' + req.user.id, text: `${name} nhắn Admin: "${preview(body)}"`, href: '/admin#inbox/' + req.user.id, actor: req.user.name })
+    notifyChat(to, { ref: 'chat:' + req.user.id, text: `${name} nhắn Admin: "${preview(body, files)}"`, href: '/admin#inbox/' + req.user.id, actor: req.user.name })
   }
   res.status(201).json({ message })
 })
@@ -84,7 +99,7 @@ router.get('/threads', requireAuth, requireAdmin, (req, res) => {
   res.json({
     threads: rows.map((r) => ({
       user: who(userById(r.user_id)),
-      last: { body: preview(r.body), fromAdmin: !!r.from_admin, time: r.created_at },
+      last: { body: preview(r.body, db.prepare("SELECT mime FROM comment_files WHERE kind = 'chat' AND target_id = ?").all(String(r.id))), fromAdmin: !!r.from_admin, time: r.created_at },
       unread: unreadStmt.get(r.user_id, seenOf(r.user_id).admin_seen).n,
     })),
   })
@@ -101,10 +116,10 @@ router.get('/threads/:uid', requireAuth, requireAdmin, (req, res) => {
 router.post('/threads/:uid', requireAuth, requireAdmin, (req, res) => {
   const u = userById(Number(req.params.uid))
   if (!u) return res.status(404).json({ error: 'not_found' })
-  const body = cleanBody(req.body?.body)
-  if (!body) return res.status(400).json({ error: 'empty' })
-  const message = insert(u.id, req.user.id, true, body)
-  notifyChat(u.email, { ref: 'chat:' + u.id, text: `Admin đã trả lời bạn: "${preview(body)}"`, href: '/chat', actor: req.user.name })
+  const { body, files, error } = readMessage(req.body)
+  if (error) return res.status(400).json({ error })
+  const message = insert(u.id, req.user.id, true, body, files)
+  notifyChat(u.email, { ref: 'chat:' + u.id, text: `Admin đã trả lời bạn: "${preview(body, files)}"`, href: '/chat', actor: req.user.name })
   // the other admins' copy of this conversation's notification is answered now
   db.prepare("UPDATE notifications SET read = 1 WHERE kind = 'chat' AND ref = ? AND email != ?").run('chat:' + u.id, u.email.toLowerCase())
   res.status(201).json({ message })

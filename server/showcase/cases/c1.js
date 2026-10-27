@@ -51,7 +51,9 @@ export default {
       'Máy: các lần sau tự làm lại; chỉ bấm tiếp khi màn hình khớp ảnh đã ghi, không khớp thì dừng và ghi lỗi.',
       'Bạn kiểm tra: xem kết quả, mở ảnh và video khi có lỗi; chỉ can thiệp khi kịch bản cần dữ liệu đặc biệt.',
     ],
-    images: [],
+    images: [
+      { src: '/use-cases/c1/workspace.png', caption: 'Màn hình QC Regression: danh sách test case, kết quả PASSED/FAILED và lịch sử chạy, bên cạnh điện thoại đang chạy màn Chạm thanh toán.' },
+    ],
   },
 
   result: {
@@ -156,9 +158,8 @@ export default {
     tables: [],
   },
 
-  demo: [
-    { src: '/use-cases/c1/workspace.png', caption: 'Màn hình QC Regression: danh sách test case, kết quả PASSED/FAILED và lịch sử chạy, bên cạnh điện thoại đang chạy màn Chạm thanh toán.' },
-  ],
+  // Demo pictures sit with the part they illustrate (Giải pháp).
+  demo: [],
 
   tech: {
     bullets: [

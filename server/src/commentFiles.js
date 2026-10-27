@@ -2,11 +2,11 @@ import express from 'express'
 import { db } from './db.js'
 import { requireAuth } from './auth.js'
 
-// Files attached to an answer or a comment: up to 5, 10 MB each, any type. Images are shown inline,
-// everything else is a download link.
+// Files attached to an answer, a comment or a "Chat với Admin" message: up to 5, 10 MB each, any type.
+// Images are shown inline, everything else is a download link.
 export const MAX_COMMENT_FILES = 5
 const MAX_BYTES = 10 * 1024 * 1024
-const KINDS = ['answer', 'acomment', 'uccomment']
+const KINDS = ['answer', 'acomment', 'uccomment', 'chat']
 
 // [{ name, data: "data:<mime>;base64,..." }] → [{ name, mime, data }], or null if any is unusable.
 export function decodeCommentFiles(list) {
@@ -34,6 +34,11 @@ export const dropCommentFiles = (kind, ids) => { for (const id of [].concat(ids)
 const router = express.Router()
 router.get('/:kind/:id/:idx', requireAuth, (req, res) => {
   if (!KINDS.includes(req.params.kind)) return res.status(404).end()
+  // A chat file is private to its conversation: the person who wrote in and the admins.
+  if (req.params.kind === 'chat') {
+    const m = db.prepare('SELECT user_id FROM admin_chat_messages WHERE id = ?').get(Number(req.params.id))
+    if (!m || (m.user_id !== req.user.id && !req.user.is_admin)) return res.status(404).end()
+  }
   const f = db.prepare('SELECT name, mime, data FROM comment_files WHERE kind = ? AND target_id = ? AND idx = ?').get(req.params.kind, req.params.id, Number(req.params.idx))
   if (!f) return res.status(404).end()
   const inline = /^image\/(png|jpeg|gif|webp)$/.test(f.mime)

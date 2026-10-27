@@ -57,7 +57,9 @@ export default {
       'AI: viết 1 trang gồm lệnh test sẵn cho từng API, địa chỉ và môi trường, cách vào tính năng, tài khoản test, và các câu cần hỏi lại dev.',
       'Bạn: kiểm tra nguồn từng dòng, hỏi dev phần còn thiếu, rồi quyết định bắt đầu test.',
     ],
-    images: [],
+    images: [
+      { src: '/use-cases/c7/demo-web.png', caption: 'Đưa SECREQ-28 (+ CICD-271462) vào web, nhận trang kết quả: lệnh test cho từng API kèm ghi chú và link nguồn.' },
+    ],
   },
 
   result: {
@@ -158,9 +160,8 @@ export default {
     tables: [],
   },
 
-  demo: [
-    { src: '/use-cases/c7/demo-web.png', caption: 'Đưa SECREQ-28 (+ CICD-271462) vào web, nhận trang kết quả: lệnh test cho từng API kèm ghi chú và link nguồn.' },
-  ],
+  // Demo pictures sit with the part they illustrate (Giải pháp).
+  demo: [],
 
   tech: {
     bullets: [

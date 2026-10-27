@@ -58,7 +58,17 @@ export default {
       'AI: dùng các thao tác đã được duyệt để lấy thông tin, rồi tóm tắt lại cho bạn. Mật khẩu và giá trị nhạy cảm được che.',
       'SRE / admin: xem lại nhật ký mọi lượt AI gọi: khoá do ai tạo, đã làm gì.',
     ],
-    images: [],
+    images: [
+      { src: '/use-cases/c10/landing.png', caption: 'Trang đăng nhập MCP Platform: AI đi qua một cổng kiểm soát để tới service, log, số đo, Redis, Percona, Kafka.' },
+      { src: '/use-cases/c10/admin-redis-list.png', caption: 'Admin xem danh sách tài nguyên tự dò được (Redis 107, Percona 63, Kafka 1, Services 1.811) và bấm Publish.' },
+      { src: '/use-cases/c10/admin-services-list.png', caption: 'Danh sách service trên môi trường Dev và QC được dò từ cụm Kubernetes, kèm trạng thái.' },
+      { src: '/use-cases/c10/publish-redis.png', caption: 'Admin publish một Redis: chọn chỉ đọc hay đọc và ghi, tích các công cụ AI được dùng.' },
+      { src: '/use-cases/c10/publish-percona.png', caption: 'Admin publish database Percona: chọn database AI được nối tới (ở đây là "clan") và các công cụ được phép.' },
+      { src: '/use-cases/c10/admin-resources.png', caption: 'Trang quản trị: các tài nguyên đã publish, số công cụ được phép và trạng thái.' },
+      { src: '/use-cases/c10/custom-tool-redis.png', caption: 'Dev tự tạo công cụ riêng cho Redis: chọn kiểu Pipeline, Transaction hoặc Lua chỉ đọc và các lệnh được phép.' },
+      { src: '/use-cases/c10/custom-tool-percona.png', caption: 'Dev tự tạo công cụ Transaction cho Percona: chọn bảng, cột trả về, bộ lọc và số dòng tối đa.' },
+      { src: '/use-cases/c10/publish-service.png', caption: 'Admin publish service CSM trên DEV với 6 công cụ tra cứu service.' },
+    ],
   },
 
   result: {
@@ -187,17 +197,8 @@ export default {
     tables: [],
   },
 
-  demo: [
-    { src: '/use-cases/c10/landing.png', caption: 'Trang đăng nhập MCP Platform: AI đi qua một cổng kiểm soát để tới service, log, số đo, Redis, Percona, Kafka.' },
-    { src: '/use-cases/c10/admin-redis-list.png', caption: 'Admin xem danh sách tài nguyên tự dò được (Redis 107, Percona 63, Kafka 1, Services 1.811) và bấm Publish.' },
-    { src: '/use-cases/c10/admin-services-list.png', caption: 'Danh sách service trên môi trường Dev và QC được dò từ cụm Kubernetes, kèm trạng thái.' },
-    { src: '/use-cases/c10/publish-redis.png', caption: 'Admin publish một Redis: chọn chỉ đọc hay đọc và ghi, tích các công cụ AI được dùng.' },
-    { src: '/use-cases/c10/publish-percona.png', caption: 'Admin publish database Percona: chọn database AI được nối tới (ở đây là "clan") và các công cụ được phép.' },
-    { src: '/use-cases/c10/admin-resources.png', caption: 'Trang quản trị: các tài nguyên đã publish, số công cụ được phép và trạng thái.' },
-    { src: '/use-cases/c10/custom-tool-redis.png', caption: 'Dev tự tạo công cụ riêng cho Redis: chọn kiểu Pipeline, Transaction hoặc Lua chỉ đọc và các lệnh được phép.' },
-    { src: '/use-cases/c10/custom-tool-percona.png', caption: 'Dev tự tạo công cụ Transaction cho Percona: chọn bảng, cột trả về, bộ lọc và số dòng tối đa.' },
-    { src: '/use-cases/c10/publish-service.png', caption: 'Admin publish service CSM trên DEV với 6 công cụ tra cứu service.' },
-  ],
+  // Demo pictures sit with the part they illustrate (Giải pháp).
+  demo: [],
 
   tech: {
     bullets: [
