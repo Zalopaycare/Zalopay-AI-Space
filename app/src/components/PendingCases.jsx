@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { rememberReturn } from '../lib/scrollReturn.js'
 import { api } from '../lib/api.js'
 import { css } from '../lib/style.js'
-import RichText from './RichText.jsx'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
 // list: number badge in the category colour, name, members, event label, a "Chưa có thông tin" tag and a
 // "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
-// Opening a tile shows the booth's "Vấn đề" and "Giải pháp" from the exhibition, in AI Space's detail-page look.
+// A tile opens the booth as a use case page (/use-cases/ex6): Vấn đề and Giải pháp from the exhibition,
+// the rest "Chưa có thông tin" until the owners write it up.
 
 const CAT_COLOR = {
   'Software Development': ['#2140D9', '#132A9E'],
@@ -40,55 +41,22 @@ function InterestButton({ p, busy, onToggle, t }) {
   )
 }
 
-// Same card look as "Bài toán" / "Giải pháp" on a use case detail page.
-const CARD = 'min-width:0; border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:18px 20px;'
-
-function PendingPopup({ p, busy, onToggle, onClose, t }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', onKey)
-    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
-  }, [onClose])
-  // One card like a use case page: Bài toán, then Giải pháp under a divider.
-  const part = (title, dot, text, first) => (
-    <div style={css(first ? '' : 'margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
-      <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:15px; font-weight:800; color:#0F172A;')}>
-        {t(title)}<span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
-      </div>
-      <div style={css('font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty;')}>
-        {text ? <RichText text={text} dot={dot} /> : <span style={css('color:#94a3b8;')}>{t('Chưa có thông tin')}</span>}
-      </div>
-    </div>
-  )
+/** "Quan tâm" on a booth's own page, under its title: the same toggle as on the tile. */
+export function BoothInterest({ p, t, requireLogin }) {
+  const [, setTick] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const toggle = () => requireLogin(() => {
+    if (busy) return
+    setBusy(true)
+    api.interestPending(p.id)
+      .then((r) => { p.interest = r.interest; p.mine = r.mine; setTick((n) => n + 1) })
+      .catch(() => {})
+      .finally(() => setBusy(false))
+  })
   return (
-    <div role="dialog" aria-modal="true" aria-label={p.title} onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(2,4,12,.72); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;')}>
-      <div className="zp-detail-wrap" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:100%; max-width:960px; border-radius:20px; overflow:hidden; border:1px solid rgba(130,170,255,.24); background:radial-gradient(120% 70% at 50% -10%, #1b2f74 0%, #0b1230 45%, #07070c 100%); color:#fff; padding:24px 22px 26px; box-shadow:0 30px 80px rgba(0,0,0,.55);')}>
-        <button onClick={onClose} aria-label={t('Đóng')} style={css('position:absolute; top:14px; right:14px; width:34px; height:34px; border:1px solid rgba(130,170,255,.3); border-radius:50%; background:rgba(255,255,255,.06); color:#c9d6f5; display:flex; align-items:center; justify-content:center; cursor:pointer;')}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-        </button>
-        <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding-right:44px;')}>
-          <span style={css('display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:11.5px; font-weight:700;')}>AI Exhibition · Booth {p.booth}</span>
-          <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
-        </div>
-        <h2 style={css('margin:12px 0 0; padding-right:44px; font-size:26px; line-height:1.2; font-weight:800; letter-spacing:-.6px; color:#fff; text-wrap:balance;')}>{p.title}</h2>
-        {p.members?.length > 0 && (
-          <div style={css('display:flex; align-items:baseline; gap:8px; margin-top:10px; flex-wrap:wrap; font-size:13px; line-height:1.5;')}>
-            <span style={css('font-weight:600; color:#a9b8dc;')}>Owner:</span>
-            <span style={css('font-weight:700; color:#fff;')}>{p.members.join(', ')}</span>
-          </div>
-        )}
-        <div style={css('margin-top:6px; font-size:12.5px; color:#a9b8dc;')}>{[p.label, p.category].filter(Boolean).join(' · ')}</div>
-        <div style={css(CARD + 'margin-top:20px;')}>
-          {part('Bài toán', '#E0353F', p.problem, true)}
-          {part('Giải pháp', '#00A352', p.solution, false)}
-        </div>
-        <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:20px;')}>
-          <span style={css('flex:1; min-width:200px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Use case này chưa có bài chi tiết trên AI Space. Bấm "Quan tâm" để nhắc team đăng lên.')}</span>
-          <InterestButton p={p} busy={busy} onToggle={onToggle} t={t} />
-        </div>
-      </div>
+    <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(130,170,255,.22);')}>
+      <span style={css('flex:1; min-width:220px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Use case này chưa có bài chi tiết trên AI Space. Bấm "Quan tâm" để nhắc team đăng lên.')}</span>
+      <InterestButton p={p} busy={busy} onToggle={toggle} t={t} />
     </div>
   )
 }
@@ -96,7 +64,8 @@ function PendingPopup({ p, busy, onToggle, onClose, t }) {
 export default function PendingCases({ items, t, requireLogin }) {
   const [, setTick] = useState(0)
   const [busy, setBusy] = useState(null)
-  const [open, setOpen] = useState(null)
+  const navigate = useNavigate()
+  const open = (p) => { rememberReturn(p.id); navigate(`/use-cases/${p.id}`) }
   if (!items.length) return null
 
   const toggle = (p) => requireLogin(() => {
@@ -123,8 +92,8 @@ export default function PendingCases({ items, t, requireLogin }) {
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => setOpen(p)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(p) } }}
+              onClick={() => open(p)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(p) } }}
               style={css('display:flex; align-items:flex-start; gap:12px; padding:12px 12px 12px 14px; border-radius:16px; background:#F8FAFE; border:1.5px solid #E3E8F7; cursor:pointer;')}
             >
               <span aria-hidden="true" style={css(`flex:none; width:44px; height:44px; border-radius:12px; background:${c1}; box-shadow:0 4px 0 ${c2}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:800; font-style:italic;`)}>{p.booth}</span>
@@ -148,8 +117,6 @@ export default function PendingCases({ items, t, requireLogin }) {
           )
         })}
       </div>
-      {/* on <body> so the sticky search bar and the top nav (their own stacking contexts) stay underneath */}
-      {open && createPortal(<PendingPopup p={open} busy={busy === open.id} onToggle={toggle} onClose={() => setOpen(null)} t={t} />, document.body)}
     </section>
   )
 }

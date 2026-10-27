@@ -112,6 +112,17 @@ export const builtinCases = allCases.slice()
 export const pendingCases = []
 export function registerPending(list) {
   pendingCases.splice(0, pendingCases.length, ...(Array.isArray(list) ? list : []))
+  // Each booth also opens as a use case page: its Vấn đề / Giải pháp from the exhibition, the rest
+  // "Chưa có thông tin" until the owners write it up.
+  for (const p of pendingCases) {
+    caseDetail[p.id] = { tpl: { type: 'case', source: 'exhibition', members: p.members || [], ownerTeam: p.team || '', exhibition: { problem: p.problem || '', solution: p.solution || '' } } }
+  }
+}
+
+/** A booth as a card-shaped case for the detail page (not listed in the library; the tile links to it). */
+export function pendingCard(id) {
+  const p = pendingCases.find((x) => x.id === id)
+  return p ? { id: p.id, title: p.title, desc: '', author: '', team: p.team || '', category: p.category, tools: [], coverUrl: null, exhibition: true, pending: p } : null
 }
 
 // Showcase use cases written in the 9-part template shape from the teams' own docs. They live on the

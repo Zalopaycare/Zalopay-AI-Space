@@ -36,9 +36,9 @@ import { avatarPhotoCss } from '../components/Avatar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, avatarPhoto, statusMeta, kindOf, statusOf, levelMeta, levelChip,
-  newestFirst, postedLabel, pendingCases,
+  newestFirst, postedLabel, pendingCases, pendingCard,
 } from '../data/useCases.js'
-import PendingCases from '../components/PendingCases.jsx'
+import PendingCases, { BoothInterest } from '../components/PendingCases.jsx'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
 const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
@@ -548,7 +548,8 @@ export default function UseCaseLibraryPage() {
 
   // ================= DETAIL VIEW =================
   function renderDetail() {
-    const dsel = allCases.find((x) => x.id === id)
+    // an AI Exhibition booth (ex6…) opens the same page, its unwritten parts marked "Chưa có thông tin"
+    const dsel = allCases.find((x) => x.id === id) || pendingCard(id)
     if (!dsel && !pubLoaded) return <div style={css('min-height:60vh; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;')}>Đang tải use case…</div>
     if (!dsel) return (
       <div style={css('min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px var(--zp-gutter); text-align:center; color:#fff;')}>
@@ -571,7 +572,7 @@ export default function UseCaseLibraryPage() {
     }
 
     // Which of the 9 parts have data — the rest are hidden, numbered in order, and listed in the TOC.
-    const layout = detailLayout(tp, t)
+    const layout = detailLayout(tp, t, !!dsel.pending)
     const has = layout.has
     const toc = [...layout.toc, { id: 'comments', label: t('Hữu ích & bình luận') }]
 
@@ -595,6 +596,7 @@ export default function UseCaseLibraryPage() {
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Ứng dụng ngay')}
               />
+            {dsel.pending && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
 
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>

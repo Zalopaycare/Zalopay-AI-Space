@@ -44,7 +44,12 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:12.5px; font-weight:700; line-height:1.45; color:#fff;'
   const diff = DIFF[h.difficulty]
+  // an AI Exhibition booth not written up yet keeps the info row, each fact "Chưa có thông tin"
+  const none = (key, name) => c.pending && <div key={key}>{label(t(name))}<div style={css(value + 'font-weight:600; color:#8fa6d8;')}>{t('Chưa có thông tin')}</div></div>
   const cells = [
+    !h.audience && none('aud', 'Ai dùng được'),
+    !diff && none('diff', 'Độ khó'),
+    !h.tools.length && none('tools', 'Công cụ AI'),
     h.audience && <div key="aud">{label(t('Ai dùng được'))}<div style={css(value + 'font-weight:600;')}><Fill text={h.audience} /></div></div>,
     diff && (
       <div key="diff">
@@ -77,6 +82,12 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
           columns, cover first). Older screenshots of other shapes are shown whole. */}
       <div className={c.coverUrl ? 'zp-hero-split' : undefined}>
         <div style={css('min-width:0;')}>
+          {c.pending && (
+            <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;')}>
+              <span style={css('display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:rgba(46,144,255,.18); border:1px solid rgba(46,144,255,.45); color:#dbeaff; font-size:11.5px; font-weight:700;')}>AI Exhibition · Booth {c.pending.booth}{c.pending.label ? ' · ' + c.pending.label : ''}</span>
+              <span style={css('display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:#FFF4E3; border:1px solid #F3DCB4; color:#9A5B00; font-size:11.5px; font-weight:700;')}>{t('Chưa có thông tin')}</span>
+            </div>
+          )}
           <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
           {/* Everyone who built it (or the poster), right under the title. */}
           {(h.members?.length > 0 || h.owner) && (
@@ -86,7 +97,7 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
               <AnonTag p={c} dark />
             </div>
           )}
-          <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>
+          {c.desc && <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>}
         </div>
         {c.coverUrl && (
           <div className="zp-hero-cover" style={css('width:100%; aspect-ratio:16 / 9; border-radius:18px; overflow:hidden; background:#0b1230; border:1px solid rgba(130,170,255,.22); display:flex; align-items:center; justify-content:center;')}>
@@ -147,6 +158,11 @@ export function Images({ images, style }) {
 }
 
 /** Section number in a glowing circle. */
+/** A part the owner hasn't filled in yet (AI Exhibition booths): one quiet line. */
+export function NoInfo({ t }) {
+  return <div style={css('font-size:13px; color:#94a3b8;')}>{t('Chưa có thông tin')}</div>
+}
+
 export function NumBadge({ n, size = 28 }) {
   return (
     <span aria-hidden="true" style={css(`flex:none; display:inline-flex; align-items:center; justify-content:center; width:${size}px; height:${size}px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #7FA8FF 0%, #2c5fff 60%, #1B3FCC 100%); color:#fff; font-size:${Math.round(size * 0.46)}px; font-weight:800; line-height:1; box-shadow:0 0 0 3px rgba(44,95,255,.18), 0 0 18px rgba(80,130,255,.75);`)}>{n}</span>
@@ -181,9 +197,9 @@ export function Tldr({ rows }) {
 }
 
 /** 2 Bài toán | 3 Giải pháp on one row (one column on phones). */
-export function ProblemSolution({ problem, solution, result, t, num: partNum }) {
+export function ProblemSolution({ problem, solution, result, showEmpty = false, t, num: partNum }) {
   // One card: Bài toán, then Giải pháp; Kết quả belongs to the solution and closes it.
-  const hasProblem = !!(problem.text || problem.bullets.length)
+  const hasProblem = !!(problem.text || problem.bullets.length) || showEmpty
   const head = (title, dot) => (
     <div style={css(SUB + 'display:flex; align-items:center; gap:8px;')}>
       {title}<span style={css(`width:8px; height:8px; border-radius:50%; background:${dot};`)}></span>
@@ -199,6 +215,7 @@ export function ProblemSolution({ problem, solution, result, t, num: partNum }) 
               ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={problem.text} dot="#E0353F" /></div>
               : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>)}
             {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
+            {showEmpty && !problem.text && !problem.bullets.length && <NoInfo t={t} />}
           </>
         )}
         <div style={css(hasProblem ? 'margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;' : '')}>
@@ -209,6 +226,8 @@ export function ProblemSolution({ problem, solution, result, t, num: partNum }) 
             : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>)}
           <BulletList items={solution.steps} numbered />
           <Images images={solution.images} />
+          {showEmpty && !solution.text && !solution.steps.length && <NoInfo t={t} />}
+          {!result && showEmpty && <div style={{ marginTop: 18 }}>{head(t('Số liệu & hình ảnh'), '#2c5fff')}<NoInfo t={t} /></div>}
           {result && (
             <div style={{ marginTop: 18 }}>
               {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}
