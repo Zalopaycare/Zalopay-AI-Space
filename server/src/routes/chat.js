@@ -17,11 +17,13 @@ const MAX_BODY = 2000
 const userById = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id)
 const who = (u) => (u ? { id: u.id, name: domainName(u.email, u.name), initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : null)
 
-function messagesOf(userId, after = 0) {
+// The person chatting sees replies as from "Admin": which admin answered (name, avatar) stays out of their copy.
+const ADMIN = { id: 0, name: 'Admin' }
+function messagesOf(userId, after = 0, { asUser = false } = {}) {
   const rows = db.prepare('SELECT * FROM admin_chat_messages WHERE user_id = ? AND id > ? ORDER BY id LIMIT 500').all(userId, Number(after) || 0)
   const people = new Map()
   const person = (id) => { if (!people.has(id)) people.set(id, who(userById(id))); return people.get(id) }
-  return rows.map((r) => ({ id: r.id, body: r.body, files: commentFilesOf('chat', String(r.id)), fromAdmin: !!r.from_admin, sender: person(r.sender_id), time: r.created_at }))
+  return rows.map((r) => ({ id: r.id, body: r.body, files: commentFilesOf('chat', String(r.id)), fromAdmin: !!r.from_admin, sender: asUser && r.from_admin ? ADMIN : person(r.sender_id), time: r.created_at }))
 }
 
 const lastId = (userId) => db.prepare('SELECT MAX(id) n FROM admin_chat_messages WHERE user_id = ?').get(userId).n || 0
@@ -62,7 +64,7 @@ function insert(userId, senderId, fromAdmin, body, files = []) {
 
 // ---- my own conversation ----
 router.get('/me', requireAuth, (req, res) => {
-  const messages = messagesOf(req.user.id, req.query.after)
+  const messages = messagesOf(req.user.id, req.query.after, { asUser: true })
   if (messages.length || !Number(req.query.after)) markSeen(req.user.id, 'user')
   res.json({ messages })
 })
@@ -119,7 +121,7 @@ router.post('/threads/:uid', requireAuth, requireAdmin, (req, res) => {
   const { body, files, error } = readMessage(req.body)
   if (error) return res.status(400).json({ error })
   const message = insert(u.id, req.user.id, true, body, files)
-  notifyChat(u.email, { ref: 'chat:' + u.id, text: `Admin đã trả lời bạn: "${preview(body, files)}"`, href: '/chat', actor: req.user.name })
+  notifyChat(u.email, { ref: 'chat:' + u.id, text: `Admin đã trả lời bạn: "${preview(body, files)}"`, href: '/chat', actor: 'Admin' })
   // the other admins' copy of this conversation's notification is answered now
   db.prepare("UPDATE notifications SET read = 1 WHERE kind = 'chat' AND ref = ? AND email != ?").run('chat:' + u.id, u.email.toLowerCase())
   res.status(201).json({ message })

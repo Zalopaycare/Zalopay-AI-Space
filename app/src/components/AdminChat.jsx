@@ -64,9 +64,9 @@ function Bubbles({ messages, mineIf, intro, t }) {
         <div key={'d' + i} style={css('align-self:center; margin:14px 0 8px; padding:3px 10px; border-radius:999px; background:#EEF2F9; color:#64748b; font-size:11px; font-weight:700;')}>{t(it.day)}</div>
       ) : (
         <div key={it.m.id} style={css(`display:flex; align-items:flex-end; gap:8px; ${it.mine ? 'flex-direction:row-reverse;' : ''} margin-top:${it.first ? 8 : 0}px;`)}>
-          {!it.mine && <span style={css('flex:none; width:30px;')}>{it.last && <Avatar user={it.m.sender} size={30} />}</span>}
+          {!it.mine && !it.m.fromAdmin && <span style={css('flex:none; width:30px;')}>{it.last && <Avatar user={it.m.sender} size={30} />}</span>}
           <div style={css(`max-width:min(72%, 560px); display:flex; flex-direction:column; align-items:${it.mine ? 'flex-end' : 'flex-start'};`)}>
-            {!it.mine && it.first && <div style={css('margin:0 0 3px 12px; font-size:11px; font-weight:700; color:#64748b;')}>{it.m.fromAdmin ? `Admin · ${it.m.sender?.name || ''}` : it.m.sender?.name}</div>}
+            {!it.mine && it.first && <div style={css('margin:0 0 3px 12px; font-size:11px; font-weight:700; color:#64748b;')}>{it.m.fromAdmin ? 'Admin' : it.m.sender?.name}</div>}
             {it.m.body && <div
               title={clock(it.m.time)}
               style={css(`padding:8px 13px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; ${it.mine
