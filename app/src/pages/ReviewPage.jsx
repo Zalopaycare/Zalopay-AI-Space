@@ -23,28 +23,41 @@ const STATUS = {
 const RAIL = 340
 const GAP = 10
 
-/** The post as blocks, in the order of the share form. */
-function blocksOf(s) {
+/** The post in the parts of the share form (and of the published page), in order. `step` = the form step
+ *  that edits the part. Optional fields only show when filled (or when a comment is pinned to them). */
+function partsOf(s) {
   const ex = s.extra || {}
   const hl = (ex.highlights || []).map((h) => [h.value, h.label].filter(Boolean).join(' — ')).join('\n')
+  const block = (key, label, value, opts = {}) => ({ key, label, value: String(value || ''), ...opts })
   return [
-    ['oneLine', 'Mô tả 1 câu', ex.oneLine],
-    ['audience', 'Dành cho ai', s.audience],
-    ['team', 'Team / Nhóm', s.team],
-    ['problem', 'Bài toán', s.problem],
-    ['solution', 'Giải pháp', s.solution],
-    ['result', 'Kết quả', s.result],
-    ['highlights', 'Con số nổi bật', hl],
-    ['fitYes', 'Phù hợp với bạn nếu', ex.fitYes],
-    ['fitNo', 'Chưa phù hợp nếu', ex.fitNo],
-    ['prep', 'Cần chuẩn bị gì', s.prep],
-    ['prompt', 'Prompt / quy trình', s.prompt, true],
-    ['pitfalls', 'Lỗi hay gặp', ex.pitfalls],
-    ['limits', 'Giới hạn & lưu ý an toàn', s.limits],
-    ['tech', 'Chi tiết kỹ thuật', ex.tech, true],
-    ['link', 'Link tài liệu / repo', s.link],
-    ['contact', 'Người liên hệ', s.contact],
-  ].map(([key, label, value, mono]) => ({ key, label, value: String(value || ''), mono: !!mono }))
+    { step: 0, title: 'Đầu trang', blocks: [
+      block('oneLine', 'Mô tả 1 câu', ex.oneLine, { required: true }),
+      block('audience', 'Ai dùng được', s.audience, { required: true }),
+      block('members', 'Thành viên cùng làm', (ex.members || []).join(', ')),
+      block('team', 'Team', s.team),
+    ] },
+    { step: 1, title: 'Bài toán & giải pháp', blocks: [
+      block('problem', 'Bài toán', s.problem, { required: true }),
+      block('solution', 'Giải pháp', s.solution, { required: true }),
+      block('result', 'Số liệu & hình ảnh', s.result),
+      block('highlights', 'Con số nổi bật', hl),
+    ] },
+    { step: 2, title: 'Tự áp dụng', blocks: [
+      block('link', 'Link tài liệu / repo', s.link),
+      block('fitYes', 'Phù hợp với bạn nếu', ex.fitYes),
+      block('fitNo', 'Chưa phù hợp nếu', ex.fitNo),
+      block('prep', 'Cần chuẩn bị gì', s.prep, { required: true }),
+      (ex.steps || []).length ? { key: 'steps', label: 'Các bước', steps: ex.steps, value: ex.steps.map((x) => [x.title, x.text, x.prompt, x.note].join('\n')).join('\n') } : block('prompt', 'Prompt / quy trình', s.prompt, { mono: true }),
+      block('success', 'Kết quả bạn sẽ thấy', ex.success),
+      block('pitfalls', 'Lỗi hay gặp', ex.pitfalls),
+      block('tech', 'Chi tiết kỹ thuật', ex.tech, { mono: true }),
+      block('contact', 'Người liên hệ', s.contact),
+    ] },
+    { step: 3, title: 'Lưu ý khi dùng', blocks: [
+      block('safety', 'Nguyên tắc an toàn', ex.safety),
+      block('limits', 'Hiện chưa làm được', s.limits),
+    ] },
+  ]
 }
 
 const escapeRe = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -118,7 +131,8 @@ export default function ReviewPage() {
   const threads = (data?.comments || []).filter((c) => showResolved || !c.resolved || c.id === active)
   const openCount = (data?.comments || []).filter((c) => !c.resolved).length
   const resolvedCount = (data?.comments || []).length - openCount
-  const blocks = sub ? blocksOf(sub) : []
+  const parts = sub ? partsOf(sub) : []
+  const blocks = parts.flatMap((pt) => pt.blocks)
   const fieldOrder = ['title', 'general', ...blocks.map((b) => b.key)]
   const sorted = [...threads].sort((a, b) => fieldOrder.indexOf(a.field) - fieldOrder.indexOf(b.field))
 
@@ -238,10 +252,34 @@ export default function ReviewPage() {
       Góp ý
     </button>
   )
-  const textOf = (field, value, mono) => (
-    <div data-text={field} style={css(`margin-top:6px; white-space:pre-wrap; word-break:break-word; color:#0f172a; ${mono ? 'font:500 13.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; background:#F6F8FC; border:1px solid #EAEFF7; border-radius:12px; padding:12px 14px;' : f(400, 15, 1.7)}`)}>
-      {value ? withMarks(value, threadsFor(field), active, pickThread) : <span style={css(f(400, 14) + ';color:#a3adbf; font-style:italic;')}>(Chưa điền)</span>}
+  const textOf = (field, value, mono, extra = '') => (
+    <div data-text={field} style={css(`margin-top:6px; white-space:pre-wrap; word-break:break-word; color:#0f172a; ${mono ? 'font:500 13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; background:#F6F8FC; border:1px solid #EAEFF7; border-radius:10px; padding:10px 12px;' : f(400, 14.5, 1.7)} ${extra}`)}>
+      {value ? withMarks(value, threadsFor(field), active, pickThread) : <span style={css(f(600, 13) + ';color:#B45300;')}>Chưa điền (bắt buộc)</span>}
     </div>
+  )
+  const canEdit = data.isOwner && ['changes_requested', 'pending', 'approved'].includes(sub.reviewStatus)
+  const editAt = (step) => navigate('/use-cases?edit=' + encodeURIComponent(sub.id) + (step ? '&step=' + step : ''))
+  const editBtn = (step) => canEdit && (
+    <button onClick={() => editAt(step)} className={hoverClass('background:#2c5fff !important; color:#fff !important;')}
+      style={css('display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 13px; border:1px solid #C9D7FF; border-radius:999px; background:#EEF3FF; color:#2c5fff; cursor:pointer; white-space:nowrap;' + f(700, 12.5))}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+      Sửa phần này
+    </button>
+  )
+  const stepsOf = (b) => (
+    <ol style={css('list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:12px;')}>
+      {b.steps.map((x, i) => (
+        <li key={i} style={css('display:flex; gap:11px;')}>
+          <span style={css('flex:none; width:24px; height:24px; border-radius:50%; background:#2c5fff; color:#fff; display:flex; align-items:center; justify-content:center; margin-top:1px;' + f(800, 12))}>{i + 1}</span>
+          <div style={css('flex:1; min-width:0;')}>
+            {x.title && <div data-text="steps" style={css(f(800, 14.5, 1.5) + ';color:#0f172a;')}>{withMarks(x.title, threadsFor('steps'), active, pickThread)}</div>}
+            {x.text && textOf('steps', x.text, false, 'margin-top:2px;')}
+            {x.prompt && textOf('steps', x.prompt, true)}
+            {x.note && <div data-text="steps" style={css('margin-top:6px; padding:7px 11px; border-radius:10px; background:#FFF1F1; border:1px solid #F6C9CB; white-space:pre-wrap; word-break:break-word;' + f(600, 13, 1.55) + ';color:#B4141B;')}>⚠ {withMarks(x.note, threadsFor('steps'), active, pickThread)}</div>}
+          </div>
+        </li>
+      ))}
+    </ol>
   )
 
   const cards = sorted.map((th) => (
@@ -286,14 +324,14 @@ export default function ReviewPage() {
                 <button onClick={() => { setDecide('approved'); setNote('') }} style={css('height:38px; padding:0 18px; border:none; border-radius:999px; background:#00A352; color:#fff; cursor:pointer;' + f(700, 13))}>Duyệt & đăng</button>
               </>
             )}
-            {data.isOwner && ['changes_requested', 'pending', 'approved'].includes(sub.reviewStatus) && (
-              <button onClick={() => navigate('/use-cases?edit=' + encodeURIComponent(sub.id))} style={css('height:38px; padding:0 18px; border:none; border-radius:999px; background:#2c5fff; color:#fff; cursor:pointer;' + f(700, 13))}>Chỉnh sửa bài</button>
+            {canEdit && (
+              <button onClick={() => editAt(0)} style={css('height:38px; padding:0 18px; border:none; border-radius:999px; background:#2c5fff; color:#fff; cursor:pointer;' + f(700, 13))}>Chỉnh sửa bài</button>
             )}
           </div>
 
           {data.isOwner && sub.reviewStatus === 'changes_requested' && (
             <div style={css('margin-top:12px; padding:14px 16px; border-radius:14px; background:#FFF8E8; border:1px solid #F3DCB4;' + f(500, 13.5, 1.6) + ';color:#5C3A00;')}>
-              <b>Admin cần bạn chỉnh sửa trước khi duyệt.</b> Xem các góp ý tô vàng bên cạnh bài, trả lời hoặc bấm <b>Đã sửa</b> cho từng góp ý, rồi bấm <b>Chỉnh sửa bài</b> để cập nhật và gửi lại.
+              <b>Admin cần bạn chỉnh sửa trước khi duyệt.</b> Xem các góp ý tô vàng bên cạnh bài, trả lời hoặc bấm <b>Đã sửa</b> cho từng góp ý, rồi bấm <b>Sửa phần này</b> ở phần cần sửa (hoặc <b>Chỉnh sửa bài</b>) để cập nhật và gửi lại.
               {sub.adminNote && <div style={css('margin-top:8px; white-space:pre-wrap;')}><b>Ghi chú chung:</b> {sub.adminNote}</div>}
             </div>
           )}
@@ -319,16 +357,28 @@ export default function ReviewPage() {
                 {isAdmin && underReview && <span style={css(f(500, 12) + ';color:#94a3b8;')}>Góp ý chung cho cả bài</span>}
               </div>
 
-              {blocks.map((b) => (
-                <section key={b.key} data-field={b.key} style={css('margin-top:22px; padding-top:18px; border-top:1px solid #F0F3F8;')}>
-                  <div style={css('display:flex; align-items:center; gap:8px;')}>
-                    <h2 style={css('flex:1; margin:0;' + f(800, 12.5) + ';letter-spacing:.06em; text-transform:uppercase; color:#8A97AD;')}>{b.label}</h2>
-                    {countBadge(b.key)}{addBtn(b.key)}
-                  </div>
-                  {textOf(b.key, b.value, b.mono)}
-                  {b.key === 'link' && b.value && !safeHref(b.value) && <div style={css('margin-top:6px;' + f(700, 12) + ';color:#D8232A;')}>⚠ Link không hợp lệ (chỉ nhận http/https), sẽ không bấm được.</div>}
-                </section>
-              ))}
+              {parts.map((pt) => {
+                const shown = pt.blocks.filter((b) => b.value.trim() || b.required || threadsFor(b.key).length)
+                return (
+                  <section key={pt.step} style={css('margin-top:26px;')}>
+                    <div style={css('display:flex; align-items:center; gap:10px; padding:9px 12px 9px 14px; border-radius:12px; background:linear-gradient(90deg,#1D3A8F,#2c5fff);')}>
+                      <h2 style={css('flex:1; min-width:0; margin:0;' + f(800, 16) + ';color:#fff;')}>{pt.step + 1}. {pt.title}</h2>
+                      {editBtn(pt.step)}
+                    </div>
+                    {!shown.length && <div style={css('margin-top:10px; padding:0 4px;' + f(500, 13) + ';color:#94a3b8;')}>Không điền phần này (không bắt buộc).</div>}
+                    {shown.map((b) => (
+                      <div key={b.key} data-field={b.key} style={css('margin-top:14px; padding:0 4px;')}>
+                        <div style={css('display:flex; align-items:center; gap:8px;')}>
+                          <h3 style={css('flex:1; margin:0;' + f(800, 14) + ';color:#1D3A8F;')}>{b.label}</h3>
+                          {countBadge(b.key)}{addBtn(b.key)}
+                        </div>
+                        {b.steps ? stepsOf(b) : textOf(b.key, b.value, b.mono)}
+                        {b.key === 'link' && b.value && !safeHref(b.value) && <div style={css('margin-top:6px;' + f(700, 12) + ';color:#D8232A;')}>⚠ Link không hợp lệ (chỉ nhận http/https), sẽ không bấm được.</div>}
+                      </div>
+                    ))}
+                  </section>
+                )
+              })}
             </article>
 
             <aside aria-label="Góp ý" style={css(`position:relative; min-width:0; ${wide ? 'align-self:stretch;' : 'display:flex; flex-direction:column; gap:10px;'}`)}>

@@ -13,7 +13,7 @@ import { PENDING_BY_ID, isBoothOwner } from '../showcase.js'
 const router = express.Router()
 router.use(requireAuth)
 
-const FIELDS = ['title', 'oneLine', 'audience', 'team', 'problem', 'solution', 'result', 'highlights', 'fitYes', 'fitNo', 'prep', 'prompt', 'pitfalls', 'limits', 'tech', 'link', 'contact', 'general']
+const FIELDS = ['title', 'oneLine', 'audience', 'members', 'team', 'steps', 'success', 'safety', 'problem', 'solution', 'result', 'highlights', 'fitYes', 'fitNo', 'prep', 'prompt', 'pitfalls', 'limits', 'tech', 'link', 'contact', 'general']
 
 // The author, or for an AI Exhibition booth's write-up any of the booth's owners (the team writes it together).
 function isTeamAuthor(row, user) {

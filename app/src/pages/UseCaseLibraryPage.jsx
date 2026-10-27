@@ -196,8 +196,11 @@ export default function UseCaseLibraryPage() {
 
   // ?edit=<id>: reopen my submission, prefilled, to fix what the admin asked for and resubmit.
   useEffect(() => {
-    const editId = new URLSearchParams(location.search).get('edit')
+    const params = new URLSearchParams(location.search)
+    const editId = params.get('edit')
     if (!editId) return
+    // &step=<n>: the review page's "Sửa phần này" opens the form on that part
+    const startStep = Math.min(Math.max(Number(params.get('step')) || 0, 0), SHARE_STEPS.length - 1)
     api.listSubmissions('?mine=1').then((d) => {
       const s = (d.submissions || []).find((x) => x.id === editId)
       if (!s) return
@@ -205,7 +208,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' , success: ex.success || '', safety: ex.safety || '' })
       // older posts had one Prompt box: it becomes step 1
       setShareSteps(ex.steps && ex.steps.length ? ex.steps.map((x) => ({ ...EMPTY_STEP, ...x })) : s.prompt ? [{ ...EMPTY_STEP, title: 'Prompt / quy trình', prompt: s.prompt }] : [EMPTY_STEP])
-      setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
+      setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(startStep)
       setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && !/^Anonymous( \d+)?$/.test(s.alias) ? s.alias : '')
       setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareMembers((ex.members || []).join(', ')); setShareBooth(ex.booth || '')
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
