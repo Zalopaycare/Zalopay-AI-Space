@@ -1,7 +1,8 @@
 export default {
   id: 'c2',
   postedAt: '2026-09-23',
-  title: 'Cả team làm việc với AI theo một quy trình chung trên Claude Code, Cursor và Codex',
+  // Tên lấy theo booth 3 trên Zalopay AI Exhibition 2026.
+  title: 'us-hive — Tổ đội Agent Engineering, chung TEAM, trọn TIM',
   toolName: 'us-hive',
   desc: 'Developer cài một lần, gọi trợ lý AI bằng một câu lệnh, và được làm theo cùng quy trình, cùng tiêu chuẩn kỹ thuật Zalopay như cả team.',
   type: 'tool',

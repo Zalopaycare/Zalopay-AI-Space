@@ -1,7 +1,8 @@
 export default {
   id: 'c6',
   postedAt: '2026-09-30',
-  title: 'Tạo nhóm người dùng (segment) mới trong ~4 giờ thay vì 1–2 ngày',
+  // Tên lấy theo booth 24 trên Zalopay AI Exhibition 2026.
+  title: 'Segment Pipeline Agent Skill',
   toolName: 'segment-pipeline',
   desc: 'Team Data đưa 1 ticket Jira yêu cầu tạo nhóm người dùng mới, AI kiểm dữ liệu thật rồi trả về code xử lý, câu lệnh tạo bảng và tài liệu.',
   type: 'case',

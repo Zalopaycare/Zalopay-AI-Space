@@ -1,7 +1,8 @@
 export default {
   id: 'c3',
   postedAt: '2026-09-23',
-  title: 'Bớt lỗi nhập sai khi cấu hình khuyến mãi trong CRM tool nhờ trợ lý tóm tắt và kiểm tra',
+  // Tên lấy theo booth 10 trên Zalopay AI Exhibition 2026.
+  title: 'Assistant trên CRM tool',
   toolName: 'CRM Assistant',
   desc: 'Người làm nghiệp vụ hỏi cách dùng CRM hoặc bấm 1 nút, nhận lời giải thích dễ đọc về nhóm khách hàng và ưu đãi đã cấu hình, kèm góp ý.',
   type: 'tool',

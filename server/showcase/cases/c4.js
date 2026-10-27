@@ -1,7 +1,8 @@
 export default {
   id: 'c4',
   postedAt: '2026-09-23',
-  title: 'Tự đưa AI agent lên chạy thật bằng lệnh tiếng Việt, không cần biết lập trình',
+  // Tên lấy theo booth 2 trên Zalopay AI Exhibition 2026.
+  title: 'Zalopay Agent Base',
   toolName: 'Zalopay Agent Base Skills',
   desc: 'Người chưa rành kỹ thuật cài bộ skill vào Claude Code, Codex hoặc Cursor, ra lệnh bằng tiếng Việt và nhận đường link ứng dụng chạy thật.',
   type: 'guide',

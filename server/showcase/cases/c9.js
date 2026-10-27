@@ -3,7 +3,8 @@ const P = '/use-cases/c9/'
 export default {
   id: 'c9',
   postedAt: '2026-09-30',
-  title: 'Hỏi bot trên Teams để biết vì sao build/deploy lỗi, không phải chờ đội Platform',
+  // Tên lấy theo booth 4 trên Zalopay AI Exhibition 2026.
+  title: 'Hỗ trợ CICD',
   toolName: 'Taxi Agent',
   desc: 'Dev, SRE, người vận hành release hỏi bot trên Teams bằng mã ticket hoặc link job; bot tự tra nhiều hệ thống và trả lời nguyên nhân lỗi, cách sửa.',
   type: 'tool',

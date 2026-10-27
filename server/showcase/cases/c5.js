@@ -1,7 +1,8 @@
 export default {
   id: 'c5',
   postedAt: '2026-09-23',
-  title: 'Để AI viết bài blog, tin tức cho website Zalopay, bớt thuê Agency',
+  // Tên lấy theo booth 27 trên Zalopay AI Exhibition 2026.
+  title: 'Zalopay Website Operation skill',
   toolName: 'zlpws-admin-mcp',
   desc: 'Người vận hành website gõ yêu cầu cho trợ lý AI, nhận bài blog nháp đã tạo sẵn trên trang thử nghiệm của zalopay.vn.',
   type: 'tool',
