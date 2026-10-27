@@ -10,12 +10,12 @@ const fmt = (raw) => {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-/** Byline of a post made for a team (extra.postAs 'team'): the team name, or every member when the
- *  author chose to list them. '' for a personal post, which shows its author with an avatar. */
+/** Byline of a post made for a team (extra.postAs 'team'): every member, "a, b, c" (the team name only
+ *  for an early team post without members). '' for a personal post, which shows its author with an avatar. */
 export function teamByline(s) {
   const e = s.extra || {}
   if (e.postAs !== 'team' || s.anonymous) return ''
-  return e.showAs === 'members' && (e.members || []).length ? e.members.join(', ') : s.team || ''
+  return (e.members || []).length ? e.members.join(', ') : s.team || ''
 }
 
 /** s = submission as the API returns it (title, problem, …, extra: { type, oneLine, highlights, fitYes, fitNo, pitfalls, tech }). */

@@ -221,23 +221,22 @@ function cleanExtra(e) {
     highlights: (Array.isArray(e.highlights) ? e.highlights : []).slice(0, 3)
       .map((h) => ({ value: txt(h && h.value, 40), label: txt(h && h.label, 120) })).filter((h) => h.value || h.label),
     fitYes: txt(e.fitYes), fitNo: txt(e.fitNo), pitfalls: txt(e.pitfalls), tech: txt(e.tech, 8000),
-    // Posted for a team: the byline shows the team name (showAs 'team') or everyone who built it ('members').
+    // Posted for a team: the byline lists everyone who built it.
     postAs: e.postAs === 'team' ? 'team' : '',
-    showAs: e.postAs === 'team' && e.showAs === 'members' ? 'members' : '',
+    showAs: e.postAs === 'team' ? 'members' : '',
     members: e.postAs === 'team' ? [...new Set((Array.isArray(e.members) ? e.members : []).map((m) => txt(m, 60)).filter(Boolean))].slice(0, 30) : [],
   }
   return Object.values(out).some((v) => (Array.isArray(v) ? v.length : v)) ? JSON.stringify(out) : null
 }
 const parseExtra = (v) => { try { return v ? JSON.parse(v) : null } catch { return null } }
 
-const SUBMISSION_FIELDS = ['title', 'audience', 'team', 'problem', 'solution', 'prep', 'prompt', 'result']
-// Loại / Người thực hiện / Trạng thái are no longer asked in the share form, so they're optional here.
+const SUBMISSION_FIELDS = ['title', 'audience', 'problem', 'solution', 'prep', 'prompt', 'result']
+// Loại / Người thực hiện / Trạng thái / Team are no longer asked in the share form, so they're optional here.
 const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.level
 
 router.post('/submissions', requireAuth, (req, res) => {
   const f = req.body || {}
-  const required = ['title', 'audience', 'team', 'problem', 'solution', 'prep', 'prompt', 'result']
-  if (required.some((k) => !String(f[k] || '').trim())) return res.status(400).json({ error: 'missing_fields' })
+  if (SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim())) return res.status(400).json({ error: 'missing_fields' })
   if (!Array.isArray(f.category) || !f.category.length || !f.level) {
     return res.status(400).json({ error: 'missing_fields' })
   }
@@ -247,7 +246,7 @@ router.post('/submissions', requireAuth, (req, res) => {
   db.prepare(`INSERT INTO use_case_submissions
     (id, title, audience, team, problem, solution, prep, prompt_text, result, limits, contact, link, kind, status_field, level, category, topics, tools, author_id)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(id, f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
+    .run(id, f.title.trim(), f.audience.trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
       f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link),
       f.kind || '', f.status || '', f.level || '', JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), req.user.id)
   saveCover(id, cover)
@@ -280,7 +279,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (cover === false) return res.status(400).json({ error: 'bad_cover' })
   db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
     limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = ?, edited_at = datetime('now') WHERE id = ?`)
-    .run(f.title.trim(), f.audience.trim(), f.team.trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
+    .run(f.title.trim(), f.audience.trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
       String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link), f.kind || '', f.status || '', f.level || '',
       JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)

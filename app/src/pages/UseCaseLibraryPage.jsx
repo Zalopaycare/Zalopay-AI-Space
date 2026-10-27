@@ -50,13 +50,17 @@ const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', so
 const EMPTY_HIGHLIGHTS = [{ value: '', label: '' }, { value: '', label: '' }, { value: '', label: '' }]
 const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((list || [])[i] || {}) }))
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
+// One step per part of the published page, in the page's order: header, then sections 1–4.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Giới thiệu', part: 'Phần đầu trang & Tóm tắt' },
-  { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán, Giải pháp' },
+  { key: 'intro', label: 'Đầu trang', part: 'Phần đầu trang: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
+  { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp' },
+  { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'result', label: 'Kết quả', part: 'Phần Kết quả' },
-  { key: 'apply', label: 'Ứng dụng ngay', part: 'Phần Ứng dụng ngay' },
-  { key: 'more', label: 'Lưu ý & liên hệ', part: 'Phần An toàn, Kỹ thuật, Liên hệ' },
+  { key: 'safety', label: 'An toàn & giới hạn', part: 'Phần An toàn & giới hạn' },
 ]
+// Inputs in the share form (kept small so a step fits without much scrolling).
+const FIELD_INPUT = 'width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13.5px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;'
+const FIELD_AREA = FIELD_INPUT + ' line-height:1.6; resize:vertical;'
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
 
@@ -132,9 +136,8 @@ export default function UseCaseLibraryPage() {
   const cmtAnonOpts = () => ({ anonymous: cmtAnon, alias: cmtAnon ? cmtAlias.trim() : '' })
   const [shareAnon, setShareAnon] = useState(false)
   const [shareAlias, setShareAlias] = useState('')
-  // Posted for myself or for a team; a team post shows the team name or every member ("a, b, c").
+  // Posted for myself or for a team; a team post shows every member ("a, b, c") instead of me.
   const [sharePostAs, setSharePostAs] = useState('personal')
-  const [shareShowAs, setShareShowAs] = useState('team')
   const [shareMembers, setShareMembers] = useState('')
   const [shareHighlights, setShareHighlights] = useState(EMPTY_HIGHLIGHTS)
   // Fill the form from the Word template instead of typing: { name, filled, missing } | null
@@ -201,7 +204,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' })
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
       setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && !/^Anonymous( \d+)?$/.test(s.alias) ? s.alias : '')
-      setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareShowAs(ex.showAs === 'members' ? 'members' : 'team'); setShareMembers((ex.members || []).join(', '))
+      setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareMembers((ex.members || []).join(', '))
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       setShareCategory([].concat(s.category || []))
       const known = (list, all) => list.filter((x) => all.includes(x))
@@ -292,7 +295,7 @@ export default function UseCaseLibraryPage() {
   const restoredRef = useRef(false)
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareShowAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
 
   useEffect(() => {
     if (restoredRef.current) return
@@ -304,7 +307,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ ...EMPTY_SHARE_FORM, ...(d.shareForm || {}) })
       setShareType(d.shareType || '')
       setShareAnon(!!d.shareAnon); setShareAlias(d.shareAlias || '')
-      setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareShowAs(d.shareShowAs === 'members' ? 'members' : 'team'); setShareMembers(d.shareMembers || '')
+      setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareMembers(d.shareMembers || '')
       setShareHighlights(padHighlights(d.shareHighlights))
       setShareKind(d.shareKind || '')
       setShareStatus(d.shareStatus || '')
@@ -337,7 +340,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareShowAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -366,7 +369,7 @@ export default function UseCaseLibraryPage() {
   }
 
   const resetShareForm = () => {
-    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareShowAs('team'); setShareMembers(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
+    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
     setShareCover(null); setCoverError(''); setDocxInfo(null); setDocxError('')
@@ -479,19 +482,17 @@ export default function UseCaseLibraryPage() {
   const fieldDefs = [
     ['title', 'Tên use case', 'Required', 'Một câu ngắn gọn nói rõ use case làm được gì.', 'Ví dụ: Tóm tắt phản hồi khách hàng theo tuần', 'input', 0, 'intro'],
     ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai dùng, làm được gì.', 'Ví dụ: Giúp team CS gom và tóm tắt phản hồi của cả tuần trong 30 phút.', 'input', 0, 'intro'],
-    ['audience', 'Dành cho ai', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Ví dụ: QC / QE, team mobile', 'input', 0, 'intro'],
-    ['team', 'Team / Nhóm', 'Required', 'Nhóm đang làm use case, để người đọc biết hỏi ai.', 'Ví dụ: Product Ops', 'input', 0, 'intro'],
+    ['audience', 'Ai dùng được', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Ví dụ: QC / QE, team mobile', 'input', 0, 'intro'],
     ['problem', 'Bài toán', 'Required', 'Vấn đề bạn gặp và bối cảnh công việc, trước khi có AI.', 'Mỗi tuần cần đọc hàng trăm phản hồi từ khảo sát và ticket...', 'area', 4, 'ps'],
     ['solution', 'Giải pháp', 'Required', 'AI giúp thế nào. Mỗi dòng một bước.', 'Gom dữ liệu về một file\nNhờ AI phân nhóm theo chủ đề\n...', 'area', 5, 'ps'],
-    ['result', 'Kết quả', 'Required', 'Thay đổi sau khi dùng: thời gian, chất lượng, số liệu nếu có. Mỗi dòng một ý.', 'Giảm từ 4 giờ xuống 30 phút mỗi tuần...', 'area', 3, 'result'],
+    ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file mẫu để người khác tự xem.', 'https://...', 'input', 0, 'apply'],
     ['fitYes', 'Phù hợp với bạn nếu', 'Optional', 'Mỗi dòng một trường hợp nên dùng.', 'Bạn phải đọc nhiều phản hồi dạng chữ mỗi tuần', 'area', 3, 'apply'],
     ['fitNo', 'Chưa phù hợp nếu', 'Optional', 'Mỗi dòng một trường hợp chưa nên dùng.', 'Dữ liệu có thông tin khách hàng chưa được che', 'area', 2, 'apply'],
     ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', 'Tài khoản Claude nội bộ\nQuyền xem dashboard CSAT', 'area', 3, 'apply'],
     ['prompt', 'Prompt / quy trình', 'Required', 'Prompt hoặc các bước cụ thể để người khác copy và làm lại được.', 'Dán prompt hoặc mô tả quy trình ở đây...', 'area', 5, 'apply'],
     ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', 'AI tóm tắt thiếu ý → chia file thành nhiều phần nhỏ rồi gửi lần lượt', 'area', 3, 'apply'],
-    ['limits', 'Giới hạn & lưu ý an toàn', 'Optional', 'Chỗ nào AI còn sai, dữ liệu nào không được đưa vào, khâu nào cần người kiểm lại.', 'Không đưa dữ liệu khách hàng chưa che vào prompt...', 'area', 3, 'more'],
-    ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file mẫu để người khác tự xem.', 'https://...', 'input', 0, 'more'],
-    ['contact', 'Người liên hệ', 'Optional', 'Ai trả lời khi người đọc gặp vướng: Tên người · Team.', 'Ví dụ: Thảo NT · Product Ops', 'input', 0, 'more'],
+    ['result', 'Kết quả', 'Required', 'Thay đổi sau khi dùng: thời gian, chất lượng, số liệu nếu có. Mỗi dòng một ý.', 'Giảm từ 4 giờ xuống 30 phút mỗi tuần...', 'area', 3, 'result'],
+    ['limits', 'Giới hạn & lưu ý an toàn', 'Optional', 'Chỗ nào AI còn sai, dữ liệu nào không được đưa vào, khâu nào cần người kiểm lại.', 'Không đưa dữ liệu khách hàng chưa che vào prompt...', 'area', 3, 'safety'],
   ]
   const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step]) => ({
     key: k, label, req, hint, placeholder, rows, step,
@@ -505,21 +506,17 @@ export default function UseCaseLibraryPage() {
     type: shareType, oneLine: shareForm.oneLine.trim(),
     highlights: shareHighlights.map((h) => ({ value: h.value.trim(), label: h.label.trim() })).filter((h) => h.value || h.label),
     fitYes: shareForm.fitYes.trim(), fitNo: shareForm.fitNo.trim(), pitfalls: shareForm.pitfalls.trim(), tech: shareForm.tech.trim(),
-    ...(teamPost ? { postAs: 'team', showAs: shareShowAs, members: shareMemberList } : {}),
+    ...(teamPost ? { postAs: 'team', showAs: 'members', members: shareMemberList } : {}),
   })
   // What's still missing, per step (labels), so the stepper can point at it.
   const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
     ...shareFields.filter((f) => f.step === st.key && f.req === 'Required' && !f.value.trim()).map((f) => f.label),
-    ...(st.key === 'intro' ? [!shareLevel && 'Độ khó', !shareCategory.length && 'Category'].filter(Boolean) : []),
+    ...(st.key === 'intro' ? [!shareLevel && 'Độ khó', !shareCategory.length && 'Category', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
   ]]))
-  const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.team.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && shareForm.prompt.trim() && shareForm.result.trim() && shareCategory.length && shareLevel)
+  const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && shareForm.prompt.trim() && shareForm.result.trim() && shareCategory.length && shareLevel && (!teamPost || shareMemberList.length))
   const oneOf = (val, setVal, opts, labels = {}) => opts.map((o) => ({ label: labels[o] || o, ...chip(val === o), onPick: () => setVal(val === o ? '' : o) }))
 
   const shareCategories = CATS.map((c) => ({ label: c, ...chip(shareCategory.indexOf(c) >= 0), onPick: () => setShareCategory((s) => (s.indexOf(c) >= 0 ? s.filter((x) => x !== c) : s.concat([c]))) }))
-  const shareTopics = TOPICS.map((tp) => {
-    const on = shareTopicSel.indexOf(tp) >= 0
-    return { label: tp, ...chip(on), opacity: !on && shareTopicSel.length >= 3 ? 0.45 : 1, onPick: () => setShareTopicSel((s) => { const has = s.indexOf(tp) >= 0; if (!has && s.length >= 3) return s; return has ? s.filter((x) => x !== tp) : [...s, tp] }) }
-  })
   const shareTools = TOOLS.map((tl) => ({ label: tl, ...chip(shareToolSel.indexOf(tl) >= 0), onPick: () => setShareToolSel((s) => (s.indexOf(tl) >= 0 ? s.filter((x) => x !== tl) : [...s, tl])) }))
   const shareLevels = oneOf(shareLevel, setShareLevel, ['Dễ', 'Trung bình', 'Khó'])
 
@@ -887,35 +884,35 @@ export default function UseCaseLibraryPage() {
         style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,8,20,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:48px 24px; overflow-y:auto; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}
       >
         <div ref={shareDialog.ref} {...shareDialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('width:880px; max-width:100%; background:#eef1f9; border-radius:24px; outline:none; box-shadow:0 44px 110px rgba(2,8,30,.6); overflow:hidden;')}>
-          <div style={css('position:relative; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%); padding:26px 32px 28px;')}>
-            <button onClick={closeShare} title="Đóng" aria-label="Đóng" style={css('position:absolute; top:22px; right:22px; width:36px; height:36px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#dbe6ff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;')}>
+          <div style={css('position:relative; background:linear-gradient(180deg,#0c1533 0%,#070b1c 100%); padding:20px 24px 22px;')}>
+            <button onClick={closeShare} title="Đóng" aria-label="Đóng" style={css('position:absolute; top:22px; right:22px; width:36px; height:32px; border-radius:11px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#dbe6ff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
             </button>
             <h1 style={css('margin:0; padding-right:56px; font-size:26px; font-weight:800; line-height:1.25; letter-spacing:-.01em; color:#fff;')}>{shareHeading}</h1>
-            <p style={css('margin:9px 0 0; padding-right:56px; font-size:14px; line-height:1.6; color:rgba(206,219,245,.72);')}>{shareSubhead}</p>
+            <p style={css('margin:9px 0 0; padding-right:56px; font-size:13px; line-height:1.6; color:rgba(206,219,245,.72);')}>{shareSubhead}</p>
             <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
-              <span style={css('display:inline-flex; align-items:center; gap:8px; height:30px; padding:0 13px; border-radius:999px; background:rgba(22,214,140,.14); border:1px solid rgba(22,214,140,.34); font-size:12px; font-weight:700; color:#6fe3aa;')}>
+              <span style={css('display:inline-flex; align-items:center; gap:8px; height:30px; padding:0 13px; border-radius:999px; background:rgba(22,214,140,.14); border:1px solid rgba(22,214,140,.34); font-size:11.5px; font-weight:700; color:#6fe3aa;')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                 {editing ? 'Sửa xong bấm "Gửi lại để duyệt"' : hasDraft ? 'Nháp đã lưu lúc ' + draftSavedAt : 'Nháp tự lưu khi bạn gõ'}
               </span>
               {hasDraft && (
-                <button onClick={clearDraft} style={css('height:30px; padding:0 13px; border-radius:999px; border:1px solid rgba(255,255,255,.2); background:transparent; color:#c3d0f5; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;')}>{t('Xoá nháp')}</button>
+                <button onClick={clearDraft} style={css('height:30px; padding:0 13px; border-radius:999px; border:1px solid rgba(255,255,255,.2); background:transparent; color:#c3d0f5; font-family:inherit; font-size:11.5px; font-weight:700; cursor:pointer;')}>{t('Xoá nháp')}</button>
               )}
             </div>
           </div>
 
-          <div style={css('padding:26px 32px 34px;')}>
+          <div style={css('padding:20px 24px 26px;')}>
             <div style={css('display:flex; flex-direction:column; gap:16px;')}>
               {shareStage === 'submitted' && (
-                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:34px 30px; box-shadow:0 10px 24px rgba(30,50,90,.06); text-align:center;')}>
+                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:26px 24px; box-shadow:0 10px 24px rgba(30,50,90,.06); text-align:center;')}>
                   <div style={css('width:56px; height:56px; margin:0 auto; border-radius:18px; background:#FFF1E0; display:flex; align-items:center; justify-content:center;')}>
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#B45300" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
                   </div>
                   <div style={css('margin-top:16px; font-size:19px; font-weight:800; color:#0F172A;')}>{t('Đã gửi để Admin duyệt')}</div>
-                  <div style={css('margin-top:8px; font-size:14px; line-height:1.6; color:#64748b;')}>Use case ở trạng thái <strong style={{ color: '#B45300' }}>Chờ duyệt</strong>. Bạn sẽ nhận thông báo khi được duyệt hoặc bị từ chối kèm lý do. Trong lúc chờ, bài chưa xuất hiện trong Library.</div>
+                  <div style={css('margin-top:8px; font-size:13px; line-height:1.6; color:#64748b;')}>Use case ở trạng thái <strong style={{ color: '#B45300' }}>Chờ duyệt</strong>. Bạn sẽ nhận thông báo khi được duyệt hoặc bị từ chối kèm lý do. Trong lúc chờ, bài chưa xuất hiện trong Library.</div>
                   <div style={css('display:flex; justify-content:center; gap:12px; margin-top:22px;')}>
-                    <a href="/profile#usecase" onClick={(e) => { e.preventDefault(); navigate('/profile#usecase') }} style={css('display:inline-flex; align-items:center; height:44px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:13.5px; font-weight:700; text-decoration:none;')}>{t('Xem trong Use case của tôi')}</a>
-                    <button onClick={closeShare} style={css('height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;')}>{t('Về Library')}</button>
+                    <a href="/profile#usecase" onClick={(e) => { e.preventDefault(); navigate('/profile#usecase') }} style={css('display:inline-flex; align-items:center; height:38px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:12.5px; font-weight:700; text-decoration:none;')}>{t('Xem trong Use case của tôi')}</a>
+                    <button onClick={closeShare} style={css('height:38px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;')}>{t('Về Library')}</button>
                   </div>
                 </div>
               )}
@@ -924,7 +921,7 @@ export default function UseCaseLibraryPage() {
                 const pv = previewTpl()
                 return (
                 <div>
-                  <div style={css('display:flex; align-items:center; gap:10px; background:#EEF3FF; border:1px solid #CFE0FF; border-radius:14px; padding:13px 18px; font-size:13.5px; font-weight:700; color:#1E44A8;')}>
+                  <div style={css('display:flex; align-items:center; gap:10px; background:#EEF3FF; border:1px solid #CFE0FF; border-radius:14px; padding:13px 18px; font-size:12.5px; font-weight:700; color:#1E44A8;')}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7"></path></svg>
                     {t('Xem trước: đây đúng là trang chi tiết người đọc sẽ thấy sau khi bài được duyệt.')}
                   </div>
@@ -938,15 +935,15 @@ export default function UseCaseLibraryPage() {
                     </div>
                   )}
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap;')}>
-                    <button onClick={() => setShareStage('form')} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Quay lại chỉnh sửa')}</button>
+                    <button onClick={() => setShareStage('form')} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Quay lại chỉnh sửa')}</button>
                     <button
                       onClick={submitShare}
-                      style={css('margin-left:auto; height:48px; padding:0 26px; white-space:nowrap; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
+                      style={css('margin-left:auto; height:40px; padding:0 26px; white-space:nowrap; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
                     >
                       {editing ? 'Gửi lại để duyệt' : t('Gửi duyệt')}
                     </button>
                   </div>
-                  {shareError && <div style={css('margin-top:10px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{shareError}</div>}
+                  {shareError && <div style={css('margin-top:10px; font-size:12px; font-weight:600; color:#D8232A;')}>{shareError}</div>}
                 </div>
                 )
               })()}
@@ -966,26 +963,26 @@ export default function UseCaseLibraryPage() {
                   {!editing && (
                     <div style={css('margin-bottom:16px; padding:16px 18px; border-radius:18px; background:linear-gradient(180deg,#F3F7FF,#EEF3FF); border:1px solid #D5E2FC;')}>
                       <div style={css('display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;')}>
-                        <span style={css('flex:none; width:38px; height:38px; border-radius:11px; background:#2B579A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900;')}>W</span>
+                        <span style={css('flex:none; width:38px; height:34px; border-radius:11px; background:#2B579A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13.5px; font-weight:900;')}>W</span>
                         <div style={css('flex:1; min-width:220px;')}>
-                          <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Thích điền bằng Word hơn?')}</div>
-                          <div style={css('margin-top:3px; font-size:12.5px; line-height:1.55; color:#475569;')}>{t('Tải template, điền trên máy (có thể gửi team góp ý trước), rồi tải file lên. Nội dung tự điền vào form bên dưới để bạn kiểm tra và bấm Gửi duyệt.')}</div>
+                          <div style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Thích điền bằng Word hơn?')}</div>
+                          <div style={css('margin-top:3px; font-size:12px; line-height:1.55; color:#475569;')}>{t('Tải template, điền trên máy (có thể gửi team góp ý trước), rồi tải file lên. Nội dung tự điền vào form bên dưới để bạn kiểm tra và bấm Gửi duyệt.')}</div>
                         </div>
                         <div style={css('display:flex; gap:8px; flex-wrap:wrap;')}>
-                          <a href={TEMPLATE_URL} download className={hoverClass('background:#F2F6FF !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:13px; font-weight:700; text-decoration:none; white-space:nowrap;')}>
+                          <a href={TEMPLATE_URL} download className={hoverClass('background:#F2F6FF !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:12.5px; font-weight:700; text-decoration:none; white-space:nowrap;')}>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
                             {t('Tải template Word')}
                           </a>
-                          <label className={hoverClass('filter:brightness(1.06) !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border:none; border-radius:999px; background:#2c5fff; color:#fff; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
+                          <label className={hoverClass('filter:brightness(1.06) !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:none; border-radius:999px; background:#2c5fff; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
                             <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={(e) => { importDocx(e.target.files?.[0]); e.target.value = '' }} />
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21V9"></path><path d="m7 14 5-5 5 5"></path><path d="M5 3h14"></path></svg>
                             {t('Tải lên file Word đã điền')}
                           </label>
                         </div>
                       </div>
-                      {docxError && <div style={css('margin-top:10px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{docxError}</div>}
+                      {docxError && <div style={css('margin-top:10px; font-size:12px; font-weight:600; color:#D8232A;')}>{docxError}</div>}
                       {docxInfo && (
-                        <div role="status" style={css(`margin-top:10px; padding:10px 12px; border-radius:12px; background:${docxInfo.missing.length ? '#FFF8E8' : '#F2FBF6'}; border:1px solid ${docxInfo.missing.length ? '#F3E0B0' : '#CFEEDE'}; font-size:12.5px; line-height:1.55; color:${docxInfo.missing.length ? '#5A4522' : '#1F4B33'};`)}>
+                        <div role="status" style={css(`margin-top:10px; padding:10px 12px; border-radius:12px; background:${docxInfo.missing.length ? '#FFF8E8' : '#F2FBF6'}; border:1px solid ${docxInfo.missing.length ? '#F3E0B0' : '#CFEEDE'}; font-size:12px; line-height:1.55; color:${docxInfo.missing.length ? '#5A4522' : '#1F4B33'};`)}>
                           <b>✓ {t('Đã điền')} {docxInfo.filled} {t('mục từ')} "{docxInfo.name}".</b> {docxInfo.missing.length ? t('Còn thiếu mục bắt buộc') + ': ' + docxInfo.missing.join(', ') + '. ' + t('Điền thêm bên dưới rồi gửi.') : t('Kiểm tra lại nội dung bên dưới rồi bấm Gửi duyệt.')}
                         </div>
                       )}
@@ -997,66 +994,55 @@ export default function UseCaseLibraryPage() {
                       const on = i === shareStep
                       const miss = missingByStep[st.key].length
                       return (
-                        <button key={st.key} role="tab" aria-selected={on} onClick={() => setShareStep(i)} style={css(`display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px 0 6px; border-radius:999px; border:1px solid ${on ? '#2c5fff' : '#DDE3EC'}; background:${on ? '#2c5fff' : '#fff'}; color:${on ? '#fff' : '#3A4757'}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
-                          <span style={css(`width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; background:${on ? 'rgba(255,255,255,.22)' : miss ? '#EEF1F7' : '#E7F9F0'}; color:${on ? '#fff' : miss ? '#64748b' : '#00893F'};`)}>{miss ? i + 1 : '✓'}</span>
+                        <button key={st.key} role="tab" aria-selected={on} onClick={() => setShareStep(i)} style={css(`display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px 0 6px; border-radius:999px; border:1px solid ${on ? '#2c5fff' : '#DDE3EC'}; background:${on ? '#2c5fff' : '#fff'}; color:${on ? '#fff' : '#3A4757'}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
+                          <span style={css(`width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800; background:${on ? 'rgba(255,255,255,.22)' : miss ? '#EEF1F7' : '#E7F9F0'}; color:${on ? '#fff' : miss ? '#64748b' : '#00893F'};`)}>{miss ? i + 1 : '✓'}</span>
                           {t(st.label)}
                         </button>
                       )
                     })}
                   </div>
-                  <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:26px 28px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                    <div style={css('margin:0 0 20px; font-size:12px; font-weight:700; color:#64748b;')}>{t('Bước')} {shareStep + 1}/{SHARE_STEPS.length} · {t('Điền cho')} {t(SHARE_STEPS[shareStep].part)}</div>
+                  <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:20px 22px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
+                    <div style={css('margin:0 0 20px; font-size:11.5px; font-weight:700; color:#64748b;')}>{t('Bước')} {shareStep + 1}/{SHARE_STEPS.length} · {t('Điền cho')} {t(SHARE_STEPS[shareStep].part)}</div>
                     {SHARE_STEPS[shareStep].key === 'intro' && (
                       <>
-                        <div style={css('margin-bottom:24px;')}>
+                        <div style={css('margin-bottom:16px;')}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
-                            <span style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Ảnh bìa')}</span>
+                            <span style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Ảnh bìa')}</span>
                             <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc')}</span>
                           </div>
-                          <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Hiện trên thẻ use case. Không có ảnh thì dùng icon theo danh mục.')}</div>
+                          <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Hiện trên thẻ use case. Không có ảnh thì dùng icon theo danh mục.')}</div>
                           <div style={css('display:flex; align-items:center; gap:14px; margin-top:10px;')}>
                             <CoverImage c={{ coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, category: shareCategory[0] }} size={84} radius={14} forceImage />
-                            <label className={hoverClass('background:#F2F6FF !important; border-color:#B9CCF8 !important;')} style={css('display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
+                            <label className={hoverClass('background:#F2F6FF !important; border-color:#B9CCF8 !important;')} style={css('display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
                               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => { pickCover(e.target.files?.[0]); e.target.value = '' }} />
                               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m21 15-5-5L5 21"></path></svg>
                               {shareCover && !shareCover.cleared ? t('Đổi ảnh') : t('Tải ảnh lên')}
                             </label>
                             {shareCover && !shareCover.cleared && (
-                              <button type="button" onClick={() => setShareCover(editing ? { cleared: true } : null)} style={css('border:none; background:none; padding:0; cursor:pointer; font-size:13px; font-weight:700; color:#D8232A; font-family:inherit;')}>{t('Bỏ ảnh')}</button>
+                              <button type="button" onClick={() => setShareCover(editing ? { cleared: true } : null)} style={css('border:none; background:none; padding:0; cursor:pointer; font-size:12.5px; font-weight:700; color:#D8232A; font-family:inherit;')}>{t('Bỏ ảnh')}</button>
                             )}
                           </div>
-                          {coverError && <div style={css('margin-top:8px; font-size:12.5px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
+                          {coverError && <div style={css('margin-top:8px; font-size:12px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
                         </div>
-                        <div style={css(`margin:-4px 0 24px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon && !teamPost ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon && !teamPost ? '#F2F6FF' : '#F8FAFE'};`)}>
-                          <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Người đăng')}</div>
-                          <div style={css('margin-top:3px; font-size:12.5px; color:#64748b;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
+                        <div style={css(`margin:-4px 0 16px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon && !teamPost ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon && !teamPost ? '#F2F6FF' : '#F8FAFE'};`)}>
+                          <div style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Người đăng')}</div>
+                          <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
                           <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                             {[['personal', 'Cá nhân'], ['team', 'Team']].map(([v, label]) => {
                               const ch = chip(sharePostAs === v)
-                              return <button key={v} type="button" onClick={() => setSharePostAs(v)} aria-pressed={sharePostAs === v} style={css(`height:34px; padding:0 15px; border:1px solid ${ch.border}; border-radius:999px; background:${ch.bg}; color:${ch.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{t(label)}</button>
+                              return <button key={v} type="button" onClick={() => setSharePostAs(v)} aria-pressed={sharePostAs === v} style={css(`height:30px; padding:0 13px; border:1px solid ${ch.border}; border-radius:999px; background:${ch.bg}; color:${ch.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{t(label)}</button>
                             })}
                           </div>
                           {teamPost ? (
-                            <div style={css('margin-top:14px;')}>
-                              <div style={css('font-size:13px; font-weight:700; color:#0F172A;')}>{t('Hiển thị trên bài')}</div>
-                              <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;')}>
-                                {[['team', 'Tên team'], ['members', 'Tên toàn bộ thành viên']].map(([v, label]) => {
-                                  const ch = chip(shareShowAs === v)
-                                  return <button key={v} type="button" onClick={() => setShareShowAs(v)} aria-pressed={shareShowAs === v} style={css(`height:34px; padding:0 15px; border:1px solid ${ch.border}; border-radius:999px; background:${ch.bg}; color:${ch.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{t(label)}</button>
-                                })}
-                              </div>
-                              {shareShowAs === 'members' ? (
-                                <>
-                                  <input value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} aria-label={t('Thành viên cùng làm')} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;')} />
-                                  <div style={css('margin-top:6px; font-size:12px; color:#94a3b8;')}>{shareMemberList.length ? t('Hiển thị') + ': ' + shareMemberList.join(', ') : t('Chưa có tên nào, bài sẽ hiện tên team.')}</div>
-                                </>
-                              ) : (
-                                <div style={css('margin-top:8px; font-size:12px; color:#94a3b8;')}>{shareForm.team.trim() ? t('Hiển thị') + ': ' + shareForm.team.trim() : t('Lấy từ ô "Team / Nhóm" bên dưới.')}</div>
-                              )}
+                            <div style={css('margin-top:12px;')}>
+                              <label htmlFor="sf-members" style={css('font-size:12.5px; font-weight:800; color:#0F172A;')}>{t('Thành viên cùng làm')}</label>
+                              <span style={css('margin-left:8px; font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc')}</span>
+                              <input id="sf-members" value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css(FIELD_INPUT)} />
+                              <div style={css('margin-top:5px; font-size:11.5px; color:#94a3b8;')}>{shareMemberList.length ? t('Hiện trên bài') + ': ' + shareMemberList.join(', ') : t('Bài sẽ hiện tên toàn bộ thành viên thay cho tên bạn.')}</div>
                             </div>
                           ) : (
                             <>
-                              <div style={css('margin-top:12px; font-size:12.5px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật.')}</div>
+                              <div style={css('margin-top:12px; font-size:12px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật.')}</div>
                               <AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
                             </>
                           )}
@@ -1064,76 +1050,63 @@ export default function UseCaseLibraryPage() {
                       </>
                     )}
                     {shareFields.filter((f) => f.step === SHARE_STEPS[shareStep].key).map((f) => (
-                      <div key={f.key} style={css('margin-bottom:24px;')}>
+                      <div key={f.key} style={css('margin-bottom:16px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <label htmlFor={'sf-' + f.key} style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{f.label}</label>
+                          <label htmlFor={'sf-' + f.key} style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{f.label}</label>
                           <span style={css(`font-size:11px; font-weight:700; color:${f.reqColor};`)}>{f.req === 'Required' ? t('Bắt buộc') : t('Không bắt buộc')}</span>
                         </div>
-                        <div style={css('margin-top:5px; font-size:12.5px; color:#94a3b8;')}>{f.hint}</div>
+                        <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{f.hint}</div>
                         {editReviewNotes.filter((c) => c.field === f.key).map((c) => (
-                          <div key={c.id} style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF8E1; border-left:3px solid #F5C542; font-size:13px; line-height:1.55; color:#5C3A00;')}>
+                          <div key={c.id} style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF8E1; border-left:3px solid #F5C542; font-size:12.5px; line-height:1.55; color:#5C3A00;')}>
                             <b>Góp ý của {c.author.name}:</b> {c.quote ? <i>“{c.quote}” </i> : null}{c.body}
                           </div>
                         ))}
                         {f.isInput && (
-                          <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:13px 15px; font-family:inherit; font-size:15px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;')} />
+                          <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css(FIELD_INPUT)} />
                         )}
                         {f.isArea && (
-                          <textarea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css('width:100%; margin-top:10px; border:1px solid #E6EBF3; border-radius:12px; padding:13px 15px; font-family:inherit; font-size:14.5px; line-height:1.7; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')} />
+                          <textarea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA)} />
                         )}
                       </div>
                     ))}
                     {SHARE_STEPS[shareStep].key === 'result' && (
                       <div style={css('margin-bottom:8px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <span style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Kết quả nổi bật')}</span>
+                          <span style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Kết quả nổi bật')}</span>
                           <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc · tối đa 3')}</span>
                         </div>
-                        <div style={css('margin-top:5px; font-size:12.5px; color:#94a3b8;')}>{t('Con số đáng nhớ nhất, hiện đầu phần Kết quả. Chỉ ghi số đã đo được.')}</div>
+                        <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{t('Con số đáng nhớ nhất, hiện đầu phần Kết quả. Chỉ ghi số đã đo được.')}</div>
                         {shareHighlights.map((h, i) => (
                           <div key={i} style={css('display:flex; gap:8px; margin-top:10px;')}>
-                            <input aria-label={t('Con số') + ' ' + (i + 1)} value={h.value} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)))} placeholder={['2 ngày → 5 phút', '−80%', '12 team'][i]} style={css('flex:0 0 34%; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:14px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;')} />
-                            <input aria-label={t('Ý nghĩa') + ' ' + (i + 1)} value={h.label} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)))} placeholder={['thời gian làm báo cáo tuần', 'lỗi nhập liệu', 'đang dùng hằng tuần'][i]} style={css('flex:1; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:14px; color:#0f172a; outline:none; box-sizing:border-box;')} />
+                            <input aria-label={t('Con số') + ' ' + (i + 1)} value={h.value} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)))} placeholder={['2 ngày → 5 phút', '−80%', '12 team'][i]} style={css('flex:0 0 34%; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;')} />
+                            <input aria-label={t('Ý nghĩa') + ' ' + (i + 1)} value={h.label} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)))} placeholder={['thời gian làm báo cáo tuần', 'lỗi nhập liệu', 'đang dùng hằng tuần'][i]} style={css('flex:1; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; color:#0f172a; outline:none; box-sizing:border-box;')} />
                           </div>
                         ))}
                       </div>
                     )}
                     {SHARE_STEPS[shareStep].key === 'intro' && (
                       <>
-                        <ChipGroup title="Độ khó khi làm lại" required="Bắt buộc · chọn một" options={shareLevels} last />
+                        <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" options={shareLevels} last />
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>Category</label>
+                          <label style={css('font-size:13px; font-weight:800; color:#0F172A;')}>Category</label>
                           <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · chọn được nhiều')}</span>
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareCategories.map((c) => (
-                            <button key={c.label} onClick={c.onPick} style={css(`height:36px; padding:0 15px; border:1px solid ${c.border}; border-radius:999px; background:${c.bg}; color:${c.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{c.label}</button>
+                            <button key={c.label} onClick={c.onPick} style={css(`height:32px; padding:0 13px; border:1px solid ${c.border}; border-radius:999px; background:${c.bg}; color:${c.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{c.label}</button>
                           ))}
                         </div>
 
-                        <div style={css('display:flex; align-items:center; gap:8px; margin-top:24px;')}>
-                          <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Chủ đề')}</label>
-                          <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>Không bắt buộc · tối đa 3 · {shareTopicSel.length}/3</span>
-                        </div>
-                        <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
-                          {shareTopics.map((tp) => (
-                            <button key={tp.label} onClick={() => { if (tp.label === 'Khác') markOtherPick(); tp.onPick() }} style={css(`height:36px; padding:0 15px; border:1px solid ${tp.border}; border-radius:999px; background:${tp.bg}; color:${tp.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; opacity:${tp.opacity};`)}>{tp.label}</button>
-                          ))}
-                          {shareTopicSel.indexOf('Khác') >= 0 && (
-                            <input ref={focusIfJustPicked} value={shareTopicOtherText} onChange={(e) => setShareTopicOtherText(e.target.value)} placeholder="Nhập topic khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
-                          )}
-                        </div>
-
-                        <div style={css('display:flex; align-items:center; gap:8px; margin-top:24px;')}>
-                          <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Công cụ AI')}</label>
+                        <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px;')}>
+                          <label style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Công cụ AI')}</label>
                           <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc')}</span>
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareTools.map((tl) => (
-                            <button key={tl.label} onClick={() => { if (tl.label === 'Khác') markOtherPick(); tl.onPick() }} style={css(`height:36px; padding:0 15px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{tl.label}</button>
+                            <button key={tl.label} onClick={() => { if (tl.label === 'Khác') markOtherPick(); tl.onPick() }} style={css(`height:32px; padding:0 13px; border:1px solid ${tl.border}; border-radius:999px; background:${tl.bg}; color:${tl.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{tl.label}</button>
                           ))}
                           {shareToolSel.indexOf('Khác') >= 0 && (
-                            <input ref={focusIfJustPicked} value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} placeholder="Nhập công cụ AI khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:36px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:13px; color:#0F172A; outline:none;')} />
+                            <input ref={focusIfJustPicked} value={shareToolOtherText} onChange={(e) => setShareToolOtherText(e.target.value)} placeholder="Nhập công cụ AI khác, cách nhau bằng dấu phẩy" style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;')} />
                           )}
                         </div>
 
@@ -1142,11 +1115,11 @@ export default function UseCaseLibraryPage() {
                   </div>
 
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
-                    <button onClick={() => { setHasDraft(true); try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })) } catch { /* ignore */ } closeShare() }} style={css('height:48px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu nháp & đóng')}</button>
+                    <button onClick={() => { setHasDraft(true); try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })) } catch { /* ignore */ } closeShare() }} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu nháp & đóng')}</button>
                     <div style={css('margin-left:auto; display:flex; gap:12px; flex:none;')}>
-                      {shareStep > 0 && <button onClick={() => setShareStep(shareStep - 1)} style={css('height:48px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;')}>‹ {t('Bước trước')}</button>}
+                      {shareStep > 0 && <button onClick={() => setShareStep(shareStep - 1)} style={css('height:40px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>‹ {t('Bước trước')}</button>}
                       {shareStep < SHARE_STEPS.length - 1
-                        ? <button onClick={() => setShareStep(shareStep + 1)} style={css('height:48px; padding:0 24px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 12px 26px rgba(44,95,255,.4);')}>{t('Tiếp')}: {t(SHARE_STEPS[shareStep + 1].label)} ›</button>
+                        ? <button onClick={() => setShareStep(shareStep + 1)} style={css('height:40px; padding:0 24px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 12px 26px rgba(44,95,255,.4);')}>{t('Tiếp')}: {t(SHARE_STEPS[shareStep + 1].label)} ›</button>
                         : (
                           <button
                             onClick={() => {
@@ -1158,14 +1131,14 @@ export default function UseCaseLibraryPage() {
                               }
                               setShareStage('preview'); setShareError('')
                             }}
-                            style={css('height:48px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
+                            style={css('height:40px; padding:0 26px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 12px 26px rgba(44,95,255,.4);')}
                           >
                             {t('Xem trước & gửi')} ›
                           </button>
                         )}
                     </div>
                   </div>
-                  <div style={css(`margin-top:10px; font-size:12.5px; font-weight:600; color:${shareHintColor};`)}>{shareError || (missingByStep[SHARE_STEPS[shareStep].key].length ? t('Bước này còn thiếu') + ': ' + missingByStep[SHARE_STEPS[shareStep].key].join(', ') : shareHint)}</div>
+                  <div style={css(`margin-top:10px; font-size:12px; font-weight:600; color:${shareHintColor};`)}>{shareError || (missingByStep[SHARE_STEPS[shareStep].key].length ? t('Bước này còn thiếu') + ': ' + missingByStep[SHARE_STEPS[shareStep].key].join(', ') : shareHint)}</div>
                 </div>
               )}
             </div>
@@ -1187,12 +1160,12 @@ function ChipGroup({ title, required, options, last }) {
   return (
     <>
       <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:10px;')}>
-        <label style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{title}</label>
+        <label style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{title}</label>
         <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{required}</span>
       </div>
       <div style={css(`display:flex; flex-wrap:wrap; gap:8px; margin-bottom:${last ? 24 : 24}px;`)}>
         {options.map((o) => (
-          <button key={o.label} onClick={o.onPick} style={css(`height:36px; padding:0 15px; border:1px solid ${o.border}; border-radius:999px; background:${o.bg}; color:${o.color}; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;`)}>{o.label}</button>
+          <button key={o.label} onClick={o.onPick} style={css(`height:32px; padding:0 13px; border:1px solid ${o.border}; border-radius:999px; background:${o.bg}; color:${o.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{o.label}</button>
         ))}
       </div>
     </>
