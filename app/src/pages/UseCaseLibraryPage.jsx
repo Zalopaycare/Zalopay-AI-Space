@@ -585,34 +585,34 @@ export default function UseCaseLibraryPage() {
               />
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
 
-            <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:20px; padding:24px 28px; margin:30px 0 36px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
+            <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap;')}>
                 <button
                   onClick={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
                   aria-pressed={voted}
-                  style={css(`display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 20px; border:1px solid ${voted ? '#B9CCF8' : '#DDE3EC'}; border-radius:999px; background:${voted ? '#EAF1FF' : '#fff'}; color:${voted ? '#2c5fff' : '#3A4757'}; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;`)}
+                  style={css(`display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:1px solid ${voted ? '#B9CCF8' : '#DDE3EC'}; border-radius:999px; background:${voted ? '#EAF1FF' : '#fff'}; color:${voted ? '#2c5fff' : '#3A4757'}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}
                 >
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill={voted ? '#2c5fff' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill={voted ? '#2c5fff' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
                   {base} {t('Upvote')}
                 </button>
                 <button
                   onClick={toggleApplied}
                   aria-pressed={iApplied}
                   title={t('Bấm nếu bạn đã tự áp dụng use case này')}
-                  style={css(`display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 20px; border:1px solid ${iApplied ? '#9FDDBC' : '#DDE3EC'}; border-radius:999px; background:${iApplied ? '#E7F9F0' : '#fff'}; color:${iApplied ? '#00723C' : '#3A4757'}; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;`)}
+                  style={css(`display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:1px solid ${iApplied ? '#9FDDBC' : '#DDE3EC'}; border-radius:999px; background:${iApplied ? '#E7F9F0' : '#fff'}; color:${iApplied ? '#00723C' : '#3A4757'}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}
                 >
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">{iApplied ? <><circle cx="12" cy="12" r="9" fill="#00A352" stroke="#00A352"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5" stroke="#fff"></path></> : <><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5"></path></>}</svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">{iApplied ? <><circle cx="12" cy="12" r="9" fill="#00A352" stroke="#00A352"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5" stroke="#fff"></path></> : <><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5"></path></>}</svg>
                   {t('Tôi đã áp dụng')} · {applied}
                 </button>
-                <span style={css('display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#94a3b8;')}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"></path></svg>
+                <span style={css('display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#94a3b8;')}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"></path></svg>
                   {commentsList.length} {t('Bình luận')}
                 </span>
               </div>
 
-              <div style={css('display:flex; gap:12px; margin-top:20px; align-items:flex-start;')}>
-                <span style={css(`width:36px; height:36px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
+              <div style={css('display:flex; gap:10px; margin-top:14px; align-items:flex-start;')}>
+                <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</span>
                 <div style={{ flex: 1 }}>
                   <MentionInput
                     ref={dBoxRef}
@@ -623,15 +623,15 @@ export default function UseCaseLibraryPage() {
                     onChange={setDDraft}
                     onEnter={postDComment}
                     placeholder={t('Viết bình luận về use case này... Gõ @ để mention đồng nghiệp.')}
-                    style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-family:inherit; font-size:14px; line-height:1.6; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
+                    style={css('width:100%; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13px; line-height:1.5; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                   />
                   <PendingAttachments files={att.files('cmt:' + dsel.id)} onRemove={(x) => att.remove('cmt:' + dsel.id, x)} error={att.errorFor('cmt:' + dsel.id)} />
-                  <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; margin-top:10px;')}>
+                  <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:8px;')}>
                     <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} alias={cmtAlias} onAlias={setCmtAlias} label="Bình luận ẩn danh" /></div>
-                    <AttachButton onFiles={(fl) => att.add('cmt:' + dsel.id, fl)} size={38} />
+                    <AttachButton onFiles={(fl) => att.add('cmt:' + dsel.id, fl)} size={32} />
                     <button
                       onClick={postDComment}
-                      style={css(`height:38px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
+                      style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
                     >
                       {t('Gửi bình luận')}
                     </button>
@@ -639,14 +639,14 @@ export default function UseCaseLibraryPage() {
                 </div>
               </div>
 
-              <div style={css('display:flex; flex-direction:column; gap:14px; margin-top:8px;')}>
+              <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:6px;')}>
                 {commentsList.filter((c) => !c.parentId).map((c) => {
                   const replies = commentsList.filter((r) => r.parentId === c.id)
                   const expanded = replies.length <= 1 || expandedThreads.has(c.id)
                   return (
-                    <div key={c.id} style={css('padding-top:14px; border-top:1px solid #EEF1F7;')}>
+                    <div key={c.id} style={css('padding-top:10px; border-top:1px solid #EEF1F7;')}>
                       <div className="zp-cmt" style={css('display:flex; gap:12px;')}>
-                        <span style={css(`width:36px; height:36px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
+                        <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
                             <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{c.author} <AnonTag p={c} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
@@ -654,7 +654,7 @@ export default function UseCaseLibraryPage() {
                           </div>
                           {editingCmt === c.id
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
-                            : <div style={css('margin-top:4px; font-size:13.5px; line-height:1.65; color:#3A4757;')}>{renderMentions(c.body)}</div>}
+                            : <div style={css('margin-top:4px; font-size:12.5px; line-height:1.55; color:#3A4757;')}>{renderMentions(c.body)}</div>}
                           <CommentFiles files={c.files} />
                           <button onClick={() => startReply(c.id, c.author, c.id)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                         </div>
