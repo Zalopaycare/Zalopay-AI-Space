@@ -542,7 +542,7 @@ export default function UseCaseLibraryPage() {
       prep: shareForm.prep, prompt: shareForm.prompt, result: shareForm.result, limits: shareForm.limits, contact: shareForm.contact, link: shareForm.link,
       status: shareStatus, level: shareLevel, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.name || '', team: shareAnon && !teamPost ? '' : shareForm.team, extra: shareExtra(),
     }
-    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon && !teamPost, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
+    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon && !teamPost, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
     const tp = buildTemplate(c, { tpl: submissionTpl(sub) }, { name: user?.name || '', role: shareForm.team })
     return { c, tp, layout: detailLayout(tp, t) }
   }

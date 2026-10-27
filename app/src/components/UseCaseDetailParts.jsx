@@ -37,8 +37,8 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
   )
 }
 
-/** Title block on the dark hero: title, "Owner" line, one-line summary, one horizontal info row and
- *  the "Ứng dụng ngay →" button that jumps to part 5. */
+/** Title block on the dark hero: cover banner, title, "Owner" line, one-line summary, one horizontal
+ *  info row and the "Ứng dụng ngay →" button that jumps to part 5. */
 export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) {
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:12.5px; font-weight:700; line-height:1.45; color:#fff;'
@@ -72,6 +72,12 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
         {t('Quay lại')}
       </button>}
+      {/* The 1920×1080 cover as a 16:9 banner; older screenshots of other shapes are shown whole. */}
+      {c.coverUrl && (
+        <div style={css('margin:0 0 20px; width:100%; aspect-ratio:16 / 9; border-radius:18px; overflow:hidden; background:#0b1230; border:1px solid rgba(130,170,255,.22); display:flex; align-items:center; justify-content:center;')}>
+          <img src={c.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+        </div>
+      )}
       <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
       {/* Everyone who built it (or the poster), right under the title. */}
       {(h.members?.length > 0 || h.owner) && (

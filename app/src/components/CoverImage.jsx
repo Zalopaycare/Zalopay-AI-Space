@@ -1,6 +1,6 @@
 import { css } from '../lib/style.js'
 
-// Use case thumbnail: the uploaded cover if there is one, otherwise a tinted tile with an icon
+// Use case thumbnail: the cover image if there is one, otherwise a tinted tile with an icon
 // picked from the category (never the old "ảnh" placeholder text).
 
 const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }
@@ -32,16 +32,13 @@ function look(category) {
   return hit ? { icon: hit[1], bg: hit[2][0], fg: hit[2][1] } : { icon: 'spark', bg: '#EEF2F9', fg: '#5B6B8C' }
 }
 
-// Cards show the square category icon for every use case for now (real cover images will be
-// uploaded later). Flip to true to show uploaded / showcase covers on cards again.
-const SHOW_COVERS = false
 
-export default function CoverImage({ c, size = 76, radius = 12, forceImage = false }) {
+export default function CoverImage({ c, size = 76, radius = 12 }) {
   const box = `position:relative; flex:none; width:${size}px; height:${size}px; border-radius:${radius}px; overflow:hidden;`
-  // Uploaded / showcase covers are mostly wide screenshots: show them whole in a 4:3 frame
-  // (letterboxed on a soft background) instead of cropping them into a square.
-  if (c.coverUrl && (SHOW_COVERS || forceImage)) return (
-    <span style={css(`position:relative; flex:none; width:${Math.round(size * 1.34)}px; height:${size}px; border-radius:${radius}px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#F4F7FE; border:1px solid #E6EBF3; box-sizing:border-box;`)}>
+  // Covers are 1920×1080 (the share form makes them so): a 16:9 frame. Older showcase screenshots of
+  // other shapes are shown whole, letterboxed on a soft background, rather than cropped.
+  if (c.coverUrl) return (
+    <span style={css(`position:relative; flex:none; width:${Math.round(size * 16 / 9)}px; height:${size}px; border-radius:${radius}px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#F4F7FE; border:1px solid #E6EBF3; box-sizing:border-box;`)}>
       <img src={c.coverUrl} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
     </span>
   )
