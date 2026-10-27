@@ -9,8 +9,8 @@ import Fill from './Fill.jsx'
 
 // Building blocks of the use case detail page, laid out as the template:
 // hero (owner, contacts) + info row + "Ứng dụng ngay →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp ·
-// 4 Tự áp dụng (links first; the one highlighted block) · 5 Kết quả · 6 An toàn & giới hạn · 7 Demo ·
-// 8 Chi tiết kỹ thuật (collapsed) — with a sticky table of contents on wide screens.
+// 4 Tự áp dụng (links first; the one highlighted block) · 5 Kết quả · 6 An toàn & giới hạn · 7 Demo —
+// with a sticky table of contents on wide screens. Technical details are not shown.
 
 export const DETAIL_COL = 'max-width:1120px; margin:0 auto;'
 const CARD = 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:18px 20px;'
@@ -56,7 +56,6 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
         </div>
       </div>
     ),
-    h.access && <div key="acc">{label(t('Cách tiếp cận'))}<div style={css(value + 'font-weight:600;')}><Fill text={h.access} /></div></div>,
     h.tools.length > 0 && (
       <div key="tools">
         {label(t('Công cụ AI'))}
@@ -428,29 +427,6 @@ export function ApplySection({ id, a, t, num = '5' }) {
           </PromptTargetContext.Provider>
         </div>
       </div>
-    </section>
-  )
-}
-
-/** 8 Chi tiết kỹ thuật — collapsed by default. */
-export function TechSection({ tech, t, num = '8' }) {
-  return (
-    <section id="uc-tech" data-toc style={css('scroll-margin-top:84px; margin-top:18px;')}>
-      <Collapsible dark defaultOpen title={<><span style={{ marginRight: 10, display: 'inline-flex', verticalAlign: 'middle' }}><NumBadge n={num} size={26} /></span>{t('Chi tiết kỹ thuật')} <span style={css('margin-left:8px; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.12); font-size:11.5px; color:#cfe0ff;')}>{t('Dành cho dev')}</span></>}>
-        <div style={css('display:flex; flex-direction:column; gap:14px; padding-top:8px;')}>
-          {tech.bullets && tech.bullets.length > 0 && <div style={css('padding:16px 18px; border-radius:14px; background:#fff;')}><BulletList items={tech.bullets} dot="#2c5fff" /></div>}
-          {tech.tables.map((tb, i) => <div key={i} style={css('padding:16px; border-radius:14px; background:#fff;')}><PlainTable flat table={tb} /></div>)}
-          {tech.code && tech.code.map((cb, i) => <div key={'c' + i} style={css('padding:16px; border-radius:14px; background:#fff;')}><CodeBlock cb={cb} /></div>)}
-          {tech.images && tech.images.length > 0 && <div style={css('padding:16px; border-radius:14px; background:#fff;')}><Images images={tech.images} style={{ marginTop: 0 }} /></div>}
-          {tech.repo && !tech.repo.href && <div style={css('font-size:12.5px; color:#cfe0ff;')}>Repo: <b>{tech.repo.label}</b></div>}
-          {tech.repo && tech.repo.href && (
-            <a href={safeHref(tech.repo.href) || undefined} target="_blank" rel="noopener" className={hoverClass('background:rgba(255,255,255,.14) !important;')} style={css('align-self:flex-start; display:inline-flex; align-items:center; gap:9px; padding:10px 16px; border:1px solid rgba(130,170,255,.4); border-radius:999px; color:#fff; text-decoration:none; font-size:12.5px; font-weight:700;')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>
-              {t('Mở repo')} · {tech.repo.label}
-            </a>
-          )}
-        </div>
-      </Collapsible>
     </section>
   )
 }

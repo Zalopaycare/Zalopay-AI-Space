@@ -1,7 +1,7 @@
 import { css } from '../lib/style.js'
-import { Section, ProblemSolution, ResultBody, ApplySection, TechSection, BulletList, PlainTable, Images } from './UseCaseDetailParts.jsx'
+import { Section, ProblemSolution, ResultBody, ApplySection, BulletList, PlainTable, Images } from './UseCaseDetailParts.jsx'
 
-// The body of a use case detail page (parts 2–8 of the template), shared by the real page and the
+// The body of a use case detail page (parts 2–7 of the template; technical details are left out), shared by the real page and the
 // share form's "Xem trước" so both look identical. Parts with no data are hidden and the rest are
 // numbered in the order shown (no "6 → 8" gaps).
 
@@ -14,7 +14,6 @@ export function detailLayout(tp, t) {
     apply: !tp.apply.empty,
     safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),
     demo: tp.demo.length > 0,
-    tech: !!(tp.tech.tables.length || tp.tech.repo || tp.tech.bullets.length || tp.tech.code.length || tp.tech.images.length),
   }
   // "Tự áp dụng" comes before "Kết quả": once the reader gets the idea, the links and steps are next.
   const parts = [
@@ -24,7 +23,6 @@ export function detailLayout(tp, t) {
     ['result', 'uc-result', 'Kết quả'],
     ['safety', 'uc-safety', 'An toàn & giới hạn'],
     ['demo', 'uc-demo', 'Demo'],
-    ['tech', 'uc-tech', 'Chi tiết kỹ thuật'],
   ].filter(([k]) => has[k])
   const num = {}
   parts.forEach(([k], i) => { num[k] = String(i + 1) })
@@ -55,7 +53,6 @@ export function DetailSections({ id, tp, t, layout }) {
           <Images images={tp.demo} style={{ marginTop: 0 }} />
         </Section>
       )}
-      {has.tech && <TechSection tech={tp.tech} t={t} num={num.tech} />}
     </>
   )
 }

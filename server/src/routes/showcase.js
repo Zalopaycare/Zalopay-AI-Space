@@ -18,7 +18,7 @@ const pingOwners = (p) => {
 for (const p of pendingCases) if (accountsOf(p).length) pingOwners(p)
 
 const pendingFor = (userId) => pendingCases.map((p) => ({
-  id: p.id, booth: p.booth, title: p.title, team: p.team, label: p.label, category: p.category, members: p.members || [],
+  id: p.id, booth: p.booth, title: p.title, team: p.team, label: p.label, category: p.category, members: p.members || [], problem: p.problem || '', solution: p.solution || '',
   interest: interestCount(p.id),
   mine: !!db.prepare('SELECT 1 FROM use_case_interest WHERE use_case_id = ? AND user_id = ?').get(p.id, userId),
 }))

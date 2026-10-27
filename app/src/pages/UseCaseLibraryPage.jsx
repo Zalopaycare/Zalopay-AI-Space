@@ -490,7 +490,6 @@ export default function UseCaseLibraryPage() {
     ['prompt', 'Prompt / quy trình', 'Required', 'Prompt hoặc các bước cụ thể để người khác copy và làm lại được.', 'Dán prompt hoặc mô tả quy trình ở đây...', 'area', 5, 'apply'],
     ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', 'AI tóm tắt thiếu ý → chia file thành nhiều phần nhỏ rồi gửi lần lượt', 'area', 3, 'apply'],
     ['limits', 'Giới hạn & lưu ý an toàn', 'Optional', 'Chỗ nào AI còn sai, dữ liệu nào không được đưa vào, khâu nào cần người kiểm lại.', 'Không đưa dữ liệu khách hàng chưa che vào prompt...', 'area', 3, 'more'],
-    ['tech', 'Chi tiết kỹ thuật', 'Optional', 'Dành cho dev: kiến trúc, API, cấu hình. Không cần thì bỏ trống.', 'Gọi API nội bộ X, chạy mỗi sáng thứ Hai bằng cron...', 'area', 4, 'more'],
     ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file mẫu để người khác tự xem.', 'https://...', 'input', 0, 'more'],
     ['contact', 'Người liên hệ', 'Optional', 'Ai trả lời khi người đọc gặp vướng: Tên người · Team.', 'Ví dụ: Thảo NT · Product Ops', 'input', 0, 'more'],
   ]
