@@ -155,7 +155,12 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-collapse[open] > summary .zp-collapse-chev { transform: rotate(90deg); }
 .zp-detail-wrap { container-type: inline-size; }
 .zp-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 36px; align-items: start; }
+.zp-hero-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: center; }
 .zp-toc { position: sticky; top: 84px; margin-top: 26px; max-height: calc(100vh - 110px); overflow-y: auto; }
+@container (max-width: 759px) {
+  .zp-hero-split { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .zp-hero-cover { order: -1; }
+}
 @container (max-width: 899px) {
   .zp-detail-grid { grid-template-columns: minmax(0, 1fr); }
   .zp-toc, .zp-toc-space { display: none; }

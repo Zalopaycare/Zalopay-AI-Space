@@ -37,7 +37,7 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
   )
 }
 
-/** Title block on the dark hero: cover banner, title, "Owner" line, one-line summary, one horizontal
+/** Title block on the dark hero: title, "Owner" line and one-line summary beside the cover, one horizontal
  *  info row and the "Ứng dụng ngay →" button that jumps to part 5. */
 export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) {
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
@@ -72,22 +72,27 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
         {t('Quay lại')}
       </button>}
-      {/* The 1920×1080 cover as a 16:9 banner; older screenshots of other shapes are shown whole. */}
-      {c.coverUrl && (
-        <div style={css('margin:0 0 20px; width:100%; aspect-ratio:16 / 9; border-radius:18px; overflow:hidden; background:#0b1230; border:1px solid rgba(130,170,255,.22); display:flex; align-items:center; justify-content:center;')}>
-          <img src={c.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+      {/* Title, Owner and summary on the left, the 1920×1080 cover on the right (stacked on narrow
+          columns, cover first). Older screenshots of other shapes are shown whole. */}
+      <div className={c.coverUrl ? 'zp-hero-split' : undefined}>
+        <div style={css('min-width:0;')}>
+          <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
+          {/* Everyone who built it (or the poster), right under the title. */}
+          {(h.members?.length > 0 || h.owner) && (
+            <div style={css('display:flex; align-items:baseline; gap:8px; margin-top:12px; flex-wrap:wrap; font-size:13px; line-height:1.5;')}>
+              <span style={css('font-weight:600; color:#a9b8dc;')}>Owner:</span>
+              <span style={css('font-weight:700; color:#fff;')}><Fill text={h.members?.length ? h.members.join(', ') : h.owner} /></span>
+              <AnonTag p={c} dark />
+            </div>
+          )}
+          <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>
         </div>
-      )}
-      <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
-      {/* Everyone who built it (or the poster), right under the title. */}
-      {(h.members?.length > 0 || h.owner) && (
-        <div style={css('display:flex; align-items:baseline; gap:8px; margin-top:12px; flex-wrap:wrap; font-size:13px; line-height:1.5;')}>
-          <span style={css('font-weight:600; color:#a9b8dc;')}>Owner:</span>
-          <span style={css('font-weight:700; color:#fff;')}><Fill text={h.members?.length ? h.members.join(', ') : h.owner} /></span>
-          <AnonTag p={c} dark />
-        </div>
-      )}
-      <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>
+        {c.coverUrl && (
+          <div className="zp-hero-cover" style={css('width:100%; aspect-ratio:16 / 9; border-radius:18px; overflow:hidden; background:#0b1230; border:1px solid rgba(130,170,255,.22); display:flex; align-items:center; justify-content:center;')}>
+            <img src={c.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+          </div>
+        )}
+      </div>
       {/* One overview box: the info row, then the 30-second summary (part 1) right under it. */}
       <div id="uc-overview" className="zp-overview" style={{ marginTop: 22 }}>
         {cells.length > 0 && <div className="zp-info-row" style={{ '--zp-cells': Math.max(1, cells.length) }}>{cells}</div>}
