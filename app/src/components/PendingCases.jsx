@@ -43,7 +43,7 @@ function InterestButton({ p, busy, onToggle, t }) {
 
 // What a booth's owner sees on its page: start the write-up, or where the team's write-up stands.
 const OWNER_STATUS = {
-  pending: ['Bài của team đang chờ Admin duyệt.', '#1E44A8', '#EEF3FF', '#CFDDFB'],
+  pending: ['Bài của team đang chờ Admin duyệt. Ai trong team cũng sửa được.', '#1E44A8', '#EEF3FF', '#CFDDFB'],
   changes_requested: ['Admin cần team chỉnh sửa / bổ sung trước khi duyệt.', '#9A5B00', '#FFF8E8', '#F3E0B0'],
   rejected: ['Bài trước chưa được duyệt. Team có thể gửi lại.', '#C0262D', '#FFF0F0', '#F5C9CB'],
 }
@@ -65,9 +65,8 @@ export function BoothOwnerBar({ p, t }) {
         </div>
       </div>
       {!sub && <button onClick={() => navigate(`/use-cases?share=1&booth=${encodeURIComponent(p.id)}`)} style={css(btn)}>{t('Cập nhật use case này')} →</button>}
-      {sub && sub.mine && sub.status === 'pending' && <button onClick={() => navigate(`/use-cases?edit=${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem / sửa bài đã gửi')}</button>}
-      {sub && sub.mine && sub.status === 'changes_requested' && <button onClick={() => navigate(`/review/${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem góp ý và sửa')}</button>}
-      {sub && !sub.mine && <span style={css('font-size:12px; color:#64748b;')}>{t('Một thành viên khác trong team đã gửi bài.')}</span>}
+      {sub && sub.status === 'pending' && <button onClick={() => navigate(`/use-cases?edit=${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem / sửa bài đã gửi')}</button>}
+      {sub && sub.status === 'changes_requested' && <button onClick={() => navigate(`/review/${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem góp ý và sửa')}</button>}
     </div>
   )
 }

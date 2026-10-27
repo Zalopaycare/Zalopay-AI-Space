@@ -1,15 +1,16 @@
 import express from 'express'
-import { requireAuth, companyDomains } from '../auth.js'
+import { requireAuth } from '../auth.js'
 import { db } from '../db.js'
 import { notifyInterest, notifyOnce } from '../notifications.js'
 import { domainName } from '../mentions.js'
-import { visibleShowcase, MEDIA_DIR, pendingCases, PENDING_BY_ID, boothAccounts, isBoothOwner } from '../showcase.js'
+import { visibleShowcase, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile } from '../showcase.js'
+import path from 'node:path'
 
 const router = express.Router()
 
 const interestCount = (id) => db.prepare('SELECT COUNT(*) n FROM use_case_interest WHERE use_case_id = ?').get(id).n
-// Every company mailbox a booth's owners may sign in with (the exhibition only knows account names).
-const ownerEmails = (p) => boothAccounts(p).flatMap((acc) => companyDomains().map((d) => `${acc}@${d}`))
+// The owners' mailboxes: <account>@vng.com.vn.
+const ownerEmails = boothEmails
 // Tells a booth's PIC and members how many people are interested so far.
 const pingOwners = (p) => {
   const count = interestCount(p.id)
@@ -32,6 +33,7 @@ const pendingFor = (user) => {
     const sub = owner || user.is_admin ? latestSubmission(p.id) : null
     return {
       id: p.id, booth: p.booth, title: p.title, team: p.team, label: p.label, category: p.category, members: p.members || [], problem: p.problem || '', solution: p.solution || '',
+      cover: coverOf(p.id),
       interest: interestCount(p.id),
       mine: !!db.prepare('SELECT 1 FROM use_case_interest WHERE use_case_id = ? AND user_id = ?').get(p.id, user.id),
       // the signed-in person is one of the booth's owners: they get "Cập nhật use case này"
@@ -64,7 +66,7 @@ const userName = (id) => { const u = id ? db.prepare('SELECT email, name FROM us
 router.get('/admin/booths', requireAuth, requireAdmin, (req, res) => {
   const lastInvite = db.prepare('SELECT MAX(created_at) at, COUNT(*) n FROM booth_invites WHERE booth_id = ?')
   // owners who have signed in to AI Space at least once (so they can see the invitation)
-  const signedIn = new Set(db.prepare('SELECT email FROM users').all().map((u) => u.email.split('@')[0].toLowerCase()))
+  const signedIn = new Set(db.prepare('SELECT email FROM users').all().map((u) => u.email.toLowerCase()))
   res.json({
     booths: pendingCases.map((p) => {
       const sub = latestSubmission(p.id)
@@ -76,7 +78,7 @@ router.get('/admin/booths', requireAuth, requireAdmin, (req, res) => {
         status: sub ? sub.review_status : 'not_started',
         submissionId: sub ? sub.id : null, submittedBy: sub ? userName(sub.author_id) : '', submittedAt: sub ? sub.created_at : null,
         invitedAt: inv.at, invites: inv.n,
-        ownersOnSite: accounts.filter((a) => signedIn.has(a)).length, owners: accounts.length,
+        ownersOnSite: accounts.filter((a) => signedIn.has(`${a}@${BOOTH_DOMAIN}`)).length, owners: accounts.length,
       }
     }),
   })
@@ -100,6 +102,21 @@ router.post('/admin/booths/:id/invite', requireAuth, requireAdmin, (req, res) =>
   if (!p) return res.status(404).json({ error: 'not_found' })
   invite(p, req)
   res.json({ ok: true })
+})
+
+// A cover an admin added for a case or booth that had none (1920×1080 JPEG, cropped in the browser).
+router.get('/cover/:id', requireAuth, (req, res) => {
+  if (!SHOWCASE_IDS.has(req.params.id) && !PENDING_BY_ID.has(req.params.id)) return res.status(404).end()
+  res.set('Cache-Control', 'private, max-age=86400')
+  res.sendFile(path.join(COVER_DIR, `${req.params.id}.jpg`), (e) => { if (e && !res.headersSent) res.status(404).end() })
+})
+router.post('/admin/cover/:id', requireAuth, requireAdmin, (req, res) => {
+  if (!SHOWCASE_IDS.has(req.params.id) && !PENDING_BY_ID.has(req.params.id)) return res.status(404).json({ error: 'not_found' })
+  const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body?.cover || ''))
+  const buf = m ? Buffer.from(m[1], 'base64') : null
+  if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) return res.status(400).json({ error: 'bad_cover' })
+  saveCoverFile(req.params.id, buf)
+  res.json({ cover: coverOf(req.params.id) })
 })
 
 // Images only for signed-in users; `private` keeps shared caches from storing them.

@@ -40,7 +40,9 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
 
 /** Title block on the dark hero: title, "Owner" line and one-line summary beside the cover, one horizontal
  *  info row and the "Ứng dụng ngay →" button that jumps to part 5. */
-export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) {
+export function DetailHero({ c, h, onBack, onStart, startLabel, onUploadCover, tldr = [], t }) {
+  const [coverBusy, setCoverBusy] = useState(false)
+  const [coverErr, setCoverErr] = useState('')
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:12.5px; font-weight:700; line-height:1.45; color:#fff;'
   const diff = DIFF[h.difficulty]
@@ -80,7 +82,7 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
       </button>}
       {/* Title, Owner and summary on the left, the 1920×1080 cover on the right (stacked on narrow
           columns, cover first). Older screenshots of other shapes are shown whole. */}
-      <div className={c.coverUrl ? 'zp-hero-split' : undefined}>
+      <div className={c.coverUrl || onUploadCover ? 'zp-hero-split' : undefined}>
         <div style={css('min-width:0;')}>
           {c.pending && (
             <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;')}>
@@ -99,6 +101,23 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, tldr = [], t }) 
           )}
           {c.desc && <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>}
         </div>
+        {/* no cover yet: admins get an empty 16:9 frame with an upload button */}
+        {!c.coverUrl && onUploadCover && (
+          <div className="zp-hero-cover" style={css('width:100%; aspect-ratio:16 / 9; border-radius:18px; border:1.5px dashed rgba(130,170,255,.45); background:rgba(255,255,255,.04); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; padding:16px; box-sizing:border-box;')}>
+            <div style={css('font-size:13px; font-weight:700; color:#c9d6f5;')}>{t('Chưa có ảnh bìa')}</div>
+            <div style={css('font-size:11.5px; color:#8fa6d8;')}>1920 × 1080 px (16:9)</div>
+            <label style={css(`display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 15px; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-size:12.5px; font-weight:800; cursor:pointer; opacity:${coverBusy ? 0.6 : 1};`)}>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden disabled={coverBusy} onChange={(e) => {
+                const f = e.target.files?.[0]; e.target.value = ''
+                if (!f) return
+                setCoverBusy(true); setCoverErr('')
+                onUploadCover(f).catch((er) => setCoverErr(er?.message || t('Chưa tải được ảnh, thử lại nhé.'))).finally(() => setCoverBusy(false))
+              }} />
+              {coverBusy ? t('Đang tải…') : t('Tải ảnh bìa')}
+            </label>
+            {coverErr && <div style={css('font-size:11.5px; font-weight:600; color:#ffb4b4;')}>{coverErr}</div>}
+          </div>
+        )}
         {c.coverUrl && (
           <div className="zp-hero-cover" style={css('width:100%; aspect-ratio:16 / 9; border-radius:18px; overflow:hidden; background:#0b1230; border:1px solid rgba(130,170,255,.22); display:flex; align-items:center; justify-content:center;')}>
             <img src={c.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
@@ -212,7 +231,7 @@ export function ProblemSolution({ problem, solution, result, showEmpty = false, 
           <>
             {head(t('Bài toán'), '#E0353F')}
             {problem.text && (problem.rich
-              ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={problem.text} dot="#E0353F" /></div>
+              ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={problem.text} /></div>
               : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={problem.text} /></p>)}
             {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
             {showEmpty && !problem.text && !problem.bullets.length && <NoInfo t={t} />}
@@ -222,12 +241,11 @@ export function ProblemSolution({ problem, solution, result, showEmpty = false, 
           {head(t('Giải pháp'), '#00A352')}
           {solution.analogy && <div style={css('margin:0 0 14px; padding:10px 14px; border-radius:12px; background:#F4F7FE; font-size:12.5px; line-height:1.6; color:#1E3A7A;')}><b>{t('Hiểu đơn giản')}:</b> <Fill text={String(solution.analogy).replace(/^\s*hiểu đơn giản\s*[:：]\s*/i, '')} /></div>}
           {solution.text && (solution.rich
-            ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={solution.text} dot="#00A352" /></div>
+            ? <div style={css('margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;')}><RichText text={solution.text} /></div>
             : <p style={css('margin:0 0 10px; font-size:13px; line-height:1.55; color:#3A4757; text-wrap:pretty; white-space:pre-line;')}><Fill text={solution.text} /></p>)}
           <BulletList items={solution.steps} numbered />
           <Images images={solution.images} />
           {showEmpty && !solution.text && !solution.steps.length && <NoInfo t={t} />}
-          {!result && showEmpty && <div style={{ marginTop: 18 }}>{head(t('Số liệu & hình ảnh'), '#2c5fff')}<NoInfo t={t} /></div>}
           {result && (
             <div style={{ marginTop: 18 }}>
               {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}

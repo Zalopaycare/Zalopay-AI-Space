@@ -75,6 +75,8 @@ export const api = {
   interestPending: (id) => request(`/showcase/pending/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
   // Admin Console "Booth Exhibition": every booth's write-up status, and inviting owners to write it up
   adminBooths: () => request('/showcase/admin/booths'),
+  // a 1920×1080 cover for a case or booth that had none (admins)
+  adminSetCover: (id, cover) => request(`/showcase/admin/cover/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify({ cover }) }),
   inviteBooth: (id) => request(`/showcase/admin/booths/${encodeURIComponent(id)}/invite`, { method: 'POST' }),
   inviteAllBooths: () => request('/showcase/admin/booths/invite', { method: 'POST' }),
   // "Chat với Admin": my conversation, and the admins' shared inbox. `after` = last message id I have.

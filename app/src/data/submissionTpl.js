@@ -18,6 +18,16 @@ export function teamByline(s) {
   return (e.members || []).length ? e.members.join(', ') : s.team || ''
 }
 
+// A form step → a journey step: what to do, then its prompt / command, then its warning in red.
+const stepSectionsOf = (steps) => (steps || []).map((x, i) => ({
+  title: x.title || `Bước ${i + 1}`,
+  blocks: [
+    x.text && { type: 'text', text: x.text },
+    x.prompt && { type: 'prompt', label: 'Prompt / lệnh mẫu', text: x.prompt },
+    x.note && { type: 'note', tone: 'warn', text: x.note },
+  ].filter(Boolean),
+}))
+
 /** s = submission as the API returns it (title, problem, …, extra: { type, oneLine, highlights, fitYes, fitNo, pitfalls, tech }). */
 export function submissionTpl(s) {
   const e = s.extra || {}
@@ -42,11 +52,14 @@ export function submissionTpl(s) {
     apply: {
       fit: { yes: lines(e.fitYes), no: lines(e.fitNo) },
       prep: lines(s.prep),
-      blocks: s.prompt ? [{ type: 'prompt', label: 'Prompt / quy trình', text: s.prompt }] : [],
+      // Steps from the form show as the step-by-step journey; older posts only had one Prompt box.
+      stepSections: stepSectionsOf(e.steps),
+      blocks: (e.steps || []).length ? [] : s.prompt ? [{ type: 'prompt', label: 'Prompt / quy trình', text: s.prompt }] : [],
+      success: lines(e.success),
       // "Lỗi bạn gặp → cách xử lý", one per line
       pitfalls: lines(e.pitfalls).map((l) => { const m = /^(.*?)\s*(?:→|->|—)\s*(.+)$/.exec(l); return m ? { meet: m[1], why: '', fix: m[2] } : { meet: l, why: '' } }),
     },
-    safety: { limits: lines(s.limits) },
+    safety: { rules: lines(e.safety), limits: lines(s.limits) },
     tech: { bullets: lines(e.tech) },
     next: { contact: s.contact ? [s.contact] : [], link: s.link || '' },
   }

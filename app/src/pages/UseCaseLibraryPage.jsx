@@ -28,6 +28,7 @@ import { buildTemplate } from '../data/useCaseTemplate.js'
 import { submissionTpl } from '../data/submissionTpl.js'
 import AnonTag from '../components/AnonTag.jsx'
 import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
+import { cropCover } from '../lib/cover.js'
 import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import MentionInput from '../components/MentionInput.jsx'
@@ -49,7 +50,11 @@ const TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ
 const TOOLS = [...AI_TOOLS, OTHER]
 const TOOL_LIST = AI_TOOLS
 const SORT_OPTS = [{ label: 'Mới nhất', val: 'new' }, { label: 'Nổi bật', val: 'helpful' }]
-const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '', fitYes: '', fitNo: '', pitfalls: '', tech: '' }
+const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '', fitYes: '', fitNo: '', pitfalls: '', tech: '', success: '', safety: '' }
+// One step of Tự áp dụng: its name, what to do, an optional prompt / command, an optional red warning.
+const EMPTY_STEP = { title: '', text: '', prompt: '', note: '' }
+// The steps as plain text, for the old Prompt column (review page, older readers).
+const stepsAsText = (steps) => steps.map((x, i) => [`Bước ${i + 1}. ${x.title}`, x.text, x.prompt && 'Prompt / lệnh mẫu:\n' + x.prompt, x.note && 'Lưu ý: ' + x.note].filter(Boolean).join('\n')).join('\n\n')
 const EMPTY_HIGHLIGHTS = [{ value: '', label: '' }, { value: '', label: '' }, { value: '', label: '' }]
 const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((list || [])[i] || {}) }))
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
@@ -114,32 +119,7 @@ export default function UseCaseLibraryPage() {
   const [coverNote, setCoverNote] = useState('')
   const pickCover = (file) => {
     setCoverError(''); setCoverNote('')
-    if (!file) return
-    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) { setCoverError('Chỉ nhận ảnh PNG, JPG, WEBP hoặc GIF.'); return }
-    const img = new Image()
-    const src = URL.createObjectURL(file)
-    img.onload = () => {
-      const W = 1920, H = 1080
-      // largest 16:9 area in the middle of the picture
-      const sw = Math.min(img.width, img.height * W / H), sh = sw * H / W
-      const cv = document.createElement('canvas')
-      cv.width = W; cv.height = H
-      const g = cv.getContext('2d')
-      g.imageSmoothingQuality = 'high'
-      g.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, W, H)
-      URL.revokeObjectURL(src)
-      // the server takes up to 2 MB: step the quality down for busy pictures
-      let data = ''
-      for (const q of [0.85, 0.75, 0.65, 0.55]) { data = cv.toDataURL('image/jpeg', q); if (data.length <= 2.6 * 1024 * 1024) break }
-      if (data.length > 2.6 * 1024 * 1024) { setCoverError('Ảnh quá lớn, chọn ảnh khác nhỏ hơn.'); return }
-      const notes = []
-      if (Math.abs(img.width / img.height - W / H) > 0.01) notes.push('Ảnh không đúng tỉ lệ 16:9 nên đã được cắt phần giữa.')
-      if (img.width < W || img.height < H) notes.push(`Ảnh gốc ${img.width}×${img.height} nhỏ hơn 1920×1080 nên có thể hơi mờ.`)
-      setCoverNote(notes.join(' '))
-      setShareCover({ url: data, data })
-    }
-    img.onerror = () => { URL.revokeObjectURL(src); setCoverError('Không đọc được ảnh này.') }
-    img.src = src
+    cropCover(file).then(({ data, note }) => { setCoverNote(note); setShareCover({ url: data, data }) }).catch((e) => setCoverError(e.message))
   }
   const [shareStage, setShareStage] = useState('form')
   const [shareStep, setShareStep] = useState(0)
@@ -154,6 +134,7 @@ export default function UseCaseLibraryPage() {
   const [shareMembers, setShareMembers] = useState('')
   // The AI Exhibition booth this post writes up (its owners open the form from the booth's page)
   const [shareBooth, setShareBooth] = useState('')
+  const [shareSteps, setShareSteps] = useState([EMPTY_STEP])
   const [shareHighlights, setShareHighlights] = useState(EMPTY_HIGHLIGHTS)
   // Fill the form from the Word template instead of typing: { name, filled, missing } | null
   const [docxInfo, setDocxInfo] = useState(null)
@@ -196,6 +177,7 @@ export default function UseCaseLibraryPage() {
       .then((r) => {
         if (!r.filled) { setDocxError('Không tìm thấy nội dung theo mẫu trong file này. Hãy dùng đúng file template và giữ nguyên tên các mục.'); return }
         setShareForm((f) => ({ ...f, ...Object.fromEntries(Object.entries(r.form).filter(([, v]) => v)) }))
+        if (r.form.prompt) setShareSteps([{ ...EMPTY_STEP, title: 'Prompt / quy trình', prompt: r.form.prompt }])
         if (r.kind) setShareKind(r.kind)
         if (r.status) setShareStatus(r.status)
         if (r.level) setShareLevel(r.level)
@@ -216,7 +198,9 @@ export default function UseCaseLibraryPage() {
       const s = (d.submissions || []).find((x) => x.id === editId)
       if (!s) return
       const ex = s.extra || {}
-      setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' })
+      setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' , success: ex.success || '', safety: ex.safety || '' })
+      // older posts had one Prompt box: it becomes step 1
+      setShareSteps(ex.steps && ex.steps.length ? ex.steps.map((x) => ({ ...EMPTY_STEP, ...x })) : s.prompt ? [{ ...EMPTY_STEP, title: 'Prompt / quy trình', prompt: s.prompt }] : [EMPTY_STEP])
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
       setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && !/^Anonymous( \d+)?$/.test(s.alias) ? s.alias : '')
       setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareMembers((ex.members || []).join(', ')); setShareBooth(ex.booth || '')
@@ -254,7 +238,7 @@ export default function UseCaseLibraryPage() {
     setShareForm({ ...EMPTY_SHARE_FORM, title: p.title, problem: plain(p.problem), solution: plain(p.solution) })
     setSharePostAs('team'); setShareMembers((p.members || []).join(', ')); setShareAnon(false)
     setShareCategory(BOOTH_CATS[p.category] ? [BOOTH_CATS[p.category]] : [])
-    setShareBooth(bid); setShareStep(0)
+    setShareBooth(bid); setShareSteps([EMPTY_STEP]); setShareStep(0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, pubV])
   // Closing keeps the autosaved draft; ?share / ?edit are dropped so the same link opens it again.
@@ -324,7 +308,7 @@ export default function UseCaseLibraryPage() {
   const restoredRef = useRef(false)
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
 
   useEffect(() => {
     if (restoredRef.current) return
@@ -336,7 +320,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ ...EMPTY_SHARE_FORM, ...(d.shareForm || {}) })
       setShareType(d.shareType || '')
       setShareAnon(!!d.shareAnon); setShareAlias(d.shareAlias || '')
-      setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareMembers(d.shareMembers || ''); setShareBooth(d.shareBooth || '')
+      setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareMembers(d.shareMembers || ''); setShareBooth(d.shareBooth || ''); setShareSteps(Array.isArray(d.shareSteps) && d.shareSteps.length ? d.shareSteps : d.shareForm?.prompt ? [{ ...EMPTY_STEP, title: 'Prompt / quy trình', prompt: d.shareForm.prompt }] : [EMPTY_STEP])
       setShareHighlights(padHighlights(d.shareHighlights))
       setShareKind(d.shareKind || '')
       setShareStatus(d.shareStatus || '')
@@ -369,7 +353,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -385,7 +369,7 @@ export default function UseCaseLibraryPage() {
       (editing ? (p) => api.updateSubmission(editing.id, p) : api.submitUseCase)({
         title: shareForm.title.trim(), audience: shareForm.audience.trim(), team: shareForm.team.trim(),
         problem: shareForm.problem.trim(), solution: shareForm.solution.trim(), prep: shareForm.prep.trim(),
-        prompt: shareForm.prompt.trim(), result: shareForm.result.trim(), limits: shareForm.limits.trim(),
+        prompt: stepsAsText(shareStepList), result: shareForm.result.trim(), limits: shareForm.limits.trim(),
         contact: shareForm.contact.trim(), link: shareForm.link.trim(),
         kind: shareKind, status: shareStatus, level: shareLevel,
         category: shareCategory, topics: previewTopics, tools: previewTools,
@@ -398,7 +382,7 @@ export default function UseCaseLibraryPage() {
   }
 
   const resetShareForm = () => {
-    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
+    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareSteps([EMPTY_STEP]); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
     setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
@@ -508,42 +492,56 @@ export default function UseCaseLibraryPage() {
   // ---- share form derivations ----
   const setField = (k) => (e) => setShareForm((f) => ({ ...f, [k]: e.target.value }))
   // [key, label, required, hint, placeholder, input|area, rows, step]
+  // [key, label, required, hint, placeholder, input|area, rows, step, example] — in the order the page shows
+  // them. The example is taken from use cases already on the site, so authors see what "good" looks like.
+  // ('apply2' fields sit in Tự áp dụng after the steps.)
   const fieldDefs = [
-    ['title', 'Tên use case', 'Required', 'Một câu ngắn gọn nói rõ use case làm được gì.', 'Ví dụ: Tóm tắt phản hồi khách hàng theo tuần', 'input', 0, 'intro'],
-    ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai dùng, làm được gì.', 'Ví dụ: Giúp team CS gom và tóm tắt phản hồi của cả tuần trong 30 phút.', 'input', 0, 'intro'],
-    ['audience', 'Ai dùng được', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Ví dụ: QC / QE, team mobile', 'input', 0, 'intro'],
-    ['problem', 'Bài toán', 'Required', 'Vấn đề bạn gặp và bối cảnh công việc, trước khi có AI.', 'Mỗi tuần cần đọc hàng trăm phản hồi từ khảo sát và ticket...', 'area', 4, 'ps'],
-    ['solution', 'Giải pháp', 'Required', 'AI giúp thế nào. Mỗi dòng một bước.', 'Gom dữ liệu về một file\nNhờ AI phân nhóm theo chủ đề\n...', 'area', 5, 'ps'],
-    ['result', 'Kết quả', 'Required', 'Thay đổi sau khi dùng: thời gian, chất lượng, số liệu nếu có. Mỗi dòng một ý.', 'Giảm từ 4 giờ xuống 30 phút mỗi tuần...', 'area', 3, 'ps'],
-    ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file mẫu để người khác tự xem.', 'https://...', 'input', 0, 'apply'],
-    ['fitYes', 'Phù hợp với bạn nếu', 'Optional', 'Mỗi dòng một trường hợp nên dùng.', 'Bạn phải đọc nhiều phản hồi dạng chữ mỗi tuần', 'area', 3, 'apply'],
-    ['fitNo', 'Chưa phù hợp nếu', 'Optional', 'Mỗi dòng một trường hợp chưa nên dùng.', 'Dữ liệu có thông tin khách hàng chưa được che', 'area', 2, 'apply'],
-    ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', 'Tài khoản Claude nội bộ\nQuyền xem dashboard CSAT', 'area', 3, 'apply'],
-    ['prompt', 'Prompt / quy trình', 'Required', 'Prompt hoặc các bước cụ thể để người khác copy và làm lại được.', 'Dán prompt hoặc mô tả quy trình ở đây...', 'area', 5, 'apply'],
-    ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', 'AI tóm tắt thiếu ý → chia file thành nhiều phần nhỏ rồi gửi lần lượt', 'area', 3, 'apply'],
-    ['limits', 'Giới hạn & lưu ý an toàn', 'Optional', 'Chỗ nào AI còn sai, dữ liệu nào không được đưa vào, khâu nào cần người kiểm lại.', 'Không đưa dữ liệu khách hàng chưa che vào prompt...', 'area', 3, 'safety'],
+    ['title', 'Tên use case', 'Required', 'Đọc tên là biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).', 'Tên công cụ – làm được gì, cho ai', 'input', 0, 'intro',
+      'GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay\nAutomation Testing Tool – Hỗ trợ QC viết UI automation test bằng prompt\nPO Tool Kit: bộ AI skill giúp PO đi từ ý tưởng tới ticket, prototype và báo cáo'],
+    ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai đưa gì vào, nhận lại gì.', 'Ai làm gì với công cụ, nhận được gì', 'input', 0, 'intro',
+      'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.'],
+    ['audience', 'Ai dùng được', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Vai trò / team', 'input', 0, 'intro', 'Security, Dev'],
+    ['problem', 'Bài toán', 'Required', 'Viết theo 3 ý: vấn đề trước khi có AI · ai đang gặp · tác động (tốn bao nhiêu thời gian, rủi ro gì). Dùng **chữ đậm** cho tên ý, xuống dòng giữa các ý.', '', 'area', 6, 'ps',
+      'Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket: đọc Jira, lần theo tài liệu Confluence, tìm đúng version đang deploy, rồi gõ tay từng lệnh curl để test.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester.\n\n**Tác động:** Mỗi lần chuẩn bị mất 0,5–2 ngày; dễ sót endpoint mới hoặc test nhầm version.'],
+    ['solution', 'Giải pháp', 'Required', 'Viết theo 3 ý: giải pháp là gì · AI làm được gì (gạch đầu dòng) · kết quả hiện tại.', '', 'area', 6, 'ps',
+      'secreq là tool nội bộ dùng AI: nhập mã ticket Jira, tool tự đọc ticket, tài liệu Confluence và source đã deploy, rồi xuất trang tóm tắt chuẩn bị test.\n\n**AI làm được gì:**\n- Dựng sẵn lệnh curl chạy được cho từng API.\n- Đánh dấu API mới trong bản release để ưu tiên test.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest.'],
+    ['result', 'Số liệu & hình ảnh', 'Optional', 'Số đo trước / sau nếu có. Mỗi dòng một ý. Chưa đo thì để trống.', '', 'area', 3, 'ps',
+      'Chuẩn bị pentest: từ 0,5–2 ngày xuống khoảng 5 phút\n17/25 ticket gần nhất chỉ đưa link, trung bình 2–3 link'],
+    ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file cài để người khác tự xem.', 'https://...', 'input', 0, 'apply', 'https://gitlab.zalopay.vn/…/secreq-bot'],
+    ['fitYes', 'Phù hợp với bạn nếu', 'Optional', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'apply', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
+    ['fitNo', 'Chưa phù hợp nếu', 'Optional', 'Mỗi dòng một trường hợp chưa nên dùng.', '', 'area', 2, 'apply', 'Tính năng có thanh toán.\nBạn cần đưa lên chạy thật (production).'],
+    ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', '', 'area', 3, 'apply', 'Tài khoản O365 để đăng nhập MCP Platform.\nQuyền owner/co-owner của tài nguyên trên Gear.\nMột AI có hỗ trợ kết nối MCP (ví dụ Codex).'],
+    ['success', 'Kết quả bạn sẽ thấy', 'Optional', 'Làm xong các bước thì người đọc thấy gì, để họ biết mình đã làm đúng. Mỗi dòng một ý.', '', 'area', 2, 'apply2', 'AI trả về trang tóm tắt có lệnh curl cho từng API, dòng nào cũng có link nguồn.\nTrong bảng MCP keys, khoá của bạn có trạng thái "Active".'],
+    ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', '', 'area', 3, 'apply2', 'Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.\nMất khoá sau khi đóng màn hình → tạo khoá mới trong mục "MCP keys".'],
+    ['safety', 'Nguyên tắc an toàn', 'Optional', 'AI được và không được làm gì, dữ liệu nào không đưa vào. Mỗi dòng một ý.', '', 'area', 3, 'safety', 'AI chỉ đọc Jira, không sửa ticket.\nKhông dán mật khẩu, token vào khung chat với AI.'],
+    ['limits', 'Hiện chưa làm được', 'Optional', 'Giới hạn của bản hiện tại, chỗ nào còn cần người kiểm lại. Mỗi dòng một ý.', '', 'area', 3, 'safety', 'Chưa đọc được ảnh, sơ đồ trong tài liệu và Figma.\nMới chạy ở môi trường dev, chỉ test trên macOS.'],
   ]
-  const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step]) => ({
-    key: k, label, req, hint, placeholder, rows, step,
+  const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step, example]) => ({
+    key: k, label, req, hint, placeholder, rows, step, example,
     reqColor: req === 'Required' ? '#E0353F' : '#94a3b8',
     isInput: kind === 'input', isArea: kind === 'area',
     value: shareForm[k] || '', onChange: setField(k),
   }))
   const teamPost = sharePostAs === 'team'
   const shareMemberList = shareMembers.split(/[,\n]/).map((x) => x.trim()).filter(Boolean)
+  const shareStepList = shareSteps.map((x) => ({ title: x.title.trim(), text: x.text.trim(), prompt: x.prompt.trim(), note: x.note.trim() })).filter((x) => x.title || x.text || x.prompt)
+  // every step needs a name and something to do (or a prompt)
+  const stepsReady = shareStepList.length > 0 && shareStepList.every((x) => x.title && (x.text || x.prompt))
   const shareExtra = () => ({
     type: shareType, oneLine: shareForm.oneLine.trim(),
     highlights: shareHighlights.map((h) => ({ value: h.value.trim(), label: h.label.trim() })).filter((h) => h.value || h.label),
     fitYes: shareForm.fitYes.trim(), fitNo: shareForm.fitNo.trim(), pitfalls: shareForm.pitfalls.trim(), tech: shareForm.tech.trim(),
     ...(teamPost ? { postAs: 'team', showAs: 'members', members: shareMemberList } : {}),
     ...(shareBooth ? { booth: shareBooth } : {}),
+    steps: shareStepList, success: shareForm.success.trim(), safety: shareForm.safety.trim(),
   })
   // What's still missing, per step (labels), so the stepper can point at it.
   const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
     ...shareFields.filter((f) => f.step === st.key && f.req === 'Required' && !f.value.trim()).map((f) => f.label),
+    ...(st.key === 'apply' && !stepsReady ? ['Các bước (mỗi bước cần tên và nội dung)'] : []),
     ...(st.key === 'intro' ? [!(shareCover && !shareCover.cleared) && 'Ảnh bìa', !shareLevel && 'Độ khó', !shareCategory.length && 'Category', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
   ]]))
-  const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && shareForm.prompt.trim() && shareForm.result.trim() && shareCategory.length && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
+  const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
   const oneOf = (val, setVal, opts, labels = {}) => opts.map((o) => ({ label: labels[o] || o, ...chip(val === o), onPick: () => setVal(val === o ? '' : o) }))
 
   const shareCategories = CATS.map((c) => ({ label: c, ...chip(shareCategory.indexOf(c) >= 0), onPick: () => setShareCategory((s) => (s.indexOf(c) >= 0 ? s.filter((x) => x !== c) : s.concat([c]))) }))
@@ -558,7 +556,7 @@ export default function UseCaseLibraryPage() {
   const previewTpl = () => {
     const sub = {
       title: previewTitle, audience: shareForm.audience, team: shareForm.team, problem: shareForm.problem, solution: shareForm.solution,
-      prep: shareForm.prep, prompt: shareForm.prompt, result: shareForm.result, limits: shareForm.limits, contact: shareForm.contact, link: shareForm.link,
+      prep: shareForm.prep, prompt: stepsAsText(shareStepList), result: shareForm.result, limits: shareForm.limits, contact: shareForm.contact, link: shareForm.link,
       status: shareStatus, level: shareLevel, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.name || '', team: shareAnon && !teamPost ? '' : shareForm.team, extra: shareExtra(),
     }
     const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon && !teamPost, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategory[0] || 'Khác', tools: previewTools }
@@ -617,6 +615,10 @@ export default function UseCaseLibraryPage() {
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Ứng dụng ngay')}
+                // admins add the missing cover of a showcase case or a booth right here
+                onUploadCover={user?.isAdmin && (dsel.pending || (caseDetail[dsel.id]?.tpl && !dsel.submitted))
+                  ? (file) => cropCover(file).then(({ data }) => api.adminSetCover(dsel.id, data)).then(() => loadPublishedUseCases(true))
+                  : null}
               />
             {dsel.pending && <BoothOwnerBar p={dsel.pending} t={t} />}
             {dsel.pending && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
@@ -1081,13 +1083,20 @@ export default function UseCaseLibraryPage() {
                         </div>
                       </>
                     )}
-                    {shareFields.filter((f) => f.step === SHARE_STEPS[shareStep].key).map((f) => (
+                    {(() => {
+                      const key = SHARE_STEPS[shareStep].key
+                      const field = (f) => (
                       <div key={f.key} style={css('margin-bottom:16px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <label htmlFor={'sf-' + f.key} style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{f.label}</label>
                           <span style={css(`font-size:11px; font-weight:700; color:${f.reqColor};`)}>{f.req === 'Required' ? t('Bắt buộc') : t('Không bắt buộc')}</span>
                         </div>
                         <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{f.hint}</div>
+                        {f.example && (
+                          <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.55; color:#475569; white-space:pre-wrap;')}>
+                            <span style={css('font-weight:800; color:#2c5fff;')}>{t('Ví dụ')}{f.key === 'title' ? ` (${t('tên hay')})` : ''}:</span>{'\n'}{f.example}
+                          </div>
+                        )}
                         {editReviewNotes.filter((c) => c.field === f.key).map((c) => (
                           <div key={c.id} style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF8E1; border-left:3px solid #F5C542; font-size:12.5px; line-height:1.55; color:#5C3A00;')}>
                             <b>Góp ý của {c.author.name}:</b> {c.quote ? <i>“{c.quote}” </i> : null}{c.body}
@@ -1100,7 +1109,15 @@ export default function UseCaseLibraryPage() {
                           <textarea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA)} />
                         )}
                       </div>
-                    ))}
+                      )
+                      return (
+                        <>
+                          {shareFields.filter((f) => f.step === key).map(field)}
+                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} />}
+                          {key === 'apply' && shareFields.filter((f) => f.step === 'apply2').map(field)}
+                        </>
+                      )
+                    })()}
                     {SHARE_STEPS[shareStep].key === 'ps' && (
                       <div style={css('margin-bottom:8px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
@@ -1185,6 +1202,45 @@ export default function UseCaseLibraryPage() {
       {isDetail ? renderDetail() : renderLibrary()}
       {shareOpen && createPortal(renderShareModal(), document.body)}
     </Layout>
+  )
+}
+
+/** Tự áp dụng, step by step, the way the published page shows it (a horizontal journey, one step at a
+ *  time): each step has a name, what to do, an optional prompt / command and an optional red warning. */
+function StepsEditor({ steps, onChange, t }) {
+  const set = (i, k) => (e) => onChange(steps.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
+  const move = (i, d) => { const n = [...steps]; [n[i], n[i + d]] = [n[i + d], n[i]]; onChange(n) }
+  const small = 'width:28px; height:28px; border:1px solid #DDE3EC; border-radius:8px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer;'
+  const lbl = (text, req) => <div style={css('margin-top:10px; font-size:12px; font-weight:800; color:#334155;')}>{t(text)} <span style={css(`font-weight:700; color:${req ? '#E0353F' : '#94a3b8'};`)}>{req ? t('Bắt buộc') : t('Không bắt buộc')}</span></div>
+  return (
+    <div style={css('margin-bottom:16px;')}>
+      <div style={css('display:flex; align-items:center; gap:8px;')}>
+        <span style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Các bước')}</span>
+        <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · ít nhất 1 bước')}</span>
+      </div>
+      <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{t('Mỗi bước là một việc người đọc làm theo thứ tự. Trên trang bài, các bước hiện thành hàng 1 → 2 → 3, bấm vào từng bước để xem chi tiết.')}</div>
+      <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.55; color:#475569; white-space:pre-wrap;')}>
+        <span style={css('font-weight:800; color:#2c5fff;')}>{t('Ví dụ một bước')}:</span>{'\n'}<b>{t('Tên bước')}:</b> Tạo 1 khoá cho nhiều tài nguyên{'\n'}<b>{t('Làm gì')}:</b> Vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên cần dùng, bấm "Create key".{'\n'}<b>{t('Prompt / lệnh mẫu')}:</b> codex mcp add mcp-platform --url "…/mcp" --bearer-token-env-var MCP_PLATFORM_KEY{'\n'}<b>{t('Lưu ý (hiện màu đỏ)')}:</b> Khoá chỉ hiện một lần: chép ngay, không gửi cho người khác.
+      </div>
+      {steps.map((x, i) => (
+        <div key={i} style={css('margin-top:12px; padding:12px 14px 14px; border:1px solid #D5E0F7; border-radius:14px; background:#FAFBFF;')}>
+          <div style={css('display:flex; align-items:center; gap:8px;')}>
+            <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;')}>{i + 1}</span>
+            <input value={x.title} onChange={set(i, 'title')} aria-label={t('Tên bước') + ' ' + (i + 1)} placeholder={t('Tên bước, ví dụ: Cài bộ skill vào Codex')} style={css(FIELD_INPUT + 'margin-top:0; flex:1; font-weight:700;')} />
+            <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title={t('Lên trên')} style={css(small + `opacity:${i === 0 ? 0.35 : 1};`)}>↑</button>
+            <button type="button" onClick={() => move(i, 1)} disabled={i === steps.length - 1} title={t('Xuống dưới')} style={css(small + `opacity:${i === steps.length - 1 ? 0.35 : 1};`)}>↓</button>
+            <button type="button" onClick={() => onChange(steps.length > 1 ? steps.filter((_, j) => j !== i) : [{ title: '', text: '', prompt: '', note: '' }])} title={t('Xoá bước')} style={css(small + 'color:#D8232A;')}>✕</button>
+          </div>
+          {lbl('Làm gì', true)}
+          <textarea value={x.text} onChange={set(i, 'text')} rows={3} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA)} />
+          {lbl('Prompt / lệnh mẫu', false)}
+          <textarea value={x.prompt} onChange={set(i, 'prompt')} rows={3} placeholder={t('Prompt để copy dán vào công cụ AI, hoặc lệnh cần gõ')} style={css(FIELD_AREA + 'font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;')} />
+          {lbl('Lưu ý ở bước này (hiện màu đỏ)', false)}
+          <input value={x.note} onChange={set(i, 'note')} placeholder={t('Điều dễ sai hoặc nguy hiểm khi cài / dùng AI ở bước này')} style={css(FIELD_INPUT)} />
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...steps, { title: '', text: '', prompt: '', note: '' }])} style={css('margin-top:10px; height:34px; padding:0 14px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm bước')}</button>
+    </div>
   )
 }
 

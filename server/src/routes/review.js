@@ -5,6 +5,7 @@ import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { domainName, initialsOf } from '../mentions.js'
 import { notify } from '../notifications.js'
 import { serializeSubmission } from './useCases.js'
+import { PENDING_BY_ID, isBoothOwner } from '../showcase.js'
 
 // Review page for a use case submission: the admin pins comments to a field (optionally to a quoted
 // passage), Google-Docs style; the author replies and marks each one "Đã sửa". Only admins and the
@@ -14,10 +15,18 @@ router.use(requireAuth)
 
 const FIELDS = ['title', 'oneLine', 'audience', 'team', 'problem', 'solution', 'result', 'highlights', 'fitYes', 'fitNo', 'prep', 'prompt', 'pitfalls', 'limits', 'tech', 'link', 'contact', 'general']
 
+// The author, or for an AI Exhibition booth's write-up any of the booth's owners (the team writes it together).
+function isTeamAuthor(row, user) {
+  if (row.author_id === user.id) return true
+  let booth = null
+  try { booth = PENDING_BY_ID.get(JSON.parse(row.extra || '{}').booth) } catch { /* no extra */ }
+  return !!booth && isBoothOwner(booth, user.email)
+}
+
 function loadSub(req, res) {
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(req.params.id)
   // Same answer for "doesn't exist" and "not yours", so ids can't be probed.
-  if (!row || (!req.user.is_admin && row.author_id !== req.user.id)) { res.status(404).json({ error: 'not_found' }); return null }
+  if (!row || (!req.user.is_admin && !isTeamAuthor(row, req.user))) { res.status(404).json({ error: 'not_found' }); return null }
   return row
 }
 
@@ -36,7 +45,7 @@ function commentsOf(subId) {
 router.get('/:id', (req, res) => {
   const row = loadSub(req, res)
   if (!row) return
-  res.json({ submission: serializeSubmission(row, req.user), comments: commentsOf(row.id), isOwner: row.author_id === req.user.id })
+  res.json({ submission: serializeSubmission(row, req.user), comments: commentsOf(row.id), isOwner: isTeamAuthor(row, req.user) })
 })
 
 router.post('/:id/comments', (req, res) => {

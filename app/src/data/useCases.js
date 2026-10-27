@@ -126,7 +126,7 @@ export function registerPending(list, done) {
 /** A booth as a card-shaped case for the detail page (not listed in the library; the tile links to it). */
 export function pendingCard(id) {
   const p = pendingCases.find((x) => x.id === id)
-  return p ? { id: p.id, title: p.title, desc: '', author: '', team: p.team || '', category: p.category, tools: [], coverUrl: null, exhibition: true, pending: p } : null
+  return p ? { id: p.id, title: p.title, desc: '', author: '', team: p.team || '', category: p.category, tools: [], coverUrl: p.cover || null, exhibition: true, pending: p } : null
 }
 
 // Showcase use cases written in the 9-part template shape from the teams' own docs. They live on the

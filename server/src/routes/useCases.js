@@ -9,7 +9,7 @@ import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
-import { PENDING_BY_ID, isBoothOwner } from '../showcase.js'
+import { PENDING_BY_ID, pendingCases, isBoothOwner } from '../showcase.js'
 
 const router = express.Router()
 // Only http(s) links are stored (a "javascript:…" link would run code when clicked).
@@ -176,7 +176,11 @@ router.get('/submissions', requireAuth, (req, res) => {
   const onlyMine = req.query.mine === '1' && req.user
   const onlyApproved = req.query.status === 'approved'
   let rows
-  if (onlyMine) rows = db.prepare('SELECT * FROM use_case_submissions WHERE author_id = ? ORDER BY created_at DESC').all(req.user.id)
+  if (onlyMine) {
+    // mine, plus my team's write-ups of the AI Exhibition booths I own
+    const booths = pendingCases.filter((p) => isBoothOwner(p, req.user.email)).map((p) => p.id)
+    rows = db.prepare(`SELECT * FROM use_case_submissions WHERE author_id = ? OR json_extract(extra, '$.booth') IN (${booths.map(() => '?').join(',') || "''"}) ORDER BY created_at DESC`).all(req.user.id, ...booths)
+  }
   else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' ORDER BY COALESCE(published_at, created_at) DESC").all()
   else if (req.user.is_admin) rows = db.prepare('SELECT * FROM use_case_submissions ORDER BY created_at DESC').all()
   else return res.status(403).json({ error: 'admin_only' })
@@ -228,6 +232,11 @@ function cleanExtra(e, user) {
     postAs: e.postAs === 'team' ? 'team' : '',
     showAs: e.postAs === 'team' ? 'members' : '',
     members: e.postAs === 'team' ? [...new Set((Array.isArray(e.members) ? e.members : []).map((m) => txt(m, 60)).filter(Boolean))].slice(0, 30) : [],
+    // Tự áp dụng as steps, each once: what to do, an optional prompt / command, an optional red warning
+    steps: (Array.isArray(e.steps) ? e.steps : []).slice(0, 15)
+      .map((x) => ({ title: txt(x && x.title, 120), text: txt(x && x.text), prompt: txt(x && x.prompt, 8000), note: txt(x && x.note, 600) }))
+      .filter((x) => x.title || x.text || x.prompt),
+    success: txt(e.success), safety: txt(e.safety),
     // the write-up of an AI Exhibition booth: once approved it replaces the booth
     booth: booth && user && (user.is_admin || isBoothOwner(booth, user.email)) ? booth.id : '',
   }
@@ -235,8 +244,9 @@ function cleanExtra(e, user) {
 }
 const parseExtra = (v) => { try { return v ? JSON.parse(v) : null } catch { return null } }
 
-const SUBMISSION_FIELDS = ['title', 'audience', 'problem', 'solution', 'prep', 'prompt', 'result']
-// Loại / Người thực hiện / Trạng thái / Team are no longer asked in the share form, so they're optional here.
+const SUBMISSION_FIELDS = ['title', 'audience', 'problem', 'solution', 'prep']
+// Loại / Người thực hiện / Trạng thái / Team / Kết quả are optional; the steps (extra.steps) replaced the single
+// Prompt box, whose column now just carries those steps as text.
 const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.level
 
 router.post('/submissions', requireAuth, (req, res) => {
@@ -254,7 +264,7 @@ router.post('/submissions', requireAuth, (req, res) => {
     (id, title, audience, team, problem, solution, prep, prompt_text, result, limits, contact, link, kind, status_field, level, category, topics, tools, author_id)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(id, f.title.trim(), f.audience.trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
-      f.prompt.trim(), f.result.trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link),
+      String(f.prompt || '').trim(), String(f.result || '').trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link),
       f.kind || '', f.status || '', f.level || '', JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), req.user.id)
   saveCover(id, cover)
   const anon = anonFields(f)
@@ -276,7 +286,9 @@ router.post('/submissions', requireAuth, (req, res) => {
 router.patch('/submissions/:id', requireAuth, (req, res) => {
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(req.params.id)
   if (!row) return res.status(404).json({ error: 'not_found' })
-  if (row.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
+  // a booth's write-up belongs to its whole team: any of the booth's owners may edit it
+  const booth = PENDING_BY_ID.get((parseExtra(row.extra) || {}).booth)
+  if (row.author_id !== req.user.id && !(booth && isBoothOwner(booth, req.user.email))) return res.status(403).json({ error: 'not_owner' })
   if (!['changes_requested', 'pending', 'approved'].includes(row.review_status)) return res.status(409).json({ error: 'not_editable' })
   // Every edit goes back through review, published ones included: the post leaves the library until an admin approves it again.
   const nextStatus = 'pending'
@@ -286,7 +298,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (cover === false) return res.status(400).json({ error: 'bad_cover' })
   db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
     limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = ?, edited_at = datetime('now') WHERE id = ?`)
-    .run(f.title.trim(), f.audience.trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), f.prompt.trim(), f.result.trim(),
+    .run(f.title.trim(), f.audience.trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), String(f.prompt || '').trim(), String(f.result || '').trim(),
       String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link), f.kind || '', f.status || '', f.level || '',
       JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)

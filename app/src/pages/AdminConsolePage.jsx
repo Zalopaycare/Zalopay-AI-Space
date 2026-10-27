@@ -670,7 +670,7 @@ export default function AdminConsolePage() {
             const count = (k) => list.filter((b) => k === 'all' || b.status === k).length
             // most-wanted first: owners of booths people are waiting for get nudged first
             const rows = list.filter((b) => boothTab === 'all' || b.status === boothTab).sort((a, b) => b.interest - a.interest || a.booth - b.booth)
-            const B_COLS = 'minmax(0,1fr) 150px 70px 120px 120px 210px'
+            const B_COLS = 'minmax(220px,1fr) 160px 72px 120px 110px 190px'
             const inviteOne = (b) => api.inviteBooth(b.id).then(() => { setBoothMsg(`Đã gửi lời mời tới Owner của booth ${b.booth} · ${b.title}.`); reloadBooths() }).catch(() => {})
             const inviteAll = () => setConfirm({
               text: `Gửi lời mời cập nhật use case tới Owner của ${list.filter((b) => b.status === 'not_started' || b.status === 'rejected').length} booth chưa gửi bài?`,
@@ -684,7 +684,9 @@ export default function AdminConsolePage() {
                   <button onClick={inviteAll} style={css(btn('approve') + 'height:36px; padding:0 14px; margin-left:auto;')}>Mời tất cả booth chưa gửi bài</button>
                 </div>
                 {boothMsg && <div style={css('margin-top:12px;' + font(600, 13) + ';color:#9fe0b9;')}>{boothMsg}</div>}
-                <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                {/* scrolls sideways on narrow windows instead of squeezing the booth names */}
+                <div style={css('margin-top:16px; overflow-x:auto;' + card)}>
+                  <div style={{ minWidth: 900 }}>
                   <div style={headRow(B_COLS)}><span>BOOTH</span><span>OWNER</span><span>QUAN TÂM</span><span>TRẠNG THÁI</span><span>ĐÃ MỜI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                   {booths === null && empty('Đang tải…')}
                   {rows.map((b) => {
@@ -714,6 +716,7 @@ export default function AdminConsolePage() {
                     )
                   })}
                   {booths && rows.length === 0 && empty('Không có booth nào ở trạng thái này.')}
+                  </div>
                 </div>
               </div>
             )

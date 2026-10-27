@@ -30,15 +30,28 @@ export const SHOWCASE_IDS = new Set(showcaseCases.map((c) => c.id))
 export const pendingCases = (await import(pathToFileURL(path.join(ROOT, 'pending.js')).href)).default
 export const PENDING_BY_ID = new Map(pendingCases.map((p) => [p.id, p]))
 // A booth's owners: its PIC and members, as company account names (lower-case, the part before @).
+// Their mailbox is <account>@vng.com.vn; only those exact addresses count as the booth's owners.
+export const BOOTH_DOMAIN = 'vng.com.vn'
 export const boothAccounts = (p) => [...new Set([...(p.pic || []), ...(p.members || [])].map((a) => a.toLowerCase()))]
-export const isBoothOwner = (p, email) => !!p && boothAccounts(p).includes(String(email || '').split('@')[0].toLowerCase())
+export const boothEmails = (p) => boothAccounts(p).map((a) => `${a}@${BOOTH_DOMAIN}`)
+export const isBoothOwner = (p, email) => !!p && boothEmails(p).includes(String(email || '').toLowerCase())
 
 // Admins can remove a showcase case from the site. The case files stay in the code; the removed ids
 // are kept in a small JSON file next to the database (same volume), so no schema change is needed.
 const HIDDEN_FILE = path.join(process.env.DATA_DIR || '/data', 'hidden-showcase.json')
 let hidden = new Set()
 try { hidden = new Set(JSON.parse(fs.readFileSync(HIDDEN_FILE, 'utf8'))) } catch { /* none hidden yet */ }
-export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id))
+// Covers an admin added on the site (for cases and booths that had none): <DATA_DIR>/showcase-covers/<id>.jpg,
+// served at /api/showcase/cover/<id>; they win over the cover in the case file.
+export const COVER_DIR = path.join(process.env.DATA_DIR || '/data', 'showcase-covers')
+export function coverOf(id) {
+  try { const st = fs.statSync(path.join(COVER_DIR, `${id}.jpg`)); return `/api/showcase/cover/${id}?v=${Math.round(st.mtimeMs)}` } catch { return '' }
+}
+export function saveCoverFile(id, buf) {
+  fs.mkdirSync(COVER_DIR, { recursive: true })
+  fs.writeFileSync(path.join(COVER_DIR, `${id}.jpg`), buf)
+}
+export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id)).map((c) => { const own = coverOf(c.id); return own ? { ...c, cover: own } : c })
 export function hideShowcase(id) {
   if (!SHOWCASE_IDS.has(id)) return false
   hidden.add(id)
