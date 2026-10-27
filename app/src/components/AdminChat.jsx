@@ -109,7 +109,6 @@ function Composer({ onSend, placeholder, t }) {
       {err && <div style={css('margin:0 0 6px 6px; font-size:12px; font-weight:600; color:#D8232A;')}>{err}</div>}
       {(files.length > 0 || att.errorFor('chat')) && <div style={css('margin:-8px 0 6px;')}><PendingAttachments files={files} onRemove={(i) => att.remove('chat', i)} error={att.errorFor('chat')} /></div>}
       <div style={css('display:flex; align-items:flex-end; gap:8px;')}>
-        <span style={css('flex:none; padding-bottom:2px;')}><AttachButton size={36} title={t('Gửi kèm hình ảnh, file')} onFiles={(list) => att.add('chat', list)} disabled={busy} /></span>
         <textarea
           ref={ref}
           rows={1}
@@ -122,6 +121,8 @@ function Composer({ onSend, placeholder, t }) {
           aria-label={placeholder}
           style={css('flex:1; min-width:0; resize:none; border:1px solid #E3E8F2; border-radius:20px; padding:9px 15px; font-family:inherit; font-size:13.5px; line-height:1.5; color:#0F172A; background:#F7F9FD; outline:none; box-sizing:border-box; max-height:132px;')}
         />
+        {/* attach sits right beside send */}
+        <span style={css('flex:none; padding-bottom:2px;')}><AttachButton size={36} title={t('Gửi kèm hình ảnh, file')} onFiles={(list) => att.add('chat', list)} disabled={busy} /></span>
         <button
           onClick={send}
           disabled={!ready || busy}
