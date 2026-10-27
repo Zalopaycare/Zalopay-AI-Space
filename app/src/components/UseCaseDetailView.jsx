@@ -1,8 +1,7 @@
 import { css } from '../lib/style.js'
-import { safeHref } from '../lib/safeHref.js'
 import { Section, ProblemSolution, ResultBody, ApplySection, TechSection, BulletList, PlainTable, Images } from './UseCaseDetailParts.jsx'
 
-// The body of a use case detail page (parts 2–9 of the template), shared by the real page and the
+// The body of a use case detail page (parts 2–8 of the template), shared by the real page and the
 // share form's "Xem trước" so both look identical. Parts with no data are hidden and the rest are
 // numbered in the order shown (no "6 → 8" gaps).
 
@@ -16,17 +15,16 @@ export function detailLayout(tp, t) {
     safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),
     demo: tp.demo.length > 0,
     tech: !!(tp.tech.tables.length || tp.tech.repo || tp.tech.bullets.length || tp.tech.code.length || tp.tech.images.length),
-    next: !!(tp.next.steps.length || tp.next.contact.length || tp.next.link),
   }
+  // "Tự áp dụng" comes before "Kết quả": once the reader gets the idea, the links and steps are next.
   const parts = [
     ['tldr', 'uc-tldr', 'Tóm tắt'],
     ['ps', 'uc-problem', 'Bài toán & giải pháp'],
-    ['result', 'uc-result', 'Kết quả'],
     ['apply', 'uc-apply', tp.apply.title],
+    ['result', 'uc-result', 'Kết quả'],
     ['safety', 'uc-safety', 'An toàn & giới hạn'],
     ['demo', 'uc-demo', 'Demo'],
     ['tech', 'uc-tech', 'Chi tiết kỹ thuật'],
-    ['next', 'uc-next', 'Tiếp theo & liên hệ'],
   ].filter(([k]) => has[k])
   const num = {}
   parts.forEach(([k], i) => { num[k] = String(i + 1) })
@@ -34,15 +32,15 @@ export function detailLayout(tp, t) {
   return { has, num, toc }
 }
 
-const SUBHEAD = 'font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
+const SUBHEAD = 'font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
 
 export function DetailSections({ id, tp, t, layout }) {
   const { has, num } = layout
   return (
     <>
       {has.ps && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} num={num.ps} />}
-      {has.result && <Section id="uc-result" num={num.result} title={t('Kết quả')}><ResultBody r={tp.result} t={t} /></Section>}
       {has.apply && <ApplySection id={id} a={tp.apply} t={t} num={num.apply} />}
+      {has.result && <Section id="uc-result" num={num.result} title={t('Kết quả')}><ResultBody r={tp.result} t={t} /></Section>}
       {has.safety && (
         <Section id="uc-safety" num={num.safety} title={t('An toàn & giới hạn')}>
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>
@@ -58,15 +56,6 @@ export function DetailSections({ id, tp, t, layout }) {
         </Section>
       )}
       {has.tech && <TechSection tech={tp.tech} t={t} num={num.tech} />}
-      {has.next && (
-        <Section id="uc-next" num={num.next} title={t('Tiếp theo & liên hệ')}>
-          <div style={css('display:flex; flex-direction:column; gap:16px;')}>
-            {tp.next.steps.length > 0 && <div><div style={css(SUBHEAD)}>{t('Sắp làm')}</div><BulletList items={tp.next.steps} dot="#2c5fff" /></div>}
-            {tp.next.contact.length > 0 && <div><div style={css(SUBHEAD)}>{t('Liên hệ')}</div><BulletList items={tp.next.contact} dot="#9FB6E8" /></div>}
-            {safeHref(tp.next.link) && <a href={safeHref(tp.next.link)} target="_blank" rel="noopener" style={css('align-self:flex-start; font-size:13.5px; font-weight:700; color:#2c5fff;')}>{t('Tài liệu gốc')} ↗</a>}
-          </div>
-        </Section>
-      )}
     </>
   )
 }

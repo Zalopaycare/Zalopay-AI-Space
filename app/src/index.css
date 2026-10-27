@@ -182,7 +182,7 @@ html.zp-vt .zp-page-in { animation: none; }
   .zp-tldr > div > div:nth-child(2) { margin-bottom: 10px; }
   .zp-ps { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 0 auto; row-gap: 22px; }
   .zp-ps-arrow > span { transform: rotate(90deg); }
-  .zp-detail-title { font-size: 28px !important; letter-spacing: -.5px !important; }
+  .zp-detail-title { font-size: 24px !important; letter-spacing: -.5px !important; }
 }
 
 /* Original images: small thumbnails, several per row; click opens them large. */

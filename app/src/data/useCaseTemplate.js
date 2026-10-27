@@ -64,7 +64,42 @@ function fromTpl(c, m) {
   }
 }
 
+// Contact lines in the source docs mix people with goals, notes and doc links ("Phụ trách: …",
+// "Mục tiêu: …", "Tài liệu liên quan: … — https://…"). Only the people go to the hero.
+const PERSON = /^(người\s+)?(phụ trách|pic\b|cùng làm|review|đóng góp)|^sre\b/i
+function splitContacts(lines) {
+  const people = [], links = []
+  for (const line of lines) {
+    const s = String(line || '')
+    const at = s.indexOf(':')
+    const label = at > 0 ? s.slice(0, at).trim() : ''
+    const value = at > 0 ? s.slice(at + 1).trim() : s.trim()
+    const url = /https?:\/\/[^\s,;)]+/.exec(s)
+    if (url) links.push({ kind: 'doc', label: value.split(' — ')[0].replace(url[0], '').trim() || label || 'Tài liệu', href: url[0] })
+    // names drop Microsoft's "(8)" counters, as the owner does
+    else if (PERSON.test(label) && !/^\[cần bổ sung/i.test(value)) people.push((/phụ trách|pic\b/i.test(label) ? value : `${label}: ${value}`).replace(/\s*\(\d+\)/g, ''))
+  }
+  return { people, links }
+}
+
+// There is no "Tiếp theo & liên hệ" part: the repo and the docs become links at the top of
+// "Tự áp dụng", and the people to contact sit in the hero under the owner.
 export function buildTemplate(c, cd, info) {
+  const tp = buildParts(c, cd, info)
+  const { people, links: docLinks } = splitContacts(tp.next.contact)
+  // A repo may come as a name only (no link); it is still listed, as text.
+  const links = [
+    tp.tech.repo && { kind: 'repo', label: tp.tech.repo.label, href: tp.tech.repo.href || '' },
+    tp.next.link && { kind: 'doc', label: 'Tài liệu gốc', href: tp.next.link },
+    ...docLinks,
+  ].filter(Boolean)
+  tp.apply = { ...tp.apply, links, empty: tp.apply.empty && !links.length }
+  tp.hero = { ...tp.hero, contact: people }
+  tp.tech = { ...tp.tech, repo: null }
+  return tp
+}
+
+function buildParts(c, cd, info) {
   if (cd.tpl) return fromTpl(c, cd.tpl)
   const x = EXTRA[c.id] || {}
   const howto = cd.howto || {}
