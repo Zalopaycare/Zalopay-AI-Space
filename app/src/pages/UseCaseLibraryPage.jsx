@@ -564,15 +564,12 @@ export default function UseCaseLibraryPage() {
     const live = ucMeta[dsel.id]
     const base = live ? live.helpful : (prdMeta[dsel.id] || {}).helpful || 0
     const voted = live ? live.iHelped : false
-    const applied = live ? live.applied || 0 : 0
-    const iApplied = live ? !!live.iApplied : false
     const commentsList = live ? live.comments : []
     const postDComment = () => {
       const text = (dBoxRef.current ? dBoxRef.current.expand(dDraft) : dDraft).trim()
       const key = 'cmt:' + dsel.id
       if (text || att.files(key).length) requireLogin(() => api.commentUseCase(dsel.id, text, null, dsel.title, { ...cmtAnonOpts(), ownerHandle: dsel.author, files: att.payload(key) }).then(() => { refreshMeta(dsel.id); att.clear(key); setDDraft('') }).catch(alertIfAliasTaken))
     }
-    const toggleApplied = () => requireLogin(() => api.toggleApplied(dsel.id).then((d) => setUcMeta((m) => ({ ...m, [dsel.id]: { ...(m[dsel.id] || {}), ...d } }))).catch(() => {}))
 
     // Which of the 9 parts have data — the rest are hidden, numbered in order, and listed in the TOC.
     const layout = detailLayout(tp, t)
@@ -603,28 +600,15 @@ export default function UseCaseLibraryPage() {
 
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}
-              <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap;')}>
-                <button
-                  onClick={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
-                  aria-pressed={voted}
-                  style={css(`display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:1px solid ${voted ? '#B9CCF8' : '#DDE3EC'}; border-radius:999px; background:${voted ? '#EAF1FF' : '#fff'}; color:${voted ? '#2c5fff' : '#3A4757'}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill={voted ? '#2c5fff' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.6 3.4L13.5 9h5a2.5 2.5 0 0 1 2.4 3.1l-1.7 7A2.5 2.5 0 0 1 16.8 22H7Z"></path><path d="M7 22H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3"></path></svg>
-                  {base} {t('Upvote')}
-                </button>
-                <button
-                  onClick={toggleApplied}
-                  aria-pressed={iApplied}
-                  title={t('Bấm nếu bạn đã tự áp dụng use case này')}
-                  style={css(`display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border:1px solid ${iApplied ? '#9FDDBC' : '#DDE3EC'}; border-radius:999px; background:${iApplied ? '#E7F9F0' : '#fff'}; color:${iApplied ? '#00723C' : '#3A4757'}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">{iApplied ? <><circle cx="12" cy="12" r="9" fill="#00A352" stroke="#00A352"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5" stroke="#fff"></path></> : <><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.7 2.7L16.5 9.5"></path></>}</svg>
-                  {t('Tôi đã áp dụng')} · {applied}
-                </button>
-                <span style={css('display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#94a3b8;')}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"></path></svg>
-                  {commentsList.length} {t('Bình luận')}
-                </span>
+              {/* Same Upvote + Bình luận pair as the use case cards; "Bình luận" jumps to the comment box. */}
+              <div style={css('display:flex;')}>
+                <CardActions
+                  helpful={base}
+                  helped={voted}
+                  onHelpful={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
+                  replies={commentsList.length}
+                  onReply={() => document.querySelector('#comments textarea, #comments [contenteditable="true"]')?.focus()}
+                />
               </div>
 
               <div style={css('display:flex; gap:10px; margin-top:14px; align-items:flex-start;')}>
