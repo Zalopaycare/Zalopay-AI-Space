@@ -3,8 +3,8 @@ import { api } from '../lib/api.js'
 import { css } from '../lib/style.js'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
-// list: number badge in the category colour, name, event label, a "Chưa có thông tin" tag and a
-// "Quan tâm" toggle that pings the booth owners ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
+// list: number badge in the category colour, name, members, event label, a "Chưa có thông tin" tag and a
+// "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
 
 const CAT_COLOR = {
   'Software Development': ['#2140D9', '#132A9E'],
@@ -45,6 +45,11 @@ export default function PendingCases({ items, t, requireLogin }) {
               <span aria-hidden="true" style={css(`flex:none; width:44px; height:44px; border-radius:12px; background:${c1}; box-shadow:0 4px 0 ${c2}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:800; font-style:italic;`)}>{p.booth}</span>
               <div style={css('flex:1; min-width:0;')}>
                 <div style={css('font-size:13.5px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;')}>{p.title}</div>
+                {p.members?.length > 0 && (
+                  <div style={css('margin-top:3px; font-size:12px; line-height:1.45; color:#5B6B82;')}>
+                    <span style={css('font-weight:600; color:#3A4757;')}>{t('Thành viên')}:</span> {p.members.join(', ')}
+                  </div>
+                )}
                 <div style={css('display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px;')}>
                   {p.label && <span style={css(`font-size:12px; font-weight:600; color:${LABEL_COLOR(p.label)};`)}>{p.label}</span>}
                   <span style={css('display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:999px; background:#FFF4E3; border:1px solid #F3DCB4; color:#9A5B00; font-size:11px; font-weight:700;')}>{t('Chưa có thông tin')}</span>

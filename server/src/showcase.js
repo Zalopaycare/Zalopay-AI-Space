@@ -26,7 +26,7 @@ export const showcaseCases = await load()
 export const SHOWCASE_IDS = new Set(showcaseCases.map((c) => c.id))
 
 // AI Exhibition booths with no write-up yet: shown as "Chưa có thông tin" tiles with a "Quan tâm"
-// button. Their owners' emails stay on the server; only the counts go out.
+// button, listing the booth's members (public on the exhibition site too).
 export const pendingCases = (await import(pathToFileURL(path.join(ROOT, 'pending.js')).href)).default
 export const PENDING_BY_ID = new Map(pendingCases.map((p) => [p.id, p]))
 

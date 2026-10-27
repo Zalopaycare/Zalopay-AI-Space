@@ -448,7 +448,7 @@ export default function UseCaseLibraryPage() {
   // "Chưa có thông tin" booth tiles follow the search box and Category; they have no tools, topics or
   // kind, so any of those filters hides them.
   const pendingList = (libTool || libTopic || libKind || libGroup) ? [] : pendingCases.filter((p) =>
-    (!libCat || p.category === libCat) && (!q || fold([p.title, p.team, p.label, p.category].join(' ')).includes(q)))
+    (!libCat || p.category === libCat) && (!q || fold([p.title, p.team, p.label, p.category, ...(p.members || [])].join(' ')).includes(q)))
   const PAGE_SIZE = 6
   const pageCount = Math.max(1, Math.ceil(libCases.length / PAGE_SIZE))
   const curPage = Math.min(libPage, pageCount)
