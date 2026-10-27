@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
-import Fill from './Fill.jsx'
+import Fill, { plainText } from './Fill.jsx'
 
 // Building blocks for step-by-step use case content: prompts with Copy, mock AI result windows,
 // tables, coloured notes, tool tabs and click-to-zoom images (used by the detail page's part 5).
@@ -36,7 +36,8 @@ export function CopyButton({ text, small }) {
 }
 
 const Label = ({ children }) => <div style={css(`font:700 12.5px ${FONT}; color:#64748b; margin-bottom:8px;`)}>{children}</div>
-const SubTitle = ({ children }) => <div style={css(`font:800 14.5px ${FONT}; color:#0F172A; margin-bottom:8px;`)}>{children}</div>
+// a titled block inside a step or card: one level below the card headings (see SUB2 in UseCaseDetailParts)
+const SubTitle = ({ children }) => <div style={css(`font:800 14px ${FONT}; color:#0F172A; margin-bottom:8px;`)}>{children}</div>
 
 /** Marks the parts of a prompt the reader has to change: [ngoặc vuông] and <tên_bạn>. */
 export function Placeholders({ text }) {
@@ -255,15 +256,15 @@ export function Figure({ img }) {
       <button type="button" onClick={() => setOpen(true)} title="Bấm để xem ảnh lớn" className={hoverClass('border-color:#B9CCF8 !important; box-shadow:0 8px 22px rgba(44,95,255,.18) !important;')} style={css('display:block; width:100%; padding:0; border:1px solid #E6EBF3; border-radius:12px; background:#F7F9FD; overflow:hidden; cursor:zoom-in; transition:box-shadow .15s, border-color .15s;')}>
         <img
           src={img.src}
-          alt={img.caption || ''}
+          alt={plainText(img.caption)}
           onLoad={(e) => setDims({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
           style={{ display: 'block', margin: '0 auto', width: '100%', maxWidth: dims ? dims.w : undefined, height: tall ? 300 : 'auto', objectFit: tall ? 'cover' : undefined, objectPosition: 'top' }}
         />
       </button>
       {img.caption && <figcaption style={css(`margin-top:7px; font:400 12px/1.45 ${FONT}; color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
       {open && createPortal(
-        <div role="dialog" aria-modal="true" aria-label={img.caption || 'Ảnh'} onClick={() => setOpen(false)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(3,6,18,.86); backdrop-filter:blur(4px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px; box-sizing:border-box; cursor:zoom-out;')}>
-          <img src={img.src} alt={img.caption || ''} style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 110px)', objectFit: 'contain', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.6)', background: '#fff' }} />
+        <div role="dialog" aria-modal="true" aria-label={plainText(img.caption) || 'Ảnh'} onClick={() => setOpen(false)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(3,6,18,.86); backdrop-filter:blur(4px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px; box-sizing:border-box; cursor:zoom-out;')}>
+          <img src={img.src} alt={plainText(img.caption)} style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 110px)', objectFit: 'contain', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.6)', background: '#fff' }} />
           {img.caption && <div style={css(`max-width:900px; text-align:center; font:500 13.5px/1.5 ${FONT}; color:#dbe4f7;`)}><Fill text={img.caption} /></div>}
           <div style={css(`font:500 12px ${FONT}; color:#8fa6d8;`)}>Bấm bất cứ đâu để đóng</div>
         </div>,

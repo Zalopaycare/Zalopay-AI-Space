@@ -15,8 +15,11 @@ import RichText from './RichText.jsx'
 
 export const DETAIL_COL = 'max-width:1120px; margin:0 auto;'
 const CARD = 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:18px 20px;'
-// Every heading inside a card (Bài toán, Giải pháp, Cần chuẩn bị, Các bước…): one size, one color.
-const SUB = 'font-size:14.5px; font-weight:800; color:#0F172A; margin-bottom:10px;'
+// Heading scale on a use case page: part titles outside the cards (20px white) > SUB, the headings
+// inside a card (Bài toán, Giải pháp, Cần chuẩn bị, Các bước…; 16px deep blue) > SUB2, what sits under
+// those (Số liệu & hình ảnh, table titles, a step's name; 14px near-black) > body text (13px).
+const SUB = 'font-size:16px; font-weight:800; letter-spacing:-.2px; color:#1D3A8F; margin-bottom:10px;'
+const SUB2 = 'font-size:14px; font-weight:800; color:#0F172A; margin-bottom:8px;'
 const DIFF = { 'Dễ': ['#4ADE80', 1], 'Trung bình': ['#FBBF24', 2], 'Khó': ['#F87171', 3] }
 
 export const scrollToId = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -194,7 +197,7 @@ export function Section({ id, num, title, sub, children, bare = false }) {
     <section id={id} data-toc style={css('scroll-margin-top:84px; margin-top:18px;')}>
       <div style={css('display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;')}>
         {num && <NumBadge n={num} />}
-        <h2 style={css('margin:0; font-size:18px; font-weight:800; letter-spacing:-.3px; color:#fff;')}>{title}</h2>
+        <h2 style={css('margin:0; font-size:20px; font-weight:800; letter-spacing:-.4px; color:#fff;')}>{title}</h2>
         {sub && <span style={css('font-size:12.5px; color:#8b98b8;')}>{sub}</span>}
       </div>
       {bare ? children : <div style={css(CARD)}>{children}</div>}
@@ -249,7 +252,7 @@ export function ProblemSolution({ problem, solution, result, showEmpty = false, 
           {result && (
             <div style={{ marginTop: 18 }}>
               {/* not "Kết quả": the AI Exhibition's Giải pháp text often ends with its own "Kết quả:" */}
-              {head(t('Số liệu & hình ảnh'), '#2c5fff')}
+              <div style={css(SUB2 + 'display:flex; align-items:center; gap:8px;')}>{t('Số liệu & hình ảnh')}<span style={css('width:7px; height:7px; border-radius:50%; background:#2c5fff;')}></span></div>
               <ResultBody r={result} t={t} />
             </div>
           )}
@@ -269,7 +272,7 @@ export function BarTable({ table, t, limit = 5 }) {
   const rows = all ? table.rows : table.rows.slice(0, limit)
   return (
     <div style={css('padding:18px; border:1px solid #E6EBF3; border-radius:16px; display:flex; flex-direction:column;')}>
-      <div style={css(SUB + 'margin-bottom:4px;')}>{table.title}</div>
+      <div style={css(SUB2 + 'margin-bottom:4px;')}>{table.title}</div>
       {table.note && <div style={css('font-size:12px; line-height:1.5; color:#64748b; margin-bottom:14px;')}>{table.note}</div>}
       <div style={css('display:flex; flex-direction:column; gap:12px;')}>
         {rows.map((r, i) => (
@@ -297,8 +300,8 @@ export function PlainTable({ table, flat = false, tone }) {
   const red = tone === 'danger'
   return (
     <div style={css(flat ? '' : CARD)}>
-      {table.title && <div style={css(SUB + 'margin-bottom:4px;')}>{table.title}</div>}
-      {table.note && <div style={css('font-size:12px; color:#64748b; margin-bottom:12px;')}>{table.note}</div>}
+      {table.title && <div style={css(SUB2 + 'margin-bottom:4px;')}><Fill text={table.title} /></div>}
+      {table.note && <div style={css('font-size:12px; color:#64748b; margin-bottom:12px;')}><Fill text={table.note} /></div>}
       <div style={css(`overflow-x:auto; border:1px solid ${red ? '#F5C9CB' : '#E6EBF3'}; border-radius:12px; background:#fff;`)}>
         <table style={css('width:100%; border-collapse:collapse; font-size:12.5px;')}>
           <thead>
@@ -439,7 +442,7 @@ function StepJourney({ sections, t }) {
       </div>
       <div role="tabpanel" style={css('padding:16px 18px 18px;')}>
         <div style={css('font-size:10.5px; font-weight:800; letter-spacing:.08em; color:#5B7BD6;')}>{t('BƯỚC')} {on + 1}/{sections.length}</div>
-        <div style={css('margin:2px 0 12px; font-size:16px; font-weight:800; line-height:1.35; color:#0B1F5C;')}>{s.title}</div>
+        <div style={css('margin:2px 0 12px; font-size:15px; font-weight:800; line-height:1.35; color:#0F172A;')}>{s.title}</div>
         {s.sub && <div style={css('margin:0 0 12px; font-size:12.5px; color:#64748b;')}>{s.sub}</div>}
         <Blocks blocks={s.blocks} />
         <div style={css('display:flex; align-items:center; gap:10px; margin-top:18px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
