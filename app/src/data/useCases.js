@@ -123,7 +123,7 @@ export function registerTemplateCases(list) {
     const card = {
       id: m.id, postedAt: m.postedAt || '', title: m.title, desc: m.desc, author: m.author, team: known(m.ownerTeam), category: m.category || 'Other',
       tools: normalizeTools(m.tools || []), repo: m.tech?.repo?.label || '', repoHref: m.tech?.repo?.href || '',
-      audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null,
+      audience: [m.kind === 'nontech' ? 'nontech' : 'tech'], coverUrl: m.cover || null, exhibition: m.source === 'exhibition',
     }
     // keep built-ins in id order (c1…c5, c6…) so "Mới nhất" puts the newest showcase first
     const at = allCases.findIndex((c) => !c.submitted && Number(c.id.slice(1)) > Number(m.id.slice(1)))
@@ -183,8 +183,10 @@ export function postedLabel(c) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-/** "Mới nhất" order used everywhere (Home + Library): approved community posts newest first
- *  (they're already sorted that way), then the built-in cases, newest built-in first. */
+/** "Mới nhất" order used everywhere (Home + Library): the fully written built-in cases first (newest
+ *  first), then approved community posts (already newest first), then the AI Exhibition booths, which
+ *  only have Vấn đề + Giải pháp so far. */
 export function newestFirst(list) {
-  return [...list.filter((c) => c.submitted), ...list.filter((c) => !c.submitted).reverse()]
+  const builtin = list.filter((c) => !c.submitted).reverse()
+  return [...builtin.filter((c) => !c.exhibition), ...list.filter((c) => c.submitted), ...builtin.filter((c) => c.exhibition)]
 }
