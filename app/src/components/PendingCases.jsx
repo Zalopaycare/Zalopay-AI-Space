@@ -41,6 +41,37 @@ function InterestButton({ p, busy, onToggle, t }) {
   )
 }
 
+// What a booth's owner sees on its page: start the write-up, or where the team's write-up stands.
+const OWNER_STATUS = {
+  pending: ['Bài của team đang chờ Admin duyệt.', '#1E44A8', '#EEF3FF', '#CFDDFB'],
+  changes_requested: ['Admin cần team chỉnh sửa / bổ sung trước khi duyệt.', '#9A5B00', '#FFF8E8', '#F3E0B0'],
+  rejected: ['Bài trước chưa được duyệt. Team có thể gửi lại.', '#C0262D', '#FFF0F0', '#F5C9CB'],
+}
+
+/** On a booth's page, for its owners only: "Cập nhật use case này" (the share form, pre-filled), or the
+ *  status of the write-up already sent with a link to edit it. */
+export function BoothOwnerBar({ p, t }) {
+  const navigate = useNavigate()
+  if (!p.owner) return null
+  const sub = p.submission && p.submission.status !== 'rejected' ? p.submission : null
+  const st = p.submission ? OWNER_STATUS[p.submission.status] : null
+  const btn = 'display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 6px 16px rgba(44,95,255,.35);'
+  return (
+    <div style={css(`display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:14px 16px; border-radius:14px; background:${st ? st[2] : '#EEF3FF'}; border:1px solid ${st ? st[3] : '#CFDDFB'};`)}>
+      <div style={css('flex:1; min-width:220px;')}>
+        <div style={css(`font-size:13.5px; font-weight:800; color:${st ? st[1] : '#1E3A7A'};`)}>{t('Bạn là Owner của use case này')}</div>
+        <div style={css('margin-top:2px; font-size:12.5px; line-height:1.5; color:#3A4757;')}>
+          {st ? t(st[0]) : t('Bài toán, Giải pháp và thành viên đã có sẵn từ AI Exhibition. Bổ sung các phần còn trống (ảnh bìa, các bước, số liệu…) rồi gửi Admin duyệt.')}
+        </div>
+      </div>
+      {!sub && <button onClick={() => navigate(`/use-cases?share=1&booth=${encodeURIComponent(p.id)}`)} style={css(btn)}>{t('Cập nhật use case này')} →</button>}
+      {sub && sub.mine && sub.status === 'pending' && <button onClick={() => navigate(`/use-cases?edit=${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem / sửa bài đã gửi')}</button>}
+      {sub && sub.mine && sub.status === 'changes_requested' && <button onClick={() => navigate(`/review/${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem góp ý và sửa')}</button>}
+      {sub && !sub.mine && <span style={css('font-size:12px; color:#64748b;')}>{t('Một thành viên khác trong team đã gửi bài.')}</span>}
+    </div>
+  )
+}
+
 /** "Quan tâm" on a booth's own page, under its title: the same toggle as on the tile. */
 export function BoothInterest({ p, t, requireLogin }) {
   const [, setTick] = useState(0)

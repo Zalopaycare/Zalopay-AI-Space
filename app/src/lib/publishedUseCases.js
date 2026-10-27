@@ -16,7 +16,7 @@ export function loadPublishedUseCases(force = false) {
   if (inflight && !force) return inflight
   inflight = Promise.all([
     // showcase first: registerPublished keeps whatever is registered as built-in
-    api.showcase().then((d) => { registerTemplateCases(d.cases || []); registerPending(d.pending) }).catch(() => {}),
+    api.showcase().then((d) => { registerTemplateCases(d.cases || []); registerPending(d.pending, d.boothDone) }).catch(() => {}),
     api.listSubmissions('?status=approved').catch(() => null),
   ])
     .then(([, d]) => { if (d) registerPublished(d.submissions || []) })

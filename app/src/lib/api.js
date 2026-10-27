@@ -73,6 +73,10 @@ export const api = {
   reactUseCase: (id) => request(`/use-cases/${id}/react`, { method: 'POST' }),
   showcase: () => request('/showcase'),
   interestPending: (id) => request(`/showcase/pending/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
+  // Admin Console "Booth Exhibition": every booth's write-up status, and inviting owners to write it up
+  adminBooths: () => request('/showcase/admin/booths'),
+  inviteBooth: (id) => request(`/showcase/admin/booths/${encodeURIComponent(id)}/invite`, { method: 'POST' }),
+  inviteAllBooths: () => request('/showcase/admin/booths/invite', { method: 'POST' }),
   // "Chat với Admin": my conversation, and the admins' shared inbox. `after` = last message id I have.
   chatMine: (after = 0) => request('/chat/me?after=' + after),
   chatSend: (body, files = []) => request('/chat/me', { method: 'POST', body: JSON.stringify({ body, files }) }),

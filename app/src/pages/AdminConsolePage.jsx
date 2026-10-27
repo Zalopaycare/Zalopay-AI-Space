@@ -96,6 +96,12 @@ export default function AdminConsolePage() {
   // "Hộp thư": the open "Chat với Admin" conversation; #inbox/<user id> (from a notification) opens one
   const [chatUid, setChatUid] = useState(() => Number((/#inbox\/(\d+)/.exec(window.location.hash) || [])[1]) || null)
   const chatInbox = useChatUnread(isAdmin).inbox
+  // "Booth Exhibition": AI Exhibition booths and how far their owners are with the write-up
+  const [booths, setBooths] = useState(null)
+  const [boothTab, setBoothTab] = useState('all')
+  const [boothMsg, setBoothMsg] = useState('')
+  const reloadBooths = () => api.adminBooths().then((d) => setBooths(d.booths || [])).catch(() => setBooths((b) => b || []))
+  useEffect(() => { if (isAdmin && section === 'booths') reloadBooths() }, [isAdmin, section]) // eslint-disable-line react-hooks/exhaustive-deps
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [adminStats, setAdminStats] = useState(null)
@@ -311,6 +317,7 @@ export default function AdminConsolePage() {
     ['reports', 'Báo cáo', '#D8232A', reports.filter((r) => r.status === 'open').length],
     ['users', 'Thành viên', '#00B7FF', 0],
     ['inbox', 'Hộp thư', '#6F0CE2', chatInbox],
+    ['booths', 'Booth Exhibition', '#FF8D00', 0],
   ]
 
   const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:14px; align-items:center;`
@@ -650,6 +657,67 @@ export default function AdminConsolePage() {
               </div>
             </div>
           )}
+
+          {section === 'booths' && (() => {
+            const ST = {
+              not_started: ['Chưa bắt đầu', '#F1F4FA', '#5B6675'],
+              pending: ['Chờ duyệt', '#FFF1E0', '#B45300'],
+              changes_requested: ['Cần chỉnh sửa', '#FFF4E3', '#9A5B00'],
+              approved: ['Đã đăng', '#E7F9F0', '#00893F'],
+              rejected: ['Từ chối', '#FFECEC', '#D8232A'],
+            }
+            const list = booths || []
+            const count = (k) => list.filter((b) => k === 'all' || b.status === k).length
+            // most-wanted first: owners of booths people are waiting for get nudged first
+            const rows = list.filter((b) => boothTab === 'all' || b.status === boothTab).sort((a, b) => b.interest - a.interest || a.booth - b.booth)
+            const B_COLS = 'minmax(0,1fr) 150px 70px 120px 120px 210px'
+            const inviteOne = (b) => api.inviteBooth(b.id).then(() => { setBoothMsg(`Đã gửi lời mời tới Owner của booth ${b.booth} · ${b.title}.`); reloadBooths() }).catch(() => {})
+            const inviteAll = () => setConfirm({
+              text: `Gửi lời mời cập nhật use case tới Owner của ${list.filter((b) => b.status === 'not_started' || b.status === 'rejected').length} booth chưa gửi bài?`,
+              run: () => api.inviteAllBooths().then((d) => { setBoothMsg(`Đã mời Owner của ${d.invited} booth.`); reloadBooths() }).catch(() => {}),
+            })
+            return (
+              <div>
+                <Heading title="Booth Exhibition" sub="Use case từ AI Exhibition 2026: Owner (PIC + thành viên booth) tự cập nhật nội dung, Admin duyệt rồi bài thay cho khung &quot;Chưa có thông tin&quot;." />
+                <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
+                  <Tabs value={boothTab} onChange={setBoothTab} tabs={[['all', 'Tất cả', count('all')], ['not_started', 'Chưa bắt đầu', count('not_started')], ['pending', 'Chờ duyệt', count('pending')], ['changes_requested', 'Cần chỉnh sửa', count('changes_requested')], ['approved', 'Đã đăng', count('approved')]]} />
+                  <button onClick={inviteAll} style={css(btn('approve') + 'height:36px; padding:0 14px; margin-left:auto;')}>Mời tất cả booth chưa gửi bài</button>
+                </div>
+                {boothMsg && <div style={css('margin-top:12px;' + font(600, 13) + ';color:#9fe0b9;')}>{boothMsg}</div>}
+                <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                  <div style={headRow(B_COLS)}><span>BOOTH</span><span>OWNER</span><span>QUAN TÂM</span><span>TRẠNG THÁI</span><span>ĐÃ MỜI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                  {booths === null && empty('Đang tải…')}
+                  {rows.map((b) => {
+                    const st = ST[b.status] || ST.not_started
+                    return (
+                      <div key={b.id} style={bodyRow(B_COLS)}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={css(font(700, 13.5, 1.4) + ';color:#0f172a;')}>{b.booth}. {b.title}</div>
+                          <div style={css('margin-top:3px;' + font(400, 12) + ';color:#94a3b8;')}>{[b.label, b.category].filter(Boolean).join(' · ')}</div>
+                        </div>
+                        <div style={css(font(600, 12) + ';color:#3A4757;')} title={[...b.pic, ...b.members].join(', ')}>
+                          <div style={css('white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{(b.members.length ? b.members : b.pic).join(', ') || '—'}</div>
+                          <div style={css('margin-top:3px;' + font(400, 11.5) + ';color:#94a3b8;')}>{b.ownersOnSite}/{b.owners} đã vào AI Space</div>
+                        </div>
+                        <div style={css(font(700, 13.5) + ';color:#B45300;')}>{b.interest}</div>
+                        <div>
+                          <span style={css(pill(st[1], st[2]))}>{st[0]}</span>
+                          {b.submittedBy && <div style={css('margin-top:4px;' + font(400, 11.5) + ';color:#94a3b8;')}>{b.submittedBy}</div>}
+                        </div>
+                        <div style={css(font(400, 12) + ';color:#64748b;')}>{b.invitedAt ? `${relativeTime(b.invitedAt)} · ${b.invites} lần` : 'Chưa mời'}</div>
+                        <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                          {b.status !== 'approved' && <button onClick={() => inviteOne(b)} style={css(btn('plain'))}>{b.invites ? 'Nhắc lại' : 'Mời'}</button>}
+                          {(b.status === 'pending' || b.status === 'changes_requested') && b.submissionId && <a href={`/review/${encodeURIComponent(b.submissionId)}`} target="_blank" rel="noreferrer" style={css(btn('changes') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Duyệt</a>}
+                          <a href={b.status === 'approved' && b.submissionId ? `/use-cases/${encodeURIComponent(b.submissionId)}` : `/use-cases/${b.id}`} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Xem</a>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {booths && rows.length === 0 && empty('Không có booth nào ở trạng thái này.')}
+                </div>
+              </div>
+            )
+          })()}
 
           {section === 'inbox' && (
             <div>

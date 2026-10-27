@@ -1,4 +1,4 @@
-import { SHOWCASE_IDS } from './showcase.js'
+import { SHOWCASE_IDS, PENDING_BY_ID } from './showcase.js'
 import express from 'express'
 import { db } from './db.js'
 import { requireAuth } from './auth.js'
@@ -41,7 +41,7 @@ export function notifyUpvotes(ownerEmail, { ref, count, lastVoter, title, href }
 
 // "Quan tâm" on a booth with no write-up yet: one notification per booth and owner, updated in place
 // like the upvote one, pointing at the share form. Safe to call again with the same count.
-export function notifyInterest(ownerEmail, { ref, count, title }) {
+export function notifyInterest(ownerEmail, { ref, count, title, href = '/use-cases?share=1' }) {
   if (!ownerEmail) return
   const email = String(ownerEmail).toLowerCase()
   const prev = db.prepare("SELECT * FROM notifications WHERE email = ? AND kind = 'interest' AND ref = ?").get(email, ref)
@@ -49,7 +49,6 @@ export function notifyInterest(ownerEmail, { ref, count, title }) {
   const label = String(title || '').trim()
   const name = label ? ` "${label.length > 80 ? label.slice(0, 80).trimEnd() + '…' : label}"` : ''
   const text = `Use case${name} của bạn nhận được ${count} lượt quan tâm. Đăng Use Case ngay!`
-  const href = '/use-cases?share=1'
   try {
     if (prev) {
       const grew = count > (Number((/(\d+) lượt quan tâm/.exec(prev.text) || [])[1]) || 0)
@@ -62,21 +61,24 @@ export function notifyInterest(ownerEmail, { ref, count, title }) {
 
 // "Chat với Admin": one notification per conversation and reader, rewritten with the newest message
 // and marked unread again, so a busy chat doesn't flood the list.
-export function notifyChat(email, { ref, text, href, actor = '' }) {
+export function notifyChat(email, { ref, text, href, actor = '' }) { notifyOnce(email, 'chat', { ref, text, href, actor }) }
+
+/** One notification of `kind` per ref and reader: rewritten, unread again and moved to the top when sent again. */
+export function notifyOnce(email, kind, { ref, text, href, actor = '' }) {
   if (!email) return
   const to = String(email).toLowerCase()
   try {
-    const prev = db.prepare("SELECT id FROM notifications WHERE email = ? AND kind = 'chat' AND ref = ?").get(to, ref)
+    const prev = db.prepare('SELECT id FROM notifications WHERE email = ? AND kind = ? AND ref = ?').get(to, kind, ref)
     if (prev) db.prepare("UPDATE notifications SET text = ?, href = ?, actor = ?, read = 0, created_at = datetime('now') WHERE id = ?").run(String(text).slice(0, 500), href, actor, prev.id)
-    else db.prepare("INSERT INTO notifications (email, kind, text, href, actor, ref) VALUES (?, 'chat', ?, ?, ?, ?)").run(to, String(text).slice(0, 500), href, actor, ref)
-  } catch (e) { console.error('[notifications] chat failed:', e.message) }
+    else db.prepare('INSERT INTO notifications (email, kind, text, href, actor, ref) VALUES (?, ?, ?, ?, ?, ?)').run(to, kind, String(text).slice(0, 500), href, actor, ref)
+  } catch (e) { console.error(`[notifications] ${kind} failed:`, e.message) }
 }
 
 const BUILTIN_CASES = new Set(SHOWCASE_IDS)
 function stillExists(r) {
   const href = String(r.href || '')
   let m = /^\/use-cases\/([^/?#]+)/.exec(href)
-  if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(id) }
+  if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || PENDING_BY_ID.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(id) }
   m = /^\/questions(?:#q=|\/)([^&/?#]+)/.exec(href) // old "#q=" links and the new /questions/<id>
   if (m) return !!db.prepare('SELECT 1 FROM questions WHERE id = ?').get(decodeURIComponent(m[1]))
   return true

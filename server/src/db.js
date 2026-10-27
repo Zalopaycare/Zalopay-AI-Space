@@ -259,6 +259,13 @@ CREATE TABLE IF NOT EXISTS use_case_interest (
   PRIMARY KEY (use_case_id, user_id)
 );
 
+-- Admin invitations to an AI Exhibition booth's owners to write their use case up ("Mời"), for the tracker.
+CREATE TABLE IF NOT EXISTS booth_invites (
+  booth_id TEXT NOT NULL,
+  invited_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- "Chat với Admin": one conversation per person with the admin team (any admin may answer).
 -- user_id = whose conversation; from_admin marks the admin side. Seen marks are message ids.
 CREATE TABLE IF NOT EXISTS admin_chat_messages (

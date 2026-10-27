@@ -54,4 +54,5 @@ export const NOTIF_STYLE = {
   upvote: { iconBg: '#E4ECFF', iconFg: '#2c5fff' },
   interest: { iconBg: '#FFF4E3', iconFg: '#B45300' },
   chat: { iconBg: '#E4ECFF', iconFg: '#2c5fff' },
+  invite: { iconBg: '#FFF4E3', iconFg: '#B45300' },
 }

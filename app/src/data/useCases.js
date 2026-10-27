@@ -110,8 +110,12 @@ export const builtinCases = allCases.slice()
 // AI Exhibition booths with no write-up yet ({ id, booth, title, team, label, category, interest, mine }),
 // shown as small "Chưa có thông tin" tiles under the library. Arrive with /api/showcase.
 export const pendingCases = []
-export function registerPending(list) {
+// booth id → id of the approved use case that replaced it (the booth's link redirects there)
+export const boothDone = {}
+export function registerPending(list, done) {
   pendingCases.splice(0, pendingCases.length, ...(Array.isArray(list) ? list : []))
+  for (const k of Object.keys(boothDone)) delete boothDone[k]
+  Object.assign(boothDone, done || {})
   // Each booth also opens as a use case page: its Vấn đề / Giải pháp from the exhibition, the rest
   // "Chưa có thông tin" until the owners write it up.
   for (const p of pendingCases) {

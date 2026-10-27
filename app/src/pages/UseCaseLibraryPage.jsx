@@ -8,7 +8,7 @@ import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { AI_TOOLS, OTHER } from '../lib/taxonomy.js'
 import { renderMentions } from '../components/MentionField.jsx'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useDialog } from '../hooks/useDialog.js'
 import { markOtherPick, focusIfJustPicked } from '../lib/focusOther.js'
@@ -36,11 +36,14 @@ import { avatarPhotoCss } from '../components/Avatar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, avatarPhoto, statusMeta, kindOf, statusOf, levelMeta, levelChip,
-  newestFirst, postedLabel, pendingCases, pendingCard,
+  newestFirst, postedLabel, pendingCases, pendingCard, boothDone,
 } from '../data/useCases.js'
-import PendingCases, { BoothInterest } from '../components/PendingCases.jsx'
+import PendingCases, { BoothInterest, BoothOwnerBar } from '../components/PendingCases.jsx'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
+// AI Exhibition categories → the share form's (a booth's write-up starts in the closest one)
+const BOOTH_CATS = { 'Software Development': 'Coding & Technical', 'Test Automation': 'Coding & Technical', 'Chatbot & Knowledge Search': 'Research & Knowledge',
+  'Config & Operations Automation': 'Automation & Workflow', 'Data Analytics & Monitoring': 'Data & Analysis', 'Docs, Content & Design': 'Content & Communication' }
 const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
 const TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Khác']
 const TOOLS = [...AI_TOOLS, OTHER]
@@ -149,6 +152,8 @@ export default function UseCaseLibraryPage() {
   // Posted for myself or for a team; a team post shows every member ("a, b, c") instead of me.
   const [sharePostAs, setSharePostAs] = useState('personal')
   const [shareMembers, setShareMembers] = useState('')
+  // The AI Exhibition booth this post writes up (its owners open the form from the booth's page)
+  const [shareBooth, setShareBooth] = useState('')
   const [shareHighlights, setShareHighlights] = useState(EMPTY_HIGHLIGHTS)
   // Fill the form from the Word template instead of typing: { name, filled, missing } | null
   const [docxInfo, setDocxInfo] = useState(null)
@@ -214,7 +219,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' })
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(0)
       setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && !/^Anonymous( \d+)?$/.test(s.alias) ? s.alias : '')
-      setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareMembers((ex.members || []).join(', '))
+      setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareMembers((ex.members || []).join(', ')); setShareBooth(ex.booth || '')
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       setShareCategory([].concat(s.category || []))
       const known = (list, all) => list.filter((x) => all.includes(x))
@@ -238,12 +243,26 @@ export default function UseCaseLibraryPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search])
+  // ?share=1&booth=ex6: a booth's owner writing it up — start from what the AI Exhibition already has
+  useEffect(() => {
+    const bid = new URLSearchParams(location.search).get('booth')
+    const p = bid && pendingCases.find((x) => x.id === bid)
+    if (!p || shareBooth === bid) return
+    const busy = shareForm.title.trim() || shareForm.problem.trim() || shareForm.solution.trim()
+    if (busy && !window.confirm(t('Bạn đang có bản nháp khác. Thay bằng nội dung của booth') + ` "${p.title}"?`)) return
+    const plain = (x) => String(x || '').replace(/\*\*(.+?)\*\*/g, '$1').trim()
+    setShareForm({ ...EMPTY_SHARE_FORM, title: p.title, problem: plain(p.problem), solution: plain(p.solution) })
+    setSharePostAs('team'); setShareMembers((p.members || []).join(', ')); setShareAnon(false)
+    setShareCategory(BOOTH_CATS[p.category] ? [BOOTH_CATS[p.category]] : [])
+    setShareBooth(bid); setShareStep(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, pubV])
   // Closing keeps the autosaved draft; ?share / ?edit are dropped so the same link opens it again.
   const closeShare = () => {
     setShareOpen(false); setShareError('')
     if (editing) { setEditing(null); resetShareForm() }
     const qs = new URLSearchParams(location.search)
-    if (qs.has('share') || qs.has('edit')) { qs.delete('share'); qs.delete('edit'); navigate({ pathname: location.pathname, search: qs.toString() ? '?' + qs : '' }, { replace: true }) }
+    if (qs.has('share') || qs.has('edit') || qs.has('booth')) { qs.delete('share'); qs.delete('edit'); qs.delete('booth'); navigate({ pathname: location.pathname, search: qs.toString() ? '?' + qs : '' }, { replace: true }) }
   }
   const shareDialog = useDialog(shareOpen, () => closeShare(), 'Chia sẻ Use Case')
   const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
@@ -305,7 +324,7 @@ export default function UseCaseLibraryPage() {
   const restoredRef = useRef(false)
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
 
   useEffect(() => {
     if (restoredRef.current) return
@@ -317,7 +336,7 @@ export default function UseCaseLibraryPage() {
       setShareForm({ ...EMPTY_SHARE_FORM, ...(d.shareForm || {}) })
       setShareType(d.shareType || '')
       setShareAnon(!!d.shareAnon); setShareAlias(d.shareAlias || '')
-      setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareMembers(d.shareMembers || '')
+      setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareMembers(d.shareMembers || ''); setShareBooth(d.shareBooth || '')
       setShareHighlights(padHighlights(d.shareHighlights))
       setShareKind(d.shareKind || '')
       setShareStatus(d.shareStatus || '')
@@ -350,7 +369,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareKind, shareStatus, shareLevel, shareCategory, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -373,13 +392,13 @@ export default function UseCaseLibraryPage() {
         extra: shareExtra(),
         anonymous: shareAnon && !teamPost, alias: shareAnon && !teamPost ? shareAlias.trim() : '',
         ...(shareCover?.data ? { cover: shareCover.data } : shareCover?.cleared ? { cover: null } : {}),
-      }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
+      }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (shareBooth) loadPublishedUseCases(true); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
         .catch((e) => setShareError(e?.data?.message || 'Không gửi được use case, thử lại.'))
     })
   }
 
   const resetShareForm = () => {
-    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
+    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
     setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
@@ -517,6 +536,7 @@ export default function UseCaseLibraryPage() {
     highlights: shareHighlights.map((h) => ({ value: h.value.trim(), label: h.label.trim() })).filter((h) => h.value || h.label),
     fitYes: shareForm.fitYes.trim(), fitNo: shareForm.fitNo.trim(), pitfalls: shareForm.pitfalls.trim(), tech: shareForm.tech.trim(),
     ...(teamPost ? { postAs: 'team', showAs: 'members', members: shareMemberList } : {}),
+    ...(shareBooth ? { booth: shareBooth } : {}),
   })
   // What's still missing, per step (labels), so the stepper can point at it.
   const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
@@ -548,6 +568,8 @@ export default function UseCaseLibraryPage() {
 
   // ================= DETAIL VIEW =================
   function renderDetail() {
+    // a booth that has been written up and approved now lives at its use case's link
+    if (boothDone[id] && !allCases.some((x) => x.id === id)) return <Navigate to={`/use-cases/${encodeURIComponent(boothDone[id])}`} replace />
     // an AI Exhibition booth (ex6…) opens the same page, its unwritten parts marked "Chưa có thông tin"
     const dsel = allCases.find((x) => x.id === id) || pendingCard(id)
     if (!dsel && !pubLoaded) return <div style={css('min-height:60vh; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;')}>Đang tải use case…</div>
@@ -596,6 +618,7 @@ export default function UseCaseLibraryPage() {
                 onStart={has.apply ? () => scrollToId('uc-apply') : null}
                 startLabel={t('Ứng dụng ngay')}
               />
+            {dsel.pending && <BoothOwnerBar p={dsel.pending} t={t} />}
             {dsel.pending && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
 
@@ -985,6 +1008,14 @@ export default function UseCaseLibraryPage() {
                       )}
                     </div>
                   )}
+                  {shareBooth && (() => {
+                    const bp = pendingCases.find((x) => x.id === shareBooth)
+                    return (
+                      <div style={css('margin-bottom:14px; padding:12px 16px; border-radius:14px; background:#EEF3FF; border:1px solid #CFDDFB; font-size:12.5px; line-height:1.55; color:#1E3A7A;')}>
+                        <b>{t('Bạn đang cập nhật use case của booth')} {bp ? `${bp.booth} · ${bp.title}` : ''}</b> {t('từ AI Exhibition 2026. Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Chưa có thông tin" của booth.')}
+                      </div>
+                    )
+                  })()}
                   {/* Stepper: one step per part of the detail page; click any step to jump. */}
                   <div role="tablist" aria-label={t('Các bước')} style={css('display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;')}>
                     {SHARE_STEPS.map((st, i) => {

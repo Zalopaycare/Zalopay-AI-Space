@@ -29,6 +29,9 @@ export const SHOWCASE_IDS = new Set(showcaseCases.map((c) => c.id))
 // button, listing the booth's members (public on the exhibition site too).
 export const pendingCases = (await import(pathToFileURL(path.join(ROOT, 'pending.js')).href)).default
 export const PENDING_BY_ID = new Map(pendingCases.map((p) => [p.id, p]))
+// A booth's owners: its PIC and members, as company account names (lower-case, the part before @).
+export const boothAccounts = (p) => [...new Set([...(p.pic || []), ...(p.members || [])].map((a) => a.toLowerCase()))]
+export const isBoothOwner = (p, email) => !!p && boothAccounts(p).includes(String(email || '').split('@')[0].toLowerCase())
 
 // Admins can remove a showcase case from the site. The case files stay in the code; the removed ids
 // are kept in a small JSON file next to the database (same volume), so no schema change is needed.

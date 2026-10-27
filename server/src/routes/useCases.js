@@ -9,6 +9,7 @@ import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes } from '../notifications.js'
+import { PENDING_BY_ID, isBoothOwner } from '../showcase.js'
 
 const router = express.Router()
 // Only http(s) links are stored (a "javascript:…" link would run code when clicked).
@@ -213,8 +214,10 @@ router.get('/submissions/:id/cover', requireAuth, (req, res) => {
 // Share-form fields beyond the original columns, kept as one JSON column. Only known keys, trimmed and capped.
 const EXTRA_TYPES = ['tool', 'guide', 'case', 'proposal']
 const txt = (v, max = 4000) => String(v || '').trim().slice(0, max)
-function cleanExtra(e) {
+// `user` decides whether the post may claim an AI Exhibition booth: only its owners (or an admin).
+function cleanExtra(e, user) {
   if (!e || typeof e !== 'object') return null
+  const booth = PENDING_BY_ID.get(e.booth)
   const out = {
     type: EXTRA_TYPES.includes(e.type) ? e.type : '',
     oneLine: txt(e.oneLine, 300),
@@ -225,6 +228,8 @@ function cleanExtra(e) {
     postAs: e.postAs === 'team' ? 'team' : '',
     showAs: e.postAs === 'team' ? 'members' : '',
     members: e.postAs === 'team' ? [...new Set((Array.isArray(e.members) ? e.members : []).map((m) => txt(m, 60)).filter(Boolean))].slice(0, 30) : [],
+    // the write-up of an AI Exhibition booth: once approved it replaces the booth
+    booth: booth && user && (user.is_admin || isBoothOwner(booth, user.email)) ? booth.id : '',
   }
   return Object.values(out).some((v) => (Array.isArray(v) ? v.length : v)) ? JSON.stringify(out) : null
 }
@@ -253,7 +258,7 @@ router.post('/submissions', requireAuth, (req, res) => {
       f.kind || '', f.status || '', f.level || '', JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), req.user.id)
   saveCover(id, cover)
   const anon = anonFields(f)
-  db.prepare('UPDATE use_case_submissions SET extra = ?, anonymous = ?, alias = ? WHERE id = ?').run(cleanExtra(f.extra), anon.anonymous, anon.alias, id)
+  db.prepare('UPDATE use_case_submissions SET extra = ?, anonymous = ?, alias = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), anon.anonymous, anon.alias, id)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
   for (const to of adminEmailsFor(req)) {
@@ -286,7 +291,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
       JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)
   // Older clients don't send `extra`; leave what's stored untouched then.
-  if (f.extra !== undefined) db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra), row.id)
+  if (f.extra !== undefined) db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), row.id)
   if (f.anonymous !== undefined) { const an = anonFields(f); db.prepare('UPDATE use_case_submissions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, row.id) }
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
@@ -317,6 +322,25 @@ router.delete('/submissions/:id', requireAuth, (req, res) => {
   res.json({ ok: true })
 })
 
+// An approved write-up of an AI Exhibition booth replaces it: what people did on the booth's page
+// (comments, upvotes, saves, "đã áp dụng") moves to the use case, and links to the booth point at it.
+function takeOverBooth(row) {
+  const booth = (parseExtra(row.extra) || {}).booth
+  if (!booth || !PENDING_BY_ID.has(booth)) return
+  db.transaction(() => {
+    for (const table of ['use_case_reactions', 'use_case_saves', 'use_case_applied']) {
+      db.prepare(`UPDATE OR IGNORE ${table} SET use_case_id = ? WHERE use_case_id = ?`).run(row.id, booth)
+      db.prepare(`DELETE FROM ${table} WHERE use_case_id = ?`).run(booth)
+    }
+    db.prepare('UPDATE use_case_comments SET use_case_id = ? WHERE use_case_id = ?').run(row.id, booth)
+    const from = '/use-cases/' + booth, to = '/use-cases/' + row.id
+    db.prepare("UPDATE notifications SET href = ? || substr(href, ?) WHERE href = ? OR href LIKE ? OR href LIKE ?")
+      .run(to, from.length + 1, from, from + '#%', from + '?%')
+    // the owners' "N lượt quan tâm" and "Admin mời" reminders are done with
+    db.prepare("DELETE FROM notifications WHERE ref IN (?, ?)").run('interest:' + booth, 'invite:' + booth)
+  })()
+}
+
 router.post('/submissions/:id/review', requireAuth, (req, res) => {
   if (!req.user.is_admin) return res.status(403).json({ error: 'admin_only' })
   const { id } = req.params
@@ -332,6 +356,7 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
     published_at = CASE WHEN ? = 'approved' THEN COALESCE(published_at, datetime('now')) ELSE published_at END WHERE id = ?`).run(status, note, req.user.id, status, id)
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(id)
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id)
+  if (status === 'approved') takeOverBooth(row)
   if (author) {
     const link = `${appUrl(req)}${status === 'approved' ? `/use-cases/${encodeURIComponent(row.id)}` : '/profile#usecase'}`
     const msg = {
