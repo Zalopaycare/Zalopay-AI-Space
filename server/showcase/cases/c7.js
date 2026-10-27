@@ -106,35 +106,59 @@ export default {
       'Link web của công cụ: [cần bổ sung]',
       'Xin quyền dùng ở đâu: [cần bổ sung]',
     ],
-    steps: [
-      'Mở web của công cụ [cần bổ sung link].',
-      'Dán mã ticket, ví dụ SECREQ-28. Ô ticket CICD có thể để trống, công cụ tự tìm trong nội dung ticket.',
-      'Bấm "Assess ticket" và đợi khoảng 4–5 phút.',
-      'Đọc trang tóm tắt, kiểm tra link nguồn từng dòng, gửi câu hỏi còn thiếu cho dev.',
-      'Gửi link kết quả cho người khác; mở lại kết quả đã lưu không tốn thêm chi phí.',
-    ],
-    blocks: [
+    // Each step once, with its details and screenshots right under it.
+    stepSections: [
       {
-        type: 'table',
-        title: 'Bạn có thể đưa vào',
-        cols: ['Ô trên web', 'Điền gì'],
-        rows: [
-          ['Jira ticket', 'Mã ticket, ví dụ SECREQ-28'],
-          ['CICD deploy ticket (không bắt buộc)', 'Ví dụ CICD-271462; để trống thì công cụ tự tìm trong nội dung ticket'],
-          ['Or paste ticket text', 'Dán nội dung ticket nếu không có mã'],
-          ['Drop files', 'Kéo thả file: bộ Postman, tài liệu, ảnh'],
+        title: 'Mở web của công cụ',
+        blocks: [
+          { type: 'text', text: 'Mở web của công cụ [cần bổ sung link].' },
         ],
       },
       {
-        type: 'note',
-        tone: 'info',
-        title: 'Trang tóm tắt gồm',
-        text: 'Lệnh test chạy được cho từng API (kèm ghi chú người dùng dùng API đó thế nào) · địa chỉ và môi trường (PROD/SANDBOX/DEV) · cách vào tính năng để test · môi trường và tài khoản test · những gì tài liệu chưa nói, thành câu hỏi cho dev.',
+        title: 'Dán mã ticket',
+        blocks: [
+          { type: 'text', text: 'Dán mã ticket, ví dụ SECREQ-28. Ô ticket CICD có thể để trống, công cụ tự tìm trong nội dung ticket.' },
+          {
+            type: 'table',
+            title: 'Bạn có thể đưa vào',
+            cols: ['Ô trên web', 'Điền gì'],
+            rows: [
+              ['Jira ticket', 'Mã ticket, ví dụ SECREQ-28'],
+              ['CICD deploy ticket (không bắt buộc)', 'Ví dụ CICD-271462; để trống thì công cụ tự tìm trong nội dung ticket'],
+              ['Or paste ticket text', 'Dán nội dung ticket nếu không có mã'],
+              ['Drop files', 'Kéo thả file: bộ Postman, tài liệu, ảnh'],
+            ],
+          },
+        ],
       },
       {
-        type: 'note',
-        tone: 'warn',
-        text: 'Công cụ không hiển thị thông tin không tìm được nguồn. Bạn vẫn là người xác nhận và quyết định trước khi test.',
+        title: 'Bấm "Assess ticket" và đợi',
+        blocks: [
+          { type: 'text', text: 'Bấm "Assess ticket" và đợi khoảng 4–5 phút.' },
+        ],
+      },
+      {
+        title: 'Đọc trang tóm tắt, kiểm tra nguồn',
+        blocks: [
+          { type: 'text', text: 'Đọc trang tóm tắt, kiểm tra link nguồn từng dòng, gửi câu hỏi còn thiếu cho dev.' },
+          {
+            type: 'note',
+            tone: 'info',
+            title: 'Trang tóm tắt gồm',
+            text: 'Lệnh test chạy được cho từng API (kèm ghi chú người dùng dùng API đó thế nào) · địa chỉ và môi trường (PROD/SANDBOX/DEV) · cách vào tính năng để test · môi trường và tài khoản test · những gì tài liệu chưa nói, thành câu hỏi cho dev.',
+          },
+          {
+            type: 'note',
+            tone: 'warn',
+            text: 'Công cụ không hiển thị thông tin không tìm được nguồn. Bạn vẫn là người xác nhận và quyết định trước khi test.',
+          },
+        ],
+      },
+      {
+        title: 'Gửi link kết quả',
+        blocks: [
+          { type: 'text', text: 'Gửi link kết quả cho người khác; mở lại kết quả đã lưu không tốn thêm chi phí.' },
+        ],
       },
     ],
     code: [],

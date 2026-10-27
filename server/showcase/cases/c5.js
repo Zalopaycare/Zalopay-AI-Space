@@ -133,39 +133,58 @@ export default {
       'Tài khoản trang quản trị website để AI tạo bài: [cần bổ sung nơi xin quyền]',
       'Chủ đề bài viết, và nguồn ảnh bạn cho phép AI dùng.',
     ],
-    steps: [
-      'Mở Codex, chạy 2 lệnh cài bên dưới (một lần duy nhất).',
-      'Gõ yêu cầu cho AI; sửa chủ đề và phần ảnh theo bài của bạn.',
-      'Đợi AI viết bài và trả về link bài nháp trên sandbox.zalopay.vn.',
-      'Mở link, đọc lại bài, chấm human score tại humalingo.com/public/detect.',
-      'Đưa bài lên trang chính: [cần bổ sung]',
+    // Each step once, with its details and screenshots right under it.
+    stepSections: [
+      {
+        title: 'Cài bộ kết nối vào Codex',
+        blocks: [
+          { type: 'text', text: 'Mở Codex, chạy 2 lệnh cài bên dưới (một lần duy nhất).' },
+          { type: 'code', label: 'Install', code: 'codex plugin marketplace add https://gitlab.zalopay.vn/zpp/ai/zpp-agent-marketplace.git\ncodex plugin add zlpws-admin@zpp-agent', note: 'Lệnh này dùng để thêm kho plugin nội bộ vào Codex, rồi cài bộ kết nối zlpws-admin.' },
+        ],
+      },
+      {
+        title: 'Gõ yêu cầu cho AI',
+        blocks: [
+          { type: 'text', text: 'Gõ yêu cầu cho AI; sửa chủ đề và phần ảnh theo bài của bạn.' },
+          {
+            type: 'prompt',
+            label: 'Prompt mẫu (dùng cho bài review phim The Odyssey 2026)',
+            text: 'Hãy tạo một bài blog draft cho zalopay.vn.\nChủ đề: Review phim The Odyssey 2026\nCác ảnh của bài viết tạo mới giúp tôi hoặc tìm và tải các poster, ảnh\nchụp phân cảnh trong phim từ các nguồn public về để minh họa giúp tôi,\nvui lòng ghi rõ nguồn nếu sử dụng y nguyên từ nguồn',
+          },
+        ],
+      },
+      {
+        title: 'Nhận link bài nháp trên sandbox',
+        blocks: [
+          { type: 'text', text: 'Đợi AI viết bài và trả về link bài nháp trên sandbox.zalopay.vn.' },
+          {
+            type: 'result',
+            label: 'Kết quả mẫu',
+            title: '2 bài AI đã tạo trên trang thử nghiệm (sandbox)',
+            code: 'https://sandbox.zalopay.vn/review-phim-the-odyssey-2026-christopher-nolan-bien-hanh-trinh-hoi-huong-thanh-mot-con-song-imax-du-doi-63\nhttps://sandbox.zalopay.vn/zalopay-duoc-vinh-danh-unified-wallet-pioneer-tai-mastercard-customer-forum-2025-64',
+          },
+        ],
+      },
+      {
+        title: 'Đọc lại bài, chấm human score',
+        blocks: [
+          { type: 'text', text: 'Mở link, đọc lại bài, chấm human score tại humalingo.com/public/detect.' },
+          {
+            type: 'note',
+            tone: 'info',
+            title: 'Cách chấm "giống người viết"',
+            text: 'Dán bài vào humalingo.com/public/detect và so human score với bài Agency đang live, ví dụ bài review phim Moana 2026 trên zalopay.vn.',
+          },
+        ],
+      },
+      {
+        title: 'Đưa bài lên trang chính',
+        blocks: [
+          { type: 'text', text: 'Đưa bài lên trang chính: [cần bổ sung]' },
+        ],
+      },
     ],
-    blocks: [
-      {
-        type: 'prompt',
-        label: 'Prompt mẫu (dùng cho bài review phim The Odyssey 2026)',
-        text: 'Hãy tạo một bài blog draft cho zalopay.vn.\nChủ đề: Review phim The Odyssey 2026\nCác ảnh của bài viết tạo mới giúp tôi hoặc tìm và tải các poster, ảnh\nchụp phân cảnh trong phim từ các nguồn public về để minh họa giúp tôi,\nvui lòng ghi rõ nguồn nếu sử dụng y nguyên từ nguồn',
-      },
-      {
-        type: 'result',
-        label: 'Kết quả mẫu',
-        title: '2 bài AI đã tạo trên trang thử nghiệm (sandbox)',
-        code: 'https://sandbox.zalopay.vn/review-phim-the-odyssey-2026-christopher-nolan-bien-hanh-trinh-hoi-huong-thanh-mot-con-song-imax-du-doi-63\nhttps://sandbox.zalopay.vn/zalopay-duoc-vinh-danh-unified-wallet-pioneer-tai-mastercard-customer-forum-2025-64',
-      },
-      {
-        type: 'note',
-        tone: 'info',
-        title: 'Cách chấm "giống người viết"',
-        text: 'Dán bài vào humalingo.com/public/detect và so human score với bài Agency đang live, ví dụ bài review phim Moana 2026 trên zalopay.vn.',
-      },
-    ],
-    code: [
-      {
-        title: 'Install',
-        code: 'codex plugin marketplace add https://gitlab.zalopay.vn/zpp/ai/zpp-agent-marketplace.git\ncodex plugin add zlpws-admin@zpp-agent',
-        note: 'Lệnh này dùng để thêm kho plugin nội bộ vào Codex, rồi cài bộ kết nối zlpws-admin.',
-      },
-    ],
+    code: [],
     success: [
       'AI trả về link bài trên sandbox.zalopay.vn, mở ra thấy bài nháp.',
       'Human score của bài tương đồng bài Agency đang live (bài mẫu: 6% so với 6%).',

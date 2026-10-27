@@ -119,62 +119,60 @@ export default {
       'Máy Windows: dùng WSL.',
       'Tài khoản đăng nhập gitlab.zalopay.vn và quyền vào kho code aqr/bill/us-hive: xin ở đâu [cần bổ sung].',
     ],
-    steps: [
-      'Đăng nhập GitLab và tải us-hive về máy, rồi chạy bộ cài (lệnh ở dưới).',
-      'Bộ cài mặc định cài toàn bộ trợ lý cho cả Claude Code, Cursor và Codex, tự cấu hình và tự chạy kiểm tra.',
-      'Nếu chỉ cần vài trợ lý trên Codex, chạy lệnh cài chọn lọc.',
-      'Trong công cụ AI, gọi trợ lý bằng một câu lệnh (xem bảng danh sách trợ lý).',
-      'Khi trợ lý hỏi xác nhận trước việc quan trọng, đọc kỹ rồi mới đồng ý.',
-    ],
-    blocks: [
+    // Each step once, with its details and screenshots right under it.
+    stepSections: [
       {
-        type: 'table',
-        title: 'Danh sách trợ lý',
-        cols: ['Trợ lý', 'Cách gọi', 'Dùng để'],
-        rows: [
-          ['bee-dev', 'bee-dev spec= jira= confluence= ...', 'Phát triển service Go: thiết kế, viết test trước (TDD), rà soát (audit), bàn giao QC và tạo bản nháp yêu cầu merge code (MR).'],
-          ['bee-figma-ui', 'bee-figma-ui <figma-node-url>', 'Dựng hoặc review giao diện từ Figma, có đề xuất Code Connect và so lệch từng pixel.'],
-          ['bee-integrator', 'bee-integrator <partner> <document>', 'Tích hợp API đối tác: 4 giai đoạn, TDD, rà soát theo ZES, bàn giao QC và bản nháp MR.'],
-          ['bee-review-code', 'bee-review-code <MR-url>', 'Review MR: chụp lại trạng thái, ghi nhận xét ngay tại dòng code, dừng để bạn duyệt trước khi đăng.'],
-          ['bee-qc', 'bee-qc jira= prd= mr= refs= ,...', 'Sinh kịch bản kiểm thử hộp đen (black-box), tuỳ chọn kèm bộ Postman.'],
-          ['bee-db-audit', 'bee-db-audit', 'Rà soát database mức L1 cho MySQL/TiDB, không kết nối vào production.'],
-          ['bee-docs', 'bee-docs', 'Sinh tài liệu kỹ thuật từ code và chuẩn bị bản nháp MR.'],
+        title: 'Tải us-hive và chạy bộ cài',
+        blocks: [
+          { type: 'text', text: 'Đăng nhập GitLab và tải us-hive về máy, rồi chạy bộ cài (lệnh ở dưới).' },
+          { type: 'code', label: 'Install us-hive', code: 'glab auth login --hostname gitlab.zalopay.vn\nglab repo clone https://gitlab.zalopay.vn/aqr/bill/us-hive.git\ncd us-hive\n./install.sh', note: 'Lệnh này dùng để đăng nhập GitLab, tải us-hive về máy và cài toàn bộ trợ lý cho Claude Code, Cursor, Codex (kèm kiểm tra sau cài).' },
+          { type: 'text', text: 'Bộ cài mặc định cài toàn bộ trợ lý cho cả Claude Code, Cursor và Codex, tự cấu hình và tự chạy kiểm tra.' },
         ],
       },
       {
-        type: 'note',
-        tone: 'info',
-        title: 'Một trợ lý, một câu lệnh',
-        text: 'Mỗi trợ lý chỉ có một câu lệnh chuẩn trên mọi công cụ. Trên Codex gõ $ ở đầu, trên Claude Code / Cursor gõ / ở đầu.',
+        title: 'Chỉ cài vài trợ lý trên Codex (tuỳ chọn)',
+        blocks: [
+          { type: 'text', text: 'Nếu chỉ cần vài trợ lý trên Codex, chạy lệnh cài chọn lọc.' },
+          { type: 'code', label: 'Chỉ cài một số agent trên Codex', code: './install.sh codex --plugins bee-dev,bee-review-code', note: 'Lệnh này dùng để chỉ cài 2 trợ lý bee-dev và bee-review-code cho Codex.' },
+        ],
+      },
+      {
+        title: 'Gọi trợ lý trong công cụ AI',
+        blocks: [
+          { type: 'text', text: 'Trong công cụ AI, gọi trợ lý bằng một câu lệnh (xem bảng danh sách trợ lý).' },
+          {
+            type: 'table',
+            title: 'Danh sách trợ lý',
+            cols: ['Trợ lý', 'Cách gọi', 'Dùng để'],
+            rows: [
+              ['bee-dev', 'bee-dev spec= jira= confluence= ...', 'Phát triển service Go: thiết kế, viết test trước (TDD), rà soát (audit), bàn giao QC và tạo bản nháp yêu cầu merge code (MR).'],
+              ['bee-figma-ui', 'bee-figma-ui <figma-node-url>', 'Dựng hoặc review giao diện từ Figma, có đề xuất Code Connect và so lệch từng pixel.'],
+              ['bee-integrator', 'bee-integrator <partner> <document>', 'Tích hợp API đối tác: 4 giai đoạn, TDD, rà soát theo ZES, bàn giao QC và bản nháp MR.'],
+              ['bee-review-code', 'bee-review-code <MR-url>', 'Review MR: chụp lại trạng thái, ghi nhận xét ngay tại dòng code, dừng để bạn duyệt trước khi đăng.'],
+              ['bee-qc', 'bee-qc jira= prd= mr= refs= ,...', 'Sinh kịch bản kiểm thử hộp đen (black-box), tuỳ chọn kèm bộ Postman.'],
+              ['bee-db-audit', 'bee-db-audit', 'Rà soát database mức L1 cho MySQL/TiDB, không kết nối vào production.'],
+              ['bee-docs', 'bee-docs', 'Sinh tài liệu kỹ thuật từ code và chuẩn bị bản nháp MR.'],
+            ],
+          },
+          {
+            type: 'note',
+            tone: 'info',
+            title: 'Một trợ lý, một câu lệnh',
+            text: 'Mỗi trợ lý chỉ có một câu lệnh chuẩn trên mọi công cụ. Trên Codex gõ $ ở đầu, trên Claude Code / Cursor gõ / ở đầu.',
+          },
+          { type: 'code', label: 'Codex — gọi trực tiếp Agent Skill', code: '$bee-dev jira=ABC-123 // đưa nội dung, yêu cầu,...\n$bee-review-code https://gitlab.zalopay.vn/.../merge_requests/123\n$bee-integrator partner-name document', note: 'Lệnh này dùng để gọi trợ lý trong Codex; thay ABC-123, link MR, tên đối tác và tài liệu bằng của bạn.' },
+          { type: 'code', label: 'Codex — chọn agent từ danh sách', code: '/skills', note: 'Lệnh này dùng để mở danh sách trợ lý trong Codex và chọn một trợ lý.' },
+          { type: 'code', label: 'Claude Code / Cursor — gọi bằng slash command', code: '/bee-dev jira=ABC-123/ đưa nội dung, yêu cầu,...\n/bee-review-code https://gitlab.zalopay.vn/.../merge_requests/123\n/bee-integrator partner-name document', note: 'Lệnh này dùng để gọi trợ lý trong Claude Code hoặc Cursor; thay phần ví dụ bằng của bạn.' },
+        ],
+      },
+      {
+        title: 'Đọc kỹ trước khi đồng ý',
+        blocks: [
+          { type: 'text', text: 'Khi trợ lý hỏi xác nhận trước việc quan trọng, đọc kỹ rồi mới đồng ý.' },
+        ],
       },
     ],
-    code: [
-      {
-        title: 'Install us-hive',
-        code: 'glab auth login --hostname gitlab.zalopay.vn\nglab repo clone https://gitlab.zalopay.vn/aqr/bill/us-hive.git\ncd us-hive\n./install.sh',
-        note: 'Lệnh này dùng để đăng nhập GitLab, tải us-hive về máy và cài toàn bộ trợ lý cho Claude Code, Cursor, Codex (kèm kiểm tra sau cài).',
-      },
-      {
-        title: 'Chỉ cài một số agent trên Codex',
-        code: './install.sh codex --plugins bee-dev,bee-review-code',
-        note: 'Lệnh này dùng để chỉ cài 2 trợ lý bee-dev và bee-review-code cho Codex.',
-      },
-      {
-        title: 'Codex — gọi trực tiếp Agent Skill',
-        code: '$bee-dev jira=ABC-123 // đưa nội dung, yêu cầu,...\n$bee-review-code https://gitlab.zalopay.vn/.../merge_requests/123\n$bee-integrator partner-name document',
-        note: 'Lệnh này dùng để gọi trợ lý trong Codex; thay ABC-123, link MR, tên đối tác và tài liệu bằng của bạn.',
-      },
-      {
-        title: 'Codex — chọn agent từ danh sách',
-        code: '/skills',
-        note: 'Lệnh này dùng để mở danh sách trợ lý trong Codex và chọn một trợ lý.',
-      },
-      {
-        title: 'Claude Code / Cursor — gọi bằng slash command',
-        code: '/bee-dev jira=ABC-123/ đưa nội dung, yêu cầu,...\n/bee-review-code https://gitlab.zalopay.vn/.../merge_requests/123\n/bee-integrator partner-name document',
-        note: 'Lệnh này dùng để gọi trợ lý trong Claude Code hoặc Cursor; thay phần ví dụ bằng của bạn.',
-      },
-    ],
+    code: [],
     success: [
       'Bộ cài chạy xong phần kiểm tra (health check) sau khi cài. Dấu hiệu cụ thể: [cần bổ sung]',
       'Trong Codex, gõ /skills thấy danh sách trợ lý để chọn.',

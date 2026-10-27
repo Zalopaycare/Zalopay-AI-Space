@@ -403,7 +403,7 @@ function StepJourney({ sections, t }) {
               role="tab"
               aria-selected={i === on}
               onClick={() => go(i)}
-              style={css('position:relative; flex:1 0 108px; display:flex; flex-direction:column; align-items:center; gap:7px; padding:0 6px; border:none; background:none; cursor:pointer; font-family:inherit;')}
+              style={css('position:relative; flex:1 0 88px; display:flex; flex-direction:column; align-items:center; gap:7px; padding:0 6px; border:none; background:none; cursor:pointer; font-family:inherit;')}
             >
               {/* the line to the next step */}
               {i < last && <span aria-hidden="true" style={css(`position:absolute; top:16px; left:calc(50% + 20px); right:calc(-50% + 20px); height:2px; border-radius:2px; background:${i < on ? '#2c5fff' : '#CFDAF2'};`)}></span>}

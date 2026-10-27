@@ -164,19 +164,43 @@ export default {
       'Link mở CRM tool: [cần bổ sung]',
       'Một cấu hình nhóm khách hàng hoặc ưu đãi đang soạn, để bấm kiểm tra.',
     ],
-    steps: [
-      'Mở CRM tool. Ở màn hình chính có khung chat CRM Assistant để hỏi về cách dùng (quyền, cách cấu hình…).',
-      'Ở màn hình cấu hình nhóm khách hàng hoặc ưu đãi, bấm nút CRM Assistant nhỏ ở trên cùng, cạnh tên bạn.',
-      'Nhóm khách hàng: bấm "Summarize" để nhận đoạn tóm tắt điều kiện. Ưu đãi: bấm "Analyze" để nhận phân tích và đề xuất.',
-      'Đọc kết quả, so với nhu cầu thật và điều khoản chương trình. Thấy lệch thì tự sửa rồi lưu.',
-      'Có câu hỏi khác thì gõ vào ô "Ask a question...", hoặc bấm một câu hỏi gợi ý có sẵn.',
-    ],
-    blocks: [
-      { type: 'image', src: '/use-cases/c3/crm-assistant-nut.png', caption: 'Nút CRM Assistant nằm ở góc trên, cạnh tên người dùng.' },
-      { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Tôi có thể hỏi bạn những gì?' },
-      { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Cách xin quyền vào CRM?' },
-      { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Không thấy nút Add New trong Merchant Code thì làm sao?' },
-      { type: 'note', tone: 'info', title: 'Video demo', text: 'Tài liệu gốc có video "[Demo] Chatbot Config + Segment Explain + Reward Config Validation.mov" quay trên môi trường SBQC (bản sao lúc 31/07/2026 15:00).' },
+    // Each step once, with its details and screenshots right under it.
+    stepSections: [
+      {
+        title: 'Mở CRM tool',
+        blocks: [
+          { type: 'text', text: 'Mở CRM tool. Ở màn hình chính có khung chat CRM Assistant để hỏi về cách dùng (quyền, cách cấu hình…).' },
+        ],
+      },
+      {
+        title: 'Bấm nút CRM Assistant',
+        blocks: [
+          { type: 'text', text: 'Ở màn hình cấu hình nhóm khách hàng hoặc ưu đãi, bấm nút CRM Assistant nhỏ ở trên cùng, cạnh tên bạn.' },
+          { type: 'image', src: '/use-cases/c3/crm-assistant-nut.png', caption: 'Nút CRM Assistant nằm ở góc trên, cạnh tên người dùng.' },
+        ],
+      },
+      {
+        title: 'Bấm Summarize hoặc Analyze',
+        blocks: [
+          { type: 'text', text: 'Nhóm khách hàng: bấm "Summarize" để nhận đoạn tóm tắt điều kiện. Ưu đãi: bấm "Analyze" để nhận phân tích và đề xuất.' },
+          { type: 'note', tone: 'info', title: 'Video demo', text: 'Tài liệu gốc có video "[Demo] Chatbot Config + Segment Explain + Reward Config Validation.mov" quay trên môi trường SBQC (bản sao lúc 31/07/2026 15:00).' },
+        ],
+      },
+      {
+        title: 'Đối chiếu kết quả, tự sửa rồi lưu',
+        blocks: [
+          { type: 'text', text: 'Đọc kết quả, so với nhu cầu thật và điều khoản chương trình. Thấy lệch thì tự sửa rồi lưu.' },
+        ],
+      },
+      {
+        title: 'Hỏi thêm CRM Assistant',
+        blocks: [
+          { type: 'text', text: 'Có câu hỏi khác thì gõ vào ô "Ask a question...", hoặc bấm một câu hỏi gợi ý có sẵn.' },
+          { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Tôi có thể hỏi bạn những gì?' },
+          { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Cách xin quyền vào CRM?' },
+          { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Không thấy nút Add New trong Merchant Code thì làm sao?' },
+        ],
+      },
     ],
     code: [],
     success: [

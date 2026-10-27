@@ -104,30 +104,54 @@ export default {
       'Mã nguồn công cụ: GitLab ZaloPay – ui-automation-test.',
       'Xin quyền dùng ở đâu: [cần bổ sung]',
     ],
-    steps: [
-      'Chọn kịch bản, chuẩn bị tài khoản, trạng thái app và điện thoại có kết nối.',
-      'Làm mẫu kịch bản một lần trên điện thoại.',
-      'Để hệ thống ghi lại thao tác và ảnh màn hình trước mỗi bước; che (mask) các vùng hay đổi như đồng hồ, số dư, ảnh động.',
-      'Chạy lại: chọn một hoặc nhiều kịch bản, để máy tự làm lần lượt.',
-      'Xem kết quả; kịch bản lỗi thì mở báo cáo, ảnh khác biệt và video.',
-    ],
-    blocks: [
+    // Each step once, with its details and screenshots right under it.
+    stepSections: [
       {
-        type: 'note',
-        tone: 'info',
-        title: 'Vì sao che (mask) một số vùng',
-        text: 'Máy so màn hình hiện tại với ảnh đã ghi. Các vùng luôn đổi như thời gian đồng hồ, số dư hoặc ảnh động được bỏ qua khi so sánh.',
+        title: 'Chuẩn bị kịch bản và điện thoại',
+        blocks: [
+          { type: 'text', text: 'Chọn kịch bản, chuẩn bị tài khoản, trạng thái app và điện thoại có kết nối.' },
+          {
+            type: 'note',
+            tone: 'info',
+            title: 'Prompt khởi đầu',
+            text: '[cần bổ sung] — tài liệu gốc không có prompt mẫu.',
+          },
+        ],
       },
       {
-        type: 'note',
-        tone: 'warn',
-        text: 'Nếu màn hình không khớp hoặc chờ quá lâu, kịch bản dừng và ghi lỗi, thay vì bấm tiếp sai màn hình.',
+        title: 'Làm mẫu kịch bản một lần',
+        blocks: [
+          { type: 'text', text: 'Làm mẫu kịch bản một lần trên điện thoại.' },
+        ],
       },
       {
-        type: 'note',
-        tone: 'info',
-        title: 'Prompt khởi đầu',
-        text: '[cần bổ sung] — tài liệu gốc không có prompt mẫu.',
+        title: 'Ghi thao tác, che vùng hay đổi',
+        blocks: [
+          { type: 'text', text: 'Để hệ thống ghi lại thao tác và ảnh màn hình trước mỗi bước; che (mask) các vùng hay đổi như đồng hồ, số dư, ảnh động.' },
+          {
+            type: 'note',
+            tone: 'info',
+            title: 'Vì sao che (mask) một số vùng',
+            text: 'Máy so màn hình hiện tại với ảnh đã ghi. Các vùng luôn đổi như thời gian đồng hồ, số dư hoặc ảnh động được bỏ qua khi so sánh.',
+          },
+        ],
+      },
+      {
+        title: 'Chạy lại kịch bản tự động',
+        blocks: [
+          { type: 'text', text: 'Chạy lại: chọn một hoặc nhiều kịch bản, để máy tự làm lần lượt.' },
+          {
+            type: 'note',
+            tone: 'warn',
+            text: 'Nếu màn hình không khớp hoặc chờ quá lâu, kịch bản dừng và ghi lỗi, thay vì bấm tiếp sai màn hình.',
+          },
+        ],
+      },
+      {
+        title: 'Xem kết quả và báo cáo lỗi',
+        blocks: [
+          { type: 'text', text: 'Xem kết quả; kịch bản lỗi thì mở báo cáo, ảnh khác biệt và video.' },
+        ],
       },
     ],
     code: [],

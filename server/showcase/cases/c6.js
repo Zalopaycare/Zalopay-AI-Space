@@ -111,45 +111,69 @@ export default {
       'Mã ticket Jira của segment cần làm (dạng PCDCM-xxxx).',
       'Xin quyền repo, kernel và các kết nối ở đâu: [cần bổ sung].',
     ],
-    steps: [
-      'Bạn: gọi skill bằng /segment-pipeline hoặc gõ câu mô tả kèm mã ticket.',
-      'Bạn: trả lời 4 câu AI hỏi: tên segment, tên file, domain, cột dimension (cột chia nhóm).',
-      'AI: chạy thử trên dữ liệu thật. Nếu kết quả là "HOI-USER", bạn quyết định từng điểm lệch.',
-      'AI: sinh code, câu lệnh tạo bảng, chạy thử ở STG, viết tài liệu mô tả dữ liệu.',
-      'Bạn: chạy câu lệnh tạo bảng, nạp lịch sử 6 tháng theo ticket, đăng ký lịch chạy Airflow, mở MR gồm cả cdp/ và docs/.',
-    ],
-    blocks: [
-      { type: 'prompt', label: 'Cách 1 — gọi skill bằng lệnh', text: '/segment-pipeline' },
-      { type: 'prompt', label: 'Cách 2 — chỉ cần mô tả (thay PCDCM-xxxx bằng mã ticket của bạn)', text: 'tạo segment mới từ ticket PCDCM-xxxx' },
+    // Each step once, with its details and screenshots right under it.
+    stepSections: [
       {
-        type: 'table',
-        title: '8 bước skill đi qua (ai làm gì)',
-        cols: ['Bước', 'Việc', 'Bạn nhận được'],
-        rows: [
-          ['0 — Tiếp nhận', 'AI đọc Jira, điền khung 27 điểm, kiểm trùng segment, hỏi bạn 4 thông tin bắt buộc', 'Yêu cầu đã chốt'],
-          ['1 — Kiểm dữ liệu thật', 'AI chạy thử trên dữ liệu thật: tên cột, đơn vị thời gian, phân bố nhóm, trùng lặp, ngày cao điểm', 'Số liệu thật + cổng kiểm PASS'],
-          ['2 — Sinh code', 'AI sinh code từ mẫu, kèm ô nạp lịch sử (backfill) để sẵn dạng comment', 'File code của segment'],
-          ['3 — Soát lỗi', 'AI chạy script kiểm và checklist quy ước', 'Code hợp lệ để push'],
-          ['4 — Câu lệnh tạo bảng', 'AI sinh câu lệnh tạo bảng (DDL) và in ra chat', 'Bạn tự chạy câu lệnh'],
-          ['5 — Chạy thử STG', 'AI chạy thử ở môi trường thử nghiệm, chạy 6 điểm kiểm chất lượng', 'Xác nhận chạy được'],
-          ['6 — Tài liệu', 'AI viết tài liệu mô tả dữ liệu từ số liệu thật, đăng Confluence', 'Tài liệu + trang Confluence'],
-          ['7 — Bàn giao', 'AI liệt kê việc bạn cần làm: chạy DDL, nạp lịch sử, đăng ký lịch chạy', 'Checklist bàn giao'],
+        title: 'Gọi skill kèm mã ticket',
+        blocks: [
+          { type: 'text', text: 'Bạn: gọi skill bằng /segment-pipeline hoặc gõ câu mô tả kèm mã ticket.' },
+          { type: 'prompt', label: 'Cách 1 — gọi skill bằng lệnh', text: '/segment-pipeline' },
+          { type: 'prompt', label: 'Cách 2 — chỉ cần mô tả (thay PCDCM-xxxx bằng mã ticket của bạn)', text: 'tạo segment mới từ ticket PCDCM-xxxx' },
+          {
+            type: 'table',
+            title: '8 bước skill đi qua (ai làm gì)',
+            cols: ['Bước', 'Việc', 'Bạn nhận được'],
+            rows: [
+              ['0 — Tiếp nhận', 'AI đọc Jira, điền khung 27 điểm, kiểm trùng segment, hỏi bạn 4 thông tin bắt buộc', 'Yêu cầu đã chốt'],
+              ['1 — Kiểm dữ liệu thật', 'AI chạy thử trên dữ liệu thật: tên cột, đơn vị thời gian, phân bố nhóm, trùng lặp, ngày cao điểm', 'Số liệu thật + cổng kiểm PASS'],
+              ['2 — Sinh code', 'AI sinh code từ mẫu, kèm ô nạp lịch sử (backfill) để sẵn dạng comment', 'File code của segment'],
+              ['3 — Soát lỗi', 'AI chạy script kiểm và checklist quy ước', 'Code hợp lệ để push'],
+              ['4 — Câu lệnh tạo bảng', 'AI sinh câu lệnh tạo bảng (DDL) và in ra chat', 'Bạn tự chạy câu lệnh'],
+              ['5 — Chạy thử STG', 'AI chạy thử ở môi trường thử nghiệm, chạy 6 điểm kiểm chất lượng', 'Xác nhận chạy được'],
+              ['6 — Tài liệu', 'AI viết tài liệu mô tả dữ liệu từ số liệu thật, đăng Confluence', 'Tài liệu + trang Confluence'],
+              ['7 — Bàn giao', 'AI liệt kê việc bạn cần làm: chạy DDL, nạp lịch sử, đăng ký lịch chạy', 'Checklist bàn giao'],
+            ],
+          },
         ],
       },
-      { type: 'note', tone: 'info', title: 'Khi AI dừng lại hỏi', text: 'AI không tự sửa cho khớp dữ liệu. Mỗi quyết định của bạn được ghi vào Note của tài liệu: ticket ghi gì, thực tế dùng gì, vì sao, ai quyết, ngày nào.' },
       {
-        type: 'table',
-        title: 'Ví dụ quyết định đã ghi lại (case core_receive_money)',
-        cols: ['Ticket ghi', 'Thực tế dùng', 'Vì sao', 'Ai quyết định', 'Ngày'],
-        rows: [
-          ["appID = 450 và productCode = 'TF012' cho p2p", 'Giữ nguyên theo ticket', 'TF012 ra 0 dòng trong cửa sổ explore 20260724–20260730; user chốt giữ đúng hợp đồng ticket và ghi lại hiện trạng chưa có dữ liệu', 'User', '2026-07-31'],
-          ['Dimension p2p', 'Giữ như giá trị kỳ vọng, hiện 0 dòng', 'Suy ra từ quyết định giữ nguyên TF012 ở trên', 'User', '2026-07-31'],
-          ['— (ticket không đề cập)', 'Không dedup', '31,48% dòng trùng theo (appUser, source, ymd) là nhiều lần nhận tiền thật, phải giữ cho sum và count', 'User', '2026-07-31'],
+        title: 'Trả lời 4 câu AI hỏi',
+        blocks: [
+          { type: 'text', text: 'Bạn: trả lời 4 câu AI hỏi: tên segment, tên file, domain, cột dimension (cột chia nhóm).' },
         ],
       },
-      { type: 'result', label: 'Kết quả mẫu', title: 'Output thật — gate hợp đồng ticket (rút gọn)', code: "======================================================================\nCT ticket ghi\n  user_id      'appUser': OK (7/7 ngày)\n  amount       'amount': OK (7/7 ngày)\n  timestamp    'reqDate': OK (7/7 ngày)\n======================================================================\nGIÁ TR FILTER ticket ghi  (trên 27,845,746 dòng CHA filter)\n  status == 'SUCCESS'          25,618,697\n  appID == 3253                2,589,691\n  appID == 450                   565,633\n  appID == 454                 3,311,869\n  productCode == 'MS001'             3,078,857\n  productCode == 'TF012'                     0   <-- 0 DÒNG\n  productCode == 'TU012'                72,064\n======================================================================\nPHI HI USER — ticket lch d liu:\n  filter productCode: giá tr ticket ghi không xut hin: ['TF012']\nHi 2 iu: (1) dng  clarify vi BA, hay tip tc?\n            (2) nu tip tc thì dùng ct/giá tr nào — USER ch nh.\nKHÔNG t i EXPLORE_COLS / FILTER_EXPR cho khp d liu.\n\n--- và sau transform, kim li dimension mà ticket yêu cu ---\n\ndimension 'receive_money_source' — ticket yêu cu 3 giá tr:\n  bank                     2,589,681\n  p2p                              0   <-- 0 DÒNG\n  napas_phone                 71,953\nPHI HI USER — dimension ca ticket không khp kt qu:\n  receive_money_source: giá tr ticket yêu cu ra 0 dòng: ['p2p']\nHi: sai iu kin filter, sai ct ngun, hay nghip v úng là không có d liu?\nBa hng sa khác nhau — KHÔNG t oán, và KHÔNG lng l ship 1/3 dimension.\n\n======================================================================\nEXPLORE GATE: HOI-USER  |  0 chn, 3 cn quyt nh\n======================================================================" },
-      { type: 'result', label: 'Kết quả mẫu', title: 'Output thật — dq_precheck (user_id đã được che bớt)', code: "================================================================\nDATA QUALITY PRECHECK\n================================================================\nPASS  s dòng: 2,661,634\nPASS   ct bt buc\nPASS  redshift_cols không cha ct h thng\nPASS  updated_at 13 ch s, 2026-07-24 00:00:01  2026-07-30 23:59:59\nPASS  user_id úng 15 ký t\nPASS  không null trong redshift_cols\n================================================================\nKT QU: PASS — sn sàng chy run_pipeline\n================================================================\n+---------------+--------------------+--------------------+-------------+\n|user_id        |receive_money_source|receive_money_amount|updated_at   |\n+---------------+--------------------+--------------------+-------------+\n|2506********364|napas_phone         |20000               |1785158606965|\n|2604********403|bank                |55000               |1785158625221|\n|2104********517|bank                |600000              |1785158696468|\n|2606********420|bank                |50000               |1785156799199|\n|2607********904|bank                |50000               |1785156811594|\n+---------------+--------------------+--------------------+-------------+" },
-      { type: 'note', tone: 'info', text: 'Hai khối kết quả trên được chép nguyên từ tài liệu gốc; một số chữ tiếng Việt có dấu bị mất ký tự ngay trong bản PDF.' },
+      {
+        title: 'Quyết định khi dữ liệu thật lệch ticket',
+        blocks: [
+          { type: 'text', text: 'AI: chạy thử trên dữ liệu thật. Nếu kết quả là "HOI-USER", bạn quyết định từng điểm lệch.' },
+          { type: 'note', tone: 'info', title: 'Khi AI dừng lại hỏi', text: 'AI không tự sửa cho khớp dữ liệu. Mỗi quyết định của bạn được ghi vào Note của tài liệu: ticket ghi gì, thực tế dùng gì, vì sao, ai quyết, ngày nào.' },
+          {
+            type: 'table',
+            title: 'Ví dụ quyết định đã ghi lại (case core_receive_money)',
+            cols: ['Ticket ghi', 'Thực tế dùng', 'Vì sao', 'Ai quyết định', 'Ngày'],
+            rows: [
+              ["appID = 450 và productCode = 'TF012' cho p2p", 'Giữ nguyên theo ticket', 'TF012 ra 0 dòng trong cửa sổ explore 20260724–20260730; user chốt giữ đúng hợp đồng ticket và ghi lại hiện trạng chưa có dữ liệu', 'User', '2026-07-31'],
+              ['Dimension p2p', 'Giữ như giá trị kỳ vọng, hiện 0 dòng', 'Suy ra từ quyết định giữ nguyên TF012 ở trên', 'User', '2026-07-31'],
+              ['— (ticket không đề cập)', 'Không dedup', '31,48% dòng trùng theo (appUser, source, ymd) là nhiều lần nhận tiền thật, phải giữ cho sum và count', 'User', '2026-07-31'],
+            ],
+          },
+          { type: 'result', label: 'Kết quả mẫu', title: 'Output thật — gate hợp đồng ticket (rút gọn)', code: "======================================================================\nCT ticket ghi\n  user_id      'appUser': OK (7/7 ngày)\n  amount       'amount': OK (7/7 ngày)\n  timestamp    'reqDate': OK (7/7 ngày)\n======================================================================\nGIÁ TR FILTER ticket ghi  (trên 27,845,746 dòng CHA filter)\n  status == 'SUCCESS'          25,618,697\n  appID == 3253                2,589,691\n  appID == 450                   565,633\n  appID == 454                 3,311,869\n  productCode == 'MS001'             3,078,857\n  productCode == 'TF012'                     0   <-- 0 DÒNG\n  productCode == 'TU012'                72,064\n======================================================================\nPHI HI USER — ticket lch d liu:\n  filter productCode: giá tr ticket ghi không xut hin: ['TF012']\nHi 2 iu: (1) dng  clarify vi BA, hay tip tc?\n            (2) nu tip tc thì dùng ct/giá tr nào — USER ch nh.\nKHÔNG t i EXPLORE_COLS / FILTER_EXPR cho khp d liu.\n\n--- và sau transform, kim li dimension mà ticket yêu cu ---\n\ndimension 'receive_money_source' — ticket yêu cu 3 giá tr:\n  bank                     2,589,681\n  p2p                              0   <-- 0 DÒNG\n  napas_phone                 71,953\nPHI HI USER — dimension ca ticket không khp kt qu:\n  receive_money_source: giá tr ticket yêu cu ra 0 dòng: ['p2p']\nHi: sai iu kin filter, sai ct ngun, hay nghip v úng là không có d liu?\nBa hng sa khác nhau — KHÔNG t oán, và KHÔNG lng l ship 1/3 dimension.\n\n======================================================================\nEXPLORE GATE: HOI-USER  |  0 chn, 3 cn quyt nh\n======================================================================" },
+          { type: 'result', label: 'Kết quả mẫu', title: 'Output thật — dq_precheck (user_id đã được che bớt)', code: "================================================================\nDATA QUALITY PRECHECK\n================================================================\nPASS  s dòng: 2,661,634\nPASS   ct bt buc\nPASS  redshift_cols không cha ct h thng\nPASS  updated_at 13 ch s, 2026-07-24 00:00:01  2026-07-30 23:59:59\nPASS  user_id úng 15 ký t\nPASS  không null trong redshift_cols\n================================================================\nKT QU: PASS — sn sàng chy run_pipeline\n================================================================\n+---------------+--------------------+--------------------+-------------+\n|user_id        |receive_money_source|receive_money_amount|updated_at   |\n+---------------+--------------------+--------------------+-------------+\n|2506********364|napas_phone         |20000               |1785158606965|\n|2604********403|bank                |55000               |1785158625221|\n|2104********517|bank                |600000              |1785158696468|\n|2606********420|bank                |50000               |1785156799199|\n|2607********904|bank                |50000               |1785156811594|\n+---------------+--------------------+--------------------+-------------+" },
+          { type: 'note', tone: 'info', text: 'Hai khối kết quả trên được chép nguyên từ tài liệu gốc; một số chữ tiếng Việt có dấu bị mất ký tự ngay trong bản PDF.' },
+        ],
+      },
+      {
+        title: 'AI sinh code, chạy thử STG, viết tài liệu',
+        blocks: [
+          { type: 'text', text: 'AI: sinh code, câu lệnh tạo bảng, chạy thử ở STG, viết tài liệu mô tả dữ liệu.' },
+        ],
+      },
+      {
+        title: 'Tạo bảng, nạp lịch sử, mở MR',
+        blocks: [
+          { type: 'text', text: 'Bạn: chạy câu lệnh tạo bảng, nạp lịch sử 6 tháng theo ticket, đăng ký lịch chạy Airflow, mở MR gồm cả cdp/ và docs/.' },
+        ],
+      },
     ],
     code: [],
     success: [
