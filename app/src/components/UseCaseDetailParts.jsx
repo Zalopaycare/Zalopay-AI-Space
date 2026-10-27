@@ -9,7 +9,7 @@ import Fill from './Fill.jsx'
 import RichText from './RichText.jsx'
 
 // Building blocks of the use case detail page, laid out as the template:
-// hero (owner, contacts) + info row + "Ứng dụng ngay →" · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp ·
+// hero (owner, contacts) + info row · 3 numbers · 1 Tóm tắt · 2–3 Bài toán | Giải pháp ·
 // 4 Tự áp dụng (links first; the one highlighted block) · 5 Kết quả · 6 An toàn & giới hạn · 7 Demo —
 // with a sticky table of contents on wide screens. Technical details are not shown.
 
@@ -41,9 +41,9 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
   )
 }
 
-/** Title block on the dark hero: title, "Owner" line and one-line summary beside the cover, one horizontal
- *  info row and the "Ứng dụng ngay →" button that jumps to part 5. */
-export function DetailHero({ c, h, onBack, onStart, startLabel, onUploadCover, tldr = [], t }) {
+/** Title block on the dark hero: title, "Owner" line and one-line summary beside the cover, and one
+ *  horizontal info row. */
+export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
   const [coverBusy, setCoverBusy] = useState(false)
   const [coverErr, setCoverErr] = useState('')
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
@@ -136,11 +136,6 @@ export function DetailHero({ c, h, onBack, onStart, startLabel, onUploadCover, t
         )}
       </div>
       {h.statusNote && <div style={css('margin-top:8px; font-size:12px; color:#a9b8dc;')}>{h.statusNote}</div>}
-      {onStart && (
-        <button onClick={onStart} className={hoverClass('filter:brightness(1.08) !important; transform:translateY(-1px);')} style={css('margin-top:20px; display:inline-flex; align-items:center; gap:10px; height:48px; padding:0 24px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13.5px; font-weight:800; cursor:pointer; box-shadow:0 10px 30px rgba(44,95,255,.45); transition:transform .15s;')}>
-          {startLabel} <span aria-hidden="true">→</span>
-        </button>
-      )}
     </>
   )
 }

@@ -186,7 +186,7 @@ export default {
       'Trợ lý có thể hỏi bạn xác nhận trước thay đổi quan trọng: ghi code, đăng nội dung, tạo yêu cầu merge code.',
       'bee-review-code dừng ở một điểm kiểm tra để bạn xem trước khi đăng nhận xét.',
       'bee-db-audit không kết nối vào database production.',
-      'bee-dev, bee-integrator, bee-docs chỉ tạo bản nháp yêu cầu merge code (draft MR).',
+      'bee-dev, bee-integrator, bee-docs {{chỉ}} tạo bản nháp yêu cầu merge code (draft MR).',
       'Dữ liệu đi qua AI: [cần bổ sung]',
     ],
     limits: [

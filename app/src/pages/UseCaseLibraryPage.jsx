@@ -22,7 +22,7 @@ import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import FilterPill from '../components/FilterPill.jsx'
-import { DETAIL_COL, DetailHero, Toc, scrollToId, FloatingBack } from '../components/UseCaseDetailParts.jsx'
+import { DETAIL_COL, DetailHero, Toc, FloatingBack } from '../components/UseCaseDetailParts.jsx'
 import { DetailSections, detailLayout } from '../components/UseCaseDetailView.jsx'
 import { buildTemplate } from '../data/useCaseTemplate.js'
 import { submissionTpl } from '../data/submissionTpl.js'
@@ -660,8 +660,6 @@ export default function UseCaseLibraryPage() {
                 c={dsel}
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
-                onStart={has.apply ? () => scrollToId('uc-apply') : null}
-                startLabel={t('Ứng dụng ngay')}
                 // admins add the missing cover of a showcase case or a booth right here
                 onUploadCover={user?.isAdmin && (dsel.pending || (caseDetail[dsel.id]?.tpl && !dsel.submitted))
                   ? (file) => cropCover(file).then(({ data }) => api.adminSetCover(dsel.id, data)).then(() => loadPublishedUseCases(true))
@@ -1001,7 +999,7 @@ export default function UseCaseLibraryPage() {
                     {t('Xem trước: đây đúng là trang chi tiết người đọc sẽ thấy sau khi bài được duyệt.')}
                   </div>
                   <div className="zp-detail-wrap" style={css('margin-top:16px; border-radius:20px; overflow:hidden; background:#07070c; color:#fff; padding:22px 22px 30px;')}>
-                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} startLabel={t('Ứng dụng ngay')} onStart={pv.layout.has.apply ? () => document.getElementById('uc-apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : null} />
+                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
                   {!teamPost && (

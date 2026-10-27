@@ -167,7 +167,7 @@ export default {
     rules: [
       'Máy chỉ bấm tiếp khi màn hình khớp ảnh đã ghi; không khớp thì dừng và ghi lỗi.',
       'QC vẫn theo dõi kết quả và can thiệp khi kịch bản cần dữ liệu đặc biệt.',
-      'Bản hiện tại không dùng AI để chạy kiểm thử; hướng dùng AI mới là đề xuất, cần giới hạn công cụ, bảo vệ dữ liệu, lưu vết và QC duyệt.',
+      '{{Bản hiện tại không dùng AI để chạy kiểm thử;}} hướng dùng AI mới là đề xuất, cần giới hạn công cụ, bảo vệ dữ liệu, lưu vết và QC duyệt.',
     ],
     limits: [
       'Đây vẫn là PoC, chạy trên một loại máy cố định.',
