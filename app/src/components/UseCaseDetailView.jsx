@@ -24,8 +24,10 @@ export function detailLayout(tp, t, showEmpty = false) {
     ['ps', 'uc-problem', 'Bài toán & giải pháp'],
     ['apply', 'uc-apply', tp.apply.title],
     ['safety', 'uc-safety', 'Trách nhiệm & giới hạn'],
+    // the author's own parts ("Phần khác" in the form), each a numbered part of its own
+    ...(tp.custom || []).map((x, i) => ['custom' + i, 'uc-more-' + i, x.title]),
     ['demo', 'uc-demo', 'Demo'],
-  ].filter(([k]) => has[k] || (k === 'ps' && has.result) || (showEmpty && ['ps', 'apply'].includes(k)))
+  ].filter(([k]) => has[k] || k.startsWith('custom') || (k === 'ps' && has.result) || (showEmpty && ['ps', 'apply'].includes(k)))
   const num = {}
   parts.forEach(([k], i) => { num[k] = String(i + 1) })
   const toc = parts.map(([k, id, label]) => ({ id, label: num[k] + '. ' + t(label), hot: k === 'apply' }))
@@ -75,6 +77,11 @@ export function DetailSections({ id, tp, t, layout }) {
         </Section>
         )
       })()}
+      {(tp.custom || []).map((x, i) => (
+        <Section key={'more' + i} id={'uc-more-' + i} num={num['custom' + i]} title={x.title}>
+          <div style={css('font-size:13.5px; line-height:1.65; color:#1E293B; white-space:pre-line; overflow-wrap:anywhere;')}><Fill text={x.text} /></div>
+        </Section>
+      ))}
       {has.demo && (
         <Section id="uc-demo" num={num.demo} title="Demo">
           <Images images={tp.demo} style={{ marginTop: 0 }} />

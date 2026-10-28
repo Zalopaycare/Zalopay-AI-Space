@@ -57,6 +57,10 @@ function partsOf(s) {
       block('safety', 'Trách nhiệm của con người', ex.safety),
       block('limits', 'Giới hạn của AI', s.limits),
     ] },
+    // the author's own extra parts, one text block (comments pin to it as "custom")
+    { step: 4, title: 'Phần khác', blocks: [
+      block('custom', 'Các phần thêm', (ex.customSections || []).map((x) => `${x.title}\n${x.text}`).join('\n\n')),
+    ] },
   ]
 }
 

@@ -60,6 +60,8 @@ export function submissionTpl(s) {
       pitfalls: lines(e.pitfalls).map((l) => { const m = /^(.*?)\s*(?:→|->|—)\s*(.+)$/.exec(l); return m ? { meet: m[1], why: '', fix: m[2] } : { meet: l, why: '' } }),
     },
     safety: { rules: lines(e.safety), limits: lines(s.limits) },
+    // the author's own extra parts ("Phần khác"), shown after the template's
+    custom: (e.customSections || []).filter((x) => x && x.title && x.text),
     tech: { bullets: lines(e.tech) },
     next: { contact: s.contact ? [s.contact] : [], link: s.link || '' },
   }

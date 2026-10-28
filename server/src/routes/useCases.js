@@ -246,6 +246,9 @@ function cleanExtra(e, user) {
       .map((x) => ({ title: txt(x && x.title, 120), text: txt(x && x.text), prompt: txt(x && x.prompt, 8000), note: txt(x && x.note, 600) }))
       .filter((x) => x.title || x.text || x.prompt),
     success: txt(e.success), safety: txt(e.safety),
+    // "Phần khác": parts of the author's own after the template's ones (title + text)
+    customSections: (Array.isArray(e.customSections) ? e.customSections : []).slice(0, 8)
+      .map((x) => ({ title: txt(x && x.title, 120), text: txt(x && x.text, 6000) })).filter((x) => x.title && x.text),
     // the write-up of an AI Exhibition booth: once approved it replaces the booth
     booth: booth && user && (user.is_admin || isBoothOwner(booth, user.email)) ? booth.id : '',
   }

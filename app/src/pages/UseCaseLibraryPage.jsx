@@ -5,6 +5,7 @@ import { parseUseCaseDocx, TEMPLATE_URL } from '../lib/docxImport.js'
 import { rememberReturn, hasReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
+import RichText from '../components/RichText.jsx'
 import CoverImage from '../components/CoverImage.jsx'
 import { AI_TOOLS, OTHER } from '../lib/taxonomy.js'
 import { renderMentions } from '../components/MentionField.jsx'
@@ -64,6 +65,7 @@ const SHARE_STEPS = [
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
+  { key: 'more', label: 'Phần khác', part: 'Phần khác (không bắt buộc): thêm phần riêng của bạn' },
 ]
 // Inputs in the share form (kept small so a step fits without much scrolling).
 const FIELD_INPUT = 'width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13.5px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;'
@@ -157,6 +159,7 @@ export default function UseCaseLibraryPage() {
   const [shareCategory, setShareCategory] = useState([])
   // "Other" category: the author's own category name, saved in its place
   const [shareCatOther, setShareCatOther] = useState('')
+  const [shareCustom, setShareCustom] = useState([]) // "Phần khác": [{ title, text }]
   // after "Xem trước & gửi" finds gaps: required fields left empty turn red, and the form scrolls to the first one
   const [showMissing, setShowMissing] = useState(false)
   const [missTick, setMissTick] = useState(0)
@@ -231,6 +234,7 @@ export default function UseCaseLibraryPage() {
       setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareMembers((ex.members || []).join(', ')); setShareBooth(ex.booth || '')
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       { const cats = [].concat(s.category || []), own = cats.filter((x) => !CATS.includes(x)); setShareCategory([...cats.filter((x) => CATS.includes(x)), ...(own.length ? ['Other'] : [])]); setShareCatOther(own.join(', ')) }
+      setShareCustom((ex.customSections || []).map((x) => ({ title: x.title || '', text: x.text || '' })))
       const known = (list, all) => list.filter((x) => all.includes(x))
       const extra = (list, all) => list.filter((x) => !all.includes(x))
       const tps = s.topics || [], tls = s.tools || []
@@ -334,7 +338,7 @@ export default function UseCaseLibraryPage() {
   const restoredRef = useRef(false)
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
 
   useEffect(() => {
     if (restoredRef.current) return
@@ -353,6 +357,7 @@ export default function UseCaseLibraryPage() {
       setShareLevel(d.shareLevel || '')
       setShareCategory(Array.isArray(d.shareCategory) ? d.shareCategory : d.shareCategory ? [d.shareCategory] : [])
       setShareCatOther(d.shareCatOther || '')
+      setShareCustom(Array.isArray(d.shareCustom) ? d.shareCustom : [])
       setShareTopicSel(d.shareTopicSel || [])
       setShareTopicOtherText(d.shareTopicOtherText || '')
       setShareToolSel(d.shareToolSel || [])
@@ -380,7 +385,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -454,7 +459,7 @@ export default function UseCaseLibraryPage() {
 
   const resetShareForm = () => {
     setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareSteps([EMPTY_STEP]); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
-    setShareCategory([]); setShareCatOther(''); setShareTopicSel([]); setShareTopicOtherText('')
+    setShareCategory([]); setShareCatOther(''); setShareCustom([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form'); setShowMissing(false)
     setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
   }
@@ -562,10 +567,10 @@ export default function UseCaseLibraryPage() {
     ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai đưa gì vào, nhận lại gì.', 'Ai làm gì với công cụ, nhận được gì', 'input', 0, 'intro',
       'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.'],
     ['audience', 'Ai dùng được', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Vai trò / team', 'input', 0, 'intro', 'Security, Dev'],
-    ['problem', 'Bài toán', 'Required', 'Viết theo 3 ý: vấn đề trước khi có AI · ai đang gặp · tác động (tốn bao nhiêu thời gian, rủi ro gì). Dùng **chữ đậm** cho tên ý, xuống dòng giữa các ý.', '', 'area', 6, 'ps',
-      'Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket: đọc Jira, lần theo tài liệu Confluence, tìm đúng version đang deploy, rồi gõ tay từng lệnh curl để test.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester.\n\n**Tác động:** Mỗi lần chuẩn bị mất 0,5–2 ngày; dễ sót endpoint mới hoặc test nhầm version.'],
-    ['solution', 'Giải pháp', 'Required', 'Viết theo 3 ý: giải pháp là gì · AI làm được gì (gạch đầu dòng) · kết quả hiện tại.', '', 'area', 6, 'ps',
-      'secreq là tool nội bộ dùng AI: nhập mã ticket Jira, tool tự đọc ticket, tài liệu Confluence và source đã deploy, rồi xuất trang tóm tắt chuẩn bị test.\n\n**AI làm được gì:**\n- Dựng sẵn lệnh curl chạy được cho từng API.\n- Đánh dấu API mới trong bản release để ưu tiên test.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest.'],
+    ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nDùng **chữ đậm** cho tên ý, xuống dòng giữa các ý.', '', 'area', 6, 'ps',
+      '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence, tìm đúng version đang deploy, rồi gõ tay từng lệnh curl để test. Thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester.\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint, test nhầm version.'],
+    ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps',
+      'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence + source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API, pentester copy-dán test được ngay.\n- Đánh dấu API nào là mới trong bản release để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin và che thông tin nhạy cảm.\n\n**Kết quả:** Đang được team AppSec dùng thật (MVP/pilot, đã go-live nội bộ). Rút ngắn thời gian chuẩn bị pentest từ vài tiếng xuống còn vài phút.'],
     ['result', 'Số liệu & hình ảnh', 'Optional', 'Số đo trước / sau nếu có. Mỗi dòng một ý. Chưa đo thì để trống.', '', 'area', 3, 'ps',
       'Chuẩn bị pentest: từ 0,5–2 ngày xuống khoảng 5 phút\n17/25 ticket gần nhất chỉ đưa link, trung bình 2–3 link'],
     ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file cài để người khác tự xem.', 'https://...', 'input', 0, 'apply', 'https://gitlab.zalopay.vn/…/secreq-bot'],
@@ -597,13 +602,20 @@ export default function UseCaseLibraryPage() {
     ...(teamPost ? { postAs: 'team', showAs: 'members', members: shareMemberList } : {}),
     ...(shareBooth ? { booth: shareBooth } : {}),
     steps: shareStepList, success: shareForm.success.trim(), safety: shareForm.safety.trim(),
+    customSections: shareCustom.map((x) => ({ title: x.title.trim(), text: x.text.trim() })).filter((x) => x.title && x.text),
   })
-  // What's still missing, per step (labels), so the stepper can point at it.
-  const missingByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
-    ...shareFields.filter((f) => f.step === st.key && f.req === 'Required' && !f.value.trim()).map((f) => f.label),
-    ...(st.key === 'apply' && !stepsReady ? ['Các bước (mỗi bước cần tên và nội dung)'] : []),
-    ...(st.key === 'intro' ? [!(shareCover && !shareCover.cleared) && 'Ảnh bìa', !shareLevel && 'Độ khó', !shareCategory.length && 'Category', catOtherOn && !shareCatOther.trim() && 'Tên category khác', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
+  // Every required item of each step and whether it's filled: drives the green "Đã điền" ticks, the
+  // "x/y" progress line and the stepper's counts. missingByStep = the labels still empty.
+  const reqByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
+    ...shareFields.filter((f) => f.step === st.key && f.req === 'Required').map((f) => ({ label: f.label, done: !!f.value.trim() })),
+    ...(st.key === 'apply' ? [{ label: 'Các bước (mỗi bước cần tên và nội dung)', done: stepsReady }] : []),
+    ...(st.key === 'intro' ? [
+      { label: 'Ảnh bìa', done: !!(shareCover && !shareCover.cleared) }, { label: 'Độ khó', done: !!shareLevel }, { label: 'Category', done: !!shareCategory.length },
+      ...(catOtherOn ? [{ label: 'Tên category khác', done: !!shareCatOther.trim() }] : []),
+      ...(teamPost ? [{ label: 'Thành viên cùng làm', done: !!shareMemberList.length }] : []),
+    ] : []),
   ]]))
+  const missingByStep = Object.fromEntries(Object.entries(reqByStep).map(([k, list]) => [k, list.filter((x) => !x.done).map((x) => x.label)]))
   const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && (!catOtherOn || shareCatOther.trim()) && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
   const missCover = showMissing && !(shareCover && !shareCover.cleared)
   const missMembers = showMissing && teamPost && !shareMemberList.length
@@ -1085,13 +1097,25 @@ export default function UseCaseLibraryPage() {
                         <button key={st.key} role="tab" aria-selected={on} onClick={() => setShareStep(i)} style={css(`display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px 0 6px; border-radius:999px; border:1px solid ${on ? '#2c5fff' : '#DDE3EC'}; background:${on ? '#2c5fff' : '#fff'}; color:${on ? '#fff' : '#3A4757'}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
                           <span style={css(`width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800; background:${on ? 'rgba(255,255,255,.22)' : miss ? '#EEF1F7' : '#E7F9F0'}; color:${on ? '#fff' : miss ? '#64748b' : '#00893F'};`)}>{miss ? i + 1 : '✓'}</span>
                           {t(st.label)}
-                          {showMissing && miss > 0 && <span title={t('Còn thiếu') + ': ' + missingByStep[st.key].join(', ')} style={css('min-width:18px; height:18px; padding:0 5px; margin-left:-2px; border-radius:999px; background:#E0353F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:800; box-sizing:border-box;')}>{miss}</span>}
+                          {miss > 0 && <span title={t('Còn thiếu') + ': ' + missingByStep[st.key].join(', ')} style={css(`min-width:18px; height:18px; padding:0 5px; margin-left:-2px; border-radius:999px; background:${showMissing ? '#E0353F' : '#F59E0B'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:800; box-sizing:border-box;`)}>{miss}</span>}
                         </button>
                       )
                     })}
                   </div>
                   <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:20px 22px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
                     <div style={css('margin:0 0 20px; font-size:11.5px; font-weight:700; color:#64748b;')}>{t('Bước')} {shareStep + 1}/{SHARE_STEPS.length} · {t('Điền cho')} {t(SHARE_STEPS[shareStep].part)}</div>
+                    {(() => {
+                      // how far this step's required items are: green when all are in
+                      const req = reqByStep[SHARE_STEPS[shareStep].key], done = req.filter((x) => x.done).length
+                      if (!req.length) return null
+                      const all = done === req.length
+                      return (
+                        <div style={css(`margin:-12px 0 18px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:${all ? '#00893F' : '#B45300'};`)}>
+                          <span style={css('flex:none; width:120px; height:6px; border-radius:999px; background:#EEF1F7; overflow:hidden;')}><span style={css(`display:block; height:100%; width:${Math.round((done / req.length) * 100)}%; background:${all ? '#00A352' : '#F59E0B'};`)}></span></span>
+                          {all ? `✓ ${t('Đã điền đủ mục bắt buộc ở bước này')}` : `${t('Đã điền')} ${done}/${req.length} ${t('mục bắt buộc')}`}
+                        </div>
+                      )
+                    })()}
                     {showMissing && missingByStep[SHARE_STEPS[shareStep].key].length > 0 && (
                       <div key={missTick} className="zp-miss" role="alert" style={css('margin:-8px 0 18px; display:flex; align-items:flex-start; gap:9px; padding:10px 13px; border-radius:12px; background:#FFF1F1; border:1px solid #F6C1C4; color:#B4141B; font-size:12.5px; line-height:1.5; font-weight:600;')}>
                         <span style={css('flex:none; width:20px; height:20px; border-radius:50%; background:#E0353F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;')}>!</span>
@@ -1103,7 +1127,7 @@ export default function UseCaseLibraryPage() {
                         <div style={css('margin-bottom:16px;')}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
                             <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Ảnh bìa')}</span>
-                            <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc')}</span>
+                            <ReqTag done={!!(shareCover && !shareCover.cleared)} required t={t} />
                           </div>
                           <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Kích thước 1920 × 1080 px (16:9). Ảnh khác kích thước sẽ tự được cắt phần giữa và đưa về đúng 1920 × 1080.')}</div>
                           <div style={css('display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;')}>
@@ -1136,7 +1160,7 @@ export default function UseCaseLibraryPage() {
                           {teamPost ? (
                             <div style={css('margin-top:12px;')}>
                               <label htmlFor="sf-members" style={css('font-size:12.5px; font-weight:800; color:#2c5fff;')}>{t('Thành viên cùng làm')}</label>
-                              <span style={css('margin-left:8px; font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc')}</span>
+                              <ReqTag done={!!shareMemberList.length} required t={t} style={{ marginLeft: 8 }} />
                               <input id="sf-members" value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css(FIELD_INPUT + (missMembers ? MISS_FIELD : ''))} />
                               {missMembers && <MissLine text={t('Chưa điền tên thành viên')} />}
                               <div style={css('margin-top:5px; font-size:11.5px; color:#94a3b8;')}>{shareMemberList.length ? t('Hiện trên bài') + ': ' + shareMemberList.join(', ') : t('Bài sẽ hiện tên toàn bộ thành viên thay cho tên bạn.')}</div>
@@ -1158,12 +1182,12 @@ export default function UseCaseLibraryPage() {
                       <div key={f.key} style={css('margin-bottom:16px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <label htmlFor={'sf-' + f.key} style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{f.label}</label>
-                          <span style={css(`font-size:11px; font-weight:700; color:${f.reqColor};`)}>{f.req === 'Required' ? t('Bắt buộc') : t('Không bắt buộc')}</span>
+                          <ReqTag done={!!String(f.value || '').trim()} required={f.req === 'Required'} t={t} />
                         </div>
                         <div style={css('margin-top:5px; font-size:12px; line-height:1.55; color:#94a3b8; white-space:pre-line;')}>{f.hint}</div>
                         {f.example && (
                           <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.55; color:#475569; white-space:pre-wrap;')}>
-                            <span style={css('font-weight:800; color:#475569;')}>{t('Ví dụ')}{f.key === 'title' ? ` (${t('tên hay')})` : ''}:</span>{'\n'}{f.example}
+                            <span style={css('font-weight:800; color:#475569;')}>{t('Ví dụ')}{f.key === 'title' ? ` (${t('tên hay')})` : ''}:</span>{'\n'}{/\*\*/.test(f.example) ? <RichText text={f.example} /> : f.example}
                           </div>
                         )}
                         {editReviewNotes.filter((c) => c.field === f.key).map((c) => (
@@ -1189,7 +1213,8 @@ export default function UseCaseLibraryPage() {
                             </div>
                           )}
                           {shareFields.filter((f) => f.step === key).map(field)}
-                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} showMissing={showMissing} />}
+                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} showMissing={showMissing} ready={stepsReady} />}
+                          {key === 'more' && <CustomSections list={shareCustom} onChange={setShareCustom} t={t} adminEdit={!!editingCase} />}
                           {key === 'apply' && shareFields.filter((f) => f.step === 'apply2').map(field)}
                         </>
                       )
@@ -1211,10 +1236,10 @@ export default function UseCaseLibraryPage() {
                     )}
                     {SHARE_STEPS[shareStep].key === 'intro' && (
                       <>
-                        <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
+                        <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" done={!!shareLevel} t={t} options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>Category</label>
-                          <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · chọn được nhiều')}</span>
+                          <ReqTag done={!!shareCategory.length && (!catOtherOn || !!shareCatOther.trim())} required label="Bắt buộc · chọn được nhiều" t={t} />
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareCategories.map((c) => (
@@ -1229,7 +1254,7 @@ export default function UseCaseLibraryPage() {
 
                         <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px;')}>
                           <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Công cụ AI')}</label>
-                          <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc')}</span>
+                          <ReqTag done={!!shareToolSel.length} t={t} />
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareTools.map((tl) => (
@@ -1293,7 +1318,7 @@ export default function UseCaseLibraryPage() {
  *  time): each step has a name, what to do, an optional prompt / command and an optional red warning. */
 // The steps of "Tự áp dụng" as a numbered path: each step is a card on a line from 1 to the last, with its
 // name and what to do; the prompt and the warning are added only when the step needs them.
-function StepsEditor({ steps, onChange, t, showMissing }) {
+function StepsEditor({ steps, onChange, t, showMissing, ready }) {
   const [example, setExample] = useState(false)
   const set = (i, k) => (e) => onChange(steps.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
   const flag = (i, k) => onChange(steps.map((x, j) => (j === i ? { ...x, [k]: true } : x)))
@@ -1303,7 +1328,7 @@ function StepsEditor({ steps, onChange, t, showMissing }) {
   const anyFilled = steps.some(filled)
   const checked = (x, i) => showMissing && (filled(x) || (!anyFilled && i === 0))
   const icon = 'width:28px; height:28px; display:flex; align-items:center; justify-content:center; border:none; border-radius:8px; background:transparent; color:#64748b; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;'
-  const lbl = (text, req) => <div style={css('margin-top:12px; font-size:12px; font-weight:800; color:#2c5fff;')}>{t(text)} <span style={css(`font-weight:700; color:${req ? '#E0353F' : '#94a3b8'};`)}>{req ? t('Bắt buộc') : t('Không bắt buộc')}</span></div>
+  const lbl = (text, req, done) => <div style={css('margin-top:12px; font-size:12px; font-weight:800; color:#2c5fff;')}>{t(text)} <ReqTag done={done} required={req} t={t} /></div>
   const addBtn = (text, onClick, red) => (
     <button type="button" onClick={onClick} className={hoverClass(`background:${red ? '#FFF1F1' : '#EEF3FF'} !important;`)} style={css(`height:28px; padding:0 11px; border:1px dashed ${red ? '#F2A6AA' : '#B9CCF8'}; border-radius:999px; background:#fff; color:${red ? '#D8232A' : '#2c5fff'}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;`)}>+ {t(text)}</button>
   )
@@ -1311,7 +1336,7 @@ function StepsEditor({ steps, onChange, t, showMissing }) {
     <div style={css('margin-bottom:18px;')}>
       <div style={css('display:flex; align-items:center; gap:8px;')}>
         <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Các bước')}</span>
-        <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · ít nhất 1 bước')}</span>
+        <ReqTag done={ready} required label="Bắt buộc · ít nhất 1 bước" t={t} />
         <span style={{ flex: 1 }}></span>
         <button type="button" onClick={() => setExample((v) => !v)} style={css('border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#2c5fff;')}>{example ? t('Ẩn ví dụ') : t('Xem ví dụ một bước')}</button>
       </div>
@@ -1343,12 +1368,12 @@ function StepsEditor({ steps, onChange, t, showMissing }) {
                 </div>
                 <input value={x.title} onChange={set(i, 'title')} aria-label={t('Tên bước') + ' ' + (i + 1)} placeholder={t('Tên bước, ví dụ: Cài bộ skill vào Codex')} style={css(FIELD_INPUT + 'margin-top:6px; font-size:14.5px; font-weight:700;' + (missTitle ? MISS_FIELD : ''))} />
                 {missTitle && <MissLine text={t('Chưa điền tên bước')} />}
-                {lbl('Làm gì', true)}
+                {lbl('Làm gì', true, !!(x.text.trim() || x.prompt.trim()))}
                 <textarea value={x.text} onChange={set(i, 'text')} rows={3} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA + (missText ? MISS_FIELD : ''))} />
                 {missText && <MissLine text={t('Chưa điền bước này làm gì')} />}
                 {(x.prompt || x.withPrompt) && (
                   <>
-                    {lbl('Prompt / lệnh mẫu', false)}
+                    {lbl('Prompt / lệnh mẫu', false, !!x.prompt.trim())}
                     <textarea value={x.prompt} onChange={set(i, 'prompt')} rows={3} autoFocus={!x.prompt} placeholder={t('Prompt để copy dán vào công cụ AI, hoặc lệnh cần gõ')} style={css(FIELD_AREA + 'font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; background:#F6F8FC;')} />
                   </>
                 )}
@@ -1374,12 +1399,48 @@ function StepsEditor({ steps, onChange, t, showMissing }) {
   )
 }
 
-function ChipGroup({ title, required, options, last, miss }) {
+// Next to a field's name: "✓ Đã điền" in green once it has something; until then "Bắt buộc" (red) or "Không bắt buộc".
+function ReqTag({ done, required, label, t, style }) {
+  if (done) return <span style={{ ...css('font-size:11px; font-weight:800; color:#00893F; white-space:nowrap;'), ...style }}>✓ {t('Đã điền')}</span>
+  return <span style={{ ...css(`font-size:11px; font-weight:700; color:${required ? '#E0353F' : '#94a3b8'};`), ...style }}>{t(label || (required ? 'Bắt buộc' : 'Không bắt buộc'))}</span>
+}
+
+// "Phần khác": parts of the author's own after the template's (e.g. Chi phí, Kế hoạch tiếp theo), each a
+// title + text that shows as a numbered part of the page.
+function CustomSections({ list, onChange, t, adminEdit }) {
+  const set = (i, k) => (e) => onChange(list.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
+  return (
+    <div style={css('margin-bottom:16px;')}>
+      <div style={css('font-size:12.5px; line-height:1.6; color:#64748b;')}>
+        {t('Muốn kể thêm điều gì chưa có chỗ trong các bước trước? Thêm một phần riêng: đặt tên phần và viết nội dung. Mỗi phần hiện thành một mục có số trên trang bài, sau phần Trách nhiệm & giới hạn.')}
+        <div style={css('margin-top:4px;')}><b style={css('color:#475569;')}>{t('Ví dụ')}:</b> {t('Chi phí sử dụng, Kế hoạch tiếp theo, Câu hỏi thường gặp, Kinh nghiệm rút ra.')}</div>
+      </div>
+      {adminEdit && <div style={css('margin-top:10px; font-size:12px; font-weight:600; color:#B45300;')}>{t('Phần khác chỉ lưu được cho bài đăng qua form, chưa áp dụng khi Admin sửa use case có sẵn.')}</div>}
+      {list.map((x, i) => (
+        <div key={i} style={css('margin-top:14px; padding:12px 14px 14px; border:1px solid #E1E8F5; border-radius:14px; background:#fff;')}>
+          <div style={css('display:flex; align-items:center; gap:8px;')}>
+            <span style={css('font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#2c5fff;')}>{t('Phần')} {i + 1}</span>
+            <ReqTag done={!!(x.title.trim() && x.text.trim())} t={t} />
+            <span style={{ flex: 1 }}></span>
+            <button type="button" onClick={() => onChange(list.filter((_, j) => j !== i))} title={t('Xoá phần này')} aria-label={t('Xoá phần này')} className={hoverClass('background:#FFF1F1 !important; color:#D8232A !important;')} style={css('width:28px; height:28px; border:none; border-radius:8px; background:transparent; color:#64748b; font-size:14px; font-weight:800; cursor:pointer;')}>✕</button>
+          </div>
+          <input value={x.title} onChange={set(i, 'title')} maxLength={120} aria-label={t('Tên phần') + ' ' + (i + 1)} placeholder={t('Tên phần, ví dụ: Chi phí sử dụng')} style={css(FIELD_INPUT + 'margin-top:6px; font-size:14.5px; font-weight:700;')} />
+          <textarea value={x.text} onChange={set(i, 'text')} rows={4} aria-label={t('Nội dung phần') + ' ' + (i + 1)} placeholder={t('Nội dung phần này. Mỗi ý một dòng.')} style={css(FIELD_AREA)} />
+        </div>
+      ))}
+      {list.length < 8 && (
+        <button type="button" onClick={() => onChange([...list, { title: '', text: '' }])} className={hoverClass('background:#EEF3FF !important;')} style={css('margin-top:14px; height:36px; padding:0 16px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm phần khác')}</button>
+      )}
+    </div>
+  )
+}
+
+function ChipGroup({ title, required, options, last, miss, done, t = (x) => x }) {
   return (
     <>
       <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:10px;')}>
         <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{title}</label>
-        <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{required}</span>
+        <ReqTag done={done} required label={required} t={t} />
       </div>
       <div style={css(`display:flex; flex-wrap:wrap; gap:8px; margin-bottom:${miss ? 6 : 24}px;`)}>
         {options.map((o) => (

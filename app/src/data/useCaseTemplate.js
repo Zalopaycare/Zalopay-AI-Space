@@ -61,6 +61,7 @@ function fromTpl(c, m) {
     result: { highlights: arr(r.highlights), bullets: arr(r.bullets), beforeAfter: r.beforeAfter && arr(r.beforeAfter.rows).length ? r.beforeAfter : null, tables: arr(r.tables), note: r.note || '', images: arr(r.images) },
     apply,
     safety: { rules: arr(sa.rules), limits: arr(sa.limits), tables: arr(sa.tables) },
+    custom: arr(m.custom),
     demo: arr(m.demo).filter((g) => g && g.src),
     tech: { bullets: arr(te.bullets), tables: arr(te.tables), code: arr(te.code), images: arr(te.images), repo: te.repo && te.repo.label ? te.repo : null },
     next: { steps: arr(n.steps), contact: arr(n.contact), link: n.link || '' },
