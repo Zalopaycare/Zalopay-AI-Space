@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import { fold } from '../lib/fold.js'
 import { parseUseCaseDocx, TEMPLATE_URL } from '../lib/docxImport.js'
-import { rememberReturn, hasReturn, pendingReturn, useScrollReturn } from '../lib/scrollReturn.js'
+import { rememberReturn, hasReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
@@ -117,8 +117,7 @@ export default function UseCaseLibraryPage() {
   const [libSort, setLibSort] = useState(() => new URLSearchParams(window.location.search).get('sort') || 'new')
   // Filters, sort and search live in the URL (?q=&cat=&tool=&sort=) so a view can be shared and Back restores it.
   // Page number too (?page=2), so the link always matches the page shown and can be opened directly.
-  const [libPage, setLibPage] = useState(() => pendingReturn()?.page || Math.max(1, parseInt(new URLSearchParams(window.location.search).get('page'), 10) || 1))
-  useUrlFilters({ q: [query, setQuery, ''], cat: [libCat, setLibCat, null], tool: [libTool, setLibTool, null], sort: [libSort, setLibSort, 'new'], page: [String(libPage), (v) => setLibPage(Math.max(1, parseInt(v, 10) || 1)), '1'] }, !id)
+  useUrlFilters({ q: [query, setQuery, ''], cat: [libCat, setLibCat, null], tool: [libTool, setLibTool, null], sort: [libSort, setLibSort, 'new'] }, !id)
   const [openDrop, setOpenDrop] = useState(null)
 
   const [shareOpen, setShareOpen] = useState(false)
@@ -484,8 +483,8 @@ export default function UseCaseLibraryPage() {
       canEditCase: !!user?.isAdmin && !c.submitted && !!(caseDetail[c.id] || {}).tpl,
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
-      onOpen: () => { rememberReturn(c.id, { page: libPage }); navigate(`/use-cases/${c.id}`) },
-      onOpenComments: () => { rememberReturn(c.id, { page: libPage }); navigate(`/use-cases/${c.id}#comments`) },
+      onOpen: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}`) },
+      onOpenComments: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}#comments`) },
       saveFill: saved ? 'currentColor' : 'none',
       saveColor: saved ? '#2c5fff' : '#59667A',
       saveColorD: saved ? '#9fd0ff' : '#c3c3d4',
@@ -529,25 +528,12 @@ export default function UseCaseLibraryPage() {
 
   // A filter/search change goes back to page 1 — but not when the change came from the URL itself
   // (first load, Back/Forward), or "?page=2" would never open on page 2.
-  const urlKey = JSON.stringify([query || '', libCat || null, libTool || null, libSort || 'new'])
-  const localKey = JSON.stringify([libGroup, libTopic]) // filters that aren't in the URL
-  // Done during render (not in an effect) so the URL is written once with the right page; an effect
-  // would write "?q=a&page=2" first and then read it back.
-  const [prevKeys, setPrevKeys] = useState([urlKey, localKey])
-  if (prevKeys[0] !== urlKey || prevKeys[1] !== localKey) {
-    const qs = new URLSearchParams(location.search)
-    const urlNow = JSON.stringify([qs.get('q') || '', qs.get('cat') || null, qs.get('tool') || null, qs.get('sort') || 'new'])
-    setPrevKeys([urlKey, localKey])
-    if ((prevKeys[1] !== localKey || urlNow !== urlKey) && libPage !== 1) setLibPage(1)
-  }
   // "Chưa có thông tin" booth tiles follow the search box and Category; they have no tools, topics or
   // kind, so any of those filters hides them.
   const pendingList = (libTool || libTopic || libKind || libGroup) ? [] : pendingCases.filter((p) =>
     (!libCat || p.category === libCat) && (!q || fold([p.title, p.team, p.label, p.category, ...(p.members || [])].join(' ')).includes(q)))
-  const PAGE_SIZE = 6
-  const pageCount = Math.max(1, Math.ceil(libCases.length / PAGE_SIZE))
-  const curPage = Math.min(libPage, pageCount)
-  const libCards = libCases.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE).map(mapCard)
+  // every use case on one page (no paging while the library is small)
+  const libCards = libCases.map(mapCard)
   const activeFilterCount = [libCat, libTopic, libTool, libGroup, libKind].filter(Boolean).length
 
   const catOptions = [{ label: 'Tất cả category', val: null }, ...catList.map((c) => ({ label: c, val: c }))]
@@ -939,15 +925,6 @@ export default function UseCaseLibraryPage() {
                 </div>
               )}
 
-              {pageCount > 1 && (
-                <div style={css('display:flex; align-items:center; justify-content:center; gap:6px; margin-top:26px;')}>
-                  <button disabled={curPage === 1} onClick={() => { setLibPage(curPage - 1); document.getElementById('lib-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} style={css(`height:36px; padding:0 14px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; font:700 13px inherit; cursor:pointer; opacity:${curPage === 1 ? 0.4 : 1};`)}>‹ {t('Trước')}</button>
-                  {Array.from({ length: pageCount }, (_, k) => k + 1).map((n) => (
-                    <button key={n} onClick={() => { setLibPage(n); document.getElementById('lib-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} style={css(`width:36px; height:36px; border-radius:10px; border:1px solid ${n === curPage ? '#2c5fff' : 'rgba(255,255,255,.2)'}; background:${n === curPage ? '#2c5fff' : 'rgba(255,255,255,.06)'}; color:#fff; font:800 13px inherit; cursor:pointer;`)}>{n}</button>
-                  ))}
-                  <button disabled={curPage === pageCount} onClick={() => { setLibPage(curPage + 1); document.getElementById('lib-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} style={css(`height:36px; padding:0 14px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#fff; font:700 13px inherit; cursor:pointer; opacity:${curPage === pageCount ? 0.4 : 1};`)}>{t('Sau')} ›</button>
-                </div>
-              )}
               <PendingCases items={pendingList} t={t} requireLogin={requireLogin} />
             </div>
           </div>
@@ -1098,7 +1075,7 @@ export default function UseCaseLibraryPage() {
                     const bp = pendingCases.find((x) => x.id === shareBooth)
                     return (
                       <div style={css('margin-bottom:14px; padding:12px 16px; border-radius:14px; background:#EEF3FF; border:1px solid #CFDDFB; font-size:12.5px; line-height:1.55; color:#1E3A7A;')}>
-                        <b>{t('Bạn đang cập nhật use case của booth')} {bp ? `${bp.booth} · ${bp.title}` : ''}</b> {t('từ AI Exhibition 2026. Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Chưa có thông tin" của booth.')}
+                        <b>{t('Bạn đang cập nhật use case của booth')} {bp ? `"${bp.title}"` : ''}</b> {t('từ AI Exhibition 2026. Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Chưa có thông tin" của booth.')}
                       </div>
                     )
                   })()}
