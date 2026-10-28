@@ -386,7 +386,7 @@ function CodeBlock({ cb }) {
 }
 
 /** Detailed steps as a journey: the whole path in one row (1 → 2 → 3…), one step's details at a time,
- *  with "Bước trước / Bước tiếp" to walk through. The row scrolls sideways on narrow screens. */
+ *  with "Quay lại / Tiếp" to walk through. The row scrolls sideways on narrow screens. */
 function StepJourney({ sections, t }) {
   const [on, setOn] = useState(0)
   const topRef = useRef(null)
@@ -434,8 +434,8 @@ function StepJourney({ sections, t }) {
         {s.sub && <div style={css('margin:0 0 12px; font-size:12.5px; color:#64748b;')}>{s.sub}</div>}
         <Blocks blocks={s.blocks} />
         <div style={css('display:flex; align-items:center; gap:10px; margin-top:18px; padding-top:14px; border-top:1px solid #EEF1F7;')}>
-          {on > 0 && <button onClick={() => go(on - 1)} style={css(navBtn(false))}>← {t('Bước trước')}</button>}
-          {on < last && <button onClick={() => go(on + 1)} style={css(navBtn(true) + 'margin-left:auto;')}>{t('Bước tiếp')}: {sections[on + 1].title} →</button>}
+          {on > 0 && <button onClick={() => go(on - 1)} style={css(navBtn(false))}>← {t('Quay lại')}</button>}
+          {on < last && <button onClick={() => go(on + 1)} style={css(navBtn(true) + 'margin-left:auto;')}>{t('Tiếp')} →</button>}
         </div>
       </div>
     </div>
