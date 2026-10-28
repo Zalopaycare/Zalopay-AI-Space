@@ -904,15 +904,11 @@ export default function UseCaseLibraryPage() {
                         <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
                           <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
-                          <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>
-                        </div>
-                      </div>
-                      <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
-                        {/* a team post names the team (or all its members) instead of one poster with an avatar */}
-                        {!c.byline && <span style={css(c.avStyle)}>{c.avInitial}</span>}
-                        <div style={css('display:flex; align-items:baseline; gap:6px; min-width:0;')}>
-                          <span style={css(`font-size:12.5px; font-weight:600; line-height:1.45; color:#0F172A; ${c.byline ? '' : 'white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'}`)}>{c.byline || c.author}</span><AnonTag p={c} />
-                          {c.posted && <span style={css('flex:none; font-size:12px; font-weight:500; color:#94a3b8; white-space:nowrap;')}>· {t('Đăng')} {c.posted}</span>}
+                          {/* the people behind it right under the name, like the AI Exhibition tiles */}
+                          <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}>
+                            <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {c.byline || c.author}<AnonTag p={c} />
+                          </div>
+                          {c.overview && <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>}
                         </div>
                       </div>
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
