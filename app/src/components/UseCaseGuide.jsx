@@ -239,8 +239,8 @@ function Block({ b }) {
  *  in a popup, and a click anywhere (or Esc) closes it again. */
 export function Figure({ img }) {
   const [open, setOpen] = useState(false)
-  // Landscape images are shown whole (never cropped) at the column's full width; tall screenshots
-  // get a capped preview from the top. Never stretched past their real size.
+  // Every image is shown whole, never cropped: landscape ones at the column's full width, tall
+  // screenshots scaled down to fit a capped height. Never stretched past their real size.
   const [dims, setDims] = useState(null)
   const tall = dims && dims.h > dims.w * 1.15
   useEffect(() => {
@@ -258,7 +258,7 @@ export function Figure({ img }) {
           src={img.src}
           alt={plainText(img.caption)}
           onLoad={(e) => setDims({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
-          style={{ display: 'block', margin: '0 auto', width: '100%', maxWidth: dims ? dims.w : undefined, height: tall ? 300 : 'auto', objectFit: tall ? 'cover' : undefined, objectPosition: 'top' }}
+          style={{ display: 'block', margin: '0 auto', width: tall ? 'auto' : '100%', maxWidth: dims ? `min(100%, ${dims.w}px)` : '100%', maxHeight: tall ? 560 : undefined, height: 'auto', objectFit: 'contain' }}
         />
       </button>
       {img.caption && <figcaption style={css(`margin-top:7px; font:400 12px/1.45 ${FONT}; color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
