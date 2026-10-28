@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { rememberReturn } from '../lib/scrollReturn.js'
 import { api } from '../lib/api.js'
 import { css } from '../lib/style.js'
+import RichText from './RichText.jsx'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
 // list: number badge in the category colour, name, members, event label, a "Chưa có thông tin" tag and a
 // "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
-// A tile opens the booth as a use case page (/use-cases/ex6): Vấn đề and Giải pháp from the exhibition,
-// the rest "Chưa có thông tin" until the owners write it up.
+// A tile opens a popup with the booth's Bài toán and Giải pháp as the exhibition wrote them. Its owners
+// (and admins) get "Bổ sung thông tin" instead of "Quan tâm", straight to the share form.
+// The booth also has a page of its own (/use-cases/ex6), where notifications and invites link to.
 
 const LABEL_COLOR = (label) => (/^Claw-a-thon/.test(label) ? '#2E8F4C' : /^Business/.test(label) ? '#6F0CE2' : '#2140D9')
 
@@ -18,12 +20,21 @@ function Star({ on }) {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill={on ? '#F59E0B' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"></path></svg>
 }
 
+// Where "Bổ sung thông tin" takes a booth's owner: the share form pre-filled from the exhibition, the
+// write-up the team already sent, or the admin's comments on it.
+function ownerHref(p) {
+  const sub = p.submission && p.submission.status !== 'rejected' ? p.submission : null
+  if (!sub) return `/use-cases?share=1&booth=${encodeURIComponent(p.id)}`
+  return sub.status === 'changes_requested' ? `/review/${encodeURIComponent(sub.id)}` : `/use-cases?edit=${encodeURIComponent(sub.id)}`
+}
+
 // What a booth's owners (and admins, who see it as they do) get on the tile instead of "Quan tâm".
 const OWNER_TILE = { pending: 'Đang chờ duyệt', changes_requested: 'Cần chỉnh sửa' }
-function OwnerButton({ p, t, onOpen }) {
+function OwnerButton({ p, t }) {
+  const navigate = useNavigate()
   const label = OWNER_TILE[p.submission?.status] || 'Bổ sung thông tin'
   return (
-    <button onClick={(e) => { e.stopPropagation(); onOpen() }}
+    <button onClick={(e) => { e.stopPropagation(); navigate(ownerHref(p)) }}
       style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 13px; border-radius:999px; border:none; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;')}>
       {t(label)} →
     </button>
@@ -97,8 +108,7 @@ export function BoothInterest({ p, t, requireLogin }) {
 export default function PendingCases({ items, t, requireLogin }) {
   const [, setTick] = useState(0)
   const [busy, setBusy] = useState(null)
-  const navigate = useNavigate()
-  const open = (p) => { rememberReturn(p.id); navigate(`/use-cases/${p.id}`) }
+  const [shown, setShown] = useState(null) // the booth whose popup is open
   if (!items.length) return null
 
   const toggle = (p) => requireLogin(() => {
@@ -124,8 +134,8 @@ export default function PendingCases({ items, t, requireLogin }) {
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => open(p)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(p) } }}
+              onClick={() => setShown(p)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShown(p) } }}
               style={css('display:flex; align-items:flex-start; gap:12px; padding:12px 12px 12px 14px; border-radius:16px; background:#F8FAFE; border:1.5px solid #E3E8F7; cursor:pointer;')}
             >
               <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; align-self:stretch;')}>
@@ -141,13 +151,59 @@ export default function PendingCases({ items, t, requireLogin }) {
                     {p.label && <span style={css(`font-size:12px; font-weight:600; color:${LABEL_COLOR(p.label)};`)}>{p.label}</span>}
                     <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
                   </div>
-                  {p.owner ? <OwnerButton p={p} t={t} onOpen={() => open(p)} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
+                  {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
                 </div>
               </div>
             </div>
           )
         })}
       </div>
+      {shown && <BoothPopup p={shown} t={t} busy={busy === shown.id} onToggle={toggle} onClose={() => setShown(null)} />}
     </section>
+  )
+}
+
+/** A booth's Bài toán and Giải pháp in a popup, verbatim from the AI Exhibition, with "Quan tâm" (or
+ *  "Bổ sung thông tin" for its owners). */
+function BoothPopup({ p, t, busy, onToggle, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+  }, [onClose])
+  const head = (text, color) => <div style={css(`font-size:16px; font-weight:800; letter-spacing:-.2px; color:${color}; margin-bottom:10px;`)}>{t(text)}</div>
+  const body = 'font-size:13px; line-height:1.6; color:#3A4757;'
+  // on <body>, so the page's sticky search bar and its stacking can't cover it
+  return createPortal(
+    <div onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,8,20,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:48px 16px; overflow-y:auto;')}>
+      <div role="dialog" aria-modal="true" aria-label={p.title} onClick={(e) => e.stopPropagation()} style={css('position:relative; width:880px; max-width:100%; background:#fff; border-radius:20px; padding:24px 26px 22px; box-sizing:border-box; box-shadow:0 30px 70px rgba(0,0,0,.4);')}>
+        <button onClick={onClose} aria-label={t('Đóng')} style={css('position:absolute; top:14px; right:14px; width:34px; height:34px; border:none; border-radius:50%; background:#F1F4FA; color:#3A4757; font-size:16px; font-weight:800; cursor:pointer;')}>✕</button>
+        <div style={css('padding-right:40px;')}>
+          <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
+            {p.label && <span style={css(`font-size:12px; font-weight:700; color:${LABEL_COLOR(p.label)};`)}>{p.label}</span>}
+            <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
+          </div>
+          <h2 style={css('margin:8px 0 0; font-size:22px; font-weight:800; line-height:1.3; letter-spacing:-.3px; color:#0F172A; text-wrap:pretty;')}>{p.title}</h2>
+          {p.members?.length > 0 && <div style={css('margin-top:6px; font-size:12.5px; line-height:1.5; color:#5B6B82;')}><span style={css('font-weight:700; color:#3A4757;')}>Owner:</span> {p.members.join(', ')}</div>}
+        </div>
+        <div className="zp-ps2" style={css('margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
+          <div style={{ minWidth: 0 }}>
+            {head('Bài toán', '#C81E1E')}
+            <div style={css(body)}>{p.problem ? <RichText text={p.problem} /> : t('Chưa có thông tin')}</div>
+          </div>
+          <div className="zp-ps2-sol" style={{ minWidth: 0 }}>
+            {head('Giải pháp', '#00893F')}
+            <div style={css(body)}>{p.solution ? <RichText text={p.solution} /> : t('Chưa có thông tin')}</div>
+          </div>
+        </div>
+        <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid #EEF1F7;')}>
+          <span style={css('flex:1; min-width:0; font-size:12px; line-height:1.5; color:#64748b;')}>{p.owner ? t('Bạn là Owner: bổ sung các bước, ảnh bìa, số liệu… để use case có trang đầy đủ.') : t('Use case này chưa có bài chi tiết trên AI Space. Bấm "Quan tâm" để nhắc team đăng lên.')}</span>
+          {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy} onToggle={onToggle} t={t} />}
+        </div>
+      </div>
+    </div>,
+    document.body,
   )
 }
