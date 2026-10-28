@@ -43,12 +43,22 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
 
 /** Title block on the dark hero: title, "Owner" line and one-line summary beside the cover, and one
  *  horizontal info row. */
+/** Yellow "Cần review": a fact AI Space filled in itself (not the team), until an Owner or admin confirms it. */
+export function ReviewTag({ t }) {
+  return <span title={t('AI Space tự điền, cần Owner hoặc Admin xác nhận lại')} style={css('display:inline-flex; align-items:center; height:18px; padding:0 7px; border-radius:999px; background:#FFF1D6; border:1px dashed #E3A33B; color:#8A5300; font-size:10px; font-weight:800; letter-spacing:0; text-transform:none; white-space:nowrap;')}>{t('Cần review')}</span>
+}
+
 export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
   // "Phù hợp với bạn nếu" takes the place of "Ai dùng được" when the use case has it
   const hasFit = !!fit && fit.yes.length > 0
   const [coverBusy, setCoverBusy] = useState(false)
   const [coverErr, setCoverErr] = useState('')
-  const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
+  const label = (text, review) => <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}{review && <ReviewTag t={t} />}</div>
+  const rv = h.review || {}
+  // every use case names its AI tool; one that doesn't yet shows the placeholder, to be confirmed
+  const tools = h.tools.length ? h.tools : c.pending ? [] : [t('Agent tự phát triển')]
+  // the tools listed come from the team's documents; only the placeholder needs confirming
+  const toolsReview = !h.tools.length
   const value = 'font-size:12.5px; font-weight:700; line-height:1.45; color:#fff;'
   const diff = DIFF[h.difficulty]
   // an AI Exhibition booth not written up yet keeps the info row, each fact "Thông tin đang được cập nhật"
@@ -56,11 +66,11 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
   const cells = [
     !h.audience && !hasFit && none('aud', 'Ai dùng được'),
     !diff && none('diff', 'Độ khó'),
-    !h.tools.length && none('tools', 'Công cụ AI'),
-    h.audience && !hasFit && <div key="aud">{label(t('Ai dùng được'))}<div style={css(value + 'font-weight:600;')}><Fill text={h.audience} /></div></div>,
+    !tools.length && none('tools', 'Công cụ AI'),
+    h.audience && !hasFit && <div key="aud">{label(t('Ai dùng được'), rv.audience)}<div style={css(value + 'font-weight:600;')}><Fill text={h.audience} /></div></div>,
     diff && (
       <div key="diff">
-        {label(t('Độ khó'))}
+        {label(t('Độ khó'), rv.difficulty)}
         <div style={css('display:flex; align-items:center; gap:8px;')}>
           <span style={css('display:flex; gap:3px;')} aria-hidden="true">
             {[1, 2, 3].map((n) => <span key={n} style={css(`width:7px; height:14px; border-radius:3px; background:${n <= diff[1] ? diff[0] : 'rgba(255,255,255,.16)'};`)}></span>)}
@@ -69,11 +79,11 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
         </div>
       </div>
     ),
-    h.tools.length > 0 && (
+    tools.length > 0 && (
       <div key="tools">
-        {label(t('Công cụ AI'))}
+        {label(t('Công cụ AI'), toolsReview)}
         <div style={css('display:flex; flex-wrap:wrap; gap:5px;')}>
-          {h.tools.map((name) => <span key={name} style={css('display:inline-flex; align-items:center; height:24px; padding:0 9px; border-radius:999px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; font-size:12px; font-weight:700;')}>{name}</span>)}
+          {tools.map((name) => <span key={name} style={css('display:inline-flex; align-items:center; height:24px; padding:0 9px; border-radius:999px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; font-size:12px; font-weight:700;')}>{name}</span>)}
         </div>
       </div>
     ),

@@ -48,6 +48,8 @@ function fromTpl(c, m) {
     hero: {
       type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
       toolName: m.toolName || '', audience: m.audience || '', difficulty: m.difficulty || '', access: m.access || '',
+      // facts AI Space rated itself for the showcase cases (not the author): shown with a yellow "Cần review"
+      review: m.byAuthor ? {} : { difficulty: !(m.reviewed && m.reviewed.difficulty), audience: !(m.reviewed && m.reviewed.audience) },
       // owner drops Microsoft's "(8)" counters
       tools: c.tools || [], owner: String(known(m.ownerName) || (m.author === 'AI Space' || m.author === m.ownerTeam ? '' : c.author)).replace(/\s*\(\d+\)/g, ''), ownerTeam: known(m.ownerTeam) || known(c.team), updated: known(m.updated),
       // everyone who built it, as the booth's "Member:" line on AI Exhibition shows them

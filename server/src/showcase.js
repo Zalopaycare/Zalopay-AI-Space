@@ -87,6 +87,8 @@ function withEdit(c) {
     ...c,
     title: e.title || c.title, desc: e.oneLine ?? c.desc, audience: e.audience ?? c.audience, difficulty: e.level || c.difficulty,
     tools: e.tools || c.tools, members: e.members || c.members,
+    // what an admin has set by hand (so it no longer needs the "Cần review" tag AI Space's own guesses carry)
+    reviewed: { difficulty: !!e.level, audience: e.audience != null },
     apply: {
       ...a,
       prep: e.prep != null ? lines(e.prep) : a.prep,

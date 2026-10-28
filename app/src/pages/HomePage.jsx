@@ -424,13 +424,11 @@ export default function HomePage() {
                     <CoverImage c={allCases.find((x) => x.id === item.id) || item} />
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
                       <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
-                      <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>
-                    </div>
-                  </div>
-                  <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>
-                    {!item.byline && <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${item.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(item.avatarUrl)}`)}>{item.initials}</span>}
-                    <div style={css('display:flex; flex-direction:column; min-width:0;')}>
-                      <span style={css(`font:600 12.5px/1.45 ${FONT}; color:#0F172A; ${item.byline ? '' : 'white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'}`)}>{item.byline || item.author}</span>
+                      {/* same as the Use Case Library card: the people behind it right under the name */}
+                      <div style={css(`margin-top:4px; font:400 12.5px/1.45 ${FONT}; color:#5B6B82;`)}>
+                        <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {item.byline || item.author}<AnonTag p={item} />
+                      </div>
+                      {item.desc && <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>}
                     </div>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>

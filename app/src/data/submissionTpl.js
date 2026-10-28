@@ -34,6 +34,8 @@ export function submissionTpl(s) {
   const hl = (e.highlights || []).filter((h) => h && (h.value || h.label))
   const resultLines = lines(s.result)
   return {
+    // written and rated by the author: nothing on it is AI Space's own guess
+    byAuthor: true,
     type: e.type || '',
     status: STATUS[s.status] || '',
     audience: s.audience || '',
