@@ -60,7 +60,7 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Đầu trang', part: 'Phần đầu trang: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
+  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
@@ -660,7 +660,7 @@ export default function UseCaseLibraryPage() {
     // Which of the 9 parts have data — the rest are hidden, numbered in order, and listed in the TOC.
     const layout = detailLayout(tp, t, !!dsel.pending)
     const has = layout.has
-    const toc = [...layout.toc, { id: 'comments', label: t('Hữu ích & bình luận') }]
+    const toc = layout.toc
 
     return (
       <div>

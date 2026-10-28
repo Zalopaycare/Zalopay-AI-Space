@@ -30,7 +30,7 @@ function partsOf(s) {
   const hl = (ex.highlights || []).map((h) => [h.value, h.label].filter(Boolean).join(' — ')).join('\n')
   const block = (key, label, value, opts = {}) => ({ key, label, value: String(value || ''), ...opts })
   return [
-    { step: 0, title: 'Đầu trang', blocks: [
+    { step: 0, title: 'Overview', blocks: [
       block('oneLine', 'Mô tả 1 câu', ex.oneLine, { required: true }),
       block('audience', 'Ai dùng được', s.audience, { required: true }),
       block('members', 'Thành viên cùng làm', (ex.members || []).join(', ')),
