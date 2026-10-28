@@ -232,13 +232,13 @@ export default {
 
   safety: {
     rules: [
-      'Mặc định bot chỉ đọc. Người dùng thường chỉ được hỏi, không được sửa.',
       'Chỉ admin hoặc release operator được duyệt thao tác sửa; bot kiểm tra quyền lại trước khi làm.',
+    ],
+    limits: [
+      'Mặc định bot chỉ đọc. Người dùng thường chỉ được hỏi, không được sửa.',
       'AI chỉ giúp hiểu câu hỏi và soạn câu trả lời; quyền, duyệt và việc sửa luôn chạy theo quy tắc cố định, AI không tự quyết.',
       'Mật khẩu, token, dữ liệu khách hàng, OTP, số thẻ, số điện thoại, email khách hàng bị chặn trước khi đến AI.',
       'Chỉ nhận người dùng có email @vng.com.vn; không đủ dữ liệu về quyền thì từ chối.',
-    ],
-    limits: [
       'Duyệt thao tác sửa hiện vẫn phải gõ chữ xác nhận; nút Duyệt/Huỷ trên Teams chưa hoàn thiện.',
       'Tạo yêu cầu sửa cấu hình tài nguyên (Merge Request vào workload repo) mới là hướng làm tiếp, có kiểm soát.',
       'Chưa hỗ trợ đăng ký project CI/CD mới qua bot.',

@@ -218,13 +218,13 @@ export default {
 
   safety: {
     rules: [
-      'Trợ lý chỉ đọc: không lưu, không áp dụng, không xuất bản cấu hình nhóm khách hàng.',
-      'Chỉ trả lời từ hướng dẫn CRM đã được duyệt; mỗi câu trả lời có link nguồn.',
-      'Không đủ bằng chứng thì hỏi lại hoặc báo chưa có hướng dẫn, không tự bịa cách làm.',
       'Bạn là người quyết định: xem kết quả kiểm tra ưu đãi rồi mới lưu, xác nhận hoặc dừng.',
       'Dữ liệu đi qua AI: câu hỏi của bạn, cấu hình nhóm khách hàng/ưu đãi, điều khoản chương trình, hướng dẫn trên Confluence, thông tin ứng dụng và mẫu nhật ký giao dịch đã lược bớt.',
     ],
     limits: [
+      'Trợ lý chỉ đọc: không lưu, không áp dụng, không xuất bản cấu hình nhóm khách hàng.',
+      'Chỉ trả lời từ hướng dẫn CRM đã được duyệt; mỗi câu trả lời có link nguồn.',
+      'Không đủ bằng chứng thì hỏi lại hoặc báo chưa có hướng dẫn, không tự bịa cách làm.',
       'Chưa có nút áp dụng đề xuất vào cấu hình ngay trên màn hình (đang làm).',
       'Khi ưu đãi áp dụng cho hơn 5 ứng dụng (AppID), phần kiểm tra theo dữ liệu từng ứng dụng bị bỏ qua.',
       'Chưa dùng cho Event Tool và NBA.',

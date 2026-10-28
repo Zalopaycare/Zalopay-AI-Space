@@ -194,12 +194,12 @@ export default {
 
   safety: {
     rules: [
-      'AI chỉ tạo bản thử để review; không thay thế quy trình production.',
       'Upload, thay đổi FP Tool, activate, publish không tự động hoàn toàn, luôn cần người xác nhận.',
       'Tích hợp thật, kiểm thử, bảo mật và release vẫn do developer làm.',
       'Dữ liệu nào đi qua AI: [cần bổ sung]',
     ],
     limits: [
+      'AI chỉ tạo bản thử để review; không thay thế quy trình production.',
       'Luồng đưa lên môi trường thử develop/staging còn phụ thuộc công cụ bên ngoài, đang hoàn thiện.',
       'Chưa có guardrail đầy đủ về dữ liệu, bảo mật, accessibility và cổng kiểm tra chất lượng trước khi lên production.',
       'Chưa có template brief và checklist review chuẩn cho từng nhóm PO, HR, Marketing, BD.',

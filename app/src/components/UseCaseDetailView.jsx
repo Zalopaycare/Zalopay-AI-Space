@@ -22,7 +22,7 @@ export function detailLayout(tp, t, showEmpty = false) {
     ['tldr', 'uc-tldr', 'Tóm tắt'],
     ['ps', 'uc-problem', 'Bài toán & giải pháp'],
     ['apply', 'uc-apply', tp.apply.title],
-    ['safety', 'uc-safety', 'Lưu ý khi dùng'],
+    ['safety', 'uc-safety', 'Trách nhiệm & giới hạn'],
     ['demo', 'uc-demo', 'Demo'],
   ].filter(([k]) => has[k] || (k === 'ps' && has.result) || (showEmpty && ['ps', 'apply'].includes(k)))
   const num = {}
@@ -44,10 +44,10 @@ export function DetailSections({ id, tp, t, layout }) {
       {has.apply && <ApplySection id={id} a={tp.apply} t={t} num={num.apply} />}
       {!has.apply && showEmpty && <Section id="uc-apply" num={num.apply} title={t(tp.apply.title)}><NoInfo t={t} /></Section>}
       {has.safety && (
-        <Section id="uc-safety" num={num.safety} title={t('Lưu ý khi dùng')}>
+        <Section id="uc-safety" num={num.safety} title={t('Trách nhiệm & giới hạn')}>
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>
-            {tp.safety.rules.length > 0 && <div><div style={css(SUBHEAD)}>{t('Nguyên tắc an toàn')}</div><div style={css(CAPTION)}>{t('AI được và không được làm gì, người dùng không được làm gì với AI, chỗ nào người phải xác nhận và dữ liệu nào đi qua AI.')}</div><BulletList items={tp.safety.rules} dot="#6F0CE2" /></div>}
-            {tp.safety.limits.length > 0 && <div><div style={css(SUBHEAD)}>{t('Giới hạn của AI')}</div><div style={css(CAPTION)}>{t('Những việc AI ở use case này hiện chưa làm được, chỗ nào còn cần người kiểm lại.')}</div><BulletList items={tp.safety.limits} dot="#E39100" /></div>}
+            {tp.safety.rules.length > 0 && <div><div style={css(SUBHEAD)}>{t('Trách nhiệm của con người')}</div><div style={css(CAPTION)}>{t('Việc con người phải tự làm, tự quyết hoặc không được làm khi dùng AI, và dữ liệu nào đi qua AI.')}</div><BulletList items={tp.safety.rules} dot="#6F0CE2" /></div>}
+            {tp.safety.limits.length > 0 && <div><div style={css(SUBHEAD)}>{t('Giới hạn của AI')}</div><div style={css(CAPTION)}>{t('AI không được làm gì, và những việc AI ở use case này hiện chưa làm được.')}</div><BulletList items={tp.safety.limits} dot="#E39100" /></div>}
             {tp.safety.tables.map((tb, i) => <PlainTable flat key={i} table={tb} />)}
           </div>
         </Section>

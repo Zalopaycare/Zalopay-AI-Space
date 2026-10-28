@@ -53,8 +53,8 @@ function partsOf(s) {
       block('tech', 'Chi tiết kỹ thuật', ex.tech, { mono: true }),
       block('contact', 'Người liên hệ', s.contact),
     ] },
-    { step: 3, title: 'Lưu ý khi dùng', blocks: [
-      block('safety', 'Nguyên tắc an toàn', ex.safety),
+    { step: 3, title: 'Trách nhiệm & giới hạn', blocks: [
+      block('safety', 'Trách nhiệm của con người', ex.safety),
       block('limits', 'Giới hạn của AI', s.limits),
     ] },
   ]

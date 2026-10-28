@@ -194,13 +194,13 @@ export default {
 
   safety: {
     rules: [
-      'AI được làm: đọc dữ liệu, phân tích, sinh code.',
-      'AI không được làm nếu bạn chưa yêu cầu rõ ràng: ghi vào HDFS/MongoDB/Redshift/Delta Lake, xoá file HDFS, commit, push.',
-      'AI không chạy bước nạp dữ liệu (run_pipeline) và không bỏ comment ô nạp lịch sử (backfill).',
       'Dữ liệu đi qua AI: dữ liệu giao dịch thật, chạy trên máy chủ Server 95, không phải dữ liệu mẫu.',
       'Mọi điểm lệch giữa ticket và dữ liệu đều do người quyết, AI chỉ báo và ghi lại.',
     ],
     limits: [
+      'AI được làm: đọc dữ liệu, phân tích, sinh code.',
+      'AI không được làm nếu bạn chưa yêu cầu rõ ràng: ghi vào HDFS/MongoDB/Redshift/Delta Lake, xoá file HDFS, commit, push.',
+      'AI không chạy bước nạp dữ liệu (run_pipeline) và không bỏ comment ô nạp lịch sử (backfill).',
       'Mới đo trên 1 segment; cần thêm mẫu để khẳng định con số tiết kiệm.',
       'Chưa kiểm end-to-end cho segment gần thời gian thực (streaming Kafka).',
       'Chưa tự đăng ký lịch chạy Airflow; bước này vẫn làm tay.',

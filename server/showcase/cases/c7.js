@@ -174,13 +174,13 @@ export default {
 
   safety: {
     rules: [
+      'Dữ liệu đi qua AI: nội dung ticket, trang Confluence, file đính kèm, source code của tính năng.',
+    ],
+    limits: [
       'AI chỉ đọc Jira, không sửa ticket.',
       'AI chỉ chuẩn bị thông tin: không tự nhắn dev, không tự quyết.',
       'Không hiển thị thông tin nào không tìm được nguồn.',
       'Tự che mật khẩu, khoá bí mật và dữ liệu cá nhân trước khi xử lý; không để lọt ra kết quả.',
-      'Dữ liệu đi qua AI: nội dung ticket, trang Confluence, file đính kèm, source code của tính năng.',
-    ],
-    limits: [
       'Chưa đọc được ảnh, sơ đồ trong tài liệu và Figma.',
       'Web chưa có đăng nhập riêng; hiện truy cập qua Tailscale.',
       'Mỗi ticket tốn khoảng vài trăm nghìn token.',

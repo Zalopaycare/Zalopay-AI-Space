@@ -225,10 +225,10 @@ export default {
       'File cấu hình zlpagentbase.env là của riêng bạn: không gửi cho ai, không đưa lên chat nhóm, không copy vào thư mục dự án. Nó chứa mã truy cập vào toàn bộ hệ thống với quyền của bạn.',
       'Không dán mã truy cập, mật khẩu vào khung chat với AI. Bộ skill được thiết kế để đọc trực tiếp từ file, không cần bạn gõ ra.',
       'File .env của ứng dụng không được đưa lên kho code. AI sẽ cảnh báo nếu phát hiện — hãy để AI sửa giúp.',
-      'AI sẽ không in giá trị biến môi trường dù bạn yêu cầu. Đây là thiết kế cố ý để nâng cao tính bảo mật.',
-      'Trước khi xoá, AI luôn hiện đủ thông tin ứng dụng và hỏi lại hai câu riêng biệt; tên không rõ thì AI hỏi lại, không tự đoán.',
     ],
     limits: [
+      'AI sẽ không in giá trị biến môi trường dù bạn yêu cầu. Đây là thiết kế cố ý để nâng cao tính bảo mật.',
+      'Trước khi xoá, AI luôn hiện đủ thông tin ứng dụng và hỏi lại hai câu riêng biệt; tên không rõ thì AI hỏi lại, không tự đoán.',
       'Agent Base hiện chỉ mới triển khai ở môi trường dev; bộ skill chỉ mới test trên macOS.',
       'Mỗi ứng dụng giới hạn cố định 2 CPU / 4 GB RAM, không chạy được model local như ollama, vllm.',
       'Không tự đặt được tên miền kết thúc bằng ai.zalopay.xyz; tên miền riêng phải được trỏ sẵn về server Agent Base.',

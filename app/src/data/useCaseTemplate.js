@@ -2,7 +2,7 @@ import { hlList, statusOf } from './useCases.js'
 
 // Shapes every use case into the 9-part "Template trình bày Use Case" (Zalopay AI Space, 30/09/2026):
 //   hero fields · 1 Tóm tắt 30 giây · 2 Bài toán · 3 Giải pháp · 4 Kết quả · 5 Tự áp dụng
-//   6 Lưu ý khi dùng · 7 Demo · 8 Chi tiết kỹ thuật · 9 Tiếp theo & liên hệ
+//   6 Trách nhiệm & giới hạn · 7 Demo · 8 Chi tiết kỹ thuật · 9 Tiếp theo & liên hệ
 // Built-in cases get their template-only fields from EXTRA below (all taken from the source docs
 // already in useCases.js — nothing new is claimed). Parts with no data come back empty and are hidden.
 

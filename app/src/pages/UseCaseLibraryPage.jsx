@@ -63,7 +63,7 @@ const SHARE_STEPS = [
   { key: 'intro', label: 'Đầu trang', part: 'Phần đầu trang: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
-  { key: 'safety', label: 'Lưu ý khi dùng', part: 'Phần Lưu ý khi dùng (không bắt buộc)' },
+  { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
 ]
 // Inputs in the share form (kept small so a step fits without much scrolling).
 const FIELD_INPUT = 'width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13.5px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;'
@@ -586,8 +586,8 @@ export default function UseCaseLibraryPage() {
     ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', '', 'area', 3, 'apply', 'Tài khoản O365 để đăng nhập MCP Platform.\nQuyền owner/co-owner của tài nguyên trên Gear.\nMột AI có hỗ trợ kết nối MCP (ví dụ Codex).'],
     ['success', 'Kết quả bạn sẽ thấy', 'Optional', 'Làm xong các bước thì người đọc thấy gì, để họ biết mình đã làm đúng. Mỗi dòng một ý.', '', 'area', 2, 'apply2', 'AI trả về trang tóm tắt có lệnh curl cho từng API, dòng nào cũng có link nguồn.\nTrong bảng MCP keys, khoá của bạn có trạng thái "Active".'],
     ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', '', 'area', 3, 'apply2', 'Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.\nMất khoá sau khi đóng màn hình → tạo khoá mới trong mục "MCP keys".'],
-    ['safety', 'Nguyên tắc an toàn', 'Optional', 'Ranh giới khi dùng AI ở use case này. Mỗi dòng một ý, gồm 3 loại:\n• AI được và không được làm gì\n• Người dùng không được làm gì với AI\n• Chỗ nào người phải xác nhận, và dữ liệu nào đi qua AI', '', 'area', 4, 'safety', 'AI được / không được làm gì: AI chỉ đọc Jira, không sửa ticket. AI không tự commit, push nếu bạn chưa yêu cầu.\nNgười dùng không được làm gì: Không dán mật khẩu, token vào khung chat với AI. File .env không gửi cho ai.\nNgười xác nhận, dữ liệu qua AI: Bạn xem kết quả rồi mới lưu. Dữ liệu đi qua AI: nội dung ticket, trang Confluence.'],
-    ['limits', 'Giới hạn của AI', 'Optional', 'Những việc AI ở use case này hiện chưa làm được, chỗ nào còn cần người kiểm lại. Mỗi dòng một ý.', '', 'area', 3, 'safety', 'Chưa đọc được ảnh, sơ đồ trong tài liệu và Figma.\nMới chạy ở môi trường dev, chỉ test trên macOS.'],
+    ['safety', 'Trách nhiệm của con người', 'Optional', 'Việc con người phải tự làm, tự quyết hoặc không được làm khi dùng AI ở use case này. Mỗi dòng một ý, ví dụ:\n• Chỗ phải tự xem lại, xác nhận trước khi lưu / gửi\n• Dữ liệu không được đưa vào AI\n• Dữ liệu nào sẽ đi qua AI', '', 'area', 4, 'safety', 'Bạn xem kết quả rồi mới lưu.\nKhông dán mật khẩu, token vào khung chat với AI. File .env không gửi cho ai.\nDữ liệu đi qua AI: nội dung ticket, trang Confluence.'],
+    ['limits', 'Giới hạn của AI', 'Optional', 'AI không được làm gì, và những việc AI ở use case này hiện chưa làm được. Mỗi dòng một ý.', '', 'area', 4, 'safety', 'AI chỉ đọc Jira, không sửa ticket.\nAI không tự commit, push nếu bạn chưa yêu cầu.\nChưa đọc được ảnh, sơ đồ trong tài liệu và Figma.'],
   ]
   const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step, example]) => ({
     key: k, label, req, hint, placeholder, rows, step, example,
