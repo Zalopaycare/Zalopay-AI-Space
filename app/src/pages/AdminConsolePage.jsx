@@ -291,7 +291,7 @@ export default function AdminConsolePage() {
   // ---- users ----
   const uq = fold(userQuery.trim())
   const teams = Array.from(new Set(users.map((u) => u.team || ''))).sort((a, b) => (a ? a.localeCompare(b, 'vi') : 1) - (b ? 0 : 1))
-  const userRows = users.filter((u) => (!uq || fold(u.name + ' ' + u.email + ' ' + u.domain + ' ' + (u.team || '')).includes(uq))
+  const userRows = users.filter((u) => (!uq || fold(u.name + ' ' + u.email + ' ' + u.domain + ' ' + (u.team || '') + ' ' + Object.values(u.org || {}).join(' ')).includes(uq))
     && (userRole === 'all' || (userRole === 'admin') === !!u.isAdmin)
     && (userTeam === '__all' || (u.team || '') === userTeam))
 
@@ -773,6 +773,12 @@ export default function AdminConsolePage() {
                       <div style={{ minWidth: 0 }}>
                         <div title={`${cleanName(u.name)} · ${u.domain}`} style={css(font(700, 14, 1.4) + ';color:#0f172a; word-break:break-word;')}>{cleanName(u.name)} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
                         <div title={u.email + (u.team ? ' · ' + u.team : '')} style={css('margin-top:3px;' + font(400, 12, 1.45) + ';color:#64748b; word-break:break-all;')}>{u.email}{u.team ? <span style={{ wordBreak: 'normal' }}> · {u.team}</span> : ''}</div>
+                        {/* Microsoft's organisation fields from the last SSO sign-in: to see what marks Zalopay staff */}
+                        {u.org && (u.org.companyName || u.org.officeLocation || u.org.onPremisesDistinguishedName) && (
+                          <div title={u.org.onPremisesDistinguishedName || ''} style={css('margin-top:2px;' + font(400, 11.5, 1.45) + ';color:#94a3b8; word-break:break-word;')}>
+                            {[u.org.companyName && 'Công ty: ' + u.org.companyName, u.org.officeLocation && 'Văn phòng: ' + u.org.officeLocation, u.org.onPremisesDistinguishedName && 'AD: ' + u.org.onPremisesDistinguishedName].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div><span style={css(u.isAdmin ? pill('#EDE7FF', '#6F0CE2') : pill('#EDF0FA', '#3A4757'))}>{u.isAdmin ? 'Admin' : 'Thành viên'}</span></div>

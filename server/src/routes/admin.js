@@ -11,6 +11,7 @@ import { onlineNow, lastSeen } from '../presence.js'
 import { visibleShowcase, hideShowcase } from '../showcase.js'
 
 const router = express.Router()
+const orgInfo = (raw) => { try { return raw ? JSON.parse(raw) : null } catch { return null } }
 
 router.use(requireAuth, (req, res, next) => (req.user.is_admin ? next() : res.status(403).json({ error: 'admin_only' })))
 
@@ -26,6 +27,8 @@ router.get('/users', (req, res) => {
   const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all().map((u) => ({
     id: u.id, name: u.name, domain: domainName(u.email, u.name), email: u.email, initials: initialsOf(u),
     avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u), isAdmin: !!u.is_admin, joined: u.created_at, team: u.team || '',
+    // what Microsoft said about their organisation at the last SSO sign-in (staffCheck.js), and whether that counts as Zalopay
+    org: orgInfo(u.org_info), staff: !!u.staff_ok,
     questions: questions[u.id] || 0, answers: answers[u.id] || 0, useCases: useCases[u.id] || 0, comments: comments[u.id] || 0,
     lastActive: lastDay[u.id] || null,
   }))
