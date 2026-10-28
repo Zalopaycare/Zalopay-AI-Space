@@ -68,6 +68,16 @@ const SHARE_STEPS = [
 // Inputs in the share form (kept small so a step fits without much scrolling).
 const FIELD_INPUT = 'width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13.5px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;'
 const FIELD_AREA = FIELD_INPUT + ' line-height:1.6; resize:vertical;'
+// A required field left empty, once "Xem trước & gửi" has pointed it out: red border, and a red line under it.
+const MISS_FIELD = 'border-color:#E0353F; background:#FFF8F8; box-shadow:0 0 0 3px rgba(224,53,63,.12);'
+function MissLine({ text }) {
+  return (
+    <div data-miss="" className="zp-miss" style={css('display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; font-weight:700; color:#D8232A;')}>
+      <span style={css('flex:none; width:15px; height:15px; border-radius:50%; background:#E0353F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800;')}>!</span>
+      {text}
+    </div>
+  )
+}
 
 const chip = (on) => ({ bg: on ? '#E7ECFB' : '#fff', border: on ? '#B9CCF8' : '#DDE3EC', color: on ? '#2c5fff' : '#3A4757' })
 
@@ -148,6 +158,14 @@ export default function UseCaseLibraryPage() {
   const [shareCategory, setShareCategory] = useState([])
   // "Other" category: the author's own category name, saved in its place
   const [shareCatOther, setShareCatOther] = useState('')
+  // after "Xem trước & gửi" finds gaps: required fields left empty turn red, and the form scrolls to the first one
+  const [showMissing, setShowMissing] = useState(false)
+  const [missTick, setMissTick] = useState(0)
+  useEffect(() => {
+    if (!missTick) return
+    const id = requestAnimationFrame(() => { document.querySelector('[data-miss]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }) })
+    return () => cancelAnimationFrame(id)
+  }, [missTick])
   const [shareTopicSel, setShareTopicSel] = useState([])
   const [shareTopicOtherText, setShareTopicOtherText] = useState('')
   const [shareToolSel, setShareToolSel] = useState([])
@@ -437,7 +455,7 @@ export default function UseCaseLibraryPage() {
   const resetShareForm = () => {
     setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareSteps([EMPTY_STEP]); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareCatOther(''); setShareTopicSel([]); setShareTopicOtherText('')
-    setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form')
+    setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form'); setShowMissing(false)
     setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
   }
 
@@ -599,6 +617,9 @@ export default function UseCaseLibraryPage() {
     ...(st.key === 'intro' ? [!(shareCover && !shareCover.cleared) && 'Ảnh bìa', !shareLevel && 'Độ khó', !shareCategory.length && 'Category', catOtherOn && !shareCatOther.trim() && 'Tên category khác', teamPost && !shareMemberList.length && 'Thành viên cùng làm'].filter(Boolean) : []),
   ]]))
   const valid = !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && (!catOtherOn || shareCatOther.trim()) && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
+  const missCover = showMissing && !(shareCover && !shareCover.cleared)
+  const missMembers = showMissing && teamPost && !shareMemberList.length
+  const missCatOther = showMissing && catOtherOn && !shareCatOther.trim()
   const oneOf = (val, setVal, opts, labels = {}) => opts.map((o) => ({ label: labels[o] || o, ...chip(val === o), onPick: () => setVal(val === o ? '' : o) }))
 
   const shareCategories = CATS.map((c) => ({ label: c === 'Other' ? 'Khác' : c, ...chip(shareCategory.indexOf(c) >= 0), onPick: () => setShareCategory((s) => (s.indexOf(c) >= 0 ? s.filter((x) => x !== c) : s.concat([c]))) }))
@@ -1089,12 +1110,19 @@ export default function UseCaseLibraryPage() {
                         <button key={st.key} role="tab" aria-selected={on} onClick={() => setShareStep(i)} style={css(`display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 14px 0 6px; border-radius:999px; border:1px solid ${on ? '#2c5fff' : '#DDE3EC'}; background:${on ? '#2c5fff' : '#fff'}; color:${on ? '#fff' : '#3A4757'}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;`)}>
                           <span style={css(`width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800; background:${on ? 'rgba(255,255,255,.22)' : miss ? '#EEF1F7' : '#E7F9F0'}; color:${on ? '#fff' : miss ? '#64748b' : '#00893F'};`)}>{miss ? i + 1 : '✓'}</span>
                           {t(st.label)}
+                          {showMissing && miss > 0 && <span title={t('Còn thiếu') + ': ' + missingByStep[st.key].join(', ')} style={css('min-width:18px; height:18px; padding:0 5px; margin-left:-2px; border-radius:999px; background:#E0353F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:800; box-sizing:border-box;')}>{miss}</span>}
                         </button>
                       )
                     })}
                   </div>
                   <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:20px 22px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
                     <div style={css('margin:0 0 20px; font-size:11.5px; font-weight:700; color:#64748b;')}>{t('Bước')} {shareStep + 1}/{SHARE_STEPS.length} · {t('Điền cho')} {t(SHARE_STEPS[shareStep].part)}</div>
+                    {showMissing && missingByStep[SHARE_STEPS[shareStep].key].length > 0 && (
+                      <div key={missTick} className="zp-miss" role="alert" style={css('margin:-8px 0 18px; display:flex; align-items:flex-start; gap:9px; padding:10px 13px; border-radius:12px; background:#FFF1F1; border:1px solid #F6C1C4; color:#B4141B; font-size:12.5px; line-height:1.5; font-weight:600;')}>
+                        <span style={css('flex:none; width:20px; height:20px; border-radius:50%; background:#E0353F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800;')}>!</span>
+                        <span><b>{t('Còn')} {missingByStep[SHARE_STEPS[shareStep].key].length} {t('chỗ chưa điền ở bước này')}</b>{t(', đã tô đỏ bên dưới')}: {missingByStep[SHARE_STEPS[shareStep].key].join(', ')}</span>
+                      </div>
+                    )}
                     {SHARE_STEPS[shareStep].key === 'intro' && (
                       <>
                         <div style={css('margin-bottom:16px;')}>
@@ -1105,7 +1133,7 @@ export default function UseCaseLibraryPage() {
                           <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Kích thước 1920 × 1080 px (16:9). Ảnh khác kích thước sẽ tự được cắt phần giữa và đưa về đúng 1920 × 1080.')}</div>
                           <div style={css('display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;')}>
                             {/* 16:9 preview, the exact frame the cover is saved in */}
-                            <span style={css('flex:none; width:192px; height:108px; border-radius:12px; overflow:hidden; background:#F4F7FE; border:1px dashed #C9D5EC; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:11.5px; font-weight:600;')}>
+                            <span style={css(`flex:none; width:192px; height:108px; border-radius:12px; overflow:hidden; background:${missCover ? '#FFF6F6' : '#F4F7FE'}; border:1px dashed ${missCover ? '#E0353F' : '#C9D5EC'};`+' display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:11.5px; font-weight:600;')}>
                               {shareCover && !shareCover.cleared ? <img src={shareCover.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : '1920 × 1080'}
                             </span>
                             <label className={hoverClass('background:#F2F6FF !important; border-color:#B9CCF8 !important;')} style={css('display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 16px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;')}>
@@ -1117,6 +1145,7 @@ export default function UseCaseLibraryPage() {
                               <button type="button" onClick={() => setShareCover(editing ? { cleared: true } : null)} style={css('border:none; background:none; padding:0; cursor:pointer; font-size:12.5px; font-weight:700; color:#D8232A; font-family:inherit;')}>{t('Bỏ ảnh')}</button>
                             )}
                           </div>
+                          {missCover && <MissLine text={t('Chưa có ảnh bìa: bấm Tải ảnh lên')} />}
                           {coverError && <div style={css('margin-top:8px; font-size:12px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
                           {!coverError && coverNote && <div style={css('margin-top:8px; font-size:12px; color:#9A5B00;')}>{coverNote}</div>}
                         </div>
@@ -1133,7 +1162,8 @@ export default function UseCaseLibraryPage() {
                             <div style={css('margin-top:12px;')}>
                               <label htmlFor="sf-members" style={css('font-size:12.5px; font-weight:800; color:#0F172A;')}>{t('Thành viên cùng làm')}</label>
                               <span style={css('margin-left:8px; font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc')}</span>
-                              <input id="sf-members" value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css(FIELD_INPUT)} />
+                              <input id="sf-members" value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css(FIELD_INPUT + (missMembers ? MISS_FIELD : ''))} />
+                              {missMembers && <MissLine text={t('Chưa điền tên thành viên')} />}
                               <div style={css('margin-top:5px; font-size:11.5px; color:#94a3b8;')}>{shareMemberList.length ? t('Hiện trên bài') + ': ' + shareMemberList.join(', ') : t('Bài sẽ hiện tên toàn bộ thành viên thay cho tên bạn.')}</div>
                             </div>
                           ) : (
@@ -1147,7 +1177,9 @@ export default function UseCaseLibraryPage() {
                     )}
                     {(() => {
                       const key = SHARE_STEPS[shareStep].key
-                      const field = (f) => (
+                      const field = (f) => {
+                      const miss = showMissing && f.req === 'Required' && !String(f.value || '').trim()
+                      return (
                       <div key={f.key} style={css('margin-bottom:16px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <label htmlFor={'sf-' + f.key} style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{f.label}</label>
@@ -1165,13 +1197,15 @@ export default function UseCaseLibraryPage() {
                           </div>
                         ))}
                         {f.isInput && (
-                          <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css(FIELD_INPUT)} />
+                          <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css(FIELD_INPUT + (miss ? MISS_FIELD : ''))} />
                         )}
                         {f.isArea && (
-                          <textarea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA)} />
+                          <textarea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))} />
                         )}
+                        {miss && <MissLine text={t('Chưa điền: mục này bắt buộc')} />}
                       </div>
                       )
+                      }
                       return (
                         <>
                           {key === 'safety' && (
@@ -1180,7 +1214,7 @@ export default function UseCaseLibraryPage() {
                             </div>
                           )}
                           {shareFields.filter((f) => f.step === key).map(field)}
-                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} />}
+                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} showMissing={showMissing} />}
                           {key === 'apply' && shareFields.filter((f) => f.step === 'apply2').map(field)}
                         </>
                       )
@@ -1202,7 +1236,7 @@ export default function UseCaseLibraryPage() {
                     )}
                     {SHARE_STEPS[shareStep].key === 'intro' && (
                       <>
-                        <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" options={shareLevels} last />
+                        <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <label style={css('font-size:13px; font-weight:800; color:#0F172A;')}>Category</label>
                           <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · chọn được nhiều')}</span>
@@ -1212,9 +1246,11 @@ export default function UseCaseLibraryPage() {
                             <button key={c.label} onClick={() => { if (c.label === 'Khác') markOtherPick(); c.onPick() }} style={css(`height:32px; padding:0 13px; border:1px solid ${c.border}; border-radius:999px; background:${c.bg}; color:${c.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{c.label}</button>
                           ))}
                           {catOtherOn && (
-                            <input ref={focusIfJustPicked} value={shareCatOther} onChange={(e) => setShareCatOther(e.target.value)} aria-label={t('Tên category khác')} placeholder={t('Nhập category khác, ví dụ: Legal & Compliance')} style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;')} />
+                            <input ref={focusIfJustPicked} value={shareCatOther} onChange={(e) => setShareCatOther(e.target.value)} aria-label={t('Tên category khác')} placeholder={t('Nhập category khác, ví dụ: Legal & Compliance')} style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;' + (missCatOther ? MISS_FIELD : ''))} />
                           )}
                         </div>
+                        {showMissing && !shareCategory.length && <MissLine text={t('Chưa chọn category')} />}
+                        {missCatOther && <MissLine text={t('Chưa điền tên category khác')} />}
 
                         <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px;')}>
                           <label style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Công cụ AI')}</label>
@@ -1248,6 +1284,7 @@ export default function UseCaseLibraryPage() {
                                 const first = SHARE_STEPS.findIndex((st) => missingByStep[st.key].length)
                                 setShareError(t('Còn thiếu') + ': ' + SHARE_STEPS.filter((st) => missingByStep[st.key].length).map((st) => t(st.label) + ' (' + missingByStep[st.key].join(', ') + ')').join(' · '))
                                 if (first >= 0) setShareStep(first)
+                                setShowMissing(true); setMissTick((n) => n + 1)
                                 return
                               }
                               setShareStage('preview'); setShareError('')
@@ -1279,55 +1316,102 @@ export default function UseCaseLibraryPage() {
 
 /** Tự áp dụng, step by step, the way the published page shows it (a horizontal journey, one step at a
  *  time): each step has a name, what to do, an optional prompt / command and an optional red warning. */
-function StepsEditor({ steps, onChange, t }) {
+// The steps of "Tự áp dụng" as a numbered path: each step is a card on a line from 1 to the last, with its
+// name and what to do; the prompt and the warning are added only when the step needs them.
+function StepsEditor({ steps, onChange, t, showMissing }) {
+  const [example, setExample] = useState(false)
   const set = (i, k) => (e) => onChange(steps.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
+  const flag = (i, k) => onChange(steps.map((x, j) => (j === i ? { ...x, [k]: true } : x)))
   const move = (i, d) => { const n = [...steps]; [n[i], n[i + d]] = [n[i + d], n[i]]; onChange(n) }
-  const small = 'width:28px; height:28px; border:1px solid #DDE3EC; border-radius:8px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer;'
-  const lbl = (text, req) => <div style={css('margin-top:10px; font-size:12px; font-weight:800; color:#334155;')}>{t(text)} <span style={css(`font-weight:700; color:${req ? '#E0353F' : '#94a3b8'};`)}>{req ? t('Bắt buộc') : t('Không bắt buộc')}</span></div>
+  // an empty step is skipped when sending; with nothing filled at all, step 1 is the one to fill
+  const filled = (x) => !!(x.title.trim() || x.text.trim() || x.prompt.trim())
+  const anyFilled = steps.some(filled)
+  const checked = (x, i) => showMissing && (filled(x) || (!anyFilled && i === 0))
+  const icon = 'width:28px; height:28px; display:flex; align-items:center; justify-content:center; border:none; border-radius:8px; background:transparent; color:#64748b; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;'
+  const lbl = (text, req) => <div style={css('margin-top:12px; font-size:12px; font-weight:800; color:#334155;')}>{t(text)} <span style={css(`font-weight:700; color:${req ? '#E0353F' : '#94a3b8'};`)}>{req ? t('Bắt buộc') : t('Không bắt buộc')}</span></div>
+  const addBtn = (text, onClick, red) => (
+    <button type="button" onClick={onClick} className={hoverClass(`background:${red ? '#FFF1F1' : '#EEF3FF'} !important;`)} style={css(`height:28px; padding:0 11px; border:1px dashed ${red ? '#F2A6AA' : '#B9CCF8'}; border-radius:999px; background:#fff; color:${red ? '#D8232A' : '#2c5fff'}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;`)}>+ {t(text)}</button>
+  )
   return (
-    <div style={css('margin-bottom:16px;')}>
+    <div style={css('margin-bottom:18px;')}>
       <div style={css('display:flex; align-items:center; gap:8px;')}>
         <span style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Các bước')}</span>
         <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · ít nhất 1 bước')}</span>
+        <span style={{ flex: 1 }}></span>
+        <button type="button" onClick={() => setExample((v) => !v)} style={css('border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#2c5fff;')}>{example ? t('Ẩn ví dụ') : t('Xem ví dụ một bước')}</button>
       </div>
-      <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{t('Mỗi bước là một việc người đọc làm theo thứ tự. Trên trang bài, các bước hiện thành hàng 1 → 2 → 3, bấm vào từng bước để xem chi tiết.')}</div>
-      <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.55; color:#475569; white-space:pre-wrap;')}>
-        <span style={css('font-weight:800; color:#2c5fff;')}>{t('Ví dụ một bước')}:</span>{'\n'}<b>{t('Tên bước')}:</b> Tạo 1 khoá cho nhiều tài nguyên{'\n'}<b>{t('Làm gì')}:</b> Vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên cần dùng, bấm "Create key".{'\n'}<b>{t('Prompt / lệnh mẫu')}:</b> codex mcp add mcp-platform --url "…/mcp" --bearer-token-env-var MCP_PLATFORM_KEY{'\n'}<b>{t('Lưu ý (hiện màu đỏ)')}:</b> Khoá chỉ hiện một lần: chép ngay, không gửi cho người khác.
-      </div>
-      {steps.map((x, i) => (
-        <div key={i} style={css('margin-top:12px; padding:12px 14px 14px; border:1px solid #D5E0F7; border-radius:14px; background:#FAFBFF;')}>
-          <div style={css('display:flex; align-items:center; gap:8px;')}>
-            <span style={css('flex:none; width:26px; height:26px; border-radius:50%; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;')}>{i + 1}</span>
-            <input value={x.title} onChange={set(i, 'title')} aria-label={t('Tên bước') + ' ' + (i + 1)} placeholder={t('Tên bước, ví dụ: Cài bộ skill vào Codex')} style={css(FIELD_INPUT + 'margin-top:0; flex:1; font-weight:700;')} />
-            <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title={t('Lên trên')} style={css(small + `opacity:${i === 0 ? 0.35 : 1};`)}>↑</button>
-            <button type="button" onClick={() => move(i, 1)} disabled={i === steps.length - 1} title={t('Xuống dưới')} style={css(small + `opacity:${i === steps.length - 1 ? 0.35 : 1};`)}>↓</button>
-            <button type="button" onClick={() => onChange(steps.length > 1 ? steps.filter((_, j) => j !== i) : [{ title: '', text: '', prompt: '', note: '' }])} title={t('Xoá bước')} style={css(small + 'color:#D8232A;')}>✕</button>
-          </div>
-          {lbl('Làm gì', true)}
-          <textarea value={x.text} onChange={set(i, 'text')} rows={3} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA)} />
-          {lbl('Prompt / lệnh mẫu', false)}
-          <textarea value={x.prompt} onChange={set(i, 'prompt')} rows={3} placeholder={t('Prompt để copy dán vào công cụ AI, hoặc lệnh cần gõ')} style={css(FIELD_AREA + 'font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;')} />
-          {lbl('Lưu ý ở bước này (hiện màu đỏ)', false)}
-          <input value={x.note} onChange={set(i, 'note')} placeholder={t('Điều dễ sai hoặc nguy hiểm khi cài / dùng AI ở bước này')} style={css(FIELD_INPUT)} />
+      <div style={css('margin-top:4px; font-size:12px; color:#94a3b8;')}>{t('Mỗi bước là một việc người đọc làm, theo thứ tự. Trên trang bài, các bước hiện thành hàng 1 → 2 → 3.')}</div>
+      {example && (
+        <div style={css('margin-top:8px; padding:9px 12px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.6; color:#475569; white-space:pre-wrap;')}>
+          <b>{t('Tên bước')}:</b> Tạo 1 khoá cho nhiều tài nguyên{'\n'}<b>{t('Làm gì')}:</b> Vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên cần dùng, bấm "Create key".{'\n'}<b>{t('Prompt / lệnh mẫu')}:</b> codex mcp add mcp-platform --url "…/mcp" --bearer-token-env-var MCP_PLATFORM_KEY{'\n'}<b>{t('Lưu ý (hiện màu đỏ)')}:</b> Khoá chỉ hiện một lần: chép ngay, không gửi cho người khác.
         </div>
-      ))}
-      <button type="button" onClick={() => onChange([...steps, { title: '', text: '', prompt: '', note: '' }])} style={css('margin-top:10px; height:34px; padding:0 14px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm bước')}</button>
+      )}
+      <div style={css('margin-top:14px;')}>
+        {steps.map((x, i) => {
+          const missTitle = checked(x, i) && !x.title.trim()
+          const missText = checked(x, i) && !x.text.trim() && !x.prompt.trim()
+          const last = i === steps.length - 1
+          return (
+            <div key={i} style={css('display:flex; gap:12px;')}>
+              {/* the number, and the line down to the next step */}
+              <div style={css('flex:none; width:32px; display:flex; flex-direction:column; align-items:center;')}>
+                <span style={css(`width:32px; height:32px; border-radius:50%; background:${missTitle || missText ? '#E0353F' : 'linear-gradient(180deg,#4480ff,#2c5fff)'}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; box-shadow:0 6px 14px rgba(44,95,255,.28);`)}>{i + 1}</span>
+                <span style={css(`flex:1; width:2px; min-height:16px; margin:4px 0; background:${last ? 'transparent' : '#D5E0F7'};`)}></span>
+              </div>
+              <div style={css(`flex:1; min-width:0; margin-bottom:${last ? 4 : 14}px; padding:12px 14px 14px; border:1px solid ${missTitle || missText ? '#F2A6AA' : '#E1E8F5'}; border-radius:14px; background:#fff; box-shadow:0 4px 14px rgba(15,23,42,.05);`)}>
+                <div style={css('display:flex; align-items:center; gap:6px;')}>
+                  <span style={css('flex:none; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#2c5fff;')}>{t('Bước')} {i + 1}</span>
+                  <span style={{ flex: 1 }}></span>
+                  <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title={t('Lên trên')} aria-label={t('Lên trên')} className={hoverClass('background:#F1F4FA !important;')} style={css(icon + `opacity:${i === 0 ? 0.3 : 1};`)}>↑</button>
+                  <button type="button" onClick={() => move(i, 1)} disabled={last} title={t('Xuống dưới')} aria-label={t('Xuống dưới')} className={hoverClass('background:#F1F4FA !important;')} style={css(icon + `opacity:${last ? 0.3 : 1};`)}>↓</button>
+                  <button type="button" onClick={() => onChange(steps.length > 1 ? steps.filter((_, j) => j !== i) : [{ title: '', text: '', prompt: '', note: '' }])} title={t('Xoá bước')} aria-label={t('Xoá bước')} className={hoverClass('background:#FFF1F1 !important; color:#D8232A !important;')} style={css(icon)}>✕</button>
+                </div>
+                <input value={x.title} onChange={set(i, 'title')} aria-label={t('Tên bước') + ' ' + (i + 1)} placeholder={t('Tên bước, ví dụ: Cài bộ skill vào Codex')} style={css(FIELD_INPUT + 'margin-top:6px; font-size:14.5px; font-weight:700;' + (missTitle ? MISS_FIELD : ''))} />
+                {missTitle && <MissLine text={t('Chưa điền tên bước')} />}
+                {lbl('Làm gì', true)}
+                <textarea value={x.text} onChange={set(i, 'text')} rows={3} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA + (missText ? MISS_FIELD : ''))} />
+                {missText && <MissLine text={t('Chưa điền bước này làm gì')} />}
+                {(x.prompt || x.withPrompt) && (
+                  <>
+                    {lbl('Prompt / lệnh mẫu', false)}
+                    <textarea value={x.prompt} onChange={set(i, 'prompt')} rows={3} autoFocus={!x.prompt} placeholder={t('Prompt để copy dán vào công cụ AI, hoặc lệnh cần gõ')} style={css(FIELD_AREA + 'font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; background:#F6F8FC;')} />
+                  </>
+                )}
+                {(x.note || x.withNote) && (
+                  <>
+                    <div style={css('margin-top:12px; font-size:12px; font-weight:800; color:#B4141B;')}>{t('Lưu ý ở bước này')} <span style={css('font-weight:700; color:#94a3b8;')}>{t('hiện màu đỏ trên bài')}</span></div>
+                    <input value={x.note} onChange={set(i, 'note')} autoFocus={!x.note} placeholder={t('Điều dễ sai hoặc nguy hiểm khi cài / dùng AI ở bước này')} style={css(FIELD_INPUT + 'border-color:#F6C9CB; background:#FFF8F8; color:#B4141B;')} />
+                  </>
+                )}
+                {(!(x.prompt || x.withPrompt) || !(x.note || x.withNote)) && (
+                  <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;')}>
+                    {!(x.prompt || x.withPrompt) && addBtn('Thêm prompt / lệnh mẫu', () => flag(i, 'withPrompt'))}
+                    {!(x.note || x.withNote) && addBtn('Thêm lưu ý cho bước này', () => flag(i, 'withNote'), true)}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <button type="button" onClick={() => onChange([...steps, { title: '', text: '', prompt: '', note: '' }])} className={hoverClass('background:#EEF3FF !important;')} style={css('margin:4px 0 0 44px; height:36px; padding:0 16px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm bước')} {steps.length + 1}</button>
     </div>
   )
 }
 
-function ChipGroup({ title, required, options, last }) {
+function ChipGroup({ title, required, options, last, miss }) {
   return (
     <>
       <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:10px;')}>
         <label style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{title}</label>
         <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{required}</span>
       </div>
-      <div style={css(`display:flex; flex-wrap:wrap; gap:8px; margin-bottom:${last ? 24 : 24}px;`)}>
+      <div style={css(`display:flex; flex-wrap:wrap; gap:8px; margin-bottom:${miss ? 6 : 24}px;`)}>
         {options.map((o) => (
           <button key={o.label} onClick={o.onPick} style={css(`height:32px; padding:0 13px; border:1px solid ${o.border}; border-radius:999px; background:${o.bg}; color:${o.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{o.label}</button>
         ))}
       </div>
+      {miss && <div style={css('margin:-2px 0 20px;')}><MissLine text={miss} /></div>}
     </>
   )
 }

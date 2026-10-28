@@ -231,3 +231,8 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-overlay-in { animation: zp-overlay-in .18s ease-out both; }
 .zp-dialog-in { animation: zp-dialog-in .24s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { .zp-overlay-in, .zp-dialog-in { animation: none; } }
+
+/* Share form: the red line under a required field left empty pops in */
+@keyframes zp-miss-pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.zp-miss { animation: zp-miss-pop .28s ease-out; }
+@media (prefers-reduced-motion: reduce) { .zp-miss { animation: none; } }
