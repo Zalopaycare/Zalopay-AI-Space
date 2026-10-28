@@ -135,7 +135,6 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
           </div>
         )}
       </div>
-      {h.statusNote && <div style={css('margin-top:8px; font-size:12px; color:#a9b8dc;')}>{h.statusNote}</div>}
     </>
   )
 }
