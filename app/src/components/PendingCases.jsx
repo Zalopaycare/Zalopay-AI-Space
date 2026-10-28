@@ -6,13 +6,11 @@ import { css } from '../lib/style.js'
 import RichText from './RichText.jsx'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
-// list: number badge in the category colour, name, members, event label, a "Chưa có thông tin" tag and a
+// list: name, members, a "Chưa có thông tin" tag and a
 // "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
 // A tile opens a popup with the booth's Bài toán and Giải pháp as the exhibition wrote them. Its owners
 // (and admins) get "Bổ sung thông tin" instead of "Quan tâm", straight to the share form.
 // The booth also has a page of its own (/use-cases/ex6), where notifications and invites link to.
-
-const LABEL_COLOR = (label) => (/^Claw-a-thon/.test(label) ? '#2E8F4C' : /^Business/.test(label) ? '#6F0CE2' : '#2140D9')
 
 const NOINFO_TAG = 'display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:999px; background:#FFF4E3; border:1px solid #F3DCB4; color:#9A5B00; font-size:11px; font-weight:700; white-space:nowrap;'
 
@@ -145,10 +143,9 @@ export default function PendingCases({ items, t, requireLogin }) {
                     <span style={css('font-weight:600; color:#3A4757;')}>Owner:</span> {p.members.join(', ')}
                   </div>
                 )}
-                {/* label + tag on the left, "Quan tâm" pinned to the bottom-right corner */}
+                {/* "Chưa có thông tin" on the left, "Quan tâm" pinned to the bottom-right corner */}
                 <div style={css('display:flex; align-items:flex-end; gap:8px; margin-top:auto; padding-top:8px;')}>
                   <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap;')}>
-                    {p.label && <span style={css(`font-size:12px; font-weight:600; color:${LABEL_COLOR(p.label)};`)}>{p.label}</span>}
                     <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
                   </div>
                   {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
@@ -182,7 +179,6 @@ function BoothPopup({ p, t, busy, onToggle, onClose }) {
         <button onClick={onClose} aria-label={t('Đóng')} style={css('position:absolute; top:14px; right:14px; width:34px; height:34px; border:none; border-radius:50%; background:#F1F4FA; color:#3A4757; font-size:16px; font-weight:800; cursor:pointer;')}>✕</button>
         <div style={css('padding-right:40px;')}>
           <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-            {p.label && <span style={css(`font-size:12px; font-weight:700; color:${LABEL_COLOR(p.label)};`)}>{p.label}</span>}
             <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
           </div>
           <h2 style={css('margin:8px 0 0; font-size:22px; font-weight:800; line-height:1.3; letter-spacing:-.3px; color:#0F172A; text-wrap:pretty;')}>{p.title}</h2>
