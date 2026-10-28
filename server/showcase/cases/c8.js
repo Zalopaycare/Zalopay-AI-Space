@@ -196,7 +196,6 @@ export default {
     rules: [
       'Upload, thay đổi FP Tool, activate, publish không tự động hoàn toàn, luôn cần người xác nhận.',
       'Tích hợp thật, kiểm thử, bảo mật và release vẫn do developer làm.',
-      'Dữ liệu nào đi qua AI: [cần bổ sung]',
     ],
     limits: [
       'AI chỉ tạo bản thử để review; không thay thế quy trình production.',
@@ -258,7 +257,6 @@ export default {
       'Phụ trách: Toàn. Nguyễn Trần Thiện · PCT-CX',
       'Cùng làm: Khang. Trần Hoàng, Thư. Phạm Ngọc',
       'Review: Viễn. Nguyễn Đức',
-      'Kênh liên hệ: [cần bổ sung]',
     ],
     link: '',
   },

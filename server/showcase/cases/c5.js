@@ -195,12 +195,10 @@ export default {
 
   safety: {
     rules: [
-      'Dữ liệu nào đi qua AI: [cần bổ sung]',
     ],
     limits: [
       'Bài do AI tạo được gắn cờ, để đếm riêng trong dữ liệu trang quản trị.',
       'Prompt mẫu yêu cầu AI ghi rõ nguồn khi dùng ảnh y nguyên từ nguồn public.',
-      'AI được và không được làm gì trên trang quản trị: [cần bổ sung]',
       'Mới hỗ trợ bài News items (Blogs và Tin tức).',
       'Chưa hỗ trợ SEO bằng AI; chưa vận hành loại nội dung mới.',
       'Phải cài trên máy từng người; chưa đăng nhập bằng SSO nên người non-tech còn khó cài.',
@@ -233,7 +231,6 @@ export default {
     ],
     contact: [
       'Phụ trách: Luân. Nguyễn Anh (MS)',
-      'Kênh liên hệ: [cần bổ sung]',
       'Tài liệu liên quan: Apply AI for Website — https://confluence.zalopay.vn/display/~trangnht2/Apply+AI+for+Website',
     ],
     link: '',

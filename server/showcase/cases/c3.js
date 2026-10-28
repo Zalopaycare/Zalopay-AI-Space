@@ -21,7 +21,7 @@ export default {
   // Owner: dòng "Member" của booth 10 trên Zalopay AI Exhibition 2026.
   members: ['kiettt8', 'trongdd2', 'hoangnv6', 'thanghm3'],
   ownerName: 'Kiệt. Tô Thế (8), Hoàng. Nguyễn Việt (6), Thắng. Hoàng Mạnh (3), Trọng. Dương Đức (2)',
-  ownerTeam: '[cần bổ sung]',
+  ownerTeam: '',
   updated: '',
   cover: '',
   stats: [],
@@ -113,16 +113,6 @@ export default {
   },
 
   result: {
-    beforeAfter: {
-      cols: ['Chỉ số', 'Trước', 'Sau'],
-      rows: [
-        ['Tỉ lệ yêu cầu hỗ trợ do cấu hình sai trên số chiến dịch CRM', 'Sẽ tính sau khi chốt phạm vi CRM và số chiến dịch', 'Mục tiêu: giảm X% trong 3 tháng liên tiếp (tài liệu chưa điền X)'],
-        ['Số yêu cầu hỗ trợ do cấu hình sai mỗi tháng', 'Sẽ lấy từ bộ yêu cầu 01–07/2026', 'Mục tiêu: giảm từ mức A xuống B mỗi tháng (tài liệu chưa điền số)'],
-        ['Công sức Product và Tech hỗ trợ', '[cần bổ sung]', 'Mục tiêu: giảm 50% thời gian trả lời tin nhắn, hỗ trợ'],
-        ['Yêu cầu tự giải quyết, không cần nhờ Product hoặc Tech', '[cần bổ sung]', 'Mục tiêu: đạt X% (tài liệu chưa điền X)'],
-      ],
-      note: 'Mức nền lấy từ yêu cầu hỗ trợ 01–07/2026, còn cần đối chiếu.',
-    },
     bullets: [
       'Phần giải pháp kỹ thuật đã xong (DONE), tài liệu ở trạng thái READY.',
       'Đã có demo 3 tính năng gắn vào CRM tool trên môi trường SBQC: hỏi đáp cách dùng, giải thích nhóm khách hàng, kiểm tra cấu hình ưu đãi.',
@@ -282,7 +272,6 @@ export default {
       'Phụ trách (PIC): Kiệt. Tô Thế (8), Hoàng. Nguyễn Việt (6), Thắng. Hoàng Mạnh (3), Trọng. Dương Đức (2).',
       'Giải pháp kỹ thuật: Technical team.',
       'Bằng chứng gốc: trang "Summary CS Ticket" trên Confluence (link trong tài liệu gốc).',
-      'Kênh liên hệ: [cần bổ sung]',
     ],
     link: '',
   },

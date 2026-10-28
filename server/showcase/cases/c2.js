@@ -45,7 +45,6 @@ export default {
       'Việc tốn công: mỗi lần cập nhật phải làm tay trên từng máy; người mới phải tự cài và học lại từ đầu.',
       'Hệ quả: cùng một yêu cầu nhưng mỗi người làm một kiểu, chất lượng đầu ra khác nhau.',
       'Vì sao cần làm ngay: số trợ lý, kết nối và quy trình càng tăng thì gộp lại về sau càng khó và tốn kém.',
-      'Tốn bao nhiêu: [cần bổ sung] (bài gốc không có số).',
     ],
     tables: [],
     images: [],
@@ -159,7 +158,7 @@ export default {
     ],
     code: [],
     success: [
-      'Bộ cài chạy xong phần kiểm tra (health check) sau khi cài. Dấu hiệu cụ thể: [cần bổ sung]',
+      'Bộ cài chạy xong phần kiểm tra (health check) sau khi cài.',
       'Trong Codex, gõ /skills thấy danh sách trợ lý để chọn.',
     ],
     images: [],
@@ -170,7 +169,6 @@ export default {
     rules: [
       'Trợ lý có thể hỏi bạn xác nhận trước thay đổi quan trọng: ghi code, đăng nội dung, tạo yêu cầu merge code.',
       'bee-review-code dừng ở một điểm kiểm tra để bạn xem trước khi đăng nhận xét.',
-      'Dữ liệu đi qua AI: [cần bổ sung]',
     ],
     limits: [
       'bee-db-audit không kết nối vào database production.',
@@ -222,7 +220,6 @@ export default {
       'Cùng làm: MinhLN9, NamNTH3, YenHTT, DangPHH',
       'Người đóng góp: Nam. Nguyễn Trần Hoàng (3) (bee-figma-ui); Yên. Hoàng Thị Thanh, Đăng. Phạm Hồng Hải (bee-qc).',
       'Mã nguồn, hướng dẫn cài và cách đóng góp: kho code us-hive trên GitLab.',
-      'Kênh liên hệ: [cần bổ sung]',
     ],
     link: 'https://gitlab.zalopay.vn/aqr/bill/us-hive',
   },

@@ -239,7 +239,6 @@ export default {
     contact: [
       'Phụ trách: Nghĩa. Trần Gia (Security / AppSec)',
       'Mục tiêu: gửi 1 yêu cầu pentest chỉ cần link Confluence + ticket Jira CICD, có kết quả bảo mật trong vòng 1 ngày.',
-      'Kênh liên hệ: [cần bổ sung]',
     ],
     link: '',
   },

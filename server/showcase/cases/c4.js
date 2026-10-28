@@ -264,7 +264,6 @@ export default {
     contact: [
       'SRE: cấp file cấu hình <tên_bạn>_zlpagentbase.env, kiểm tra lại key, xem lại mật khẩu bảo vệ.',
       'SRE (HienLQ): khi cần chạy model local.',
-      'Người phụ trách tài liệu: [cần bổ sung]',
     ],
     link: '',
   },
