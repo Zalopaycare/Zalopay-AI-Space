@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken'
 import { db } from './db.js'
 
 // Only Zalopay staff may use the site, but every VNG company signs in with the same @vng.com.vn
@@ -7,7 +8,8 @@ import { db } from './db.js'
 // AD path and office are the same for every VNG company, and a department or name could contain the
 // word by chance. Until STAFF_MATCH is set nobody is blocked: the fields are only recorded, so an
 // admin can see what Microsoft returns before switching the check on.
-// ADMIN_EMAILS and STAFF_EXTRA_EMAILS always pass (so a wrong pattern can't lock the admins out).
+// ADMIN_EMAILS, STAFF_EXTRA_EMAILS, admins and the people an admin granted access always pass (so a
+// wrong pattern can't lock the admins out, and someone Microsoft lists elsewhere can be let in).
 
 const ORG_FIELDS = ['companyName', 'department', 'officeLocation', 'jobTitle', 'onPremisesDistinguishedName']
 const list = (v) => String(v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
@@ -35,7 +37,7 @@ export async function orgOf(accessToken) {
 /** `staff`: the account is Zalopay staff by STAFF_MATCH (or listed in ALWAYS); `allowed`: it may get a
  *  session now (everyone, while the check is off). `org` null = Microsoft didn't say. */
 export function verdict(email, org) {
-  const staff = ALWAYS.has(String(email).toLowerCase()) || (!!org && matches(org))
+  const staff = letIn(email) || (!!org && matches(org))
   return { staff, allowed: staff || !staffCheckOn() }
 }
 
@@ -45,4 +47,22 @@ export function saveOrg(userId, org, ok) {
 }
 
 /** For every request once the check is on: a session from before it (or from an email code) no longer counts. */
-export const sessionAllowed = (user) => !staffCheckOn() || ALWAYS.has(String(user.email).toLowerCase()) || user.staff_ok === 1
+export const sessionAllowed = (user) => !staffCheckOn() || user.staff_ok === 1 || !!user.is_admin || letIn(user.email)
+
+/** Listed in the env, an admin in the database, or granted access by an admin. */
+function letIn(email) {
+  const e = String(email || '').toLowerCase()
+  return ALWAYS.has(e) || !!db.prepare('SELECT 1 FROM staff_grants WHERE email = ?').get(e) || !!db.prepare('SELECT 1 FROM users WHERE email = ? AND is_admin = 1').get(e)
+}
+
+// Someone turned away at sign-in gets a short-lived signed note of who Microsoft said they are, so the
+// "no access" page can send an access request without a session (and without trusting what the page sends).
+const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me'
+export const ACCESS_COOKIE = 'access_req'
+export const accessTicket = (email, name, org) => jwt.sign({ email, name, org }, SECRET, { expiresIn: '2h', audience: 'access-request' })
+export function readTicket(token) {
+  try { const { email, name, org } = jwt.verify(String(token || ''), SECRET, { audience: 'access-request' }); return { email, name, org } } catch { return null }
+}
+
+/** Every admin's mailbox (env + database), for access requests. */
+export const adminEmails = () => [...new Set([...list(process.env.ADMIN_EMAILS), ...db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())])]

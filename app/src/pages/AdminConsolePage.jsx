@@ -92,7 +92,7 @@ export default function AdminConsolePage() {
   const { user, openLogin, logout } = useAuth()
   const navigate = useNavigate()
   const isAdmin = !!user?.isAdmin
-  const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : /#inbox\b/.test(window.location.hash) ? 'inbox' : 'dashboard'))
+  const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : /#inbox\b/.test(window.location.hash) ? 'inbox' : /#access\b/.test(window.location.hash) ? 'access' : 'dashboard'))
   // "Hộp thư": the open "Chat với Admin" conversation; #inbox/<user id> (from a notification) opens one
   const [chatUid, setChatUid] = useState(() => Number((/#inbox\/(\d+)/.exec(window.location.hash) || [])[1]) || null)
   const chatInbox = useChatUnread(isAdmin).inbox
@@ -102,6 +102,9 @@ export default function AdminConsolePage() {
   const [boothMsg, setBoothMsg] = useState('')
   const reloadBooths = () => api.adminBooths().then((d) => setBooths(d.booths || [])).catch(() => setBooths((b) => b || []))
   useEffect(() => { if (isAdmin && section === 'booths') reloadBooths() }, [isAdmin, section]) // eslint-disable-line react-hooks/exhaustive-deps
+  // "Yêu cầu truy cập": people sign-in turned away (Microsoft doesn't list them under Zalopay) asking to be let in
+  const [access, setAccess] = useState({ requests: [], grants: [] })
+  const reloadAccess = () => api.adminAccess().then(setAccess).catch(() => {})
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [adminStats, setAdminStats] = useState(null)
@@ -149,7 +152,7 @@ export default function AdminConsolePage() {
   const reloadStats = () => api.adminStats().then(setAdminStats).catch(() => {})
   const reloadLive = () => api.adminLive().then(setLive).catch(() => {})
   const reloadPublished = () => api.adminPublished().then((d) => setPublished(d.useCases || [])).catch(() => {})
-  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports(), reloadStats(), reloadLive(), reloadPublished()]).then(() => setUpdatedAt(new Date()))
+  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports(), reloadStats(), reloadLive(), reloadPublished(), reloadAccess()]).then(() => setUpdatedAt(new Date()))
   useEffect(() => { if (isAdmin) { reloadAll(); checkDirectory() } }, [isAdmin])
   // Keep the numbers live while the console is open.
   useEffect(() => { if (!isAdmin) return; const t = setInterval(reloadAll, 60_000); return () => clearInterval(t) }, [isAdmin])
@@ -318,6 +321,7 @@ export default function AdminConsolePage() {
     ['users', 'Thành viên', '#00B7FF', 0],
     ['inbox', 'Hộp thư', '#6F0CE2', chatInbox],
     ['booths', 'Booth Exhibition', '#FF8D00', 0],
+    ['access', 'Yêu cầu truy cập', '#D8232A', access.requests.filter((r) => r.status === 'pending').length],
   ]
 
   const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:14px; align-items:center;`
@@ -722,9 +726,45 @@ export default function AdminConsolePage() {
             )
           })()}
 
+          {section === 'access' && (
+            <div>
+              <Heading title="Yêu cầu truy cập" sub="AI Space chỉ cho nhân viên Zalopay đăng nhập (công ty trên tài khoản Microsoft là Zion / Zalopay). Người bị chặn nhầm gửi yêu cầu ở đây; kiểm tra đúng là nhân viên Zalopay rồi mới duyệt." />
+              <div style={css('margin-top:18px; overflow:hidden;' + card)}>
+                {!access.requests.length ? empty('Chưa có yêu cầu nào.') : access.requests.map((r) => (
+                  <div key={r.id} style={css('display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; padding:14px 20px; border-bottom:1px solid #F3F5FA;')}>
+                    <div style={css('flex:1 1 320px; min-width:0;')}>
+                      <div style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{r.name || r.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {r.email}</span></div>
+                      <div style={css('margin-top:3px;' + font(400, 12.5, 1.5) + ';color:#64748b;')}>
+                        Công ty trên Microsoft: <b style={{ color: '#3A4757' }}>{r.org?.companyName || '(không ghi)'}</b>{r.org?.department ? ` · ${r.org.department}` : ''}{r.org?.jobTitle ? ` · ${r.org.jobTitle}` : ''} · gửi {relativeTime(r.time)}
+                      </div>
+                      {r.note && <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD;' + font(400, 13, 1.55) + ';color:#334155; white-space:pre-wrap;')}>“{r.note}”</div>}
+                    </div>
+                    {r.status === 'pending' ? (
+                      <div style={css('display:flex; gap:8px; flex:none;')}>
+                        <button onClick={() => window.confirm(`Cấp quyền vào AI Space cho ${r.email}? Chỉ duyệt khi đã kiểm tra đúng là nhân viên Zalopay.`) && api.decideAccess(r.id, 'approve').then(setAccess)} style={css(btn('approve') + 'height:34px; padding:0 14px;')}>Duyệt</button>
+                        <button onClick={() => api.decideAccess(r.id, 'reject').then(setAccess)} style={css(btn('reject') + 'height:34px; padding:0 14px;')}>Từ chối</button>
+                      </div>
+                    ) : (
+                      <span style={css(r.status === 'approved' ? pill('#E7F9F0', '#00893F') : pill('#FFECEC', '#D8232A'))}>{r.status === 'approved' ? 'Đã duyệt' : 'Đã từ chối'}{r.decider ? ` · ${r.decider}` : ''}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Đã cấp quyền riêng ({access.grants.length})</div>
+              <div style={css('margin-top:10px; overflow:hidden;' + card)}>
+                {!access.grants.length ? empty('Chưa cấp quyền riêng cho ai.') : access.grants.map((g) => (
+                  <div key={g.email} style={css('display:flex; align-items:center; gap:14px; padding:12px 20px; border-bottom:1px solid #F3F5FA;')}>
+                    <div style={css('flex:1; min-width:0;' + font(600, 13.5) + ';color:#0f172a;')}>{g.email} <span style={css(font(400, 12) + ';color:#94a3b8;')}>· {g.granter ? `${g.granter} cấp` : 'đã cấp'} {relativeTime(g.time)}</span></div>
+                    <button onClick={() => window.confirm(`Thu hồi quyền của ${g.email}? Người này sẽ bị đăng xuất nếu Microsoft không ghi công ty Zalopay.`) && api.revokeAccess(g.email).then(setAccess)} style={css(btn('plain'))}>Thu hồi</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {section === 'inbox' && (
             <div>
-              <Heading title="Hộp thư" sub="Tin nhắn mọi người gửi qua &quot;Chat với Admin&quot;. Admin nào trả lời cũng được, người nhắn thấy &quot;Admin · tên bạn&quot;." />
+              <Heading title="Hộp thư" sub="Tin nhắn mọi người gửi qua &quot;Chat với Admin&quot;. Admin nào trả lời cũng được, người nhắn chỉ thấy &quot;Admin&quot;." />
               <div className="zp-admin-inbox" style={css('margin-top:18px;')}><AdminInbox t={(x) => x} uid={chatUid} onOpen={setChatUid} /></div>
             </div>
           )}

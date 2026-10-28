@@ -34,6 +34,12 @@ async function request(path, options = {}) {
 
 export const api = {
   config: () => request('/auth/config'),
+  // turned away at sign-in (not listed under Zalopay): see who Microsoft says you are, ask the admins for access
+  accessRequestInfo: () => request('/auth/access-request'),
+  sendAccessRequest: (note) => request('/auth/access-request', { method: 'POST', body: JSON.stringify({ note }) }),
+  adminAccess: () => request('/admin/access'),
+  decideAccess: (id, decision) => request(`/admin/access/${id}/${decision}`, { method: 'POST' }),
+  revokeAccess: (email) => request(`/admin/access/grants/${encodeURIComponent(email)}`, { method: 'DELETE' }),
   requestCode: (email) => request('/auth/request-code', { method: 'POST', body: JSON.stringify({ email }) }),
   aliasCheck: (alias) => request('/auth/alias-check?alias=' + encodeURIComponent(alias)),
   verifyCode: (email, code) => request('/auth/verify-code', { method: 'POST', body: JSON.stringify({ email, code }) }),

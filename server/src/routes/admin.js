@@ -6,6 +6,8 @@ import { domainName, initialsOf, handleOf } from '../mentions.js'
 import { anonName } from '../anon.js'
 import { adminReportRoutes } from '../reports.js'
 import { directoryStatus } from '../directory.js'
+import { sendMail } from '../mailer.js'
+import { appUrl } from '../mentions.js'
 import { vnDay } from '../auth.js'
 import { onlineNow, lastSeen } from '../presence.js'
 import { visibleShowcase, hideShowcase } from '../showcase.js'
@@ -177,6 +179,40 @@ router.delete('/showcase/:id', (req, res) => {
 })
 
 router.get('/directory-status', async (req, res) => res.json(await directoryStatus(req.user.id)))
+
+// ---- Access requests from people turned away at sign-in (staffCheck.js), and the access granted ----
+const accessList = () => ({
+  requests: db.prepare(`SELECT r.*, u.name decider FROM access_requests r LEFT JOIN users u ON u.id = r.decided_by
+    ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END, r.id DESC LIMIT 200`).all()
+    .map((r) => ({ id: r.id, email: r.email, name: r.name, org: orgInfo(r.org_info), note: r.note, status: r.status, time: r.created_at, decidedAt: r.decided_at, decider: r.decider || '' })),
+  grants: db.prepare('SELECT g.email, g.created_at time, u.name granter FROM staff_grants g LEFT JOIN users u ON u.id = g.granted_by ORDER BY g.created_at DESC').all(),
+})
+router.get('/access', (req, res) => res.json(accessList()))
+router.post('/access/:id/:decision', (req, res) => {
+  const r = db.prepare('SELECT * FROM access_requests WHERE id = ?').get(Number(req.params.id))
+  if (!r) return res.status(404).json({ error: 'not_found' })
+  const approve = req.params.decision === 'approve'
+  if (!approve && req.params.decision !== 'reject') return res.status(400).json({ error: 'bad_decision' })
+  db.transaction(() => {
+    // every open request from that person is settled at once
+    db.prepare("UPDATE access_requests SET status = ?, decided_at = datetime('now'), decided_by = ? WHERE email = ? AND status = 'pending'").run(approve ? 'approved' : 'rejected', req.user.id, r.email)
+    if (approve) db.prepare('INSERT OR IGNORE INTO staff_grants (email, granted_by) VALUES (?, ?)').run(r.email, req.user.id)
+  })()
+  db.prepare("UPDATE notifications SET read = 1 WHERE kind = 'access' AND text LIKE ?").run(`%${r.name || r.email}%`)
+  sendMail({
+    to: r.email,
+    subject: approve ? 'Bạn đã được cấp quyền vào Zalopay AI Space' : 'Yêu cầu truy cập Zalopay AI Space chưa được duyệt',
+    text: approve ? `Admin đã cấp quyền cho bạn. Đăng nhập lại bằng tài khoản Microsoft tại: ${appUrl(req)}` : 'Admin chưa xác nhận được bạn là nhân viên Zalopay nên chưa cấp quyền. Nếu có nhầm lẫn, vui lòng liên hệ Admin AI Space.',
+  }).catch(() => {})
+  res.json(accessList())
+})
+// Take back access an admin gave: the person's session ends unless Microsoft lists them under Zalopay.
+router.delete('/access/grants/:email', (req, res) => {
+  const email = String(req.params.email || '').toLowerCase()
+  db.prepare('DELETE FROM staff_grants WHERE email = ?').run(email)
+  db.prepare('UPDATE users SET staff_ok = 0 WHERE email = ?').run(email)
+  res.json(accessList())
+})
 
 router.use('/reports', adminReportRoutes)
 

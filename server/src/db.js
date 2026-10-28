@@ -262,6 +262,25 @@ CREATE TABLE IF NOT EXISTS use_case_interest (
   PRIMARY KEY (use_case_id, user_id)
 );
 
+-- Sign-in is for Zalopay staff (staffCheck.js). Someone Microsoft doesn't list under Zalopay can ask an
+-- admin for access from the "no access" page; an admin who checks they are Zalopay staff grants it.
+CREATE TABLE IF NOT EXISTS access_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  org_info TEXT,
+  note TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending', -- pending | approved | rejected
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  decided_at TEXT,
+  decided_by INTEGER REFERENCES users(id)
+);
+CREATE TABLE IF NOT EXISTS staff_grants (
+  email TEXT PRIMARY KEY,
+  granted_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Admin invitations to an AI Exhibition booth's owners to write their use case up ("Mời"), for the tracker.
 CREATE TABLE IF NOT EXISTS booth_invites (
   booth_id TEXT NOT NULL,

@@ -13,7 +13,9 @@ import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
 import { companyDomains } from '../auth.js'
-import { orgOf, verdict, saveOrg } from '../staffCheck.js'
+import { orgOf, verdict, saveOrg, accessTicket, readTicket, ACCESS_COOKIE, adminEmails } from '../staffCheck.js'
+import { notify } from '../notifications.js'
+import { appUrl } from '../mentions.js'
 
 const router = express.Router()
 const SSO_COOKIE = 'sso_pending'
@@ -155,7 +157,9 @@ router.get('/sso/callback', async (req, res) => {
     const v = verdict(email, org)
     if (!v.allowed) {
       console.warn('[staff] sign-in refused:', email, org ? JSON.stringify(org) : 'no org info')
-      return res.status(403).send('Zalopay AI Space chỉ dành cho nhân viên Zalopay. Tài khoản Microsoft này không có thông tin thuộc Zalopay. Nếu bạn là nhân viên Zalopay, vui lòng liên hệ Admin.')
+      // The "no access" page can ask the admins for access with this (who Microsoft says they are).
+      res.cookie(ACCESS_COOKIE, accessTicket(email, claims.name || '', org), { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 2 * 3600 * 1000, path: '/api/auth' })
+      return res.redirect('/no-access')
     }
     const user = getOrCreateUser(email)
     saveOrg(user.id, org, v.staff)
@@ -173,6 +177,30 @@ router.get('/sso/callback', async (req, res) => {
     console.error('[sso] callback failed', err)
     res.status(500).send('Đăng nhập SSO thất bại, vui lòng thử lại hoặc dùng đăng nhập bằng mã email.')
   }
+})
+
+// ---- Turned away at sign-in: ask the admins for access ----
+const lastRequest = (email) => db.prepare('SELECT * FROM access_requests WHERE email = ? ORDER BY id DESC LIMIT 1').get(email)
+router.get('/access-request', (req, res) => {
+  const tk = readTicket(req.cookies?.[ACCESS_COOKIE])
+  if (!tk) return res.json({ ticket: false })
+  const last = lastRequest(tk.email)
+  res.json({ ticket: true, email: tk.email, name: tk.name, company: tk.org?.companyName || '', department: tk.org?.department || '', status: last ? last.status : 'none' })
+})
+router.post('/access-request', async (req, res) => {
+  const tk = readTicket(req.cookies?.[ACCESS_COOKIE])
+  if (!tk) return res.status(401).json({ error: 'no_ticket', message: 'Phiên đã hết hạn. Vui lòng bấm Đăng nhập lại rồi gửi yêu cầu.' })
+  const last = lastRequest(tk.email)
+  if (last && last.status === 'pending') return res.json({ status: 'pending' })
+  const note = String(req.body?.note || '').replace(/\r\n/g, '\n').trim().slice(0, 500)
+  db.prepare('INSERT INTO access_requests (email, name, org_info, note) VALUES (?, ?, ?, ?)').run(tk.email, String(tk.name || '').slice(0, 120), tk.org ? JSON.stringify(tk.org) : null, note)
+  const who = tk.name || tk.email
+  const company = tk.org?.companyName ? ` (công ty trên Microsoft: ${tk.org.companyName})` : ' (Microsoft không ghi công ty)'
+  for (const to of adminEmails()) {
+    notify(to, { kind: 'access', text: `${who} xin quyền vào AI Space${company}`, href: '/admin#access', actor: tk.name || '' })
+    sendMail({ to, subject: `Yêu cầu truy cập Zalopay AI Space: ${who}`, text: `${who} <${tk.email}>${company} bị chặn khi đăng nhập và xin quyền truy cập.${note ? `\n\nLời nhắn: ${note}` : ''}\n\nKiểm tra đúng là nhân viên Zalopay rồi duyệt tại: ${appUrl(req)}/admin#access` }).catch(() => {})
+  }
+  res.json({ status: 'pending' })
 })
 
 router.post('/logout', (req, res) => {

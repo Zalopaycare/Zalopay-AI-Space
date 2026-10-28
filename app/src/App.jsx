@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage.jsx'
 import AdminConsolePage from './pages/AdminConsolePage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
 import ChatPage from './pages/ChatPage.jsx'
+import NoAccessPage from './pages/NoAccessPage.jsx'
 
 export default function App() {
   return (
@@ -33,6 +34,8 @@ export default function App() {
               <Route path="/review/:id" element={<RequireAuth><ReviewPage /></RequireAuth>} />
               {/* hidden — no nav link, direct URL only; has its own login + admin-role gate */}
               <Route path="/admin" element={<AdminConsolePage />} />
+              {/* where sign-in sends someone Microsoft doesn't list under Zalopay: ask the admins for access */}
+              <Route path="/no-access" element={<NoAccessPage />} />
             </Routes>
           </PageFade>
           <LoginModal />
