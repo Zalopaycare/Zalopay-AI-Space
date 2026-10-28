@@ -678,7 +678,7 @@ export default function AdminConsolePage() {
             })
             return (
               <div>
-                <Heading title="Booth Exhibition" sub="Use case từ AI Exhibition 2026: Owner (PIC + thành viên booth) tự cập nhật nội dung, Admin duyệt rồi bài thay cho khung &quot;Chưa có thông tin&quot;." />
+                <Heading title="Booth Exhibition" sub="Use case từ AI Exhibition 2026: Owner (PIC + thành viên booth) tự cập nhật nội dung, Admin duyệt rồi bài thay cho khung &quot;Thông tin đang được cập nhật&quot;." />
                 <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                   <Tabs value={boothTab} onChange={setBoothTab} tabs={[['all', 'Tất cả', count('all')], ['not_started', 'Chưa bắt đầu', count('not_started')], ['pending', 'Chờ duyệt', count('pending')], ['changes_requested', 'Cần chỉnh sửa', count('changes_requested')], ['approved', 'Đã đăng', count('approved')]]} />
                   <button onClick={inviteAll} style={css(btn('approve') + 'height:36px; padding:0 14px; margin-left:auto;')}>Mời tất cả booth chưa gửi bài</button>

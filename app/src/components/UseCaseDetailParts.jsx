@@ -49,8 +49,8 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
   const value = 'font-size:12.5px; font-weight:700; line-height:1.45; color:#fff;'
   const diff = DIFF[h.difficulty]
-  // an AI Exhibition booth not written up yet keeps the info row, each fact "Chưa có thông tin"
-  const none = (key, name) => c.pending && <div key={key}>{label(t(name))}<div style={css(value + 'font-weight:600; color:#8fa6d8;')}>{t('Chưa có thông tin')}</div></div>
+  // an AI Exhibition booth not written up yet keeps the info row, each fact "Thông tin đang được cập nhật"
+  const none = (key, name) => c.pending && <div key={key}>{label(t(name))}<div style={css(value + 'font-weight:600; color:#8fa6d8;')}>{t('Thông tin đang được cập nhật')}</div></div>
   const cells = [
     !h.audience && none('aud', 'Ai dùng được'),
     !diff && none('diff', 'Độ khó'),
@@ -170,7 +170,7 @@ export function Images({ images, style }) {
 /** Section number in a glowing circle. */
 /** A part the owner hasn't filled in yet (AI Exhibition booths): one quiet line. */
 export function NoInfo({ t }) {
-  return <div style={css('font-size:13px; color:#94a3b8;')}>{t('Chưa có thông tin')}</div>
+  return <div style={css('font-size:13px; color:#94a3b8;')}>{t('Thông tin đang được cập nhật')}</div>
 }
 
 export function NumBadge({ n, size = 28 }) {

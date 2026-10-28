@@ -178,7 +178,7 @@ html.zp-vt .zp-page-in { animation: none; }
   .zp-info-row > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
-/* "Chưa có thông tin" booth tiles under the library: two per row, one on phones. */
+/* "Thông tin đang được cập nhật" booth tiles under the library: two per row, one on phones. */
 .zp-pending-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 /* "Chat với Admin": one tall panel for a person; inbox list + open conversation side by side for admins. */
 .zp-chat-page { max-width: 1040px; margin: 0 auto; padding: 22px var(--zp-gutter) 22px; box-sizing: border-box; }

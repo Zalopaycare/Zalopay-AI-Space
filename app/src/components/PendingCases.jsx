@@ -6,7 +6,7 @@ import { css } from '../lib/style.js'
 import RichText from './RichText.jsx'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
-// list: name, members, a "Chưa có thông tin" tag and a
+// list: name, members, a "Thông tin đang được cập nhật" tag and a
 // "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
 // A tile opens a popup with the booth's Bài toán and Giải pháp as the exhibition wrote them. Its owners
 // (and admins) get "Bổ sung thông tin" instead of "Quan tâm", straight to the share form.
@@ -124,7 +124,7 @@ export default function PendingCases({ items, t, requireLogin }) {
         <h2 style={css('margin:0; font-size:18px; font-weight:800; letter-spacing:-.2px; color:#fff;')}>{t('Use case từ AI Exhibition 2026')}</h2>
         <span style={css('font-size:12.5px; color:#8fa6d8;')}>{items.length}</span>
       </div>
-      <p style={css('margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Chưa có thông tin chi tiết. Bấm "Quan tâm" để nhắc người làm đăng Use Case lên AI Space.')}</p>
+      <p style={css('margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Thông tin chi tiết đang được cập nhật. Bấm "Quan tâm" để nhắc người làm đăng Use Case lên AI Space.')}</p>
       <div className="zp-pending-grid">
         {items.map((p) => {
           return (
@@ -143,10 +143,10 @@ export default function PendingCases({ items, t, requireLogin }) {
                     <span style={css('font-weight:600; color:#3A4757;')}>Owner:</span> {p.members.join(', ')}
                   </div>
                 )}
-                {/* "Chưa có thông tin" on the left, "Quan tâm" pinned to the bottom-right corner */}
+                {/* "Thông tin đang được cập nhật" on the left, "Quan tâm" pinned to the bottom-right corner */}
                 <div style={css('display:flex; align-items:flex-end; gap:8px; margin-top:auto; padding-top:8px;')}>
                   <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap;')}>
-                    <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
+                    <span style={css(NOINFO_TAG)}>{t('Thông tin đang được cập nhật')}</span>
                   </div>
                   {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
                 </div>
@@ -179,7 +179,7 @@ function BoothPopup({ p, t, busy, onToggle, onClose }) {
         <button onClick={onClose} aria-label={t('Đóng')} style={css('position:absolute; top:14px; right:14px; width:34px; height:34px; border:none; border-radius:50%; background:#F1F4FA; color:#3A4757; font-size:16px; font-weight:800; cursor:pointer;')}>✕</button>
         <div style={css('padding-right:40px;')}>
           <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-            <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
+            <span style={css(NOINFO_TAG)}>{t('Thông tin đang được cập nhật')}</span>
           </div>
           <h2 style={css('margin:8px 0 0; font-size:22px; font-weight:800; line-height:1.3; letter-spacing:-.3px; color:#0F172A; text-wrap:pretty;')}>{p.title}</h2>
           {p.members?.length > 0 && <div style={css('margin-top:6px; font-size:12.5px; line-height:1.5; color:#5B6B82;')}><span style={css('font-weight:700; color:#3A4757;')}>Owner:</span> {p.members.join(', ')}</div>}
@@ -187,11 +187,11 @@ function BoothPopup({ p, t, busy, onToggle, onClose }) {
         <div className="zp-ps2" style={css('margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
           <div style={{ minWidth: 0 }}>
             {head('Bài toán', '#C81E1E')}
-            <div style={css(body)}>{p.problem ? <RichText text={p.problem} /> : t('Chưa có thông tin')}</div>
+            <div style={css(body)}>{p.problem ? <RichText text={p.problem} /> : t('Thông tin đang được cập nhật')}</div>
           </div>
           <div className="zp-ps2-sol" style={{ minWidth: 0 }}>
             {head('Giải pháp', '#00893F')}
-            <div style={css(body)}>{p.solution ? <RichText text={p.solution} /> : t('Chưa có thông tin')}</div>
+            <div style={css(body)}>{p.solution ? <RichText text={p.solution} /> : t('Thông tin đang được cập nhật')}</div>
           </div>
         </div>
         <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid #EEF1F7;')}>

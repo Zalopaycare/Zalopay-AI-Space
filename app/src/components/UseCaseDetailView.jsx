@@ -6,7 +6,7 @@ import { Section, ProblemSolution, ApplySection, BulletList, PlainTable, Images,
 // numbered in the order shown (no "6 → 8" gaps).
 
 /** Which parts have data, their running numbers, and the matching TOC entries. `showEmpty` (an AI
- *  Exhibition booth nobody has written up yet) keeps the main parts, marked "Chưa có thông tin". */
+ *  Exhibition booth nobody has written up yet) keeps the main parts, marked "Thông tin đang được cập nhật". */
 export function detailLayout(tp, t, showEmpty = false) {
   const has = {
     tldr: tp.tldr.length > 0,

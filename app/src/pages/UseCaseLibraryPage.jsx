@@ -478,7 +478,8 @@ export default function UseCaseLibraryPage() {
       levelChipDark: levelChip(cd.level, true),
       overview: c.desc || c.problem,
       canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
-      canEdit: !!user && !!c.authorId && c.authorId === user.id,
+      // the author, or (for a booth's write-up) its owners and admins: the server says so per post
+      canEdit: !!user && (c.canEdit || (!!c.authorId && c.authorId === user.id)),
       // an admin edits a use case already on the site (not a submission) right from its card
       canEditCase: !!user?.isAdmin && !c.submitted && !!(caseDetail[c.id] || {}).tpl,
       statusLabel: statusMeta(c.status).label,
@@ -528,7 +529,7 @@ export default function UseCaseLibraryPage() {
 
   // A filter/search change goes back to page 1 — but not when the change came from the URL itself
   // (first load, Back/Forward), or "?page=2" would never open on page 2.
-  // "Chưa có thông tin" booth tiles follow the search box and Category; they have no tools, topics or
+  // "Thông tin đang được cập nhật" booth tiles follow the search box and Category; they have no tools, topics or
   // kind, so any of those filters hides them.
   const pendingList = (libTool || libTopic || libKind || libGroup) ? [] : pendingCases.filter((p) =>
     (!libCat || p.category === libCat) && (!q || fold([p.title, p.team, p.label, p.category, ...(p.members || [])].join(' ')).includes(q)))
@@ -633,7 +634,7 @@ export default function UseCaseLibraryPage() {
   function renderDetail() {
     // a booth that has been written up and approved now lives at its use case's link
     if (boothDone[id] && !allCases.some((x) => x.id === id)) return <Navigate to={`/use-cases/${encodeURIComponent(boothDone[id])}`} replace />
-    // an AI Exhibition booth (ex6…) opens the same page, its unwritten parts marked "Chưa có thông tin"
+    // an AI Exhibition booth (ex6…) opens the same page, its unwritten parts marked "Thông tin đang được cập nhật"
     const dsel = allCases.find((x) => x.id === id) || pendingCard(id)
     if (!dsel && !pubLoaded) return <div style={css('min-height:60vh; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;')}>Đang tải use case…</div>
     if (!dsel) return (
@@ -885,11 +886,11 @@ export default function UseCaseLibraryPage() {
                               {(c.canEdit || c.canEditCase) && (
                                 <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (c.canEdit) navigate('/use-cases?edit=' + c.id); else openCaseEdit(c) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
-                                  {t('Chỉnh sửa bài đăng')}
+                                  {t('Chỉnh sửa Use Case')}
                                 </button>
                               )}
                               {c.canDelete && (
-                                <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (c.canEdit) setConfirmDeleteId(c.id); else askRemovalReason({ what: 'use case', title: c.title }).then((why) => why && deleteUseCase(c.id, why)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
+                                <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (c.authorId && c.authorId === user?.id) setConfirmDeleteId(c.id); else askRemovalReason({ what: 'use case', title: c.title }).then((why) => why && deleteUseCase(c.id, why)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                                   {t('Xoá bài viết')}
                                 </button>
@@ -1075,7 +1076,7 @@ export default function UseCaseLibraryPage() {
                     const bp = pendingCases.find((x) => x.id === shareBooth)
                     return (
                       <div style={css('margin-bottom:14px; padding:12px 16px; border-radius:14px; background:#EEF3FF; border:1px solid #CFDDFB; font-size:12.5px; line-height:1.55; color:#1E3A7A;')}>
-                        <b>{t('Bạn đang cập nhật use case của booth')} {bp ? `"${bp.title}"` : ''}</b> {t('từ AI Exhibition 2026. Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Chưa có thông tin" của booth.')}
+                        <b>{t('Bạn đang cập nhật use case của booth')} {bp ? `"${bp.title}"` : ''}</b> {t('từ AI Exhibition 2026. Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Thông tin đang được cập nhật" của booth.')}
                       </div>
                     )
                   })()}

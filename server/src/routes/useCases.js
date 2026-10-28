@@ -149,6 +149,14 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   res.status(201).json({ id: cid, authorId: req.user.id, anonymous: !!anon.anonymous, author: anon.anonymous ? who : domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId, files: commentFilesOf('uccomment', cid) })
 })
 
+/** Who may edit a post (the PATCH below): its author, or for a booth's write-up the booth's owners and admins. */
+function canEditSubmission(r, viewer) {
+  if (!viewer) return false
+  if (r.author_id === viewer.id) return true
+  const booth = PENDING_BY_ID.get((parseExtra(r.extra) || {}).booth)
+  return !!booth && (isBoothOwner(booth, viewer.email) || !!viewer.is_admin)
+}
+
 /** A submission as `viewer` may see it (anonymous authors masked; reviewer/account only for admins). */
 export function serializeSubmission(r, viewer) {
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
@@ -167,6 +175,7 @@ export function serializeSubmission(r, viewer) {
     // Only admins learn which admin reviewed it.
     reviewedBy: viewer && viewer.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
     extra: parseExtra(r.extra),
+    canEdit: canEditSubmission(r, viewer),
     coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
   }
 }
@@ -287,8 +296,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(req.params.id)
   if (!row) return res.status(404).json({ error: 'not_found' })
   // a booth's write-up belongs to its whole team: any of the booth's owners may edit it
-  const booth = PENDING_BY_ID.get((parseExtra(row.extra) || {}).booth)
-  if (row.author_id !== req.user.id && !(booth && (isBoothOwner(booth, req.user.email) || req.user.is_admin))) return res.status(403).json({ error: 'not_owner' })
+  if (!canEditSubmission(row, req.user)) return res.status(403).json({ error: 'not_owner' })
   if (!['changes_requested', 'pending', 'approved'].includes(row.review_status)) return res.status(409).json({ error: 'not_editable' })
   // Every edit goes back through review, published ones included: the post leaves the library until an admin approves it again.
   const nextStatus = 'pending'

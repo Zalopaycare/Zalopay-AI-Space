@@ -108,7 +108,7 @@ export function hlList(arr) {
 export const builtinCases = allCases.slice()
 
 // AI Exhibition booths with no write-up yet ({ id, booth, title, team, label, category, interest, mine }),
-// shown as small "Chưa có thông tin" tiles under the library. Arrive with /api/showcase.
+// shown as small "Thông tin đang được cập nhật" tiles under the library. Arrive with /api/showcase.
 export const pendingCases = []
 // booth id → id of the approved use case that replaced it (the booth's link redirects there)
 export const boothDone = {}
@@ -117,7 +117,7 @@ export function registerPending(list, done) {
   for (const k of Object.keys(boothDone)) delete boothDone[k]
   Object.assign(boothDone, done || {})
   // Each booth also opens as a use case page: its Vấn đề / Giải pháp from the exhibition, the rest
-  // "Chưa có thông tin" until the owners write it up.
+  // "Thông tin đang được cập nhật" until the owners write it up.
   for (const p of pendingCases) {
     caseDetail[p.id] = { tpl: { type: 'case', source: 'exhibition', members: p.members || [], ownerTeam: p.team || '', exhibition: { problem: p.problem || '', solution: p.solution || '' } } }
   }
@@ -192,7 +192,7 @@ export function registerPublished(subs) {
     return {
       id: s.id, title: s.title, desc: submissionDesc(s) || firstPara(lines(s.solution).join(' · ') || s.problem), author, team: s.team || '',
       category: [].concat(s.category)[0] || 'Khác', tools: normalizeTools(s.tools), repo: '', repoHref: s.link || '',
-      audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId, coverUrl: s.coverUrl || null,
+      audience: [], publishedAt: s.publishedAt || s.time, submitted: true, authorId: s.authorId, canEdit: !!s.canEdit, coverUrl: s.coverUrl || null,
       anonymous: !!s.anonymous, alias: s.alias || null, realAuthor: s.realAuthor || null,
       byline: teamByline(s),
     }
