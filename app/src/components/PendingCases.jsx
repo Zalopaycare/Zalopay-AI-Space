@@ -15,7 +15,7 @@ import RichText from './RichText.jsx'
 const NOINFO_TAG = 'display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:999px; background:#FFF4E3; border:1px solid #F3DCB4; color:#9A5B00; font-size:11px; font-weight:700; white-space:nowrap;'
 
 function Star({ on }) {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill={on ? '#F59E0B' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"></path></svg>
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"></path></svg>
 }
 
 // Where "Bổ sung thông tin" takes a booth's owner: the share form pre-filled from the exhibition, the
@@ -45,7 +45,7 @@ function InterestButton({ p, busy, onToggle, t }) {
       onClick={(e) => { e.stopPropagation(); onToggle(p) }}
       aria-pressed={!!p.mine}
       title={t('Nhắc người làm đăng Use Case này')}
-      style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid ${p.mine ? '#F3C98B' : '#DDE3EC'}; background:${p.mine ? '#FFF4E3' : '#fff'}; color:${p.mine ? '#B45300' : '#3A4757'}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; font-variant-numeric:tabular-nums; opacity:${busy ? 0.6 : 1};`)}
+      style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid ${p.mine ? '#9FB6F5' : 'transparent'}; background:${p.mine ? '#EEF3FF' : 'linear-gradient(180deg,#4480ff 0%,#2c5fff 100%)'}; color:${p.mine ? '#2c5fff' : '#fff'}; box-shadow:${p.mine ? 'none' : '0 6px 16px rgba(44,95,255,.35)'}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; font-variant-numeric:tabular-nums; opacity:${busy ? 0.6 : 1};`)}
     >
       <Star on={p.mine} />
       {t('Quan tâm')}{p.interest > 0 ? ` · ${p.interest}` : ''}

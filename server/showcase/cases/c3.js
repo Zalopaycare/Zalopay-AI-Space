@@ -109,10 +109,7 @@ export default {
       'AI (hỏi đáp): gõ câu hỏi về quyền, cách cấu hình; AI trả lời từng bước kèm link nguồn và ảnh, không chắc thì hỏi lại.',
       'Bạn kiểm tra: đối chiếu kết quả với nhu cầu, tự sửa và lưu. Trợ lý chỉ đọc, không tự lưu hay áp dụng cấu hình.',
     ],
-    images: [
-      { src: '/use-cases/c3/segment-summarize.png', caption: 'Màn hình cấu hình nhóm khách hàng: bấm "Summarize" trong CRM Assistant để tóm tắt điều kiện.' },
-      { src: '/use-cases/c3/reward-analyze.png', caption: 'Màn hình cấu hình ưu đãi voucher: bấm "Analyze" để phân tích và nhận đề xuất.' },
-    ],
+    images: [],
   },
 
   result: {
@@ -169,7 +166,7 @@ export default {
       {
         title: 'Mở CRM tool',
         blocks: [
-          { type: 'text', text: 'Mở CRM tool. Ở màn hình chính có khung chat CRM Assistant để hỏi về cách dùng (quyền, cách cấu hình…).' },
+          { type: 'text', text: 'Mở CRM tool (link: [cần bổ sung]). Ở màn hình chính có khung chat CRM Assistant để hỏi về cách dùng (quyền, cách cấu hình…).' },
         ],
       },
       {
@@ -182,20 +179,22 @@ export default {
       {
         title: 'Bấm Summarize hoặc Analyze',
         blocks: [
-          { type: 'text', text: 'Nhóm khách hàng: bấm "Summarize" để nhận đoạn tóm tắt điều kiện. Ưu đãi: bấm "Analyze" để nhận phân tích và đề xuất.' },
-          { type: 'note', tone: 'info', title: 'Video demo', text: 'Tài liệu gốc có video "[Demo] Chatbot Config + Segment Explain + Reward Config Validation.mov" quay trên môi trường SBQC (bản sao lúc 31/07/2026 15:00).' },
+          { type: 'text', text: 'Nhóm khách hàng: bấm "Summarize", AI viết lại toàn bộ điều kiện thành đoạn tiếng Việt dễ đọc để bạn so với nhu cầu thật.' },
+          { type: 'image', src: '/use-cases/c3/segment-summarize.png', caption: 'Màn hình cấu hình nhóm khách hàng: bấm "Summarize" trong CRM Assistant để tóm tắt điều kiện.' },
+          { type: 'text', text: 'Ưu đãi voucher: bấm "Analyze", AI tóm tắt cách giảm giá, điều kiện áp dụng và báo chỗ lệch với điều khoản (T&C), kèm đề xuất.' },
+          { type: 'image', src: '/use-cases/c3/reward-analyze.png', caption: 'Màn hình cấu hình ưu đãi voucher: bấm "Analyze" để phân tích và nhận đề xuất.' },
         ],
       },
       {
         title: 'Đối chiếu kết quả, tự sửa rồi lưu',
         blocks: [
-          { type: 'text', text: 'Đọc kết quả, so với nhu cầu thật và điều khoản chương trình. Thấy lệch thì tự sửa rồi lưu.' },
+          { type: 'text', text: 'Đọc kết quả, so với nhu cầu thật và điều khoản chương trình. Thấy lệch thì tự sửa rồi lưu. Trợ lý chỉ đọc, không tự lưu hay áp dụng cấu hình.' },
         ],
       },
       {
         title: 'Hỏi thêm CRM Assistant',
         blocks: [
-          { type: 'text', text: 'Có câu hỏi khác thì gõ vào ô "Ask a question...", hoặc bấm một câu hỏi gợi ý có sẵn.' },
+          { type: 'text', text: 'Có câu hỏi khác thì gõ vào ô "Ask a question...", hoặc bấm một câu hỏi gợi ý có sẵn. AI trả lời từng bước kèm link nguồn và ảnh, không chắc thì hỏi lại.' },
           { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Tôi có thể hỏi bạn những gì?' },
           { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Cách xin quyền vào CRM?' },
           { type: 'prompt', label: 'Câu hỏi gợi ý có sẵn trong CRM Assistant', text: 'Không thấy nút Add New trong Merchant Code thì làm sao?' },
