@@ -17,7 +17,8 @@ export function getOidcConfig() {
   return configPromise
 }
 
-export const SSO_SCOPE_BASE = 'openid profile email offline_access'
+// User.Read: the person's own profile (company, department…), checked at sign-in (staffCheck.js).
+export const SSO_SCOPE_BASE = 'openid profile email offline_access User.Read'
 // Delegated Graph permission the tenant admin consented to, used by the @mention directory search.
 // Set GRAPH_DELEGATED_SCOPE= (empty) to sign in without it.
 export const GRAPH_DELEGATED_SCOPE = process.env.GRAPH_DELEGATED_SCOPE ?? 'https://graph.microsoft.com/User.Read.All'

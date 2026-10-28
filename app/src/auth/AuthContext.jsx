@@ -9,10 +9,11 @@ export function AuthProvider({ children }) {
   const [loginOpen, setLoginOpen] = useState(false)
   const [afterLogin, setAfterLogin] = useState(null)
   const [ssoEnabled, setSsoEnabled] = useState(false)
+  const [emailLogin, setEmailLogin] = useState(true) // off on the live site: Microsoft sign-in only
 
   useEffect(() => {
     api.me().then((d) => setUser(d.user)).catch(() => setUser(null)).finally(() => setLoading(false))
-    api.config().then((d) => setSsoEnabled(!!d.ssoEnabled)).catch(() => {})
+    api.config().then((d) => { setSsoEnabled(!!d.ssoEnabled); setEmailLogin(d.emailLogin !== false) }).catch(() => {})
   }, [])
 
   // With SSO configured, "Đăng nhập" goes straight to Microsoft; the email-code modal only
@@ -47,7 +48,7 @@ export function AuthProvider({ children }) {
   }, [user, openLogin])
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, loginOpen, openLogin, closeLogin, onLoggedIn, logout, requireLogin, ssoEnabled }}>
+    <AuthContext.Provider value={{ user, setUser, loading, loginOpen, openLogin, closeLogin, onLoggedIn, logout, requireLogin, ssoEnabled, emailLogin }}>
       {children}
     </AuthContext.Provider>
   )

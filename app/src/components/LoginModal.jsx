@@ -5,7 +5,7 @@ import { api } from '../lib/api.js'
 import { useDialog } from '../hooks/useDialog.js'
 
 export default function LoginModal() {
-  const { loginOpen, closeLogin, onLoggedIn, ssoEnabled } = useAuth()
+  const { loginOpen, closeLogin, onLoggedIn, ssoEnabled, emailLogin } = useAuth()
   const [stage, setStage] = useState('email') // 'email' | 'code'
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -60,15 +60,15 @@ export default function LoginModal() {
               <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
               Đăng nhập bằng tài khoản công ty (Microsoft)
             </a>
-            <div style={css('display:flex; align-items:center; gap:10px; margin-top:16px;')}>
+            {emailLogin && <div style={css('display:flex; align-items:center; gap:10px; margin-top:16px;')}>
               <div style={css('flex:1; height:1px; background:#E6EBF3;')}></div>
               <span style={css('font:600 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>hoặc</span>
               <div style={css('flex:1; height:1px; background:#E6EBF3;')}></div>
-            </div>
+            </div>}
           </>
         )}
 
-        {stage === 'email' && (
+        {stage === 'email' && emailLogin && (
           <form onSubmit={submitEmail} style={css('margin-top:18px; display:flex; flex-direction:column; gap:12px;')}>
             <input
               type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}

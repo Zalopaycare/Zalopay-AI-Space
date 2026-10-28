@@ -1,6 +1,7 @@
 import { colorOf, avatarUrlOf } from './avatarColors.js'
 import { touch } from './presence.js'
 import jwt from 'jsonwebtoken'
+import { sessionAllowed } from './staffCheck.js'
 import crypto from 'node:crypto'
 import { db } from './db.js'
 import { domainName, initialsOf } from './mentions.js'
@@ -87,7 +88,7 @@ export function currentUser(req) {
     const payload = jwt.verify(token, JWT_SECRET)
     if (db.prepare('SELECT 1 FROM revoked_sessions WHERE jti = ?').get(tokenKey(token))) return null
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(payload.uid)
-    return user && !isAliasEmail(user.email) ? user : null
+    return user && !isAliasEmail(user.email) && sessionAllowed(user) ? user : null
   } catch {
     return null
   }

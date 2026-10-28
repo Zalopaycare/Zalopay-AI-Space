@@ -13,9 +13,14 @@ import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
 import { companyDomains } from '../auth.js'
+import { orgOf, verdict, saveOrg } from '../staffCheck.js'
 
 const router = express.Router()
 const SSO_COOKIE = 'sso_pending'
+// With Microsoft sign-in set up, that's the only way in: an emailed code says nothing about which
+// VNG company the person works for (see staffCheck.js). ALLOW_EMAIL_LOGIN=true keeps codes on.
+const emailLoginOn = () => !ssoConfigured || process.env.ALLOW_EMAIL_LOGIN === 'true'
+const SSO_ONLY = { error: 'sso_only', message: 'Vui lòng đăng nhập bằng tài khoản Microsoft của công ty.' }
 
 function genCode() {
   return String(crypto.randomInt(100000, 1000000))
@@ -26,6 +31,7 @@ const RESEND_GAP_SEC = 60 // at most one new code per minute…
 const MAX_CODES_PER_HOUR = 5 // …and five per hour, per email
 
 router.post('/request-code', async (req, res) => {
+  if (!emailLoginOn()) return res.status(403).json(SSO_ONLY)
   const email = normalizeEmail(req.body?.email)
   if (!isCompanyEmail(email)) {
     return res.status(400).json({ error: 'invalid_email', message: 'Vui lòng dùng email công ty.' })
@@ -57,6 +63,7 @@ router.post('/request-code', async (req, res) => {
 })
 
 router.post('/verify-code', (req, res) => {
+  if (!emailLoginOn()) return res.status(403).json(SSO_ONLY)
   const email = normalizeEmail(req.body?.email)
   const code = String(req.body?.code || '').trim()
   if (!isCompanyEmail(email) || !code) return res.status(400).json({ error: 'invalid_input' })
@@ -85,7 +92,7 @@ router.post('/verify-code', (req, res) => {
 })
 
 router.get('/config', (req, res) => {
-  res.json({ ssoEnabled: ssoConfigured })
+  res.json({ ssoEnabled: ssoConfigured, emailLogin: emailLoginOn() })
 })
 
 router.get('/sso/login', async (req, res) => {
@@ -143,23 +150,23 @@ router.get('/sso/callback', async (req, res) => {
     if (!isCompanyEmail(email)) {
       return res.status(403).send('Tài khoản Microsoft này không thuộc domain công ty được phép.')
     }
+    // Only ZaloPay staff: Microsoft's organisation fields decide (staffCheck.js), before any account is made.
+    const org = await orgOf(tokens.access_token)
+    const v = verdict(email, org)
+    if (!v.allowed) {
+      console.warn('[staff] sign-in refused:', email, org ? JSON.stringify(org) : 'no org info')
+      return res.status(403).send('Zalopay AI Space chỉ dành cho nhân viên ZaloPay. Tài khoản Microsoft này không có thông tin thuộc ZaloPay. Nếu bạn là nhân viên ZaloPay, vui lòng liên hệ Admin.')
+    }
     const user = getOrCreateUser(email)
+    saveOrg(user.id, org, v.staff)
     // Name and department always come from Microsoft (people can't edit them, so nobody can pose as someone else).
     if (claims.name && user.name !== claims.name) {
       db.prepare('UPDATE users SET name = ? WHERE id = ?').run(claims.name, user.id)
     }
-    if (graph) {
-      saveGraphTokens(user.id, tokens)
-      // Department for the admin "by team" stats; best effort, never blocks sign-in.
-      try {
-        const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=department,jobTitle', { headers: { authorization: `Bearer ${tokens.access_token}` } })
-        if (r.ok) {
-          const me = await r.json()
-          const team = String(me.department || '').trim().slice(0, 120)
-          if (team) db.prepare('UPDATE users SET team = ? WHERE id = ?').run(team, user.id)
-        }
-      } catch { /* ignore */ }
-    }
+    // Department for the admin "by team" stats.
+    const team = String(org?.department || '').trim().slice(0, 120)
+    if (team) db.prepare('UPDATE users SET team = ? WHERE id = ?').run(team, user.id)
+    if (graph) saveGraphTokens(user.id, tokens)
     issueSession(res, db.prepare('SELECT * FROM users WHERE id = ?').get(user.id))
     res.redirect(typeof next === 'string' && /^\/(?![\/\\])/.test(next) ? next : '/')
   } catch (err) {
