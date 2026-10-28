@@ -446,11 +446,29 @@ function StepJourney({ sections, t }) {
 export function ApplySection({ id, a, t, num = '5' }) {
   const parts = []
   const links = a.links || []
+  // A repo or file given by name only (no link) can't be opened: it says what it is and who to ask.
+  const linked = links.filter((l) => safeHref(l.href)), named = links.filter((l) => !safeHref(l.href))
   if (links.length) parts.push(
-    <div key="links" style={css('display:flex; flex-wrap:wrap; gap:8px;')}>
-      {links.map((l, i) => safeHref(l.href)
-        ? <a key={i} href={safeHref(l.href)} target="_blank" rel="noopener" className={hoverClass('background:#E7ECFB !important;')} style={css('display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:999px; background:#F1F4FC; border:1px solid #D7E0F7; color:#2c5fff; font-size:12px; font-weight:700; text-decoration:none;')}>{l.kind === 'repo' ? `${t('Repo')} · ${l.label}` : t(l.label)} ↗</a>
-        : <span key={i} style={css('display:inline-flex; align-items:center; height:32px; padding:0 13px; border-radius:999px; background:#F7F8FB; border:1px solid #E3E8F2; color:#3A4757; font-size:12px; font-weight:600;')}>{l.kind === 'repo' ? `${t('Repo')}: ${l.label}` : l.label}</span>)}
+    <div key="links" style={css('display:flex; flex-direction:column; gap:8px;')}>
+      {linked.length > 0 && (
+        <div style={css('display:flex; flex-wrap:wrap; gap:8px;')}>
+          {linked.map((l, i) => (<a key={i} href={safeHref(l.href)} target="_blank" rel="noopener" className={hoverClass('background:#E7ECFB !important;')} style={css('display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:999px; background:#F1F4FC; border:1px solid #D7E0F7; color:#2c5fff; font-size:12px; font-weight:700; text-decoration:none;')}>{l.kind === 'repo' ? `${t('Repo')} · ${l.label}` : t(l.label)} ↗</a>))}
+        </div>
+      )}
+      {named.map((l, i) => {
+        const file = /\.(zip|tar|tgz|gz|rar|7z)$/i.test(l.label.trim())
+        return (
+          <div key={'n' + i} style={css('display:flex; gap:10px; align-items:flex-start; padding:10px 13px; border-radius:12px; background:#F5F8FF; border:1px solid #DCE5FA;')}>
+            <span aria-hidden="true" style={css('flex:none; width:26px; height:26px; border-radius:8px; background:#E4ECFF; color:#2c5fff; display:flex; align-items:center; justify-content:center;')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{file ? <><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></> : <><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></>}</svg>
+            </span>
+            <div style={css('flex:1; min-width:0; font-size:12.5px; line-height:1.55; color:#475569;')}>
+              <div><b style={css('color:#1D3A8F;')}>{file ? t('File cài') : t('Repo')}:</b> <span style={css('font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:#0F172A; overflow-wrap:anywhere;')}>{l.label}</span></div>
+              <div>{file ? t('File cài bộ skill của use case. Chưa có link tải: nhắn Owner để xin file.') : t('Nơi lưu code / bộ skill của use case. Chưa có link: nhắn Owner để được cấp quyền truy cập.')}</div>
+            </div>
+          </div>
+        )
+      })}
     </div>,
   )
   if (a.intro) parts.push(<p key="intro" style={css('margin:0; font-size:13.5px; line-height:1.55; color:#1E293B;')}><Fill text={a.intro} /></p>)
