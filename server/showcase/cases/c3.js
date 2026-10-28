@@ -23,7 +23,7 @@ export default {
   ownerName: 'Kiệt. Tô Thế (8), Hoàng. Nguyễn Việt (6), Thắng. Hoàng Mạnh (3), Trọng. Dương Đức (2)',
   ownerTeam: '[cần bổ sung]',
   updated: '',
-  cover: '/use-cases/c3/segment-summarize.png',
+  cover: '',
   stats: [],
 
   tldr: [

@@ -22,7 +22,7 @@ export default {
   ownerName: 'Nghĩa. Trần Gia',
   ownerTeam: 'Security (AppSec)',
   updated: '',
-  cover: '/use-cases/c7/demo-web.png',
+  cover: '',
   stats: [
     { value: '~4–5 phút', extra: '', label: 'thay vì 0,5–2 ngày chuẩn bị (đo thật, 1 ticket)' },
     { value: '1 trang', extra: '', label: 'thay vì 5 trang Confluence + 27 file đính kèm' },

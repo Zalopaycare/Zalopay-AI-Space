@@ -23,7 +23,7 @@ export default {
   ownerName: 'Luân. Nguyễn Anh',
   ownerTeam: 'MS',
   updated: '',
-  cover: '/use-cases/c5/human-score-ai.png',
+  cover: '',
   stats: [
     { value: '6%', extra: '', label: 'human score của bài AI, bằng bài Agency đang live (6%) — đo trên 1–2 bài mẫu đầu' },
   ],

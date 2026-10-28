@@ -23,7 +23,7 @@ export default {
   ownerName: 'AnhTVH',
   ownerTeam: 'Utility Solutions (US)',
   updated: '',
-  cover: '/use-cases/c2/cover.jpg',
+  cover: '',
   stats: [],
 
   tldr: [

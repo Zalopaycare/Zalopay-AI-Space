@@ -26,7 +26,7 @@ export default {
   ownerName: 'HienVT3, PhuNN4',
   ownerTeam: 'Platform',
   updated: '05/08/2026',
-  cover: P + 'uc1-sonar-plugin.png',
+  cover: '',
   stats: [
     { value: '10', extra: '', label: '{{tình huống thật đã chạy trên Teams, mỗi tình huống có kết luận}}' },
     { value: '6', extra: 'hệ thống', label: 'bot tự tra thay bạn: Jira, Jenkins, CSM, SonarQube, ArgoCD/Kubernetes, GitLab' },
