@@ -47,20 +47,7 @@ export default {
       'Vì sao cần làm ngay: số trợ lý, kết nối và quy trình càng tăng thì gộp lại về sau càng khó và tốn kém.',
       'Tốn bao nhiêu: [cần bổ sung] (bài gốc không có số).',
     ],
-    tables: [
-      {
-        title: 'Vấn đề đang gặp',
-        note: '',
-        cols: ['Vấn đề', 'Hệ quả'],
-        rows: [
-          ['Phân mảnh tri thức', 'Quy trình và kinh nghiệm tồn tại dưới nhiều phiên bản khác nhau.'],
-          ['Khó kiểm soát thay đổi', 'Mỗi lần cập nhật phải làm thủ công trên từng môi trường.'],
-          ['Quy trình dễ lệch chuẩn', 'Cùng một yêu cầu nhưng cách làm và chất lượng đầu ra có thể khác nhau.'],
-          ['Khó kế thừa', 'Thành viên mới phải tự thiết lập và học lại những kinh nghiệm đã có.'],
-          ['Khó mở rộng', 'Một cải tiến của cá nhân chưa thể nhanh chóng thành năng lực chung của team.'],
-        ],
-      },
-    ],
+    tables: [],
     images: [],
   },
 

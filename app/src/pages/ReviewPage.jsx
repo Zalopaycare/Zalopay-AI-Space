@@ -369,7 +369,7 @@ export default function ReviewPage() {
                     {shown.map((b) => (
                       <div key={b.key} data-field={b.key} style={css('margin-top:14px; padding:0 4px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <h3 style={css('flex:1; margin:0;' + f(800, 14) + ';color:#1D3A8F;')}>{b.label}</h3>
+                          <h3 style={css('flex:1; margin:0;' + f(800, 14) + ';color:#2c5fff;')}>{b.label}</h3>
                           {countBadge(b.key)}{addBtn(b.key)}
                         </div>
                         {b.steps ? stepsOf(b) : textOf(b.key, b.value, b.mono)}

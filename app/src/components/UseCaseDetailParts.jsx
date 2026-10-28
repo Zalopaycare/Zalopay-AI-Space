@@ -18,7 +18,7 @@ const CARD = 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; 
 // Heading scale on a use case page: part titles outside the cards (20px white) > SUB, the headings
 // inside a card (Bài toán, Giải pháp, Cần chuẩn bị, Các bước…; 16px deep blue) > SUB2, what sits under
 // those (Số liệu & hình ảnh, table titles, a step's name; 14px near-black) > body text (13px).
-const SUB = 'font-size:16px; font-weight:800; letter-spacing:-.2px; color:#1D3A8F; margin-bottom:10px;'
+const SUB = 'font-size:16px; font-weight:800; letter-spacing:-.2px; color:#2c5fff; margin-bottom:10px;'
 const SUB2 = 'font-size:14px; font-weight:800; color:#0F172A; margin-bottom:8px;'
 const DIFF = { 'Dễ': ['#4ADE80', 1], 'Trung bình': ['#FBBF24', 2], 'Khó': ['#F87171', 3] }
 
@@ -463,7 +463,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{file ? <><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></> : <><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></>}</svg>
             </span>
             <div style={css('flex:1; min-width:0; font-size:12.5px; line-height:1.55; color:#475569;')}>
-              <div><b style={css('color:#1D3A8F;')}>{file ? t('File cài') : t('Repo')}:</b> <span style={css('font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:#0F172A; overflow-wrap:anywhere;')}>{l.label}</span></div>
+              <div><b style={css('color:#2c5fff;')}>{file ? t('File cài') : t('Repo')}:</b> <span style={css('font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:#0F172A; overflow-wrap:anywhere;')}>{l.label}</span></div>
               <div>{file ? t('File cài bộ skill của use case. Chưa có link tải: nhắn Owner để xin file.') : t('Nơi lưu code / bộ skill của use case. Chưa có link: nhắn Owner để được cấp quyền truy cập.')}</div>
             </div>
           </div>
