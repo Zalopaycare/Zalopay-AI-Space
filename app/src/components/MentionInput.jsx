@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import MentionField, { expandMentions } from './MentionField.jsx'
+import { avatarPhotoCss } from './Avatar.jsx'
 import { api } from '../lib/api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useI18n } from '../i18n/I18nContext.jsx'
