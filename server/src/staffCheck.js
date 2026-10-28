@@ -2,9 +2,11 @@ import { db } from './db.js'
 
 // Only Zalopay staff may use the site, but every VNG company signs in with the same @vng.com.vn
 // Microsoft accounts. So at the SSO callback we read the person's organisation fields from Microsoft
-// (Graph /me) and let them in only when one of them matches STAFF_MATCH (a case-insensitive regex,
-// e.g. "zalopay|^PY\b"). Until STAFF_MATCH is set nobody is blocked: the fields are only recorded,
-// so an admin can see what Microsoft returns before switching the check on.
+// (Graph /me) and let them in only when their company (companyName: Zalopay's is "Zion") matches
+// STAFF_MATCH, a case-insensitive regex such as "^(zion|zalopay)\b". Only the company counts: the
+// AD path and office are the same for every VNG company, and a department or name could contain the
+// word by chance. Until STAFF_MATCH is set nobody is blocked: the fields are only recorded, so an
+// admin can see what Microsoft returns before switching the check on.
 // ADMIN_EMAILS and STAFF_EXTRA_EMAILS always pass (so a wrong pattern can't lock the admins out).
 
 const ORG_FIELDS = ['companyName', 'department', 'officeLocation', 'jobTitle', 'onPremisesDistinguishedName']
@@ -15,7 +17,7 @@ let pattern = null
 try { if (process.env.STAFF_MATCH) pattern = new RegExp(process.env.STAFF_MATCH, 'i') } catch (e) { console.error('[staff] STAFF_MATCH is not a valid regex:', e.message) }
 // A pattern that doesn't compile keeps the check on and lets nobody through but ALWAYS.
 export const staffCheckOn = () => !!process.env.STAFF_MATCH
-const matches = (org) => !!pattern && ORG_FIELDS.some((k) => org[k] && pattern.test(String(org[k])))
+const matches = (org) => !!pattern && !!org.companyName && pattern.test(String(org.companyName).trim())
 
 /** The signed-in person's organisation fields from Microsoft, or null when Graph can't be read. */
 export async function orgOf(accessToken) {
