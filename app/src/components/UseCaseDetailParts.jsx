@@ -43,7 +43,9 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
 
 /** Title block on the dark hero: title, "Owner" line and one-line summary beside the cover, and one
  *  horizontal info row. */
-export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
+export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
+  // "Phù hợp với bạn nếu" takes the place of "Ai dùng được" when the use case has it
+  const hasFit = !!fit && (fit.yes.length > 0 || fit.no.length > 0)
   const [coverBusy, setCoverBusy] = useState(false)
   const [coverErr, setCoverErr] = useState('')
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
@@ -52,10 +54,10 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
   // an AI Exhibition booth not written up yet keeps the info row, each fact "Thông tin đang được cập nhật"
   const none = (key, name) => c.pending && <div key={key}>{label(t(name))}<div style={css(value + 'font-weight:600; color:#8fa6d8;')}>{t('Thông tin đang được cập nhật')}</div></div>
   const cells = [
-    !h.audience && none('aud', 'Ai dùng được'),
+    !h.audience && !hasFit && none('aud', 'Ai dùng được'),
     !diff && none('diff', 'Độ khó'),
     !h.tools.length && none('tools', 'Công cụ AI'),
-    h.audience && <div key="aud">{label(t('Ai dùng được'))}<div style={css(value + 'font-weight:600;')}><Fill text={h.audience} /></div></div>,
+    h.audience && !hasFit && <div key="aud">{label(t('Ai dùng được'))}<div style={css(value + 'font-weight:600;')}><Fill text={h.audience} /></div></div>,
     diff && (
       <div key="diff">
         {label(t('Độ khó'))}
@@ -124,6 +126,7 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
       {/* One overview box: the info row, then the 30-second summary (part 1) right under it. */}
       <div id="uc-overview" className="zp-overview" style={{ marginTop: 22 }}>
         {cells.length > 0 && <div className="zp-info-row" style={{ '--zp-cells': Math.max(1, cells.length) }}>{cells}</div>}
+        {hasFit && <FitBoxes fit={fit} t={t} style={{ marginTop: cells.length ? 12 : 0 }} />}
         {tldr.length > 0 && (
           <div id="uc-tldr" className="zp-overview-tldr">
             {tldr.map(([k, v]) => (
@@ -136,6 +139,17 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
         )}
       </div>
     </>
+  )
+}
+
+/** "Phù hợp với bạn nếu" (green) | "Chưa phù hợp nếu": who should use it, in the overview box. */
+export function FitBoxes({ fit, t, style }) {
+  if (!fit || (!fit.yes.length && !fit.no.length)) return null
+  return (
+    <div className="zp-fit" style={style}>
+      {fit.yes.length > 0 && <div style={css('padding:14px 16px; border-radius:14px; background:#F2FBF6; border:1px solid #CFEEDE;')}><div style={css(SUB + 'color:#00723C;')}>✓ {t('Phù hợp với bạn nếu')}</div><BulletList items={fit.yes} dot="#00A352" /></div>}
+      {fit.no.length > 0 && <div style={css('padding:14px 16px; border-radius:14px; background:#F7F8FB; border:1px solid #E3E8F2;')}><div style={css(SUB + 'color:#5B6675;')}>{t('Chưa phù hợp nếu')}</div><BulletList items={fit.no} dot="#94a3b8" /></div>}
+    </div>
   )
 }
 
@@ -472,12 +486,6 @@ export function ApplySection({ id, a, t, num = '5' }) {
     </div>,
   )
   if (a.intro) parts.push(<p key="intro" style={css('margin:0; font-size:13.5px; line-height:1.55; color:#1E293B;')}><Fill text={a.intro} /></p>)
-  if (a.fit.yes.length || a.fit.no.length) parts.push(
-    <div key="fit" className="zp-fit">
-      {a.fit.yes.length > 0 && <div style={css('padding:14px 16px; border-radius:14px; background:#F2FBF6; border:1px solid #CFEEDE;')}><div style={css(SUB + 'color:#00723C;')}>✓ {t('Phù hợp với bạn nếu')}</div><BulletList items={a.fit.yes} dot="#00A352" /></div>}
-      {a.fit.no.length > 0 && <div style={css('padding:14px 16px; border-radius:14px; background:#F7F8FB; border:1px solid #E3E8F2;')}><div style={css(SUB + 'color:#5B6675;')}>{t('Chưa phù hợp nếu')}</div><BulletList items={a.fit.no} dot="#94a3b8" /></div>}
-    </div>,
-  )
   if (a.prep.length) parts.push(
     <div key="prep">
       <PrepChecklist id={id} items={a.prep} t={t} />

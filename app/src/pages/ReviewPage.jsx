@@ -33,6 +33,8 @@ function partsOf(s) {
     { step: 0, title: 'Overview', blocks: [
       block('oneLine', 'Mô tả 1 câu', ex.oneLine, { required: true }),
       block('audience', 'Ai dùng được', s.audience, { required: true }),
+      block('fitYes', 'Phù hợp với bạn nếu', ex.fitYes),
+      block('fitNo', 'Chưa phù hợp nếu', ex.fitNo),
       block('members', 'Thành viên cùng làm', (ex.members || []).join(', ')),
       block('team', 'Team', s.team),
     ] },
@@ -44,8 +46,6 @@ function partsOf(s) {
     ] },
     { step: 2, title: 'Tự áp dụng', blocks: [
       block('link', 'Link tài liệu / repo', s.link),
-      block('fitYes', 'Phù hợp với bạn nếu', ex.fitYes),
-      block('fitNo', 'Chưa phù hợp nếu', ex.fitNo),
       block('prep', 'Cần chuẩn bị gì', s.prep, { required: true }),
       (ex.steps || []).length ? { key: 'steps', label: 'Các bước', steps: ex.steps, value: ex.steps.map((x) => [x.title, x.text, x.prompt, x.note].join('\n')).join('\n') } : block('prompt', 'Prompt / quy trình', s.prompt, { mono: true }),
       block('success', 'Kết quả bạn sẽ thấy', ex.success),

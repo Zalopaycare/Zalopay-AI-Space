@@ -61,7 +61,7 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả, Ai dùng được, Độ khó, Công cụ AI' },
+  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả, Ai dùng được, Phù hợp với bạn nếu, Độ khó, Công cụ AI' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
@@ -574,8 +574,8 @@ export default function UseCaseLibraryPage() {
     ['result', 'Số liệu & hình ảnh', 'Optional', 'Số đo trước / sau nếu có. Mỗi dòng một ý. Chưa đo thì để trống.', '', 'area', 3, 'ps',
       'Chuẩn bị pentest: từ 0,5–2 ngày xuống khoảng 5 phút\n17/25 ticket gần nhất chỉ đưa link, trung bình 2–3 link'],
     ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file cài để người khác tự xem.', 'https://...', 'input', 0, 'apply', 'https://gitlab.zalopay.vn/…/secreq-bot'],
-    ['fitYes', 'Phù hợp với bạn nếu', 'Optional', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'apply', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
-    ['fitNo', 'Chưa phù hợp nếu', 'Optional', 'Mỗi dòng một trường hợp chưa nên dùng.', '', 'area', 2, 'apply', 'Tính năng có thanh toán.\nBạn cần đưa lên chạy thật (production).'],
+    ['fitYes', 'Phù hợp với bạn nếu', 'Optional', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'intro', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
+    ['fitNo', 'Chưa phù hợp nếu', 'Optional', 'Mỗi dòng một trường hợp chưa nên dùng.', '', 'area', 2, 'intro', 'Tính năng có thanh toán.\nBạn cần đưa lên chạy thật (production).'],
     ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', '', 'area', 3, 'apply', 'Tài khoản O365 để đăng nhập MCP Platform.\nQuyền owner/co-owner của tài nguyên trên Gear.\nMột AI có hỗ trợ kết nối MCP (ví dụ Codex).'],
     ['success', 'Kết quả bạn sẽ thấy', 'Optional', 'Làm xong các bước thì người đọc thấy gì, để họ biết mình đã làm đúng. Mỗi dòng một ý.', '', 'area', 2, 'apply2', 'AI trả về trang tóm tắt có lệnh curl cho từng API, dòng nào cũng có link nguồn.\nTrong bảng MCP keys, khoá của bạn có trạng thái "Active".'],
     ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', '', 'area', 3, 'apply2', 'Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.\nMất khoá sau khi đóng màn hình → tạo khoá mới trong mục "MCP keys".'],
@@ -687,6 +687,7 @@ export default function UseCaseLibraryPage() {
             <div style={{ minWidth: 0 }}>
               <DetailHero
                 tldr={tp.tldr}
+                fit={tp.apply.fit}
                 t={t}
                 c={dsel}
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
@@ -1020,7 +1021,7 @@ export default function UseCaseLibraryPage() {
                     {t('Xem trước: đây đúng là trang chi tiết người đọc sẽ thấy sau khi bài được duyệt.')}
                   </div>
                   <div className="zp-detail-wrap" style={css('margin-top:16px; border-radius:20px; overflow:hidden; background:#07070c; color:#fff; padding:22px 22px 30px;')}>
-                    <DetailHero tldr={pv.tp.tldr} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} />
+                    <DetailHero tldr={pv.tp.tldr} fit={pv.tp.apply.fit} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
                   {!teamPost && (
