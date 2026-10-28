@@ -45,7 +45,7 @@ export function BulletList({ items, dot = '#9FB6E8', color = '#3A4757', numbered
  *  horizontal info row. */
 export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
   // "Phù hợp với bạn nếu" takes the place of "Ai dùng được" when the use case has it
-  const hasFit = !!fit && (fit.yes.length > 0 || fit.no.length > 0)
+  const hasFit = !!fit && fit.yes.length > 0
   const [coverBusy, setCoverBusy] = useState(false)
   const [coverErr, setCoverErr] = useState('')
   const label = (text) => <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#8fa6d8; margin-bottom:6px;')}>{text}</div>
@@ -126,7 +126,12 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
       {/* One overview box: the info row, then the 30-second summary (part 1) right under it. */}
       <div id="uc-overview" className="zp-overview" style={{ marginTop: 22 }}>
         {cells.length > 0 && <div className="zp-info-row" style={{ '--zp-cells': Math.max(1, cells.length) }}>{cells}</div>}
-        {hasFit && <FitBoxes fit={fit} t={t} style={{ marginTop: cells.length ? 12 : 0 }} />}
+        {hasFit && (
+          <div style={css(`padding:14px 18px 16px; ${cells.length ? 'border-top:1px solid rgba(130,170,255,.16);' : ''}`)}>
+            <div style={css('font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:#7BE0A6; margin-bottom:8px;')}>✓ {t('Phù hợp với bạn nếu')}</div>
+            <BulletList items={fit.yes} dot="#4ADE80" color="#e6ecfa" />
+          </div>
+        )}
         {tldr.length > 0 && (
           <div id="uc-tldr" className="zp-overview-tldr">
             {tldr.map(([k, v]) => (
@@ -139,17 +144,6 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
         )}
       </div>
     </>
-  )
-}
-
-/** "Phù hợp với bạn nếu" (green) | "Chưa phù hợp nếu": who should use it, in the overview box. */
-export function FitBoxes({ fit, t, style }) {
-  if (!fit || (!fit.yes.length && !fit.no.length)) return null
-  return (
-    <div className="zp-fit" style={style}>
-      {fit.yes.length > 0 && <div style={css('padding:14px 16px; border-radius:14px; background:#F2FBF6; border:1px solid #CFEEDE;')}><div style={css(SUB + 'color:#00723C;')}>✓ {t('Phù hợp với bạn nếu')}</div><BulletList items={fit.yes} dot="#00A352" /></div>}
-      {fit.no.length > 0 && <div style={css('padding:14px 16px; border-radius:14px; background:#F7F8FB; border:1px solid #E3E8F2;')}><div style={css(SUB + 'color:#5B6675;')}>{t('Chưa phù hợp nếu')}</div><BulletList items={fit.no} dot="#94a3b8" /></div>}
-    </div>
   )
 }
 
