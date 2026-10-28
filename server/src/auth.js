@@ -8,7 +8,7 @@ import { domainName, initialsOf } from './mentions.js'
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me'
 const COOKIE_NAME = 'session'
 
-const ALLOWED_DOMAINS = String(process.env.COMPANY_EMAIL_DOMAINS || 'zalopay.vn,vng.com.vn')
+const ALLOWED_DOMAINS = String(process.env.COMPANY_EMAIL_DOMAINS || 'vng.com.vn')
   .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 
 export const companyDomains = () => ALLOWED_DOMAINS

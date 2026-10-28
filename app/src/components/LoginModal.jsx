@@ -72,7 +72,7 @@ export default function LoginModal() {
           <form onSubmit={submitEmail} style={css('margin-top:18px; display:flex; flex-direction:column; gap:12px;')}>
             <input
               type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="ten.ban@zalopay.vn"
+              placeholder="ten.ban@vng.com.vn"
               style={css('width:100%; border:1px solid #E6EBF3; border-radius:12px; padding:12px 14px; font-size:14.5px; color:#0F172A; outline:none; box-sizing:border-box;')}
             />
             {error && <div style={css('font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{error}</div>}
