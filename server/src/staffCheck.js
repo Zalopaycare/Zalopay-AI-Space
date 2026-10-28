@@ -1,6 +1,6 @@
 import { db } from './db.js'
 
-// Only ZaloPay staff may use the site, but every VNG company signs in with the same @vng.com.vn
+// Only Zalopay staff may use the site, but every VNG company signs in with the same @vng.com.vn
 // Microsoft accounts. So at the SSO callback we read the person's organisation fields from Microsoft
 // (Graph /me) and let them in only when one of them matches STAFF_MATCH (a case-insensitive regex,
 // e.g. "zalopay|^PY\b"). Until STAFF_MATCH is set nobody is blocked: the fields are only recorded,
@@ -30,7 +30,7 @@ export async function orgOf(accessToken) {
   }
 }
 
-/** `staff`: the account is ZaloPay staff by STAFF_MATCH (or listed in ALWAYS); `allowed`: it may get a
+/** `staff`: the account is Zalopay staff by STAFF_MATCH (or listed in ALWAYS); `allowed`: it may get a
  *  session now (everyone, while the check is off). `org` null = Microsoft didn't say. */
 export function verdict(email, org) {
   const staff = ALWAYS.has(String(email).toLowerCase()) || (!!org && matches(org))

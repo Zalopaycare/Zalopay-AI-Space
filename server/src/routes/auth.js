@@ -150,12 +150,12 @@ router.get('/sso/callback', async (req, res) => {
     if (!isCompanyEmail(email)) {
       return res.status(403).send('Tài khoản Microsoft này không thuộc domain công ty được phép.')
     }
-    // Only ZaloPay staff: Microsoft's organisation fields decide (staffCheck.js), before any account is made.
+    // Only Zalopay staff: Microsoft's organisation fields decide (staffCheck.js), before any account is made.
     const org = await orgOf(tokens.access_token)
     const v = verdict(email, org)
     if (!v.allowed) {
       console.warn('[staff] sign-in refused:', email, org ? JSON.stringify(org) : 'no org info')
-      return res.status(403).send('Zalopay AI Space chỉ dành cho nhân viên ZaloPay. Tài khoản Microsoft này không có thông tin thuộc ZaloPay. Nếu bạn là nhân viên ZaloPay, vui lòng liên hệ Admin.')
+      return res.status(403).send('Zalopay AI Space chỉ dành cho nhân viên Zalopay. Tài khoản Microsoft này không có thông tin thuộc Zalopay. Nếu bạn là nhân viên Zalopay, vui lòng liên hệ Admin.')
     }
     const user = getOrCreateUser(email)
     saveOrg(user.id, org, v.staff)

@@ -5,7 +5,7 @@ export default {
   postedAt: '2026-09-30',
   // Tên lấy theo booth 5 trên Zalopay AI Exhibition 2026.
   title: 'Nonpayment mini app builder & Mini-apps research agent',
-  toolName: 'ZaloPay Mini App Builder',
+  toolName: 'Zalopay Mini App Builder',
   desc: 'PO, HR, Marketing, BD mô tả ý tưởng hoặc gửi link Figma, nhận một Mini App bấm thử được và file HTML để lấy feedback.',
   type: 'tool',
   status: 'prototype',
@@ -34,7 +34,7 @@ export default {
 
   tldr: [
     ['Vấn đề', 'Release một non-payment Mini App mất ít nhất 2 tuần, nên thử ý tưởng và lấy phản hồi sớm rất chậm.'],
-    ['Giải pháp', 'Bạn mô tả ý tưởng hoặc gửi link Figma; AI dựng Mini App theo phong cách ZaloPay và xuất file HTML để chia sẻ.'],
+    ['Giải pháp', 'Bạn mô tả ý tưởng hoặc gửi link Figma; AI dựng Mini App theo phong cách Zalopay và xuất file HTML để chia sẻ.'],
     ['Kết quả', 'Đã làm xong 5 Mini App demo. 1 lần chạy mẫu mất 22 phút 30 giây.'],
     ['Dùng khi', 'Bạn có ý tưởng Mini App không liên quan thanh toán và muốn có bản bấm thử để khảo sát trước khi nhờ dev.'],
   ],
@@ -42,7 +42,7 @@ export default {
   // Bài toán + Giải pháp: nguyên văn booth 5 của Zalopay AI Exhibition 2026 (thay cho bản viết lại từ tài liệu).
   exhibition: {
     problem: 'Quy trình hiện tại để release một mini app non-payment mất ít nhất hai tuần. Team cần một quy trình nhanh hơn để thử nghiệm ý tưởng và tìm ra hướng phù hợp nhất, để ngay cả PO cũng có thể tự đưa mini app lên với ít sự hỗ trợ từ Dev.\n\n**Ai đang gặp:** PO, Biz MKT, BD,...\n\n**Tác động:** Thử nghiệm ý tưởng và deploy nhanh hơn, code được sinh ra theo đúng chuẩn kỹ thuật của Zalopay.',
-    solution: 'build skills agent từ idea ra code và có thể deploy lên sandbox\n\n**AI làm được gì:**\n    + Research idea, đề xuất idea\n    + Build prototype\n    + Deploy lên sandbox\n\n**Kết quả:**\n   + Có bộ skill agent để research product.\n   + Hoàn thành bộ ZaloPay Mini App Builder skills phiên bản MVP.\n   + Hỗ trợ hai đầu vào: ý tưởng bằng prompt và thiết kế Figma.\n   + Sinh source code theo blueprint và định hướng ZaloPay Design System.\n   + Tạo được bản review tương tác và file HTML độc lập để chia sẻ. Ngoài ra còn có thể deploy lên socialdev.\n   + Hoàn thành 5 Mini App demo: Rune Reading, Quote of the Day, Future Map, Kế hoạch Xóa Nợ và Zalopay',
+    solution: 'build skills agent từ idea ra code và có thể deploy lên sandbox\n\n**AI làm được gì:**\n    + Research idea, đề xuất idea\n    + Build prototype\n    + Deploy lên sandbox\n\n**Kết quả:**\n   + Có bộ skill agent để research product.\n   + Hoàn thành bộ Zalopay Mini App Builder skills phiên bản MVP.\n   + Hỗ trợ hai đầu vào: ý tưởng bằng prompt và thiết kế Figma.\n   + Sinh source code theo blueprint và định hướng Zalopay Design System.\n   + Tạo được bản review tương tác và file HTML độc lập để chia sẻ. Ngoài ra còn có thể deploy lên socialdev.\n   + Hoàn thành 5 Mini App demo: Rune Reading, Quote of the Day, Future Map, Kế hoạch Xóa Nợ và Zalopay',
   },
   problem: {
     text: 'Quy trình release một non-payment Mini App hiện mất ít nhất hai tuần. Thử nhiều ý tưởng và tìm product–market fit vì thế chậm và tốn nguồn lực dev.',
@@ -60,7 +60,7 @@ export default {
     analogy: 'Như có một người dựng mẫu nhanh: bạn kể ý tưởng, họ đưa lại một bản app bấm được để mọi người thử trước khi làm thật.',
     steps: [
       'Bạn: mô tả ý tưởng bằng lời thường, hoặc gửi link thiết kế Figma.',
-      'AI: hỏi rõ yêu cầu, chọn hướng giao diện theo phong cách ZaloPay và dựng Mini App.',
+      'AI: hỏi rõ yêu cầu, chọn hướng giao diện theo phong cách Zalopay và dựng Mini App.',
       'AI: xuất 1 file HTML mở được trên trình duyệt, gửi được qua email hoặc chat.',
       'Bạn: gửi file cho đồng nghiệp, người dùng khảo sát; nhờ AI chỉnh nhanh theo góp ý.',
       'Developer: khi ý tưởng đã được xác nhận, nhận source để hoàn thiện, kiểm thử và release.',
@@ -79,7 +79,7 @@ export default {
       note: 'Số 22 phút 30 giây lấy từ ảnh chụp 1 lần chạy.',
     },
     bullets: [
-      'Làm xong bộ skill ZaloPay Mini App Builder bản MVP.',
+      'Làm xong bộ skill Zalopay Mini App Builder bản MVP.',
       'Nhận 2 kiểu đầu vào: ý tưởng viết bằng lời (prompt) và thiết kế Figma.',
       'Tạo được bản review bấm thử và file HTML độc lập để chia sẻ; có thể đưa lên môi trường thử socialdev.',
       '5 Mini App demo: Rune Reading, Quote of the Day, Future Map, Kế hoạch Xóa Nợ, Zalopay Green Garden.',
@@ -149,7 +149,7 @@ export default {
             'Mở một task/chat mới sau khi cài xong.',
           ] },
           { type: 'image', src: I('installer'), caption: 'Trang cài đặt trong package: cột trái cho Codex, cột phải cho Claude.' },
-          { type: 'image', src: I('plugin-skills'), caption: 'Sau khi cài: ZaloPay Mini App Builder hiện trong danh sách plugin, có 3 câu lệnh mẫu và 11 skill.' },
+          { type: 'image', src: I('plugin-skills'), caption: 'Sau khi cài: Zalopay Mini App Builder hiện trong danh sách plugin, có 3 câu lệnh mẫu và 11 skill.' },
         ],
       },
       {
@@ -158,7 +158,7 @@ export default {
           { type: 'text', text: 'Mở chat mới, mô tả Mini App hoặc tính năng muốn thử. Thay phần trong [ngoặc vuông] bằng ý tưởng của bạn. AI sẽ làm rõ yêu cầu, chọn hướng giao diện, tạo source và chuẩn bị bản review.' },
           { type: 'prompt', label: 'Prompt mẫu · Từ ý tưởng', text: 'Use zalopay-miniapp-vibe.\n\nTôi muốn tạo một Mini App [mô tả ý tưởng].\nĐối tượng sử dụng là [nhóm người dùng].\nMục tiêu chính là [giá trị cần kiểm chứng].\nHãy chọn hướng thiết kế phù hợp và cho tôi bản có thể bấm để review.' },
           { type: 'text', title: 'Hoặc làm từ Figma', text: 'Gửi link chính xác tới frame hoặc node Figma Design. Package có hướng dẫn cho 2 cách kết nối Figma (Figma Official MCP và local Figma WebSocket bridge) trong file README.md đi kèm.' },
-          { type: 'prompt', label: 'Prompt mẫu · Từ Figma', text: 'Use zalopay-miniapp-vibe.\n\nImplement frame Figma này thành ZaloPay Mini App:\n<Figma Design URL>\nKiểm tra visual fidelity trước khi build bản review.' },
+          { type: 'prompt', label: 'Prompt mẫu · Từ Figma', text: 'Use zalopay-miniapp-vibe.\n\nImplement frame Figma này thành Zalopay Mini App:\n<Figma Design URL>\nKiểm tra visual fidelity trước khi build bản review.' },
         ],
       },
       {
@@ -212,9 +212,9 @@ export default {
 
   tech: {
     bullets: [
-      'Bộ skill ZaloPay Mini App Builder (MVP), cài vào Codex hoặc Claude dưới dạng plugin; package zalopay-miniapp-skills-v0.3.3-all-in-one.zip.',
-      'Sinh source code theo blueprint và định hướng ZaloPay Design System; người dùng không cần biết React, cấu trúc project hay lệnh build.',
-      'Mô tả plugin: “A self-contained skill suite for Practical UI product and layout discipline, ZaloPay LooknFeel UI, blueprint architecture, JS-SDK bridges, realistic mocks, review builds, slash commands, and sandbox preparation.”',
+      'Bộ skill Zalopay Mini App Builder (MVP), cài vào Codex hoặc Claude dưới dạng plugin; package zalopay-miniapp-skills-v0.3.3-all-in-one.zip.',
+      'Sinh source code theo blueprint và định hướng Zalopay Design System; người dùng không cần biết React, cấu trúc project hay lệnh build.',
+      'Mô tả plugin: “A self-contained skill suite for Practical UI product and layout discipline, Zalopay LooknFeel UI, blueprint architecture, JS-SDK bridges, realistic mocks, review builds, slash commands, and sandbox preparation.”',
       'Đầu vào Figma: hỗ trợ Figma Official MCP và local Figma WebSocket bridge (chi tiết trong README.md của package).',
       'Green Garden dựng cả feature loop: loyalty economy, tiến trình, social action, store, reward state, native bridge và guardrail; đủ trạng thái loading, ready, empty, error, retry, cây khát/héo, hồi sinh, thiếu điểm, mua vật phẩm, share thành công/hủy/lỗi và chặn thao tác trùng. Hành động chính: tưới cây → trừ xu.',
     ],
@@ -224,18 +224,18 @@ export default {
         note: 'Còn lại: Zalopay Miniapp Build, Zalopay Miniapp Generate và 4 skill khác.',
         cols: ['Skill', 'Mô tả (theo ảnh)'],
         rows: [
-          ['Zalopay Deploy Sandbox', 'Validates, builds, versions, packages, and prepares ZaloPay Mini Apps for develop or staging sandbox…'],
-          ['Zalopay Design System', 'Specifies, creatively explores, generates, and audits ZaloPay Mini App Presentation source inside an…'],
-          ['ZaloPay Figma Acquisition', 'Choose a Figma connector and normalize evidence'],
-          ['ZaloPay Figma Visual Validation', 'Compare Mini App UI against authoritative Figma frames'],
-          ['Zalopay Jssdk Bridge', 'Integrates ZaloPay JS-SDK v2 native capabilities through a typed, capability-checked adapter with…'],
+          ['Zalopay Deploy Sandbox', 'Validates, builds, versions, packages, and prepares Zalopay Mini Apps for develop or staging sandbox…'],
+          ['Zalopay Design System', 'Specifies, creatively explores, generates, and audits Zalopay Mini App Presentation source inside an…'],
+          ['Zalopay Figma Acquisition', 'Choose a Figma connector and normalize evidence'],
+          ['Zalopay Figma Visual Validation', 'Compare Mini App UI against authoritative Figma frames'],
+          ['Zalopay Jssdk Bridge', 'Integrates Zalopay JS-SDK v2 native capabilities through a typed, capability-checked adapter with…'],
         ],
       },
     ],
     code: [
       {
         title: 'Workflow đề xuất (Mermaid)',
-        code: 'flowchart LR\n   A["Idea hoặc Figma"] --> B["Trò chuyện với Mini App Builder"]\n   B --> C["ZaloPay Mini App source"]\n   C --> D["HTML review"]\n   D --> E["Survey / Review / Feedback"]\n   E --> F["Điều chỉnh nhanh"]\n   F --> D\n   E --> G["Build và deploy khi concept đạt yêu cầu"]',
+        code: 'flowchart LR\n   A["Idea hoặc Figma"] --> B["Trò chuyện với Mini App Builder"]\n   B --> C["Zalopay Mini App source"]\n   C --> D["HTML review"]\n   D --> E["Survey / Review / Feedback"]\n   E --> F["Điều chỉnh nhanh"]\n   F --> D\n   E --> G["Build và deploy khi concept đạt yêu cầu"]',
         note: 'Tách việc kiểm chứng ý tưởng khỏi phần productization: team nghiệp vụ tự lặp prototype, developer vào khi cần tích hợp thật, kiểm thử, bảo mật và release.',
       },
       {

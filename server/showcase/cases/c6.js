@@ -247,7 +247,7 @@ export default {
       },
       {
         title: 'Case core_receive_money (PCDCM-6459) — đầu vào ticket',
-        note: "Ticket: New segment condition Had/Last receive Money with QR — segment theo dõi hành vi nhận tiền của user, dimension là nguồn nhận tiền. Số liệu là output thật từ notebook explore chạy trên kernel tuanlt2 @ Server 95 (host: PTO_ZaloPay_App-637.95), cửa sổ explore 7 ngày: 20260724 → 20260730, nguồn hdfs://zalopaynewcluster/zalopay/encrypt/tpe/translog.",
+        note: "Ticket: New segment condition Had/Last receive Money with QR — segment theo dõi hành vi nhận tiền của user, dimension là nguồn nhận tiền. Số liệu là output thật từ notebook explore chạy trên kernel tuanlt2 @ Server 95 (host: PTO_Zalopay_App-637.95), cửa sổ explore 7 ngày: 20260724 → 20260730, nguồn hdfs://zalopaynewcluster/zalopay/encrypt/tpe/translog.",
         cols: ['Hạng mục', 'Ticket ghi'],
         rows: [
           ['Dimension (3 giá trị)', "Nhận tiền từ Bank (appID=3253, productCode='MS001') · từ p2p (appID=450, productCode='TF012') · từ SĐT NAPAS (appID=454, productCode='TU012')"],
