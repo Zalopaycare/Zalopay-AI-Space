@@ -6,7 +6,8 @@ export default {
   // Tên lấy theo booth 4 trên Zalopay AI Exhibition 2026.
   title: 'Hỗ trợ CICD',
   toolName: 'Taxi Agent',
-  desc: 'Dev, SRE, người vận hành release hỏi bot trên Teams bằng mã ticket hoặc link job; bot tự tra nhiều hệ thống và trả lời nguyên nhân lỗi, cách sửa.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'tool',
   status: 'prototype',
   statusNote: 'Kết quả AI Week 07/2026',

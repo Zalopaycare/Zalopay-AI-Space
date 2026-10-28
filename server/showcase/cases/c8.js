@@ -6,7 +6,8 @@ export default {
   // Tên lấy theo booth 5 trên Zalopay AI Exhibition 2026.
   title: 'Nonpayment mini app builder & Mini-apps research agent',
   toolName: 'Zalopay Mini App Builder',
-  desc: 'PO, HR, Marketing, BD mô tả ý tưởng hoặc gửi link Figma, nhận một Mini App bấm thử được và file HTML để lấy feedback.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'tool',
   status: 'prototype',
   statusNote: 'Kết quả AI Week · bản MVP (package v0.3.3)',

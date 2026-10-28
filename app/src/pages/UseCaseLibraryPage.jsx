@@ -476,7 +476,7 @@ export default function UseCaseLibraryPage() {
       levelLabel: levelMeta(cd.level).label,
       levelChipLight: levelChip(cd.level, false),
       levelChipDark: levelChip(cd.level, true),
-      overview: c.desc || c.problem,
+      overview: c.desc,
       canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
       // the author, or (for a booth's write-up) its owners and admins: the server says so per post
       canEdit: !!user && (c.canEdit || (!!c.authorId && c.authorId === user.id)),
@@ -956,7 +956,9 @@ export default function UseCaseLibraryPage() {
   function renderShareModal() {
     // Every edit goes back to review; a published one leaves the library until it is approved again.
     const liveEdit = editing?.status === 'approved'
-    const shareHeading = editingCase ? (shareStage === 'preview' ? 'Xem trước bản chỉnh sửa' : 'Chỉnh sửa use case (Admin)') : shareStage === 'submitted' ? (editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Xem trước use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
+    // a booth's owner filling it in ("Bổ sung thông tin"): the heading names the use case
+    const boothTitle = shareBooth && !editingCase && shareStage === 'form' ? (pendingCases.find((x) => x.id === shareBooth) || {}).title : ''
+    const shareHeading = boothTitle ? `${t('Bạn đang bổ sung thông tin cho')} “${boothTitle}”` : editingCase ? (shareStage === 'preview' ? 'Xem trước bản chỉnh sửa' : 'Chỉnh sửa use case (Admin)') : shareStage === 'submitted' ? (editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Xem trước use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
     const shareSubhead = editingCase ? 'Sửa nội dung của use case đang đăng. Lưu xong trang cập nhật ngay, không cần duyệt; ảnh, bảng và lệnh mẫu trong từng bước được giữ nguyên.' : shareStage === 'submitted' ? 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.' : liveEdit ? 'Bài đang đăng sẽ tạm ẩn khỏi Use Case Library cho đến khi Admin duyệt lại bản chỉnh sửa.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
     const shareHint = shareError || (editingCase ? 'Bấm Lưu thay đổi để cập nhật ngay trên trang.' : (liveEdit ? 'Sau khi gửi lại, bài tạm ẩn khỏi Use Case Library cho đến khi được duyệt lại.' : 'Sau khi gửi, bài ở trạng thái Chờ duyệt và chưa hiển thị trong Use Case Library.'))
     const shareHintColor = shareError ? '#D8232A' : '#94a3b8'
@@ -1073,14 +1075,11 @@ export default function UseCaseLibraryPage() {
                       )}
                     </div>
                   )}
-                  {shareBooth && (() => {
-                    const bp = pendingCases.find((x) => x.id === shareBooth)
-                    return (
+                  {shareBooth && (
                       <div style={css('margin-bottom:14px; padding:12px 16px; border-radius:14px; background:#EEF3FF; border:1px solid #CFDDFB; font-size:12.5px; line-height:1.55; color:#1E3A7A;')}>
-                        <b>{t('Bạn đang cập nhật use case của booth')} {bp ? `"${bp.title}"` : ''}</b> {t('từ AI Exhibition 2026. Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Thông tin đang được cập nhật" của booth.')}
+                        <b>{t('Từ AI Exhibition 2026:')}</b> {t('Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Thông tin đang được cập nhật" của booth.')}
                       </div>
-                    )
-                  })()}
+                  )}
                   {/* Stepper: one step per part of the detail page; click any step to jump. */}
                   <div role="tablist" aria-label={t('Các bước')} style={css('display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;')}>
                     {SHARE_STEPS.map((st, i) => {

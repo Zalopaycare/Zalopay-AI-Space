@@ -4,7 +4,8 @@ export default {
   // Tên lấy theo booth 24 trên Zalopay AI Exhibition 2026.
   title: 'Segment Pipeline Agent Skill',
   toolName: 'segment-pipeline',
-  desc: 'Team Data đưa 1 ticket Jira yêu cầu tạo nhóm người dùng mới, AI kiểm dữ liệu thật rồi trả về code xử lý, câu lệnh tạo bảng và tài liệu.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'case',
   status: 'prototype',
   statusNote: 'MVP đã chạy thật trên 1 segment · bản cải tiến PCDCM-6831 đang làm (IN DEV)',

@@ -4,7 +4,8 @@ export default {
   // Tên lấy theo booth 10 trên Zalopay AI Exhibition 2026.
   title: 'Assistant trên CRM tool',
   toolName: 'CRM Assistant',
-  desc: 'Người làm nghiệp vụ hỏi cách dùng CRM hoặc bấm 1 nút, nhận lời giải thích dễ đọc về nhóm khách hàng và ưu đãi đã cấu hình, kèm góp ý.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'tool',
   status: 'inuse',
   statusNote: 'Giải pháp kỹ thuật: DONE · demo trên môi trường SBQC · nút áp dụng đề xuất đang làm',

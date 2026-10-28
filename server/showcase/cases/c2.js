@@ -4,7 +4,8 @@ export default {
   // Tên lấy theo booth 3 trên Zalopay AI Exhibition 2026.
   title: 'us-hive — Tổ đội Agent Engineering, chung TEAM, trọn TIM',
   toolName: 'us-hive',
-  desc: 'Developer cài một lần, gọi trợ lý AI bằng một câu lệnh, và được làm theo cùng quy trình, cùng tiêu chuẩn kỹ thuật Zalopay như cả team.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'tool',
   status: 'inuse',
   statusNote: '',

@@ -4,7 +4,8 @@ export default {
   // Tên lấy theo booth 2 trên Zalopay AI Exhibition 2026.
   title: 'Zalopay Agent Base',
   toolName: 'Zalopay Agent Base Skills',
-  desc: 'Người chưa rành kỹ thuật cài bộ skill vào Claude Code, Codex hoặc Cursor, ra lệnh bằng tiếng Việt và nhận đường link ứng dụng chạy thật.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'guide',
   status: 'prototype',
   statusNote: 'Mới triển khai ở môi trường dev, bộ skill mới test trên macOS',

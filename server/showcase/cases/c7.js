@@ -4,7 +4,8 @@ export default {
   // Tên lấy theo booth 1 trên Zalopay AI Exhibition 2026.
   title: 'secreq — Trợ lý AI tiếp nhận & chuẩn bị thông tin yêu cầu pentest',
   toolName: 'secreq-bot',
-  desc: 'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'tool',
   status: 'building',
   statusNote: 'Đã xong bản AI Week, đã bổ sung bản v2',

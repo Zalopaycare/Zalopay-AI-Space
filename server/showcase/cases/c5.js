@@ -4,7 +4,8 @@ export default {
   // Tên lấy theo booth 27 trên Zalopay AI Exhibition 2026.
   title: 'Zalopay Website Operation skill',
   toolName: 'zlpws-admin-mcp',
-  desc: 'Người vận hành website gõ yêu cầu cho trợ lý AI, nhận bài blog nháp đã tạo sẵn trên trang thử nghiệm của zalopay.vn.',
+  // no one-line summary: the title alone says which tool and what it does
+  desc: '',
   type: 'tool',
   status: 'inuse',
   statusNote: 'Kết quả AI Week 2026 · trạng thái DONE',
