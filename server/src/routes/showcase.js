@@ -3,7 +3,7 @@ import { requireAuth } from '../auth.js'
 import { db } from '../db.js'
 import { notifyInterest, notifyOnce } from '../notifications.js'
 import { domainName } from '../mentions.js'
-import { visibleShowcase, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit } from '../showcase.js'
+import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit } from '../showcase.js'
 import path from 'node:path'
 
 const router = express.Router()
@@ -46,7 +46,8 @@ const pendingFor = (user) => {
 
 router.get('/', requireAuth, (req, res) => {
   res.set('Cache-Control', 'private, no-store')
-  res.json({ cases: visibleShowcase(), pending: pendingFor(req.user), boothDone: doneBooths() })
+  // isOwner: the signed-in person is in the case's team (account@vng.com.vn), so they may add its cover
+  res.json({ cases: visibleShowcase().map((c) => ({ ...c, isOwner: isBoothOwner(c, req.user.email) })), pending: pendingFor(req.user), boothDone: doneBooths() })
 })
 
 // "Quan tâm" toggle on a booth with no write-up yet; the owners' notification follows the count.
@@ -105,14 +106,17 @@ router.post('/admin/booths/:id/invite', requireAuth, requireAdmin, (req, res) =>
   res.json({ ok: true })
 })
 
-// A cover an admin added for a case or booth that had none (1920×1080 JPEG, cropped in the browser).
+// A cover added on the site for a case or booth that had none (1920×1080 JPEG, cropped in the browser).
 router.get('/cover/:id', requireAuth, (req, res) => {
   if (!SHOWCASE_IDS.has(req.params.id) && !PENDING_BY_ID.has(req.params.id)) return res.status(404).end()
   res.set('Cache-Control', 'private, max-age=86400')
   res.sendFile(path.join(COVER_DIR, `${req.params.id}.jpg`), (e) => { if (e && !res.headersSent) res.status(404).end() })
 })
-router.post('/admin/cover/:id', requireAuth, requireAdmin, (req, res) => {
-  if (!SHOWCASE_IDS.has(req.params.id) && !PENDING_BY_ID.has(req.params.id)) return res.status(404).json({ error: 'not_found' })
+// Admins, and the team of that case or booth (its owners), may add the cover.
+router.post('/admin/cover/:id', requireAuth, (req, res) => {
+  const item = PENDING_BY_ID.get(req.params.id) || showcaseCases.find((c) => c.id === req.params.id)
+  if (!item) return res.status(404).json({ error: 'not_found' })
+  if (!req.user.is_admin && !isBoothOwner(item, req.user.email)) return res.status(403).json({ error: 'not_owner' })
   const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body?.cover || ''))
   const buf = m ? Buffer.from(m[1], 'base64') : null
   if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) return res.status(400).json({ error: 'bad_cover' })

@@ -98,7 +98,7 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], t }) {
           )}
           {c.desc && <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>}
         </div>
-        {/* no cover yet: admins get an empty 16:9 frame with an upload button */}
+        {/* no cover yet: admins and the owners get an empty 16:9 frame with an upload button */}
         {!c.coverUrl && onUploadCover && (
           <div className="zp-hero-cover" style={css('width:100%; aspect-ratio:16 / 9; border-radius:18px; border:1.5px dashed rgba(130,170,255,.45); background:rgba(255,255,255,.04); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; padding:16px; box-sizing:border-box;')}>
             <div style={css('font-size:13px; font-weight:700; color:#c9d6f5;')}>{t('Chưa có ảnh bìa')}</div>

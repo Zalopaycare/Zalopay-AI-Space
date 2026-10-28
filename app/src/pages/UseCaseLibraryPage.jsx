@@ -680,7 +680,8 @@ export default function UseCaseLibraryPage() {
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
                 // admins add the missing cover of a showcase case or a booth right here
-                onUploadCover={user?.isAdmin && (dsel.pending || (caseDetail[dsel.id]?.tpl && !dsel.submitted))
+                // admins on any case or booth; owners on their own (the server checks too)
+                onUploadCover={user && (dsel.pending ? dsel.pending.owner : (caseDetail[dsel.id]?.tpl && !dsel.submitted && (user.isAdmin || caseDetail[dsel.id].tpl.isOwner)))
                   ? (file) => cropCover(file).then(({ data }) => api.adminSetCover(dsel.id, data)).then(() => loadPublishedUseCases(true))
                   : null}
               />
