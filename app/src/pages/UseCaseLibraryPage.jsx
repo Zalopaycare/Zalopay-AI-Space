@@ -690,7 +690,7 @@ export default function UseCaseLibraryPage() {
               </div>
             )}
             {dsel.pending && <BoothOwnerBar p={dsel.pending} t={t} />}
-            {dsel.pending && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
+            {dsel.pending && !dsel.pending.owner && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
 
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>

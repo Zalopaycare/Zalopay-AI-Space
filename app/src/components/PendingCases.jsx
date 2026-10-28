@@ -18,6 +18,18 @@ function Star({ on }) {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill={on ? '#F59E0B' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"></path></svg>
 }
 
+// What a booth's owners (and admins, who see it as they do) get on the tile instead of "Quan tâm".
+const OWNER_TILE = { pending: 'Đang chờ duyệt', changes_requested: 'Cần chỉnh sửa' }
+function OwnerButton({ p, t, onOpen }) {
+  const label = OWNER_TILE[p.submission?.status] || 'Bổ sung thông tin'
+  return (
+    <button onClick={(e) => { e.stopPropagation(); onOpen() }}
+      style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 13px; border-radius:999px; border:none; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;')}>
+      {t(label)} →
+    </button>
+  )
+}
+
 function InterestButton({ p, busy, onToggle, t }) {
   return (
     <button
@@ -39,7 +51,7 @@ const OWNER_STATUS = {
   rejected: ['Bài trước chưa được duyệt. Team có thể gửi lại.', '#C0262D', '#FFF0F0', '#F5C9CB'],
 }
 
-/** On a booth's page, for its owners only: "Cập nhật use case này" (the share form, pre-filled), or the
+/** On a booth's page, for its owners only: "Bổ sung thông tin" (the share form, pre-filled), or the
  *  status of the write-up already sent with a link to edit it. */
 export function BoothOwnerBar({ p, t }) {
   const navigate = useNavigate()
@@ -55,7 +67,7 @@ export function BoothOwnerBar({ p, t }) {
           {st ? t(st[0]) : t('Bài toán, Giải pháp và thành viên đã có sẵn từ AI Exhibition. Bổ sung các phần còn trống (ảnh bìa, các bước, số liệu…) rồi gửi Admin duyệt.')}
         </div>
       </div>
-      {!sub && <button onClick={() => navigate(`/use-cases?share=1&booth=${encodeURIComponent(p.id)}`)} style={css(btn)}>{t('Cập nhật use case này')} →</button>}
+      {!sub && <button onClick={() => navigate(`/use-cases?share=1&booth=${encodeURIComponent(p.id)}`)} style={css(btn)}>{t('Bổ sung thông tin')} →</button>}
       {sub && sub.status === 'pending' && <button onClick={() => navigate(`/use-cases?edit=${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem / sửa bài đã gửi')}</button>}
       {sub && sub.status === 'changes_requested' && <button onClick={() => navigate(`/review/${encodeURIComponent(sub.id)}`)} style={css(btn)}>{t('Xem góp ý và sửa')}</button>}
     </div>
@@ -129,7 +141,7 @@ export default function PendingCases({ items, t, requireLogin }) {
                     {p.label && <span style={css(`font-size:12px; font-weight:600; color:${LABEL_COLOR(p.label)};`)}>{p.label}</span>}
                     <span style={css(NOINFO_TAG)}>{t('Chưa có thông tin')}</span>
                   </div>
-                  <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />
+                  {p.owner ? <OwnerButton p={p} t={t} onOpen={() => open(p)} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
                 </div>
               </div>
             </div>
