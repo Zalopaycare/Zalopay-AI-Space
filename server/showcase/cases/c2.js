@@ -23,7 +23,7 @@ export default {
   ownerName: 'AnhTVH',
   ownerTeam: 'Utility Solutions (US)',
   updated: '',
-  cover: '',
+  cover: '/use-cases/c2/cover.jpg',
   stats: [],
 
   tldr: [
@@ -59,9 +59,7 @@ export default {
       'AI: tự chọn đúng bộ hướng dẫn, kết nối, tiêu chuẩn và quy trình đã được team định nghĩa.',
       'Bạn duyệt: AI có thể hỏi xác nhận trước việc quan trọng như sửa code, đăng nội dung hoặc tạo yêu cầu merge code.',
     ],
-    images: [
-      { src: '/use-cases/c2/us-hive-overview.png', caption: 'us-hive và các trợ lý: bee-dev, bee-figma-ui, bee-integrator, bee-db-audit, bee-review-code, bee-qc; sẽ có thêm trợ lý mới.' },
-    ],
+    images: [],
   },
 
   result: {

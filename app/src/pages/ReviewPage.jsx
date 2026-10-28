@@ -305,7 +305,7 @@ export default function ReviewPage() {
     <Layout>
       <div style={css('position:relative; padding:24px var(--zp-gutter) 80px; background:radial-gradient(70% 40% at 60% 0%, rgba(44,95,255,.20), transparent 70%), #04060d;')}>
         <div style={css(`max-width:${wide ? 760 + RAIL + 28 : 760}px; margin:0 auto;`)}>
-          <button onClick={() => navigate(isAdmin && !data.isOwner ? '/admin' : '/profile#usecase')} className={hoverClass('color:#fff !important;')} style={css('border:none; background:none; padding:0; cursor:pointer; color:#a9b8dc;' + f(600, 13.5))}>← {isAdmin && !data.isOwner ? 'Trang quản trị' : 'Use case của tôi'}</button>
+          <button onClick={() => navigate(isAdmin && !data.isAuthor ? '/admin' : '/profile#usecase')} className={hoverClass('color:#fff !important;')} style={css('border:none; background:none; padding:0; cursor:pointer; color:#a9b8dc;' + f(600, 13.5))}>← {isAdmin && !data.isAuthor ? 'Trang quản trị' : 'Use case của tôi'}</button>
 
           {/* Decision / status bar */}
           <div style={css('position:sticky; top:66px; z-index:30; margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 16px; border-radius:16px; background:rgba(12,22,58,.92); border:1px solid rgba(130,170,255,.22); backdrop-filter:blur(12px); box-shadow:0 12px 30px rgba(0,0,0,.35);')}>

@@ -20,7 +20,8 @@ function isTeamAuthor(row, user) {
   if (row.author_id === user.id) return true
   let booth = null
   try { booth = PENDING_BY_ID.get(JSON.parse(row.extra || '{}').booth) } catch { /* no extra */ }
-  return !!booth && isBoothOwner(booth, user.email)
+  // admins act for a booth's team, the same as its owners
+  return !!booth && (isBoothOwner(booth, user.email) || !!user.is_admin)
 }
 
 function loadSub(req, res) {
@@ -45,7 +46,7 @@ function commentsOf(subId) {
 router.get('/:id', (req, res) => {
   const row = loadSub(req, res)
   if (!row) return
-  res.json({ submission: serializeSubmission(row, req.user), comments: commentsOf(row.id), isOwner: isTeamAuthor(row, req.user) })
+  res.json({ submission: serializeSubmission(row, req.user), comments: commentsOf(row.id), isOwner: isTeamAuthor(row, req.user), isAuthor: row.author_id === req.user.id })
 })
 
 router.post('/:id/comments', (req, res) => {

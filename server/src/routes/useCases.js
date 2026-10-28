@@ -288,7 +288,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (!row) return res.status(404).json({ error: 'not_found' })
   // a booth's write-up belongs to its whole team: any of the booth's owners may edit it
   const booth = PENDING_BY_ID.get((parseExtra(row.extra) || {}).booth)
-  if (row.author_id !== req.user.id && !(booth && isBoothOwner(booth, req.user.email))) return res.status(403).json({ error: 'not_owner' })
+  if (row.author_id !== req.user.id && !(booth && (isBoothOwner(booth, req.user.email) || req.user.is_admin))) return res.status(403).json({ error: 'not_owner' })
   if (!['changes_requested', 'pending', 'approved'].includes(row.review_status)) return res.status(409).json({ error: 'not_editable' })
   // Every edit goes back through review, published ones included: the post leaves the library until an admin approves it again.
   const nextStatus = 'pending'

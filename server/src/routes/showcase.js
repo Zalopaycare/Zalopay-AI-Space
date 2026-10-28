@@ -36,8 +36,9 @@ const pendingFor = (user) => {
       cover: coverOf(p.id),
       interest: interestCount(p.id),
       mine: !!db.prepare('SELECT 1 FROM use_case_interest WHERE use_case_id = ? AND user_id = ?').get(p.id, user.id),
-      // the signed-in person is one of the booth's owners: they get "Cập nhật use case này"
-      owner,
+      // the signed-in person is one of the booth's owners: they get "Cập nhật use case này".
+      // Admins see the page the way the owners do (adminView says that's why).
+      owner: owner || !!user.is_admin, adminView: !owner && !!user.is_admin,
       submission: sub ? { id: sub.id, status: sub.review_status, mine: sub.author_id === user.id } : null,
     }
   })

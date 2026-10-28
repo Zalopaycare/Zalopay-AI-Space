@@ -219,7 +219,8 @@ export default function UseCaseLibraryPage() {
     if (!editId) return
     // &step=<n>: the review page's "Sửa phần này" opens the form on that part
     const startStep = Math.min(Math.max(Number(params.get('step')) || 0, 0), SHARE_STEPS.length - 1)
-    api.listSubmissions('?mine=1').then((d) => {
+    // an admin may open a booth team's write-up too (they act for the team): it's in the full list
+    api.listSubmissions('?mine=1').then((d) => ((d.submissions || []).some((x) => x.id === editId) || !user?.isAdmin ? d : api.listSubmissions(''))).then((d) => {
       const s = (d.submissions || []).find((x) => x.id === editId)
       if (!s) return
       const ex = s.extra || {}
