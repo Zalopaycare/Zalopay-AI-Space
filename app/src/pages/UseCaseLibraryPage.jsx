@@ -586,7 +586,7 @@ export default function UseCaseLibraryPage() {
     ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', '', 'area', 3, 'apply', 'Tài khoản O365 để đăng nhập MCP Platform.\nQuyền owner/co-owner của tài nguyên trên Gear.\nMột AI có hỗ trợ kết nối MCP (ví dụ Codex).'],
     ['success', 'Kết quả bạn sẽ thấy', 'Optional', 'Làm xong các bước thì người đọc thấy gì, để họ biết mình đã làm đúng. Mỗi dòng một ý.', '', 'area', 2, 'apply2', 'AI trả về trang tóm tắt có lệnh curl cho từng API, dòng nào cũng có link nguồn.\nTrong bảng MCP keys, khoá của bạn có trạng thái "Active".'],
     ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', '', 'area', 3, 'apply2', 'Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.\nMất khoá sau khi đóng màn hình → tạo khoá mới trong mục "MCP keys".'],
-    ['safety', 'Nguyên tắc an toàn', 'Optional', 'AI được và không được làm gì, dữ liệu nào không đưa vào. Mỗi dòng một ý.', '', 'area', 3, 'safety', 'AI chỉ đọc Jira, không sửa ticket.\nKhông dán mật khẩu, token vào khung chat với AI.'],
+    ['safety', 'Nguyên tắc an toàn', 'Optional', 'Ranh giới khi dùng AI ở use case này. Mỗi dòng một ý, gồm 3 loại:\n• AI được và không được làm gì\n• Người dùng không được làm gì với AI\n• Chỗ nào người phải xác nhận, và dữ liệu nào đi qua AI', '', 'area', 4, 'safety', 'AI được / không được làm gì: AI chỉ đọc Jira, không sửa ticket. AI không tự commit, push nếu bạn chưa yêu cầu.\nNgười dùng không được làm gì: Không dán mật khẩu, token vào khung chat với AI. File .env không gửi cho ai.\nNgười xác nhận, dữ liệu qua AI: Bạn xem kết quả rồi mới lưu. Dữ liệu đi qua AI: nội dung ticket, trang Confluence.'],
     ['limits', 'Hiện chưa làm được', 'Optional', 'Giới hạn của bản hiện tại, chỗ nào còn cần người kiểm lại. Mỗi dòng một ý.', '', 'area', 3, 'safety', 'Chưa đọc được ảnh, sơ đồ trong tài liệu và Figma.\nMới chạy ở môi trường dev, chỉ test trên macOS.'],
   ]
   const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step, example]) => ({
@@ -1127,7 +1127,7 @@ export default function UseCaseLibraryPage() {
                       <>
                         <div style={css('margin-bottom:16px;')}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
-                            <span style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>{t('Ảnh bìa')}</span>
+                            <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Ảnh bìa')}</span>
                             <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc')}</span>
                           </div>
                           <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Kích thước 1920 × 1080 px (16:9). Ảnh khác kích thước sẽ tự được cắt phần giữa và đưa về đúng 1920 × 1080.')}</div>
@@ -1150,7 +1150,7 @@ export default function UseCaseLibraryPage() {
                           {!coverError && coverNote && <div style={css('margin-top:8px; font-size:12px; color:#9A5B00;')}>{coverNote}</div>}
                         </div>
                         <div style={css(`margin:-4px 0 16px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon && !teamPost ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon && !teamPost ? '#F2F6FF' : '#F8FAFE'};`)}>
-                          <div style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>{t('Người đăng')}</div>
+                          <div style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Người đăng')}</div>
                           <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
                           <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                             {[['personal', 'Cá nhân'], ['team', 'Team']].map(([v, label]) => {
@@ -1160,7 +1160,7 @@ export default function UseCaseLibraryPage() {
                           </div>
                           {teamPost ? (
                             <div style={css('margin-top:12px;')}>
-                              <label htmlFor="sf-members" style={css('font-size:12.5px; font-weight:800; color:#1D3A8F;')}>{t('Thành viên cùng làm')}</label>
+                              <label htmlFor="sf-members" style={css('font-size:12.5px; font-weight:800; color:#2c5fff;')}>{t('Thành viên cùng làm')}</label>
                               <span style={css('margin-left:8px; font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc')}</span>
                               <input id="sf-members" value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css(FIELD_INPUT + (missMembers ? MISS_FIELD : ''))} />
                               {missMembers && <MissLine text={t('Chưa điền tên thành viên')} />}
@@ -1182,10 +1182,10 @@ export default function UseCaseLibraryPage() {
                       return (
                       <div key={f.key} style={css('margin-bottom:16px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <label htmlFor={'sf-' + f.key} style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>{f.label}</label>
+                          <label htmlFor={'sf-' + f.key} style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{f.label}</label>
                           <span style={css(`font-size:11px; font-weight:700; color:${f.reqColor};`)}>{f.req === 'Required' ? t('Bắt buộc') : t('Không bắt buộc')}</span>
                         </div>
-                        <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{f.hint}</div>
+                        <div style={css('margin-top:5px; font-size:12px; line-height:1.55; color:#94a3b8; white-space:pre-line;')}>{f.hint}</div>
                         {f.example && (
                           <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.55; color:#475569; white-space:pre-wrap;')}>
                             <span style={css('font-weight:800; color:#475569;')}>{t('Ví dụ')}{f.key === 'title' ? ` (${t('tên hay')})` : ''}:</span>{'\n'}{f.example}
@@ -1222,7 +1222,7 @@ export default function UseCaseLibraryPage() {
                     {SHARE_STEPS[shareStep].key === 'ps' && (
                       <div style={css('margin-bottom:8px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <span style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>{t('Kết quả nổi bật')}</span>
+                          <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Kết quả nổi bật')}</span>
                           <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc · tối đa 3')}</span>
                         </div>
                         <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{t('Con số đáng nhớ nhất, hiện đầu phần Kết quả. Chỉ ghi số đã đo được.')}</div>
@@ -1238,7 +1238,7 @@ export default function UseCaseLibraryPage() {
                       <>
                         <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <label style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>Category</label>
+                          <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>Category</label>
                           <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · chọn được nhiều')}</span>
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
@@ -1253,7 +1253,7 @@ export default function UseCaseLibraryPage() {
                         {missCatOther && <MissLine text={t('Chưa điền tên category khác')} />}
 
                         <div style={css('display:flex; align-items:center; gap:8px; margin-top:16px;')}>
-                          <label style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>{t('Công cụ AI')}</label>
+                          <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Công cụ AI')}</label>
                           <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc')}</span>
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
@@ -1328,14 +1328,14 @@ function StepsEditor({ steps, onChange, t, showMissing }) {
   const anyFilled = steps.some(filled)
   const checked = (x, i) => showMissing && (filled(x) || (!anyFilled && i === 0))
   const icon = 'width:28px; height:28px; display:flex; align-items:center; justify-content:center; border:none; border-radius:8px; background:transparent; color:#64748b; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;'
-  const lbl = (text, req) => <div style={css('margin-top:12px; font-size:12px; font-weight:800; color:#1D3A8F;')}>{t(text)} <span style={css(`font-weight:700; color:${req ? '#E0353F' : '#94a3b8'};`)}>{req ? t('Bắt buộc') : t('Không bắt buộc')}</span></div>
+  const lbl = (text, req) => <div style={css('margin-top:12px; font-size:12px; font-weight:800; color:#2c5fff;')}>{t(text)} <span style={css(`font-weight:700; color:${req ? '#E0353F' : '#94a3b8'};`)}>{req ? t('Bắt buộc') : t('Không bắt buộc')}</span></div>
   const addBtn = (text, onClick, red) => (
     <button type="button" onClick={onClick} className={hoverClass(`background:${red ? '#FFF1F1' : '#EEF3FF'} !important;`)} style={css(`height:28px; padding:0 11px; border:1px dashed ${red ? '#F2A6AA' : '#B9CCF8'}; border-radius:999px; background:#fff; color:${red ? '#D8232A' : '#2c5fff'}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;`)}>+ {t(text)}</button>
   )
   return (
     <div style={css('margin-bottom:18px;')}>
       <div style={css('display:flex; align-items:center; gap:8px;')}>
-        <span style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>{t('Các bước')}</span>
+        <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Các bước')}</span>
         <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{t('Bắt buộc · ít nhất 1 bước')}</span>
         <span style={{ flex: 1 }}></span>
         <button type="button" onClick={() => setExample((v) => !v)} style={css('border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#2c5fff;')}>{example ? t('Ẩn ví dụ') : t('Xem ví dụ một bước')}</button>
@@ -1403,7 +1403,7 @@ function ChipGroup({ title, required, options, last, miss }) {
   return (
     <>
       <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:10px;')}>
-        <label style={css('font-size:13px; font-weight:800; color:#1D3A8F;')}>{title}</label>
+        <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{title}</label>
         <span style={css('font-size:11px; font-weight:700; color:#E0353F;')}>{required}</span>
       </div>
       <div style={css(`display:flex; flex-wrap:wrap; gap:8px; margin-bottom:${miss ? 6 : 24}px;`)}>
