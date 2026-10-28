@@ -55,7 +55,7 @@ function partsOf(s) {
     ] },
     { step: 3, title: 'Lưu ý khi dùng', blocks: [
       block('safety', 'Nguyên tắc an toàn', ex.safety),
-      block('limits', 'Hiện chưa làm được', s.limits),
+      block('limits', 'Giới hạn của AI', s.limits),
     ] },
   ]
 }
