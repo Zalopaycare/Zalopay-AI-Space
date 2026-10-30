@@ -18,3 +18,5 @@ NOTIF_ICONS.chat = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 NOTIF_ICONS.invite = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg>
 // Someone turned away at sign-in asks for access: a padlock.
 NOTIF_ICONS.access = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+// A direct message ("Tin nhắn"): the same speech bubble as the admin chat.
+NOTIF_ICONS.dm = NOTIF_ICONS.chat

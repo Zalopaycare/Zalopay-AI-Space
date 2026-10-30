@@ -6,7 +6,7 @@ import { requireAuth } from './auth.js'
 // Images are shown inline, everything else is a download link.
 export const MAX_COMMENT_FILES = 5
 const MAX_BYTES = 10 * 1024 * 1024
-const KINDS = ['answer', 'acomment', 'uccomment', 'chat']
+const KINDS = ['answer', 'acomment', 'uccomment', 'chat', 'dm']
 
 // [{ name, data: "data:<mime>;base64,..." }] → [{ name, mime, data }], or null if any is unusable.
 export function decodeCommentFiles(list) {
@@ -38,6 +38,11 @@ router.get('/:kind/:id/:idx', requireAuth, (req, res) => {
   if (req.params.kind === 'chat') {
     const m = db.prepare('SELECT user_id FROM admin_chat_messages WHERE id = ?').get(Number(req.params.id))
     if (!m || (m.user_id !== req.user.id && !req.user.is_admin)) return res.status(404).end()
+  }
+  // A direct message's file: only the two people in that conversation.
+  if (req.params.kind === 'dm') {
+    const m = db.prepare('SELECT from_id, to_id FROM dm_messages WHERE id = ?').get(Number(req.params.id))
+    if (!m || (m.from_id !== req.user.id && m.to_id !== req.user.id)) return res.status(404).end()
   }
   const f = db.prepare('SELECT name, mime, data FROM comment_files WHERE kind = ? AND target_id = ? AND idx = ?').get(req.params.kind, req.params.id, Number(req.params.idx))
   if (!f) return res.status(404).end()

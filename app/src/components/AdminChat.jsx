@@ -19,10 +19,11 @@ const dayLabel = (raw) => {
   if (same(d, new Date(now.getTime() - 86_400_000))) return 'Hôm qua'
   return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
-const shortTime = (raw) => (dayLabel(raw) === 'Hôm nay' ? clock(raw) : dayLabel(raw) === 'Hôm qua' ? 'Hôm qua' : parseTime(raw).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }))
+export const shortTime = (raw) => (dayLabel(raw) === 'Hôm nay' ? clock(raw) : dayLabel(raw) === 'Hôm qua' ? 'Hôm qua' : parseTime(raw).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }))
 
 // Poll a conversation: loads it, then asks only for messages after the newest one we have.
-function useConversation(load, key) {
+// `onFresh` refreshes the matching unread badge (Chat với Admin by default, Tin nhắn passes its own).
+export function useConversation(load, key, onFresh = refreshChatUnread) {
   const [messages, setMessages] = useState([])
   const [loaded, setLoaded] = useState(false)
   const lastRef = useRef(0)
@@ -33,7 +34,7 @@ function useConversation(load, key) {
     const pull = () => load(lastRef.current).then((d) => {
       if (!alive) return
       const fresh = (d.messages || []).filter((m) => m.id > lastRef.current)
-      if (fresh.length) { lastRef.current = fresh[fresh.length - 1].id; setMessages((l) => [...l, ...fresh]); refreshChatUnread() }
+      if (fresh.length) { lastRef.current = fresh[fresh.length - 1].id; setMessages((l) => [...l, ...fresh]); onFresh() }
       setLoaded(true)
     }).catch(() => alive && setLoaded(true))
     pull()
@@ -44,7 +45,9 @@ function useConversation(load, key) {
   return { messages, loaded, add }
 }
 
-function Bubbles({ messages, mineIf, intro, t }) {
+// `extra(m, mine)`: anything a message carries besides text and files (Tin nhắn: a forwarded use case / thread).
+// `names`: label the other side's runs with who wrote them (off in a one-to-one chat).
+export function Bubbles({ messages, mineIf, intro, extra, names = true, t }) {
   const items = []
   let prevDay = '', prev = null
   for (const m of messages) {
@@ -66,13 +69,14 @@ function Bubbles({ messages, mineIf, intro, t }) {
         <div key={it.m.id} style={css(`display:flex; align-items:flex-end; gap:8px; ${it.mine ? 'flex-direction:row-reverse;' : ''} margin-top:${it.first ? 8 : 0}px;`)}>
           {!it.mine && !it.m.fromAdmin && <span style={css('flex:none; width:30px;')}>{it.last && <Avatar user={it.m.sender} size={30} />}</span>}
           <div style={css(`max-width:min(72%, 560px); display:flex; flex-direction:column; align-items:${it.mine ? 'flex-end' : 'flex-start'};`)}>
-            {!it.mine && it.first && <div style={css('margin:0 0 3px 12px; font-size:11px; font-weight:700; color:#64748b;')}>{it.m.fromAdmin ? 'Admin' : it.m.sender?.name}</div>}
+            {names && !it.mine && it.first && <div style={css('margin:0 0 3px 12px; font-size:11px; font-weight:700; color:#64748b;')}>{it.m.fromAdmin ? 'Admin' : it.m.sender?.name}</div>}
             {it.m.body && <div
               title={clock(it.m.time)}
               style={css(`padding:8px 13px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; ${it.mine
                 ? 'background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff;'
                 : 'background:#F0F3F9; color:#0F172A;'} border-radius:18px; ${it.mine ? `border-top-right-radius:${it.first ? 18 : 6}px; border-bottom-right-radius:${it.last ? 18 : 6}px;` : `border-top-left-radius:${it.first ? 18 : 6}px; border-bottom-left-radius:${it.last ? 18 : 6}px;`}`)}
             >{it.m.body}</div>}
+            {extra && extra(it.m, it.mine)}
             {it.m.files?.length > 0 && <CommentFiles files={it.m.files} style={{ marginTop: it.m.body ? 4 : 0, display: 'flex', flexDirection: 'column', alignItems: it.mine ? 'flex-end' : 'flex-start' }} />}
             {it.last && <div style={css(`margin:3px ${it.mine ? '4px 0 0' : '0 0 12px'}; font-size:10.5px; color:#94a3b8;`)}>{clock(it.m.time)}</div>}
           </div>
@@ -82,7 +86,7 @@ function Bubbles({ messages, mineIf, intro, t }) {
   )
 }
 
-function Composer({ onSend, placeholder, t }) {
+export function Composer({ onSend, placeholder, t }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -138,7 +142,7 @@ function Composer({ onSend, placeholder, t }) {
 }
 
 // Keeps the newest message in view, unless the reader scrolled up to read older ones.
-function ScrollArea({ deps, children }) {
+export function ScrollArea({ deps, children }) {
   const ref = useRef(null)
   const stick = useRef(true)
   useLayoutEffect(() => { const el = ref.current; if (el && stick.current) el.scrollTop = el.scrollHeight }, deps) // eslint-disable-line react-hooks/exhaustive-deps
@@ -154,7 +158,7 @@ function ScrollArea({ deps, children }) {
   )
 }
 
-const PANEL = 'display:flex; flex-direction:column; min-height:0; background:#fff; border:1px solid #E6EBF3; border-radius:20px; overflow:hidden; box-shadow:0 14px 34px rgba(8,16,40,.30);'
+export const PANEL = 'display:flex; flex-direction:column; min-height:0; background:#fff; border:1px solid #E6EBF3; border-radius:20px; overflow:hidden; box-shadow:0 14px 34px rgba(8,16,40,.30);'
 const ADMIN_BADGE = <span style={css('display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:999px; background:#E7ECFB; color:#2c5fff; font-size:11px; font-weight:800;')}>Admin</span>
 
 function TeamMark({ size = 38 }) {

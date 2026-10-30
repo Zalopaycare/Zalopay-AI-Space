@@ -4,6 +4,7 @@ import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
 import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
+import ShareToDM from '../components/ShareToDM.jsx'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
@@ -90,6 +91,7 @@ export default function QuestionsPage() {
   const [expandedCommentThreads, setExpandedCommentThreads] = useState(() => new Set())
   const [commentMention, setCommentMention] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [shareQ, setShareQ] = useState(null) // thread being sent to someone in Tin nhắn
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const [askTitle, setAskTitle] = useState('')
@@ -171,6 +173,10 @@ export default function QuestionsPage() {
     const url = window.location.origin + '/questions/' + encodeURIComponent(id)
     copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
+  }
+  const shareThread = (q) => {
+    setOpenMenuId(null)
+    requireLogin(() => setShareQ({ kind: 'thread', id: q.id, title: (q.hasTitle !== false && q.title) || q.body || '', link: window.location.origin + '/questions/' + encodeURIComponent(q.id) }))
   }
   const deleteQuestion = (id, reason) => {
     api.deleteQuestion(id, reason).then(() => {
@@ -536,7 +542,7 @@ export default function QuestionsPage() {
                             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
                             {q.answers.length > 0 && q.answers.length}
                           </button>
-                          <button onClick={() => copyLink(q.id)} title={t('Sao chép link')} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT)}>
+                          <button onClick={() => shareThread(q)} title={t('Gửi qua tin nhắn')} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT)}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"></path><path d="M22 2 11 13"></path></svg>
                           </button>
                           <button onClick={q.onSave} aria-pressed={!!q.saved} title={q.saveLabel} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT + (q.saved ? 'color:#00893F;' : ''))}>
@@ -894,6 +900,7 @@ export default function QuestionsPage() {
       </div>
     </div>
       {cmodals.modals}
+      {shareQ && <ShareToDM share={shareQ} onClose={() => setShareQ(null)} />}
     </Layout>
   )
 }

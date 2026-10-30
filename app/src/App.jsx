@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage.jsx'
 import AdminConsolePage from './pages/AdminConsolePage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
 import ChatPage from './pages/ChatPage.jsx'
+import MessagesPage from './pages/MessagesPage.jsx'
 import NoAccessPage from './pages/NoAccessPage.jsx'
 import MaintenanceGate from './components/MaintenanceGate.jsx'
 
@@ -32,6 +33,8 @@ export default function App() {
               <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
               {/* "Chat với Admin": a person's conversation with the admins; for admins, their shared inbox */}
               <Route path="/chat" element={<RequireAuth><ChatPage /></RequireAuth>} />
+              {/* "Tin nhắn": one-to-one conversations between people (?to=<user id> opens one) */}
+              <Route path="/messages" element={<RequireAuth><MessagesPage /></RequireAuth>} />
               {/* review page for a submitted use case: admins comment, the author replies (others get "not found") */}
               <Route path="/review/:id" element={<RequireAuth><ReviewPage /></RequireAuth>} />
               {/* hidden — no nav link, direct URL only; has its own login + admin-role gate */}

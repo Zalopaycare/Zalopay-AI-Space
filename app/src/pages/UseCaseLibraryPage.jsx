@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
+import ShareToDM from '../components/ShareToDM.jsx'
 import { fold } from '../lib/fold.js'
 import { parseUseCaseDocx, TEMPLATE_URL } from '../lib/docxImport.js'
 import { rememberReturn, hasReturn, useScrollReturn } from '../lib/scrollReturn.js'
@@ -109,6 +110,7 @@ export default function UseCaseLibraryPage() {
   const ucModals = useCommentModals(api)
   const [expandedThreads, setExpandedThreads] = useState(() => new Set())
   const [openMenuId, setOpenMenuId] = useState(null)
+  const [shareUc, setShareUc] = useState(null) // use case being sent to someone in Tin nhắn
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const [libCat, setLibCat] = useState(() => new URLSearchParams(window.location.search).get('cat'))
@@ -312,6 +314,11 @@ export default function UseCaseLibraryPage() {
     const url = window.location.origin + '/use-cases/' + ucId
     copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
+  }
+
+  const shareCase = (c) => {
+    setOpenMenuId(null)
+    requireLogin(() => setShareUc({ kind: 'usecase', id: c.id, title: c.title, link: window.location.origin + '/use-cases/' + c.id }))
   }
 
   const deleteUseCase = (ucId, reason) => {
@@ -718,6 +725,7 @@ export default function UseCaseLibraryPage() {
                   onHelpful={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
                   replies={commentsList.length}
                   onReply={() => document.querySelector('#comments textarea, #comments [contenteditable="true"]')?.focus()}
+                  onShare={() => shareCase(dsel)}
                 />
               </div>
 
@@ -891,6 +899,10 @@ export default function UseCaseLibraryPage() {
                               <button onClick={(e) => copyCardLink(e, c.id)} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                                 {t('Sao chép link')}
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); shareCase(c) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"></path><path d="M22 2 11 13"></path></svg>
+                                {t('Gửi qua tin nhắn')}
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); c.onSave(e); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -1310,6 +1322,7 @@ export default function UseCaseLibraryPage() {
     <Layout active="usecase">
       {isDetail ? renderDetail() : renderLibrary()}
       {shareOpen && createPortal(renderShareModal(), document.body)}
+      {shareUc && <ShareToDM share={shareUc} onClose={() => setShareUc(null)} />}
     </Layout>
   )
 }
