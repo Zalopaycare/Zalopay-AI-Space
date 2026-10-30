@@ -686,9 +686,10 @@ export default function QuestionsPage() {
                                               <button onClick={() => submitCommentReply(q.id)} style={css('flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
                                             </div>
                                           )}
-                                          {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (
+                                          {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (<>
                                             <div style={css('margin-left:70px;')}><PendingAttachments files={att.files('rep:' + a.id + ':' + c.id)} onRemove={(i) => att.remove('rep:' + a.id + ':' + c.id, i)} error={att.errorFor('rep:' + a.id + ':' + c.id)} /></div>
-                                          )}
+                                            <div style={css('margin:6px 0 0 70px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời ẩn danh" /></div>
+                                          </>)}
                                         </div>
                                       )
                                     })}
@@ -714,6 +715,7 @@ export default function QuestionsPage() {
                                       <button onClick={a.onPostComment} style={css('flex:none; height:34px; padding:0 15px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
                                     </div>
                                     <div style={css('margin-left:36px;')}><PendingAttachments files={att.files('cmt:' + a.id)} onRemove={(k) => att.remove('cmt:' + a.id, k)} error={att.errorFor('cmt:' + a.id)} /></div>
+                                    <div style={css('margin:6px 0 0 36px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" /></div>
                                   </div>
                                 )}
                               </div>
