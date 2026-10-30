@@ -890,13 +890,6 @@ export default function QuestionsPage() {
           </div>,
           document.body,
         )}
-
-        <div style={css('display:flex; justify-content:center; padding:0 0 40px;')}>
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={css('display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; box-shadow:0 6px 18px rgba(30,50,90,.06);')}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
-            {t('Quay lại đầu trang')}
-          </button>
-        </div>
       </div>
     </div>
       {cmodals.modals}
