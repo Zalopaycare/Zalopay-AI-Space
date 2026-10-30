@@ -168,7 +168,8 @@ function Block({ b }) {
     case 'text':
       return (
         <div>
-          {b.title && <SubTitle>{b.title}</SubTitle>}
+          {/* hideTitle: the step's own name already says it (the title stays in the data, see showcase.js mergeStep) */}
+          {b.title && !b.hideTitle && <SubTitle>{b.title}</SubTitle>}
           <p style={css(`margin:0; font:400 14px/1.7 var(--zp-font-text); color:#3A4757; text-wrap:pretty; white-space:pre-line;`)}><Fill text={b.text} /></p>
         </div>
       )

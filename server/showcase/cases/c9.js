@@ -162,7 +162,7 @@ export default {
         title: 'Hỏi vì sao build/deploy lỗi',
         blocks: [
           { type: 'text', text: 'Dán mã ticket hoặc link job, hỏi "tại sao failed".' },
-          { type: 'text', title: 'Hỏi vì sao build/deploy lỗi', text: 'Dán link job hoặc mã ticket, kèm câu hỏi. Đây là các câu người dùng đã gõ thật trong demo.' },
+          { type: 'text', hideTitle: true, title: 'Hỏi vì sao build/deploy lỗi', text: 'Dán link job hoặc mã ticket, kèm câu hỏi. Đây là các câu người dùng đã gõ thật trong demo.' },
           { type: 'prompt', label: 'Tình huống 1 — link job bị lỗi', text: 'Taxi tại sao pipeline này failed: https://new-jenkins.zalopay.vn/job/zpp/job/merchant-v2/job/web-service/job/system/job/create-ticket/132/' },
           { type: 'prompt', label: 'Tình huống 2 — link job bị lỗi', text: 'Taxi . https://new-jenkins.zalopay.vn/job/top/job/cicd/job/taxi-agent/job/system/job/create-ticket/13/ tại sao pipeline này failed' },
           { type: 'prompt', label: 'Tình huống 3 — mã ticket', text: 'Taxi : CICD-278524 ticket này sao failed' },
@@ -175,7 +175,7 @@ export default {
       {
         title: 'Hỏi về quy trình',
         blocks: [
-          { type: 'text', title: 'Hỏi quy trình (cho dev mới)', text: 'Hỏi bằng câu bình thường, có thể kèm mã ticket.' },
+          { type: 'text', hideTitle: true, title: 'Hỏi quy trình (cho dev mới)', text: 'Hỏi bằng câu bình thường, có thể kèm mã ticket.' },
           { type: 'prompt', label: 'Tình huống 5 — điều kiện chuyển bước', text: 'Taxi điều kiện để next step PROJECTEST-73 trong project này là gì' },
           { type: 'prompt', label: 'Tình huống 5 — cách deploy', text: 'Taxi làm sao để deploy service lên staging' },
         ],
@@ -183,7 +183,7 @@ export default {
       {
         title: 'Hỏi trạng thái và tài nguyên project',
         blocks: [
-          { type: 'text', title: 'Hỏi trạng thái và tài nguyên của project', text: 'Người dùng thường chỉ được xem project cùng squad.' },
+          { type: 'text', hideTitle: true, title: 'Hỏi trạng thái và tài nguyên của project', text: 'Người dùng thường chỉ được xem project cùng squad.' },
           { type: 'prompt', label: 'Tình huống 9a', text: 'Taxi trạng thái deployment của project : top:cicd:csm đang là gì ?' },
           { type: 'prompt', label: 'Tình huống 9b', text: 'Taxi workload deployment là gì ?' },
           { type: 'prompt', label: 'Tình huống 9c', text: 'Taxi xem workload của project: top:cicd:csm' },

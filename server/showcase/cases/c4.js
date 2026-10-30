@@ -184,7 +184,7 @@ export default {
       {
         title: 'Đổi sang tên miền dễ nhớ',
         blocks: [
-          { type: 'text', title: 'Đổi sang tên miền dễ nhớ', text: 'Sau khi deploy, ứng dụng của bạn có địa chỉ tự sinh kiểu https://a1b2c3.ai.zalopay.xyz. Bạn có thể nhờ AI đổi nó sang một tên miền dễ nhớ hơn.' },
+          { type: 'text', hideTitle: true, title: 'Đổi sang tên miền dễ nhớ', text: 'Sau khi deploy, ứng dụng của bạn có địa chỉ tự sinh kiểu https://a1b2c3.ai.zalopay.xyz. Bạn có thể nhờ AI đổi nó sang một tên miền dễ nhớ hơn.' },
           { type: 'note', tone: 'warn', title: 'Điều kiện bắt buộc', text: 'Tên miền mới phải được trỏ sẵn về server Agent Base trước. Các tên miền kết thúc bằng ai.zalopay.xyz là vùng do hệ thống tự quản lý, bạn không tự đặt được.' },
           { type: 'prompt', label: 'Prompt đổi tên miền', text: 'update ứng dụng luanpd_demo-chatbot sang domain chatbot-demo.zalopay.vn dùm nhé.' },
           { type: 'result', label: 'Kết quả', title: 'Kết quả', code: 'ZLP Update Domain — luanpd_demo-chatbot\nKết quả : THÀNH CÔNG\nDomain cũ : https://a1b2c3.ai.zalopay.xyz\nDomain mới : https://chatbot-demo.zalopay.vn\nRedeploy : finished' },
@@ -194,7 +194,7 @@ export default {
       {
         title: 'Dừng hoặc xoá ứng dụng',
         blocks: [
-          { type: 'text', title: 'Dừng / Xoá ứng dụng', text: 'Dùng khi: cần dừng tạm thời, hoặc đã thử nghiệm xong cần xoá, không dùng nữa.' },
+          { type: 'text', hideTitle: true, title: 'Dừng / Xoá ứng dụng', text: 'Dùng khi: cần dừng tạm thời, hoặc đã thử nghiệm xong cần xoá, không dùng nữa.' },
           { type: 'prompt', label: 'Tạm dừng', text: 'Tạm dừng ứng dụng luanpd_demo-chatbot trên zalopay agent base dùm nhé.' },
           { type: 'prompt', label: 'Xóa', text: 'xoá ứng dụng luanpd_demo-chatbot trên zalopay agent base dùm nhé.' },
           { type: 'note', tone: 'info', text: 'Để tránh xoá nhầm, AI luôn hiển thị đầy đủ thông tin ứng dụng sắp xoá rồi hỏi lại bạn hai câu riêng biệt. Nếu bạn gõ tên không đầy đủ và có nhiều ứng dụng giống nhau, AI sẽ hỏi lại chứ không tự đoán.' },
