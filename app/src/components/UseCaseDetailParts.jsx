@@ -99,7 +99,8 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
           columns, cover first). Older screenshots of other shapes are shown whole. */}
       <div className={c.coverUrl || onUploadCover ? 'zp-hero-split' : undefined}>
         <div style={css('min-width:0;')}>
-          <h1 className="zp-detail-title" style={css('margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-1px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
+          {/* a big bold name over a calm one-line description (about 2.4 : 1) */}
+          <h1 className="zp-detail-title" style={css('margin:0; font-size:40px; line-height:1.12; font-weight:800; letter-spacing:-1.2px; color:#fff; text-wrap:balance;')}>{c.title}</h1>
           {/* Everyone who built it (or the poster), right under the title. */}
           {(h.members?.length > 0 || h.owner) && (
             <div style={css('display:flex; align-items:baseline; gap:8px; margin-top:12px; flex-wrap:wrap; font-size:13px; line-height:1.5;')}>
@@ -108,7 +109,7 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
               <AnonTag p={c} dark />
             </div>
           )}
-          {c.desc && <p style={css('margin:12px 0 0; max-width:820px; font-size:14px; line-height:1.55; color:rgba(230,236,250,.9); text-wrap:pretty;')}>{c.desc}</p>}
+          {c.desc && <p style={css('margin:14px 0 0; max-width:820px; font-size:17px; line-height:1.6; color:rgba(230,236,250,.82); text-wrap:pretty;')}>{c.desc}</p>}
         </div>
         {/* no cover yet: admins and the owners get an empty 16:9 frame with an upload button */}
         {!c.coverUrl && onUploadCover && (

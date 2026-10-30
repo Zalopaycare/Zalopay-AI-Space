@@ -7,7 +7,7 @@ import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
 import RichText from '../components/RichText.jsx'
 import CoverImage from '../components/CoverImage.jsx'
-import { AI_TOOLS, OTHER } from '../lib/taxonomy.js'
+import { AI_TOOLS, OTHER, categoryOf, toolGroup, CATEGORIES } from '../lib/taxonomy.js'
 import { renderMentions } from '../components/MentionField.jsx'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
@@ -49,8 +49,7 @@ const BOOTH_CATS = { 'Software Development': 'Coding & Technical', 'Test Automat
 const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
 const TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Khác']
 const TOOLS = [...AI_TOOLS, OTHER]
-const TOOL_LIST = AI_TOOLS
-const SORT_OPTS = [{ label: 'Mới nhất', val: 'new' }, { label: 'Nổi bật', val: 'helpful' }]
+const SORT_OPTS = [{ label: 'Mới nhất', val: 'new' }, { label: 'Được yêu thích nhất', val: 'helpful' }]
 const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '', fitYes: '', fitNo: '', pitfalls: '', tech: '', success: '', safety: '' }
 // One step of Tự áp dụng: its name, what to do, an optional prompt / command, an optional red warning.
 const EMPTY_STEP = { title: '', text: '', prompt: '', note: '', files: [] }
@@ -515,7 +514,12 @@ export default function UseCaseLibraryPage() {
   // ---- library filter/sort/derivations ----
   const q = fold(query.trim())
   const meta = prdMeta
-  const catList = useMemo(() => Array.from(new Set([...allCases, ...pendingCases].map((c) => c.category))).sort((a, b) => a.localeCompare(b, 'vi')), [pubV])
+  // Filters list the form's own categories and the AI tools actually used, each with how many use cases have it
+  // (built-in labels and booth categories are filed under the form's categories; "Claude Code" counts as Claude).
+  const catCount = useMemo(() => { const n = {}; for (const c of [...allCases, ...pendingCases]) { const k = categoryOf(c.category); n[k] = (n[k] || 0) + 1 } return n }, [pubV])
+  const catList = CATEGORIES.filter((c) => catCount[c])
+  const toolCount = useMemo(() => { const n = {}; for (const c of allCases) for (const tl of new Set((c.tools || []).map(toolGroup))) n[tl] = (n[tl] || 0) + 1; return n }, [pubV])
+  const toolList = Object.keys(toolCount).sort((a, b) => toolCount[b] - toolCount[a] || a.localeCompare(b))
 
   const libCases = useMemo(() => {
     let list = allCases.map((c) => {
@@ -523,14 +527,14 @@ export default function UseCaseLibraryPage() {
       const live = ucMeta[c.id]
       return { ...c, kind: kindOf(c.id), status: statusOf(c.id), ...m, ...(live ? { helpful: live.helpful, comments: live.comments.length } : {}) }
     })
-    if (libCat) list = list.filter((c) => c.category === libCat)
+    if (libCat) list = list.filter((c) => categoryOf(c.category) === libCat)
     if (libTopic) list = list.filter((c) => (c.topics || []).indexOf(libTopic) >= 0)
     if (libGroup) {
       const lt = teamsData.find((x) => x.name === libGroup)
       const lm = lt ? lt.match : [libGroup]
       list = list.filter((c) => lm.some((k) => c.category.toLowerCase().includes(k.toLowerCase())))
     }
-    if (libTool) list = list.filter((c) => c.tools.includes(libTool))
+    if (libTool) list = list.filter((c) => c.tools.some((tl) => toolGroup(tl) === libTool))
     if (libKind) list = list.filter((c) => c.kind === libKind)
     if (q) list = list.filter((c) => fold([c.title, c.desc, c.author, c.team, authorInfoFor(c.author).name, c.category, c.tools.join(' '), (c.topics || []).join(' ')].join(' ')).includes(q))
     if (libSort === 'helpful') list = list.slice().sort((a, b) => (b.helpful || 0) - (a.helpful || 0))
@@ -545,14 +549,14 @@ export default function UseCaseLibraryPage() {
   // "Thông tin đang được cập nhật" booth tiles follow the search box and Category; they have no tools, topics or
   // kind, so any of those filters hides them.
   const pendingList = (libTool || libTopic || libKind || libGroup) ? [] : pendingCases.filter((p) =>
-    (!libCat || p.category === libCat) && (!q || fold([p.title, p.team, p.label, p.category, ...(p.members || [])].join(' ')).includes(q)))
+    (!libCat || categoryOf(p.category) === libCat) && (!q || fold([p.title, p.team, p.label, p.category, ...(p.members || [])].join(' ')).includes(q)))
   // every use case on one page (no paging while the library is small)
   const libCards = libCases.map(mapCard)
   const activeFilterCount = [libCat, libTopic, libTool, libGroup, libKind].filter(Boolean).length
 
-  const catOptions = [{ label: 'Tất cả category', val: null }, ...catList.map((c) => ({ label: c, val: c }))]
+  const catOptions = [{ label: 'Tất cả category', val: null }, ...catList.map((c) => ({ label: `${c === 'Other' ? 'Khác' : c} (${catCount[c]})`, val: c }))]
     .map((o) => ({ label: t(o.label), active: (libCat || null) === (o.val || null), onClick: () => { setLibCat(o.val); closeDrop() } }))
-  const toolOptions = [{ label: 'Tất cả công cụ AI', val: null }, ...TOOL_LIST.map((tl) => ({ label: tl, val: tl }))]
+  const toolOptions = [{ label: 'Tất cả công cụ AI', val: null }, ...toolList.map((tl) => ({ label: `${tl} (${toolCount[tl]})`, val: tl }))]
     .map((o) => ({ label: t(o.label), active: (libTool || null) === (o.val || null), onClick: () => { setLibTool(o.val); closeDrop() } }))
   const sortOptions = SORT_OPTS.map((o) => ({ label: t(o.label), active: libSort === o.val, onClick: () => { setLibSort(o.val); closeDrop() } }))
   const libFilters = (
@@ -855,7 +859,8 @@ export default function UseCaseLibraryPage() {
       <div style={css('background:#07070c; color:#fff;')}>
         <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
           <SpaceBackdrop arcTop={190} />
-          <div style={css('position:relative; z-index:4; padding:22px var(--zp-gutter) 0;')}>
+          {/* 54px down: level with the AI Space wordmark, which has its UFO strip above it */}
+          <div style={css('position:relative; z-index:4; padding:54px var(--zp-gutter) 0;')}>
             <h1 style={css('margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:50px; line-height:1.06; font-weight:800; letter-spacing:-1px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Use Case Library')}</h1>
             <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Tổng hợp các cách và tips Zalopay Starter áp dụng AI vào công việc.')}</p>
           </div>

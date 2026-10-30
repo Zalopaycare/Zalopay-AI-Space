@@ -760,10 +760,10 @@ export default function QuestionsPage() {
         ) : (
         <div>
           {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
-          {/* same box as the Use Case Library title (22px down, 53px tall, the line under it alike), so switching tabs doesn't jump;
+          {/* same box as the Use Case Library title (the UFO's 32px strip, then 53px of wordmark, the line under it alike), so switching tabs doesn't jump;
               the wordmark keeps 10px below itself, hence no margin above the line and 10px under the section */}
           <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:2; padding:22px var(--zp-gutter) 10px; background:transparent; text-align:center; overflow:visible;')}>
-            <HeroWordmark width={361} ufoInline={false} />
+            <HeroWordmark width={361} />
             <p className="zp-tagline" style={css('position:relative; margin:0 auto; max-width:760px; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Không gian chia sẻ, hỏi đáp và thảo luận mọi thứ về AI.')}</p>
           </section>
 

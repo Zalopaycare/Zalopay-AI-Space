@@ -33,12 +33,11 @@ const UFO_STARS = [
  * and the AI tool logos floating around it. The intro keyframes run when an ancestor has the
  * `zp-intro` class (see index.css); otherwise it shows the settled state.
  */
-// `width`: the wordmark's width (its height follows). `ufoInline`: false lays the UFO strip over the
-// space above instead of taking room, so the wordmark sits where a page title would.
-export default function HeroWordmark({ width = 320, ufoInline = true }) {
+// `width`: the wordmark's width (its height follows).
+export default function HeroWordmark({ width = 320 }) {
   return (
     <>
-      <div style={css(`position:relative; max-width:${width}px; width:100%; margin:0 auto; height:32px; ${ufoInline ? '' : 'margin-top:-32px;'}`)}>
+      <div style={css(`position:relative; max-width:${width}px; width:100%; margin:0 auto; height:32px;`)}>
         {UFO_STARS.map((s, i) => (
           <span key={i} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, borderRadius: '50%', background: '#fff', boxShadow: '0 0 6px 1px rgba(255,255,255,.75)', animation: `twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, pointerEvents: 'none' }}></span>
         ))}

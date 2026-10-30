@@ -41,7 +41,7 @@ const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose
               placeholder={t(placeholder)}
               aria-label={t(placeholder)}
               className="zp-search-input"
-              style={css(`flex:1; min-width:0; border:none; outline:none; background:transparent; font:400 13px var(--zp-font-text); color:#0F172A;`)}
+              style={css(`flex:1; min-width:0; border:none; outline:none; background:transparent; font:400 12.5px var(--zp-font-text); color:#0F172A;`)}
               {...inputProps}
             />
             {query && (
