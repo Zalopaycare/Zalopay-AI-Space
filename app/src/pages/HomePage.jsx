@@ -148,7 +148,7 @@ export default function HomePage() {
 
   // Keyboard: ↑/↓ walk the results, Enter opens the highlighted one, or (none highlighted) the page
   // with more matches pre-filtered by the query; Esc closes the panel.
-  const flatResults = [...searchUc, ...searchQ]
+  const flatResults = [...searchQ, ...searchUc] // same order as the nav: AI Thread, then Use Case Library
   const onSearchKey = (e) => {
     if (e.key === 'Escape') { if (searchOpen && searchNeedle) { e.preventDefault(); setSearchOpen(false); setActiveIdx(-1) } return }
     if (!searchNeedle) return
@@ -247,7 +247,7 @@ export default function HomePage() {
                   {t('Chưa có kết quả cho')} "<span style={css('color:#0F172A;')}>{homeQuery.trim()}</span>"
                 </div>
               ) : (
-                [['Use case', searchUc, '/use-cases'], ['AI Thread', searchQ, '/questions']].filter(([, list]) => list.length).map(([label, list, base]) => (
+                [['AI Thread', searchQ, '/questions'], ['Use case', searchUc, '/use-cases']].filter(([, list]) => list.length).map(([label, list, base]) => (
                   <div key={label} style={css('padding:4px 0;')}>
                     <div style={css('display:flex; align-items:center; justify-content:space-between; padding:8px 12px 4px;')}>
                       <span style={css(`font:800 11.5px ${FONT}; letter-spacing:.05em; text-transform:uppercase; color:#94a3b8;`)}>{t(label)} · {list.total}</span>

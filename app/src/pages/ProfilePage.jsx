@@ -190,7 +190,7 @@ export default function ProfilePage() {
   }, [])
   const notif = useNotifications(!!user)
   const section = /#(overview|activity|usecase|question|saved|archived)\b/.exec(hash || '')?.[1] || 'overview'
-  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu', archived: 'Đã lưu trữ' }[section])
+  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu', archived: 'Bài đã ẩn' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -400,7 +400,7 @@ export default function ProfilePage() {
     .then(() => showToast('Đã đăng lại'))
     .catch(() => showToast('Chưa làm được, thử lại nhé'))
 
-  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : section === 'archived' ? t('Đã lưu trữ') : ''
+  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : section === 'archived' ? t('Bài đã ẩn') : ''
 
   return (
     <Layout active="profile">
@@ -552,9 +552,9 @@ export default function ProfilePage() {
         {section === 'archived' && (
           <section style={css('position:relative; padding:14px var(--zp-gutter) 28px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              <p style={css('margin:0 0 14px; font-size:13.5px; line-height:1.55; color:#a9b8dc;')}>{t('Bài bạn lưu trữ không còn hiện với người khác nhưng chưa bị xoá. Bấm Đăng lại để bài hiện công khai như cũ.')}</p>
+              <p style={css('margin:0 0 14px; font-size:13.5px; line-height:1.55; color:#a9b8dc;')}>{t('Bài bạn ẩn không còn hiện với người khác nhưng chưa bị xoá (khác với Đã lưu: bài của người khác bạn đánh dấu để đọc lại). Bấm Đăng lại để bài hiện công khai như cũ.')}</p>
               {archivedItems.length === 0 ? (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu trữ bài nào. Mở menu ⋯ trên thread hay use case của bạn và chọn Lưu trữ.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa ẩn bài nào. Mở menu ⋯ trên thread hay use case của bạn và chọn Ẩn bài.')}</div>
               ) : (
                 <div style={css('display:flex; flex-direction:column; gap:10px;')}>
                   {archivedItems.map((it) => (

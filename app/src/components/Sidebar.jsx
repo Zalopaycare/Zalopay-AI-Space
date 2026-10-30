@@ -100,23 +100,23 @@ export default function Sidebar({ active }) {
         }>Home</NavLink>
         {mobile && (
           <>
-            <NavLink to="/use-cases" active={active === 'usecase'} collapsed={false} title={t('Use Case Library')} icon={
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
-            }>{t('Use Case Library')}</NavLink>
             <NavLink to="/questions" active={active === 'question'} collapsed={false} title={t('AI Thread')} icon={
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
             }>{t('AI Thread')}</NavLink>
+            <NavLink to="/use-cases" active={active === 'usecase'} collapsed={false} title={t('Use Case Library')} icon={
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+            }>{t('Use Case Library')}</NavLink>
           </>
         )}
       </nav>
 
       <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
-        <NavLink to="/use-cases?share=1" collapsed={collapsed} title={t('Chia sẻ use case')} icon={
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-        }>{t('Chia sẻ use case')}</NavLink>
         <NavLink to="/questions#ask" collapsed={collapsed} title={t('Đăng thread')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
         }>{t('Đăng thread')}</NavLink>
+        <NavLink to="/use-cases?share=1" collapsed={collapsed} title={t('Chia sẻ use case')} icon={
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        }>{t('Chia sẻ use case')}</NavLink>
         <NavLink to="/chat" active={active === 'chat'} collapsed={collapsed} title={t('Chat với Admin')} icon={
           <span style={css('position:relative; display:inline-flex; flex:none;')}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></svg>
@@ -154,10 +154,10 @@ export default function Sidebar({ active }) {
             <SubLink to="/profile#saved" active={sub === 'saved'} icon={
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             }>{t('Đã lưu')}</SubLink>
-            {/* my threads and use cases put away without deleting them; they can be posted again from there */}
+            {/* my threads and use cases hidden from others without deleting them; they can be posted again from there */}
             <SubLink to="/profile#archived" active={sub === 'archived'} icon={
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
-            }>{t('Đã lưu trữ')}</SubLink>
+            }>{t('Bài đã ẩn')}</SubLink>
           </div>
         </>
       )}

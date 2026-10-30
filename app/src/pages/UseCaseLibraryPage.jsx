@@ -320,7 +320,7 @@ export default function UseCaseLibraryPage() {
     api.archiveSubmission(ucId).then(() => {
       loadPublishedUseCases(true)
       if (id === ucId) navigate('/use-cases')
-      showToast('Đã lưu trữ, xem lại ở Của tôi > Đã lưu trữ')
+      showToast('Đã ẩn bài, xem lại ở Của tôi > Bài đã ẩn')
     }).catch(() => showToast('Chưa làm được, thử lại nhé'))
   }
 
@@ -914,11 +914,11 @@ export default function UseCaseLibraryPage() {
                                   {t('Chỉnh sửa Use Case')}
                                 </button>
                               )}
-                              {/* my own post: put it away without deleting it (Của tôi > Đã lưu trữ posts it again) */}
+                              {/* my own post: put it away without deleting it (Của tôi > Bài đã ẩn posts it again) */}
                               {c.submitted && !!c.authorId && c.authorId === user?.id && (
                                 <button onClick={(e) => { e.stopPropagation(); archiveCase(c.id) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
-                                  {t('Lưu trữ')}
+                                  {t('Ẩn bài')}
                                 </button>
                               )}
                               {c.canDelete && (

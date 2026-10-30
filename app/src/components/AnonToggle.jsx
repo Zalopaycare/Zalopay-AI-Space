@@ -20,16 +20,17 @@ export default function AnonToggle({ on, onChange: setOn, alias, onAlias, label 
         </span>
         <span onClick={() => onChange(!on)}>{label}</span>
       </label>
-      {on && (
-        <input
-          value={alias}
-          onChange={(e) => onAlias(e.target.value)}
-          maxLength={40}
-          placeholder="Tên hiển thị (để trống = Anonymous + số riêng)"
-          aria-label="Tên hiển thị khi ẩn danh"
-          style={css('height:30px; min-width:0; width:220px; max-width:100%; padding:0 10px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none; box-sizing:border-box;')}
-        />
-      )}
+      {/* always there, just hidden while off: switching it on doesn't push anything around */}
+      <input
+        value={alias}
+        tabIndex={on ? 0 : -1}
+        aria-hidden={on ? undefined : true}
+        onChange={(e) => onAlias(e.target.value)}
+        maxLength={40}
+        placeholder="Tên hiển thị (để trống = Anonymous + số riêng)"
+        aria-label="Tên hiển thị khi ẩn danh"
+        style={css('height:30px; min-width:0; width:220px; max-width:100%; padding:0 10px; border:1px solid #DDE3EC; border-radius:9px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none; box-sizing:border-box; visibility:' + (on ? 'visible' : 'hidden') + ';')}
+      />
       {on && taken && <span role="alert" style={css('font-size:11.5px; font-weight:700; color:#D8232A;')}>Tên này trùng với một thành viên khác, hãy chọn tên khác.</span>}
     </div>
   )
