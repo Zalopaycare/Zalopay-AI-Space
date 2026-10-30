@@ -212,6 +212,8 @@ CREATE TABLE IF NOT EXISTS question_files (
   if (!has('users', 'avatar_data')) db.exec('ALTER TABLE users ADD COLUMN avatar_data BLOB')
   // Default display name for anonymous posts, set once in the profile.
   if (!has('users', 'anon_alias')) db.exec('ALTER TABLE users ADD COLUMN anon_alias TEXT')
+  // when the person closed the welcome tour (shown once, on whichever device they first sign in on)
+  if (!has('users', 'tour_seen_at')) db.exec('ALTER TABLE users ADD COLUMN tour_seen_at TEXT')
   // What Microsoft said about the person's organisation at the last SSO sign-in, and whether it makes them Zalopay staff (staffCheck.js).
   if (!has('users', 'org_info')) db.exec('ALTER TABLE users ADD COLUMN org_info TEXT')
   if (!has('users', 'staff_ok')) db.exec('ALTER TABLE users ADD COLUMN staff_ok INTEGER NOT NULL DEFAULT 0')

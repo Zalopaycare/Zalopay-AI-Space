@@ -228,6 +228,7 @@ router.patch('/me', (req, res) => {
     const alias = String(req.body.anonAlias || '').replace(/\s+/g, ' ').trim().slice(0, 40)
     db.prepare('UPDATE users SET anon_alias = ? WHERE id = ?').run(alias || null, req.user.id)
   }
+  if (req.body?.tourSeen === true) db.prepare("UPDATE users SET tour_seen_at = COALESCE(tour_seen_at, datetime('now')) WHERE id = ?").run(req.user.id)
   if (req.body?.avatarColor !== undefined) {
     const color = AVATAR_COLORS.includes(req.body.avatarColor) ? req.body.avatarColor : null
     db.prepare('UPDATE users SET avatar_color = ? WHERE id = ?').run(color, req.user.id)

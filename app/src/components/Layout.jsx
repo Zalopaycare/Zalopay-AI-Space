@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar.jsx'
 import TopNav from './TopNav.jsx'
+import WelcomeTour from './WelcomeTour.jsx'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 
@@ -18,6 +19,8 @@ export default function Layout({ active, children }) {
       <Sidebar active={active} />
       <div style={{ marginLeft: offset, paddingTop: 58, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: '#04060d', transition: 'margin-left .16s ease' }}>
         <TopNav />
+        {/* the welcome tour, once for someone new (and on request from the account menu) */}
+        <WelcomeTour />
         <main key={pathname} className={'zp-main ' + (typeof document !== 'undefined' && document.documentElement.classList.contains('zp-vt') ? '' : 'zp-page-in')} style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'clip' }}>
           {children}
         </main>

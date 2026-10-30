@@ -9,6 +9,7 @@ import { useNotifications } from '../lib/notifications.js'
 import { useChatUnread } from '../lib/chat.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import Avatar from './Avatar.jsx'
+import { openTour } from './WelcomeTour.jsx'
 
 const itemBase = 'display:flex; align-items:center; gap:12px; height:40px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14px; cursor:pointer; text-align:left; font-family:inherit; width:100%; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 const subItemBase = 'display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:13.5px; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
@@ -170,6 +171,10 @@ export default function Sidebar({ active }) {
                 <svg style={{ flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
                 {t('Hồ sơ của tôi')}
               </SoftLink>
+              <button onClick={() => { setMenuOpen(false); openTour() }} className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:9px; width:100%; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; text-align:left; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap;')}>
+                <svg style={{ flex: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 17h.01"></path></svg>
+                {t('Hướng dẫn sử dụng')}
+              </button>
               {user.isAdmin && (
                 <SoftLink
                   to="/admin"
