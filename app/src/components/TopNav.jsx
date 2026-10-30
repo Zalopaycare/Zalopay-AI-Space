@@ -7,8 +7,7 @@ import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 
 const NAV_ITEMS = [
-  { label: 'Home', to: '/', match: (p) => p === '/' },
-  { label: 'AI Thread', to: '/questions', match: (p) => p.startsWith('/questions') },
+  { label: 'AI Thread', to: '/', match: (p) => p === '/' || p.startsWith('/questions') },
   { label: 'Use Case Library', to: '/use-cases', match: (p) => p.startsWith('/use-cases') },
 ]
 

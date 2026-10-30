@@ -272,7 +272,7 @@ export default function ProfilePage() {
         if (d && d.question) setMyQuestions((list) => list.map((x) => (x.id === q.id ? d.question : x)))
         setSavedQuestions((list) => (d && d.question && d.question.saved ? [d.question, ...list.filter((x) => x.id !== q.id)] : list.filter((x) => x.id !== q.id)))
       }).catch(() => {}),
-      onEdit: () => navigate('/questions#edit=' + encodeURIComponent(q.id)),
+      onEdit: () => navigate('/#edit=' + encodeURIComponent(q.id)),
       onDelete: () => api.deleteQuestion(q.id).then(() => {
         setMyQuestions((list) => list.filter((x) => x.id !== q.id)); setSavedQuestions((list) => list.filter((x) => x.id !== q.id))
       }).catch(() => {}),
@@ -357,7 +357,7 @@ export default function ProfilePage() {
     title: qDraft.title || t('(Chưa có tiêu đề)'), meta: t('Bản nháp') + ' · ' + relativeTime(qDraft.savedAt),
     statusLabel: t('Đang nháp'), statusBg: '#EDF0FA', statusColor: '#3A4757',
     cta: t('Tiếp tục'), primary: true,
-    onOpen: () => navigate('/questions#ask'),
+    onOpen: () => navigate('/#ask'),
   }] : []
   const recentItems = [].concat(draftItem)
     .concat(myQuestions.map((q) => ({

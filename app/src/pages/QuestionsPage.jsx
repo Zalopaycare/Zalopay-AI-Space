@@ -24,6 +24,7 @@ import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
+import HeroWordmark from '../components/HeroWordmark.jsx'
 import CommentMenu, { InlineEdit, useCommentModals, LikeButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
 import MentionField, { MENTION_SPLIT, shortMention, expandMentions, renderMentions } from '../components/MentionField.jsx'
 
@@ -34,6 +35,8 @@ const OTHER = 'Khác'
 const normTool = normalizeTool
 const ASK_TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Coding & Technical', 'Báo cáo', 'Tự động hoá', 'Khác']
 export const QUESTION_DRAFT_KEY = 'zp-question-draft-v1'
+// The wordmark's intro motion plays once per visit (not again on every way back to the feed).
+let introPlayed = false
 const DEFAULT_CATEGORY = ['Khác']
 const MAX_ASK_IMAGES = 4
 const EMOJI = ['😀', '😅', '😍', '🤔', '👍', '🙏', '🔥', '🎉', '😢', '😮', '🚀', '💡', '✅', '❌', '⚠️', '❤️']
@@ -49,6 +52,8 @@ const renderBody = renderMentions
 
 export default function QuestionsPage() {
   const { t } = useI18n()
+  const [playIntro] = useState(() => !introPlayed)
+  useEffect(() => { introPlayed = true }, [])
   const { user, requireLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -177,7 +182,7 @@ export default function QuestionsPage() {
   }
   const deleteQuestion = (id, reason) => {
     api.deleteQuestion(id, reason).then(() => {
-      if (id === detailId) navigate('/questions', { replace: true })
+      if (id === detailId) navigate('/', { replace: true })
       setQuestions((qs) => qs.filter((q) => q.id !== id))
       setConfirmDeleteId(null)
     }).catch(() => setConfirmDeleteId(null))
@@ -731,7 +736,7 @@ export default function QuestionsPage() {
   return (
     <Layout active="question">
     <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow:clip;')}>
-      <SpaceBackdrop arcTop={190} />
+      <SpaceBackdrop arcTop={190} className={playIntro && !detailId ? 'zp-backdrop-intro' : undefined} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:relative; z-index:1;')}>
@@ -739,7 +744,7 @@ export default function QuestionsPage() {
         {detailId ? (
           <div style={css('padding:22px var(--zp-gutter) 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              <button onClick={() => (window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/questions'))} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 14px; padding:4px 0; border:none; background:none; cursor:pointer; color:#a9b8dc; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
+              <button onClick={() => (window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/'))} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 14px; padding:4px 0; border:none; background:none; cursor:pointer; color:#a9b8dc; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
                 {t('Thread')}
               </button>
@@ -754,12 +759,11 @@ export default function QuestionsPage() {
           </div>
         ) : (
         <div>
-          <div style={css('position:relative; background:transparent; padding:22px var(--zp-gutter) 0;')}>
-            <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
-              <h1 style={css('margin:0; text-align:center; font:800 50px/1.06 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('AI Thread')}</h1>
-              <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Chia sẻ, hỏi đáp và thảo luận mọi thứ về AI.')}</p>
-            </div>
-          </div>
+          {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
+          <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:2; padding:14px var(--zp-gutter) 0; background:transparent; text-align:center; overflow:hidden;')}>
+            <HeroWordmark />
+            <p className="zp-tagline" style={css('position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(214,226,250,.86); text-wrap:balance;')}>{t('Không gian chia sẻ, hỏi đáp và thảo luận mọi thứ về AI.')}</p>
+          </section>
 
           {/* the same bar as the Use Case Library: post prompt on top, search and sort under it */}
           <PageActionBar prompt="Bạn có gì muốn hỏi hay chia sẻ về AI?" cta="Đăng thread" onCompose={() => requireLogin(() => setView('ask'))} query={query} onQuery={setQuery} placeholder="Tìm bài viết, tác giả..." filters={
