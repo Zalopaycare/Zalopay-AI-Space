@@ -2,7 +2,8 @@ import express from 'express'
 import { db } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
-import { domainName, initialsOf } from '../mentions.js'
+import { domainName, initialsOf, appUrl } from '../mentions.js'
+import { sendMail } from '../mailer.js'
 import { notifyOnce } from '../notifications.js'
 import { decodeCommentFiles, saveCommentFiles, commentFilesOf } from '../commentFiles.js'
 import { visibleShowcase, PENDING_BY_ID, coverOf } from '../showcase.js'
@@ -10,6 +11,8 @@ import { visibleShowcase, PENDING_BY_ID, coverOf } from '../showcase.js'
 // "Tin nhắn": one-to-one conversations between people, like Threads' Messages. A message can carry a
 // use case or a thread someone forwarded ("Gửi qua tin nhắn"), shown as a card in the chat.
 // Clients poll with ?after=<last id>; seen marks (per person and conversation) drive the unread counts.
+// The recipient also gets an email, once per unread run: the first message after they last read the
+// conversation sends one, the ones after it don't, until they open it again.
 
 const router = express.Router()
 const MAX_BODY = 2000
@@ -123,11 +126,17 @@ router.post('/with/:uid', requireAuth, (req, res) => {
   const share = sk && sid ? shareCard(sk, sid) : null
   if (share && share.missing) return res.status(404).json({ error: 'share_not_found' })
   if (!body && !files.length && !share) return res.status(400).json({ error: 'empty' })
+  const quiet = unreadFrom(other.id, req.user.id) > 0 // they haven't read what I sent before: already emailed
   const r = db.prepare('INSERT INTO dm_messages (from_id, to_id, body, share_kind, share_id) VALUES (?, ?, ?, ?, ?)').run(req.user.id, other.id, body, share ? sk : null, share ? sid : null)
   if (files.length) saveCommentFiles('dm', String(r.lastInsertRowid), files)
   markSeen(req.user.id, other.id)
   const name = domainName(req.user.email, req.user.name)
   notifyOnce(other.email, 'dm', { ref: 'dm:' + req.user.id, text: `${name} nhắn cho bạn: "${preview(body, files, share)}"`, href: '/messages?to=' + req.user.id, actor: req.user.name })
+  if (!quiet) {
+    const what = share ? `\n\n${share.kind === 'thread' ? 'Thread' : 'Use case'}: ${share.kind === 'thread' ? share.text : share.title}\n${appUrl(req)}${share.href}` : ''
+    const said = body ? `\n\n"${body.length > 500 ? body.slice(0, 500).trimEnd() + '…' : body}"` : !share ? `\n\n${preview(body, files, share)}` : ''
+    sendMail({ to: other.email, subject: `${name} vừa nhắn tin cho bạn trên Zalopay AI Space`, text: `${name} vừa nhắn tin cho bạn.${said}${what}\n\nXem và trả lời tại: ${appUrl(req)}/messages?to=${req.user.id}` }).catch(() => {})
+  }
   res.status(201).json({ message: messagesBetween(req.user.id, other.id, Number(r.lastInsertRowid) - 1)[0] })
 })
 
