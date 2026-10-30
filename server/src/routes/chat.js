@@ -95,13 +95,13 @@ router.get('/unread', requireAuth, (req, res) => {
 const requireAdmin = (req, res, next) => (req.user?.is_admin ? next() : res.status(403).json({ error: 'admin_only' }))
 
 router.get('/threads', requireAuth, requireAdmin, (req, res) => {
-  const rows = db.prepare(`SELECT m.user_id, m.id, m.body, m.from_admin, m.created_at FROM admin_chat_messages m
+  const rows = db.prepare(`SELECT m.user_id, m.id, m.body, m.from_admin, m.sender_id, m.created_at FROM admin_chat_messages m
     JOIN (SELECT user_id, MAX(id) last FROM admin_chat_messages GROUP BY user_id) l ON l.last = m.id ORDER BY m.id DESC`).all()
   const unreadStmt = db.prepare('SELECT COUNT(*) n FROM admin_chat_messages WHERE user_id = ? AND from_admin = 0 AND id > ?')
   res.json({
     threads: rows.map((r) => ({
       user: who(userById(r.user_id)),
-      last: { body: preview(r.body, db.prepare("SELECT mime FROM comment_files WHERE kind = 'chat' AND target_id = ?").all(String(r.id))), fromAdmin: !!r.from_admin, time: r.created_at },
+      last: { body: preview(r.body, db.prepare("SELECT mime FROM comment_files WHERE kind = 'chat' AND target_id = ?").all(String(r.id))), fromAdmin: !!r.from_admin, by: r.from_admin ? who(userById(r.sender_id)) : null, time: r.created_at },
       unread: unreadStmt.get(r.user_id, seenOf(r.user_id).admin_seen).n,
     })),
   })

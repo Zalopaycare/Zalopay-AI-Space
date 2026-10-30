@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Avatar from './Avatar.jsx'
 import { api } from '../lib/api.js'
+import { useAuth } from '../auth/AuthContext.jsx'
 import { css } from '../lib/style.js'
 import { refreshChatUnread } from '../lib/chat.js'
 import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from './CommentAttachments.jsx'
@@ -44,7 +45,8 @@ function useConversation(load, key) {
   return { messages, loaded, add }
 }
 
-function Bubbles({ messages, mineIf, intro, t }) {
+// `adminNames`: the admins' inbox labels each run of admin replies with who wrote it (the person chatting only sees "Admin").
+function Bubbles({ messages, mineIf, intro, adminNames = false, t }) {
   const items = []
   let prevDay = '', prev = null
   for (const m of messages) {
@@ -67,6 +69,7 @@ function Bubbles({ messages, mineIf, intro, t }) {
           {!it.mine && !it.m.fromAdmin && <span style={css('flex:none; width:30px;')}>{it.last && <Avatar user={it.m.sender} size={30} />}</span>}
           <div style={css(`max-width:min(72%, 560px); display:flex; flex-direction:column; align-items:${it.mine ? 'flex-end' : 'flex-start'};`)}>
             {!it.mine && it.first && <div style={css('margin:0 0 3px 12px; font-size:11px; font-weight:700; color:#64748b;')}>{it.m.fromAdmin ? 'Admin' : it.m.sender?.name}</div>}
+            {adminNames && it.mine && it.first && it.m.sender?.name && <div style={css('margin:0 12px 3px 0; font-size:11px; font-weight:700; color:#64748b;')}>Admin · {it.m.sender.name}</div>}
             {it.m.body && <div
               title={clock(it.m.time)}
               style={css(`padding:8px 13px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; ${it.mine
@@ -195,6 +198,7 @@ export function MyChat({ t }) {
 
 // ---- an admin: the shared inbox. `uid` = open conversation (null = none), `onOpen(uid | null)` switches. ----
 export function AdminInbox({ t, uid, onOpen }) {
+  const { user: me } = useAuth()
   const [threads, setThreads] = useState(null)
   const [q, setQ] = useState('')
   useEffect(() => {
@@ -236,7 +240,7 @@ export function AdminInbox({ t, uid, onOpen }) {
                     <span style={css('flex:none; font-size:11px; color:#94a3b8;')}>{shortTime(th.last.time)}</span>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:6px; margin-top:2px;')}>
-                    <span style={css(`flex:1; min-width:0; font-size:12.5px; color:${th.unread ? '#0F172A' : '#64748b'}; font-weight:${th.unread ? 700 : 400}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{th.last.fromAdmin ? t('Bạn') + ': ' : ''}{th.last.body}</span>
+                    <span style={css(`flex:1; min-width:0; font-size:12.5px; color:${th.unread ? '#0F172A' : '#64748b'}; font-weight:${th.unread ? 700 : 400}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{th.last.fromAdmin ? (th.last.by && th.last.by.id !== me?.id ? th.last.by.name : t('Bạn')) + ': ' : ''}{th.last.body}</span>
                     {th.unread > 0 && <span style={css('flex:none; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#2c5fff; color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{th.unread}</span>}
                   </div>
                 </div>
@@ -258,7 +262,7 @@ export function AdminInbox({ t, uid, onOpen }) {
             </div>
             <ScrollArea deps={[conv.messages.length, conv.loaded, uid]}>
               {conv.loaded
-                ? (conv.messages.length ? <Bubbles messages={conv.messages} mineIf={(m) => m.fromAdmin} t={t} /> : <div style={css('padding:30px; text-align:center; color:#94a3b8; font-size:13px;')}>{t('Chưa có tin nhắn.')}</div>)
+                ? (conv.messages.length ? <Bubbles messages={conv.messages} mineIf={(m) => m.fromAdmin} adminNames t={t} /> : <div style={css('padding:30px; text-align:center; color:#94a3b8; font-size:13px;')}>{t('Chưa có tin nhắn.')}</div>)
                 : <div style={css('padding:30px; text-align:center; color:#94a3b8; font-size:13px;')}>{t('Đang tải…')}</div>}
             </ScrollArea>
             <Composer t={t} placeholder={t('Trả lời với tư cách Admin…')} onSend={(body, files) => api.chatReply(uid, body, files).then((d) => { conv.add(d.message); api.chatThreads().then((x) => setThreads(x.threads || [])).catch(() => {}) })} />
@@ -267,7 +271,7 @@ export function AdminInbox({ t, uid, onOpen }) {
           <div style={css('flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:30px; text-align:center; color:#64748b;')}>
             <TeamMark size={52} />
             <div style={css('font-size:14px; font-weight:800; color:#0F172A;')}>{t('Chọn một cuộc trò chuyện')}</div>
-            <div style={css('font-size:12.5px; max-width:300px; line-height:1.5;')}>{t('Tin nhắn mọi người gửi Admin hiện ở cột bên trái. Admin nào trả lời cũng được, người nhắn sẽ thấy "Admin · tên bạn".')}</div>
+            <div style={css('font-size:12.5px; max-width:300px; line-height:1.5;')}>{t('Tin nhắn mọi người gửi Admin hiện ở cột bên trái. Admin nào trả lời cũng được: người nhắn chỉ thấy là "Admin", còn các admin thấy tên người đã trả lời.')}</div>
           </div>
         )}
       </div>
