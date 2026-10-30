@@ -38,7 +38,7 @@ import { avatarPhotoCss } from '../components/Avatar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, avatarPhoto, statusMeta, kindOf, statusOf, levelMeta, levelChip,
-  newestFirst, postedLabel, pendingCases, pendingCard, boothDone,
+  newestFirst, postedLabel, postedShort, pendingCases, pendingCard, boothDone,
 } from '../data/useCases.js'
 import PendingCases, { BoothInterest, BoothOwnerBar } from '../components/PendingCases.jsx'
 
@@ -922,6 +922,7 @@ export default function UseCaseLibraryPage() {
                           <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}>
                             <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {c.byline || c.author}<AnonTag p={c} />
                           </div>
+                          {postedShort(c) && <div style={css('margin-top:2px; font-size:12px; line-height:1.45; color:#94a3b8;')}>{postedShort(c)}</div>}
                           {c.overview && <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>}
                         </div>
                       </div>

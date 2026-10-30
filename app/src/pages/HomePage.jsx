@@ -14,7 +14,7 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
-import { allCases, prdMeta, avatarColor, avatarPhoto, newestFirst } from '../data/useCases.js'
+import { allCases, prdMeta, avatarColor, avatarPhoto, newestFirst, postedShort } from '../data/useCases.js'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
@@ -428,6 +428,7 @@ export default function HomePage() {
                       <div style={css(`margin-top:4px; font:400 12.5px/1.45 var(--zp-font-text); color:#5B6B82;`)}>
                         <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {item.byline || item.author}<AnonTag p={item} />
                       </div>
+                      {postedShort(allCases.find((x) => x.id === item.id) || item) && <div style={css(`margin-top:2px; font:400 12px/1.45 var(--zp-font-text); color:#94a3b8;`)}>{postedShort(allCases.find((x) => x.id === item.id) || item)}</div>}
                       {item.desc && <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>}
                     </div>
                   </div>

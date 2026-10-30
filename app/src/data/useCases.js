@@ -208,6 +208,12 @@ export function postedLabel(c) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+/** "Posted dd/mm/yy" under a preview card's owner; '' when it has no posting date (an AI Exhibition booth). */
+export function postedShort(c) {
+  const s = postedLabel(c)
+  return s ? 'Posted ' + s.slice(0, 6) + s.slice(8) : ''
+}
+
 /** "Mới nhất" order used everywhere (Home + Library): the fully written built-in cases first (newest
  *  first), then approved community posts (already newest first), then the AI Exhibition booths, which
  *  only have Vấn đề + Giải pháp so far. */
