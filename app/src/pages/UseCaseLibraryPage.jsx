@@ -53,7 +53,7 @@ const TOOL_LIST = AI_TOOLS
 const SORT_OPTS = [{ label: 'Mới nhất', val: 'new' }, { label: 'Nổi bật', val: 'helpful' }]
 const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '', fitYes: '', fitNo: '', pitfalls: '', tech: '', success: '', safety: '' }
 // One step of Tự áp dụng: its name, what to do, an optional prompt / command, an optional red warning.
-const EMPTY_STEP = { title: '', text: '', prompt: '', note: '' }
+const EMPTY_STEP = { title: '', text: '', prompt: '', note: '', files: [] }
 // The steps as plain text, for the old Prompt column (review page, older readers).
 const stepsAsText = (steps) => steps.map((x, i) => [`Bước ${i + 1}. ${x.title}`, x.text, x.prompt && 'Prompt / lệnh mẫu:\n' + x.prompt, x.note && 'Lưu ý: ' + x.note].filter(Boolean).join('\n')).join('\n\n')
 const EMPTY_HIGHLIGHTS = [{ value: '', label: '' }, { value: '', label: '' }, { value: '', label: '' }]
@@ -338,7 +338,8 @@ export default function UseCaseLibraryPage() {
   const restoredRef = useRef(false)
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  // a draft keeps files already uploaded, not new ones (their data would fill the browser's storage)
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps: shareSteps.map((x) => ({ ...x, files: (x.files || []).filter((f) => f.ref != null) })), shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
 
   // A draft left from last time isn't poured into the form on its own: opening the form asks first
   // ("Bạn có 1 use case đang nháp": go on with it, or start a new one).
@@ -597,7 +598,8 @@ export default function UseCaseLibraryPage() {
   const shareMemberList = shareMembers.split(/[,\n]/).map((x) => x.trim()).filter(Boolean)
   const catOtherOn = shareCategory.includes('Other')
   const shareCategoryList = shareCategory.flatMap((c) => (c === 'Other' ? (shareCatOther.trim() ? shareCatOther.split(',').map((x) => x.trim()).filter(Boolean) : []) : [c]))
-  const shareStepList = shareSteps.map((x) => ({ title: x.title.trim(), text: x.text.trim(), prompt: x.prompt.trim(), note: x.note.trim() })).filter((x) => x.title || x.text || x.prompt)
+  // files: kept ones go back as { ref } (plus what the preview shows), new ones carry their data
+  const shareStepList = shareSteps.map((x) => ({ title: x.title.trim(), text: x.text.trim(), prompt: x.prompt.trim(), note: x.note.trim(), files: x.files || [] })).filter((x) => x.title || x.text || x.prompt)
   // every step needs a name and something to do (or a prompt)
   const stepsReady = shareStepList.length > 0 && shareStepList.every((x) => x.title && (x.text || x.prompt))
   const shareExtra = () => ({
@@ -1243,7 +1245,7 @@ export default function UseCaseLibraryPage() {
                             </div>
                           )}
                           {shareFields.filter((f) => f.step === key).map(field)}
-                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} showMissing={showMissing} ready={stepsReady} />}
+                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} showMissing={showMissing} ready={stepsReady} allowFiles={!editingCase} />}
                           {key === 'more' && <CustomSections list={shareCustom} onChange={setShareCustom} t={t} adminEdit={!!editingCase} />}
                           {key === 'apply' && shareFields.filter((f) => f.step === 'apply2').map(field)}
                         </>
@@ -1355,8 +1357,23 @@ export default function UseCaseLibraryPage() {
  *  time): each step has a name, what to do, an optional prompt / command and an optional red warning. */
 // The steps of "Tự áp dụng" as a numbered path: each step is a card on a line from 1 to the last, with its
 // name and what to do; the prompt and the warning are added only when the step needs them.
-function StepsEditor({ steps, onChange, t, showMissing, ready }) {
+// A step's pictures / files: up to 3, 10 MB each, read in as data URLs until the form is sent.
+const MAX_STEP_FILES = 3
+const readFile = (file) => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file) })
+
+function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true }) {
   const [example, setExample] = useState(false)
+  const [fileErr, setFileErr] = useState({}) // step index → why a file wasn't added
+  const setFiles = (i, files) => onChange(steps.map((x, j) => (j === i ? { ...x, files } : x)))
+  const addFiles = async (i, list) => {
+    const have = steps[i].files || []
+    const room = MAX_STEP_FILES - have.length
+    const tooBig = list.filter((f) => f.size > 10 * 1024 * 1024)
+    const ok = list.filter((f) => f.size <= 10 * 1024 * 1024).slice(0, Math.max(0, room))
+    const added = await Promise.all(ok.map(async (f) => ({ name: f.name, size: f.size, image: /^image\/(png|jpeg|gif|webp)$/.test(f.type), data: await readFile(f) })))
+    setFiles(i, [...have, ...added])
+    setFileErr((e) => ({ ...e, [i]: tooBig.length ? t('File lớn hơn 10 MB nên chưa thêm') + ': ' + tooBig.map((f) => f.name).join(', ') : list.length > ok.length ? t('Mỗi bước tối đa') + ' ' + MAX_STEP_FILES + ' ' + t('file') : '' }))
+  }
   const set = (i, k) => (e) => onChange(steps.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
   const flag = (i, k) => onChange(steps.map((x, j) => (j === i ? { ...x, [k]: true } : x)))
   const move = (i, d) => { const n = [...steps]; [n[i], n[i + d]] = [n[i + d], n[i]]; onChange(n) }
@@ -1401,7 +1418,7 @@ function StepsEditor({ steps, onChange, t, showMissing, ready }) {
                   <span style={{ flex: 1 }}></span>
                   <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title={t('Lên trên')} aria-label={t('Lên trên')} className={hoverClass('background:#F1F4FA !important;')} style={css(icon + `opacity:${i === 0 ? 0.3 : 1};`)}>↑</button>
                   <button type="button" onClick={() => move(i, 1)} disabled={last} title={t('Xuống dưới')} aria-label={t('Xuống dưới')} className={hoverClass('background:#F1F4FA !important;')} style={css(icon + `opacity:${last ? 0.3 : 1};`)}>↓</button>
-                  <button type="button" onClick={() => onChange(steps.length > 1 ? steps.filter((_, j) => j !== i) : [{ title: '', text: '', prompt: '', note: '' }])} title={t('Xoá bước')} aria-label={t('Xoá bước')} className={hoverClass('background:#FFF1F1 !important; color:#D8232A !important;')} style={css(icon)}>✕</button>
+                  <button type="button" onClick={() => onChange(steps.length > 1 ? steps.filter((_, j) => j !== i) : [{ ...EMPTY_STEP }])} title={t('Xoá bước')} aria-label={t('Xoá bước')} className={hoverClass('background:#FFF1F1 !important; color:#D8232A !important;')} style={css(icon)}>✕</button>
                 </div>
                 <input value={x.title} onChange={set(i, 'title')} aria-label={t('Tên bước') + ' ' + (i + 1)} placeholder={t('Tên bước, ví dụ: Cài bộ skill vào Codex')} style={css(FIELD_INPUT + 'margin-top:6px; font-size:14.5px; font-weight:700;' + (missTitle ? MISS_FIELD : ''))} />
                 {missTitle && <MissLine text={t('Chưa điền tên bước')} />}
@@ -1424,6 +1441,29 @@ function StepsEditor({ steps, onChange, t, showMissing, ready }) {
                   <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;')}>
                     {!(x.prompt || x.withPrompt) && addBtn('Thêm prompt / lệnh mẫu', () => flag(i, 'withPrompt'))}
                     {!(x.note || x.withNote) && addBtn('Thêm lưu ý cho bước này', () => flag(i, 'withNote'), true)}
+                  </div>
+                )}
+                {/* optional pictures / files for this step, shown under it on the use case page */}
+                {allowFiles && (
+                  <div style={css('margin-top:12px;')}>
+                    {(x.files || []).length > 0 && (
+                      <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;')}>
+                        {x.files.map((f, k) => (
+                          <span key={k} style={css('display:inline-flex; align-items:center; gap:7px; max-width:100%; height:30px; padding:0 4px 0 8px; border:1px solid #DDE3EC; border-radius:999px; background:#F7F9FD; font-size:12px; font-weight:600; color:#3A4757;')}>
+                            {f.image ? <img src={f.url || f.data} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 4 }} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>}
+                            <span style={css('max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{f.name}</span>
+                            <button type="button" onClick={() => setFiles(i, x.files.filter((_, j) => j !== k))} aria-label={t('Bỏ file') + ' ' + f.name} style={css('border:none; background:none; cursor:pointer; color:#94a3b8; font-size:16px; line-height:1; padding:0 5px;')}>×</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {(x.files || []).length < MAX_STEP_FILES && (
+                      <label className={hoverClass('background:#EEF3FF !important;')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border:1px dashed #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:12px; font-weight:700; cursor:pointer;')}>
+                        <input type="file" multiple hidden onChange={(e) => { addFiles(i, [...(e.target.files || [])]); e.target.value = '' }} />
+                        + {t('Thêm hình / file')} <span style={css('font-weight:600; color:#94a3b8;')}>({t('không bắt buộc')})</span>
+                      </label>
+                    )}
+                    {fileErr[i] && <div style={css('margin-top:6px; font-size:12px; font-weight:600; color:#D8232A;')}>{fileErr[i]}</div>}
                   </div>
                 )}
               </div>

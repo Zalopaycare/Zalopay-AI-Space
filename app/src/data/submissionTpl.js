@@ -18,13 +18,14 @@ export function teamByline(s) {
   return (e.members || []).length ? e.members.join(', ') : s.team || ''
 }
 
-// A form step → a journey step: what to do, then its prompt / command, then its warning in red.
+// A form step → a journey step: what to do, then its prompt / command, its warning in red, then its pictures / files.
 const stepSectionsOf = (steps) => (steps || []).map((x, i) => ({
   title: x.title || `Bước ${i + 1}`,
   blocks: [
     x.text && { type: 'text', text: x.text },
     x.prompt && { type: 'prompt', label: 'Prompt / lệnh mẫu', text: x.prompt },
     x.note && { type: 'note', tone: 'warn', text: x.note },
+    (x.files || []).length && { type: 'files', files: x.files.map((f) => ({ name: f.name, size: f.size, image: !!f.image, url: f.url || f.data })) },
   ].filter(Boolean),
 }))
 

@@ -106,6 +106,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM use_case_reactions WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_saves WHERE use_case_id = ?').run(id)
   db.prepare('DELETE FROM use_case_ratings WHERE use_case_id = ?').run(id)
+  dropCommentFiles('ucstep', id)
   db.prepare('DELETE FROM use_case_submissions WHERE id = ?').run(id)
   afterRemoval(req, { authorId: row.author_id, what: 'use case', title: row.title, content: row.problem })
   res.json({ ok: true })
@@ -183,7 +184,7 @@ export function serializeSubmission(r, viewer) {
     publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
     // Only admins learn which admin reviewed it.
     reviewedBy: viewer && viewer.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
-    extra: parseExtra(r.extra),
+    extra: withStepFiles(r.id, parseExtra(r.extra)),
     canEdit: canEditSubmission(r, viewer),
     coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
   }
@@ -265,6 +266,46 @@ function cleanExtra(e, user) {
 }
 const parseExtra = (v) => { try { return v ? JSON.parse(v) : null } catch { return null } }
 
+// Pictures and files under a step of "Tự áp dụng" (optional, up to 3 a step): kept in comment_files as
+// kind 'ucstep', target = the submission, each under its own idx; extra.steps[i].files lists that step's idx.
+// The form sends each step's files as { ref: idx } (kept) or { name, data } (new), in the steps' order;
+// steps are skipped the way cleanExtra skips them, so the lists line up.
+const MAX_STEP_FILES = 3
+const stepFileInput = (steps) => (Array.isArray(steps) ? steps : []).slice(0, 15)
+  .filter((x) => txt(x && x.title, 120) || txt(x && x.text) || txt(x && x.prompt, 8000))
+  .map((x) => (Array.isArray(x.files) ? x.files.slice(0, MAX_STEP_FILES) : []))
+function saveStepFiles(id, steps) {
+  const inputs = stepFileInput(steps)
+  const have = new Set(db.prepare("SELECT idx FROM comment_files WHERE kind = 'ucstep' AND target_id = ?").all(id).map((r) => r.idx))
+  let next = Math.max(-1, ...have) + 1
+  const refs = inputs.map((list) => list.map((f) => {
+    if (f && Number.isInteger(f.ref)) return have.has(f.ref) ? f.ref : null
+    const file = (decodeCommentFiles([f]) || [])[0]
+    if (!file) return null
+    db.prepare("INSERT INTO comment_files (kind, target_id, idx, name, mime, size, data) VALUES ('ucstep', ?, ?, ?, ?, ?, ?)").run(id, next, file.name, file.mime, file.data.length, file.data)
+    return next++
+  }).filter((x) => x !== null))
+  const used = new Set(refs.flat())
+  for (const i of have) if (!used.has(i)) db.prepare("DELETE FROM comment_files WHERE kind = 'ucstep' AND target_id = ? AND idx = ?").run(id, i)
+  const ex = parseExtra(db.prepare('SELECT extra FROM use_case_submissions WHERE id = ?').get(id)?.extra)
+  if (!ex || !Array.isArray(ex.steps)) return
+  ex.steps = ex.steps.map((s, i) => (refs[i] && refs[i].length ? { ...s, files: refs[i] } : s))
+  db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(JSON.stringify(ex), id)
+}
+// extra as the page sees it: each step's file idx turned into { ref, name, size, image, url }
+function withStepFiles(id, ex) {
+  if (!ex || !Array.isArray(ex.steps) || !ex.steps.some((s) => (s.files || []).length)) return ex
+  const all = new Map(db.prepare("SELECT idx, name, mime, size FROM comment_files WHERE kind = 'ucstep' AND target_id = ?").all(id).map((f) => [f.idx, f]))
+  return {
+    ...ex,
+    steps: ex.steps.map((s) => ({
+      ...s,
+      files: (s.files || []).map((i) => all.get(i)).filter(Boolean)
+        .map((f) => ({ ref: f.idx, name: f.name, size: f.size, image: /^image\/(png|jpeg|gif|webp)$/.test(f.mime), url: `/api/files/ucstep/${encodeURIComponent(id)}/${f.idx}` })),
+    })),
+  }
+}
+
 const SUBMISSION_FIELDS = ['title', 'audience', 'problem', 'solution', 'prep']
 // Loại / Người thực hiện / Trạng thái / Team / Kết quả are optional; the steps (extra.steps) replaced the single
 // Prompt box, whose column now just carries those steps as text.
@@ -290,6 +331,7 @@ router.post('/submissions', requireAuth, (req, res) => {
   saveCover(id, cover)
   const anon = anonFields(f)
   db.prepare('UPDATE use_case_submissions SET extra = ?, anonymous = ?, alias = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), anon.anonymous, anon.alias, id)
+  saveStepFiles(id, f.extra && f.extra.steps)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
   for (const to of adminEmailsFor(req)) {
@@ -323,7 +365,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
       JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)
   // Older clients don't send `extra`; leave what's stored untouched then.
-  if (f.extra !== undefined) db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), row.id)
+  if (f.extra !== undefined) { db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), row.id); saveStepFiles(row.id, f.extra && f.extra.steps) }
   if (f.anonymous !== undefined) { const an = anonFields(f); db.prepare('UPDATE use_case_submissions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, row.id) }
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
@@ -348,6 +390,7 @@ router.delete('/submissions/:id', requireAuth, (req, res) => {
   if (!row) return res.json({ ok: true })
   const block = removalCheck(req, row.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
+  dropCommentFiles('ucstep', req.params.id)
   db.prepare('DELETE FROM use_case_submissions WHERE id = ?').run(req.params.id)
   db.prepare('DELETE FROM review_comments WHERE submission_id = ?').run(req.params.id)
   afterRemoval(req, { authorId: row.author_id, what: 'use case', title: row.title, content: row.problem })

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
 import Fill, { plainText } from './Fill.jsx'
+import { CommentFiles } from './CommentAttachments.jsx'
 
 // Building blocks for step-by-step use case content: prompts with Copy, mock AI result windows,
 // tables, coloured notes, tool tabs and click-to-zoom images (used by the detail page's part 5).
@@ -231,6 +232,8 @@ function Block({ b }) {
     case 'result': return <Result b={b} />
     case 'table': return <Table b={b} />
     case 'note': return <Note b={b} />
+    // pictures shown, other files as download links (a step's attachments from the share form)
+    case 'files': return <CommentFiles files={b.files} />
     case 'tabs': return <Tabs b={b} />
     default: return null
   }
