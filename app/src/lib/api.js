@@ -62,9 +62,10 @@ export const api = {
   reactQuestion: (id) => request(`/questions/${id}/react`, { method: 'POST' }),
   saveQuestion: (id) => request(`/questions/${id}/save`, { method: 'POST' }),
   postAnswer: (id, body, opts = {}) => request(`/questions/${id}/answers`, { method: 'POST', body: JSON.stringify({ body, ...opts }) }),
-  reactAnswer: (id, answerId) => request(`/questions/${id}/answers/${answerId}/react`, { method: 'POST' }),
-  reactAnswerComment: (id, answerId, commentId) => request(`/questions/${id}/answers/${answerId}/comments/${commentId}/react`, { method: 'POST' }),
-  reactUseCaseComment: (id, commentId) => request(`/use-cases/${id}/comments/${commentId}/react`, { method: 'POST' }),
+  // reactions: type = like | haha | wow | sad | angry (the same again takes it back)
+  reactAnswer: (id, answerId, type = 'like') => request(`/questions/${id}/answers/${answerId}/react`, { method: 'POST', body: JSON.stringify({ type }) }),
+  reactAnswerComment: (id, answerId, commentId, type = 'like') => request(`/questions/${id}/answers/${answerId}/comments/${commentId}/react`, { method: 'POST', body: JSON.stringify({ type }) }),
+  reactUseCaseComment: (id, commentId, type = 'like') => request(`/use-cases/${id}/comments/${commentId}/react`, { method: 'POST', body: JSON.stringify({ type }) }),
   acceptAnswer: (id, answerId) => request(`/questions/${id}/answers/${answerId}/accept`, { method: 'POST' }),
   editAnswer: (id, answerId, body) => request(`/questions/${id}/answers/${answerId}`, { method: 'PATCH', body: JSON.stringify({ body }) }),
   deleteAnswer: (id, answerId, reason) => request(`/questions/${id}/answers/${answerId}`, delBody(reason)),

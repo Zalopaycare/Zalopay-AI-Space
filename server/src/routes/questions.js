@@ -9,6 +9,7 @@ import { notifyMentions, appUrl, domainName, initialsOf, handleOf } from '../men
 import { notify, notifyUpvotes, notifyParticipants } from '../notifications.js'
 import { anonFields, maskAuthor, anonName } from '../anon.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
+import { summarize, reactionType, nextReaction } from '../reactions.js'
 
 const router = express.Router()
 
@@ -33,12 +34,12 @@ function loadQuestion(id, viewer) {
     const aAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(a.author_id)
     const comments = db.prepare('SELECT * FROM answer_comments WHERE answer_id = ? ORDER BY created_at ASC').all(a.id).map((c) => ({
       id: c.id, ...maskAuthor(userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), c, viewer), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at, files: commentFilesOf('acomment', c.id),
-      likes: db.prepare("SELECT COUNT(*) n FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ?").get(c.id).n,
-      liked: userId ? !!db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").get(c.id, userId) : false,
+      reactions: summarize(db.prepare("SELECT type, user_id FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ?").all(c.id), userId),
     }))
-    const helpful = db.prepare('SELECT COUNT(*) n FROM answer_reactions WHERE answer_id = ?').get(a.id).n
-    const iHelped = userId ? !!db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(a.id, userId) : false
-    return { id: a.id, ...maskAuthor(userBrief(aAuthor), a, viewer), time: a.created_at, helpful, iHelped, accepted: !!a.accepted, body: a.body, edited: !!a.edited_at, files: commentFilesOf('answer', a.id), comments }
+    const reactions = summarize(db.prepare('SELECT type, user_id FROM answer_reactions WHERE answer_id = ?').all(a.id), userId)
+    const helpful = reactions.total
+    const iHelped = !!reactions.mine
+    return { id: a.id, ...maskAuthor(userBrief(aAuthor), a, viewer), time: a.created_at, helpful, iHelped, reactions, accepted: !!a.accepted, body: a.body, edited: !!a.edited_at, files: commentFilesOf('answer', a.id), comments }
   })
   const qHelpful = db.prepare('SELECT COUNT(*) n FROM question_reactions WHERE question_id = ?').get(id).n
   const iHelpedQ = userId ? !!db.prepare('SELECT 1 FROM question_reactions WHERE question_id = ? AND user_id = ?').get(id, userId) : false
@@ -212,19 +213,21 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
 router.post('/:id/answers/:answerId/react', requireAuth, (req, res) => {
   const { id, answerId } = req.params
-  const exists = db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(answerId, req.user.id)
-  if (exists) db.prepare('DELETE FROM answer_reactions WHERE answer_id = ? AND user_id = ?').run(answerId, req.user.id)
-  else db.prepare('INSERT INTO answer_reactions (answer_id, user_id) VALUES (?, ?)').run(answerId, req.user.id)
+  const cur = db.prepare('SELECT type FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(answerId, req.user.id)
+  const next = nextReaction(cur && cur.type, reactionType(req.body?.type))
+  db.prepare('DELETE FROM answer_reactions WHERE answer_id = ? AND user_id = ?').run(answerId, req.user.id)
+  if (next) db.prepare('INSERT INTO answer_reactions (answer_id, user_id, type) VALUES (?, ?, ?)').run(answerId, req.user.id, next)
   res.json({ question: loadQuestion(id, req.user) })
 })
 
-// Like / unlike a comment under a reply.
+// React to a comment under a reply (body { type }: like / haha / wow / sad / angry; the same again takes it back).
 router.post('/:id/answers/:answerId/comments/:commentId/react', requireAuth, (req, res) => {
   const { id, answerId, commentId } = req.params
   if (!db.prepare('SELECT 1 FROM answer_comments WHERE id = ? AND answer_id = ?').get(commentId, answerId)) return res.status(404).json({ error: 'not_found' })
-  const has = db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").get(commentId, req.user.id)
-  if (has) db.prepare("DELETE FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").run(commentId, req.user.id)
-  else db.prepare("INSERT INTO comment_reactions (kind, comment_id, user_id) VALUES ('acomment', ?, ?)").run(commentId, req.user.id)
+  const cur = db.prepare("SELECT type FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").get(commentId, req.user.id)
+  const next = nextReaction(cur && cur.type, reactionType(req.body?.type))
+  db.prepare("DELETE FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").run(commentId, req.user.id)
+  if (next) db.prepare("INSERT INTO comment_reactions (kind, comment_id, user_id, type) VALUES ('acomment', ?, ?, ?)").run(commentId, req.user.id, next)
   res.json({ question: loadQuestion(id, req.user) })
 })
 

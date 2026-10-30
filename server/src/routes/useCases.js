@@ -10,6 +10,7 @@ import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes, notifyParticipants } from '../notifications.js'
 import { PENDING_BY_ID, pendingCases, isBoothOwner, boothAccounts, showcaseCases } from '../showcase.js'
+import { summarize, reactionType, nextReaction } from '../reactions.js'
 
 const router = express.Router()
 // Only http(s) links are stored (a "javascript:…" link would run code when clicked).
@@ -27,8 +28,7 @@ router.get('/:id/meta', requireAuth, (req, res) => {
     const brief = { author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? colorOf(u) : null, avatarUrl: u ? avatarUrlOf(u) : null, authorId: c.author_id }
     return {
       id: c.id, ...maskAuthor(brief, c, req.user), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at, files: commentFilesOf('uccomment', c.id),
-      likes: db.prepare("SELECT COUNT(*) n FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ?").get(c.id).n,
-      liked: req.user ? !!db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").get(c.id, req.user.id) : false,
+      reactions: summarize(db.prepare("SELECT type, user_id FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ?").all(c.id), req.user?.id),
     }
   })
   res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
@@ -467,13 +467,14 @@ export const deleteUseCaseCommentTx = db.transaction((commentId) => {
   db.prepare('DELETE FROM use_case_comments WHERE id = ?').run(commentId)
 })
 
-// Like / unlike a comment on a use case.
+// React to a comment on a use case (body { type }: like / haha / wow / sad / angry; the same again takes it back).
 router.post('/:id/comments/:commentId/react', requireAuth, (req, res) => {
   const { id, commentId } = req.params
   if (!db.prepare('SELECT 1 FROM use_case_comments WHERE id = ? AND use_case_id = ?').get(commentId, id)) return res.status(404).json({ error: 'not_found' })
-  const has = db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").get(commentId, req.user.id)
-  if (has) db.prepare("DELETE FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").run(commentId, req.user.id)
-  else db.prepare("INSERT INTO comment_reactions (kind, comment_id, user_id) VALUES ('uccomment', ?, ?)").run(commentId, req.user.id)
+  const cur = db.prepare("SELECT type FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").get(commentId, req.user.id)
+  const next = nextReaction(cur && cur.type, reactionType(req.body?.type))
+  db.prepare("DELETE FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").run(commentId, req.user.id)
+  if (next) db.prepare("INSERT INTO comment_reactions (kind, comment_id, user_id, type) VALUES ('uccomment', ?, ?, ?)").run(commentId, req.user.id, next)
   res.json({ ok: true })
 })
 

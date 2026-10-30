@@ -24,7 +24,7 @@ import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
-import CommentMenu, { InlineEdit, useCommentModals, Chevron, CommentLike } from '../components/CommentMenu.jsx'
+import CommentMenu, { InlineEdit, useCommentModals, ReactionButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
 import MentionField, { MENTION_SPLIT, shortMention, expandMentions, renderMentions } from '../components/MentionField.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -416,6 +416,7 @@ export default function QuestionsPage() {
         },
         onReply: () => setOpenComments((s) => ({ ...s, [a.id]: !s[a.id] })),
         onHelpful: () => requireLogin(() => api.reactAnswer(q.id, a.id).then((d) => patch(q.id, d.question)).catch(() => {})),
+        onReact: (type) => requireLogin(() => api.reactAnswer(q.id, a.id, type).then((d) => patch(q.id, d.question)).catch(() => {})),
         onAccept: () => accept(q.id, a.id),
       }
     })
@@ -593,21 +594,15 @@ export default function QuestionsPage() {
                                     : <div style={css('margin-top:1px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; text-wrap:pretty;')}>{a.bodyEl}</div>}
                                   <CommentFiles files={a.files} />
                                 </div>
-                                <div style={css('display:flex; align-items:center; gap:16px; margin:5px 0 0; flex-wrap:wrap;')}>
-                                  <button onClick={a.onHelpful} style={css(`display:inline-flex; align-items:center; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:${a.helpColor};`)}>
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill={a.helpFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
-                                    {a.helpful > 0 ? a.helpful : t('Thích')}
-                                  </button>
-                                  <button onClick={a.onReply} style={css('border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{a.replyLabel}</button>
+                                <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px; flex-wrap:wrap;')}>
+                                  <ReactionButton r={a.reactions} onReact={a.onReact} />
+                                  <ReplyButton count={a.comments.length} onClick={a.onReply} />
                                 </div>
 
                                 {a.showComments && (
                                   <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:10px;')}>
                                     {!inModal && a.comments.filter((c) => !c.parentId).length > 1 && (
-                                      <button onClick={() => toggleCommentThread('a:' + a.id)} style={css('align-self:flex-start; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
-                                        <Chevron up={expandedCommentThreads.has('a:' + a.id)} />
-                                        {expandedCommentThreads.has('a:' + a.id) ? t('Ẩn replies') : t('Xem thêm') + ' ' + a.comments.filter((c) => !c.parentId).length + ' ' + t('replies')}
-                                      </button>
+                                      <RepliesToggle people={a.comments.filter((c) => !c.parentId)} count={a.comments.filter((c) => !c.parentId).length} open={expandedCommentThreads.has('a:' + a.id)} onClick={() => toggleCommentThread('a:' + a.id)} style={{ alignSelf: 'flex-start' }} />
                                     )}
                                     {a.comments.filter((c) => !c.parentId).filter((c, i, arr) => inModal || arr.length <= 1 || expandedCommentThreads.has('a:' + a.id)).map((c) => {
                                       const replies = a.comments.filter((r) => r.parentId === c.id)
@@ -628,16 +623,16 @@ export default function QuestionsPage() {
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
                                                 : <div style={css('margin-top:1px; font:400 13.5px/1.5 var(--zp-font-text); color:#1E293B;')}>{c.bodyEl}</div>}
                                               <CommentFiles files={c.files} />
-                                              <CommentLike liked={c.liked} likes={c.likes} size={12} style={{ marginTop: 3 }} onClick={() => requireLogin(() => api.reactAnswerComment(q.id, a.id, c.id).then((d) => patch(q.id, d.question)).catch(() => {}))} />
-                                              <button onClick={() => startCommentReply(a.id, c.id, c.author, c.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                                              {/* ♡ (and the other reactions) · 💬, as on Threads */}
+                                              <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
+                                                <ReactionButton r={c.reactions} onReact={(type) => requireLogin(() => api.reactAnswerComment(q.id, a.id, c.id, type).then((d) => patch(q.id, d.question)).catch(() => {}))} />
+                                                <ReplyButton count={replies.length} onClick={() => { startCommentReply(a.id, c.id, c.author, c.id); setExpandedCommentThreads((s) => new Set(s).add(c.id)) }} />
+                                              </div>
                                             </div>
                                           </div>
 
                                           {!inModal && replies.length > 1 && (
-                                            <button onClick={() => toggleCommentThread(c.id)} style={css('margin:8px 0 0 36px; border:none; background:transparent; padding:0; cursor:pointer; display:flex; align-items:center; gap:6px; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff;')}>
-                                              <Chevron up={expanded} />
-                                              {expanded ? t('Ẩn replies') : t('Xem thêm') + ' ' + replies.length + ' ' + t('replies')}
-                                            </button>
+                                            <RepliesToggle people={replies} count={replies.length} open={expanded} onClick={() => toggleCommentThread(c.id)} style={{ margin: '6px 0 0 36px' }} />
                                           )}
 
                                           {expanded && replies.map((r) => (
@@ -654,8 +649,10 @@ export default function QuestionsPage() {
                                                   ? <InlineEdit initial={r.body} onSave={(b) => saveCommentEdit(q.id, a.id, r.id, b)} onCancel={() => setEditing(null)} />
                                                   : <div style={css('margin-top:1px; font:400 13px/1.5 var(--zp-font-text); color:#1E293B;')}>{r.bodyEl}</div>}
                                                 <CommentFiles files={r.files} />
-                                                <CommentLike liked={r.liked} likes={r.likes} size={11.5} style={{ marginTop: 3 }} onClick={() => requireLogin(() => api.reactAnswerComment(q.id, a.id, r.id).then((d) => patch(q.id, d.question)).catch(() => {}))} />
-                                              <button onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                                                <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
+                                                  <ReactionButton r={r.reactions} onReact={(type) => requireLogin(() => api.reactAnswerComment(q.id, a.id, r.id, type).then((d) => patch(q.id, d.question)).catch(() => {}))} />
+                                                  <ReplyButton onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} />
+                                                </div>
                                               </div>
                                             </div>
                                           ))}

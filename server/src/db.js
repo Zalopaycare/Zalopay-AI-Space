@@ -165,9 +165,15 @@ if (!useCaseCommentColumns.includes('parent_id')) {
 // Likes on comments: kind 'acomment' (under a thread's reply) or 'uccomment' (on a use case).
 db.exec(`CREATE TABLE IF NOT EXISTS comment_reactions (
   kind TEXT NOT NULL, comment_id TEXT NOT NULL, user_id INTEGER NOT NULL,
+  type TEXT NOT NULL DEFAULT 'like',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (kind, comment_id, user_id)
 )`)
+// Which reaction (like / haha / wow / sad / angry, see reactions.js); older likes on replies are 'like'.
+for (const table of ['answer_reactions', 'comment_reactions']) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)
+  if (!cols.includes('type')) db.exec(`ALTER TABLE ${table} ADD COLUMN type TEXT NOT NULL DEFAULT 'like'`)
+}
 
 // "(đã sửa)" markers for edited answers and comments.
 for (const table of ['question_answers', 'answer_comments', 'use_case_comments', 'questions', 'use_case_submissions']) {
