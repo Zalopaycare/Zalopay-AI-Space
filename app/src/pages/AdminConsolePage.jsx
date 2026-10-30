@@ -125,6 +125,9 @@ export default function AdminConsolePage() {
   const [users, setUsers] = useState([])
   const [ucStatus, setUcStatus] = useState('pending')
   const [ucQuery, setUcQuery] = useState('')
+  // ticked rows in "Duyệt use case", for deleting many at once (e.g. a tester's posts)
+  const [ucPicked, setUcPicked] = useState(() => new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
   const [qStatus, setQStatus] = useState('all')
   const [qQuery, setQQuery] = useState('')
   const [userQuery, setUserQuery] = useState('')
@@ -281,6 +284,18 @@ export default function AdminConsolePage() {
     if (s.authorId !== user.id) askRemovalReason({ what: 'use case', title: s.title }).then((r) => r && api.deleteSubmission(s.id, r).then(after).catch(() => {}))
     else setConfirm({ text: `Xoá vĩnh viễn use case "${s.title}"?`, run: () => api.deleteSubmission(s.id).then(after).catch(() => {}) })
   }
+  // Delete every ticked use case that's still in the list, whatever its status. One reason for all; the
+  // dialog's "bài test" choice sends TEST_REMOVAL so nobody is notified.
+  const removePicked = (rows) => {
+    const list = rows.filter((s) => ucPicked.has(s.id))
+    if (!list.length) return
+    askRemovalReason({ what: `${list.length} use case`, title: list.length === 1 ? list[0].title : '' }).then(async (reason) => {
+      if (!reason) return
+      setBulkBusy(true)
+      for (const s of list) { try { await api.deleteSubmission(s.id, reason) } catch { /* keep going */ } }
+      setBulkBusy(false); setUcPicked(new Set()); reloadSubmissions(); reloadPublished()
+    })
+  }
   const removeQuestion = (q, after) => {
     if (q.authorId !== user.id) askRemovalReason({ what: 'câu hỏi', title: q.title }).then((r) => r && api.deleteQuestion(q.id, r).then(after).catch(() => {}))
     else setConfirm({ text: `Xoá câu hỏi "${q.title}" cùng toàn bộ câu trả lời?`, run: () => api.deleteQuestion(q.id).then(after).catch(() => {}) })
@@ -328,7 +343,7 @@ export default function AdminConsolePage() {
   const headRow = (cols) => css(grid(cols) + 'padding:11px 20px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
   const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
   const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
-  const UC_COLS = 'minmax(0,2fr) 100px 92px 100px 112px minmax(272px,auto)'
+  const UC_COLS = '22px minmax(0,2fr) 100px 92px 100px 112px minmax(272px,auto)'
   const P_COLS = 'minmax(0,1fr) 104px 66px 76px 52px 84px 118px'
   const Q_COLS = 'minmax(0,1fr) 110px 58px 62px 128px 118px'
   const U_COLS = 'minmax(0,1fr) 100px 96px 118px 64px 64px 72px'
@@ -567,12 +582,24 @@ export default function AdminConsolePage() {
                 {pubRows.length === 0 && empty('Không có use case nào khớp bộ lọc.')}
               </div>
               ) : (
-              <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(UC_COLS)}><span>USE CASE</span><span>NGƯỜI GỬI</span><span>NGÀY GỬI</span><span>REVIEW BỞI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+              <>
+              {ucRows.some((s) => ucPicked.has(s.id)) && (
+                <div style={css('margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 16px; border-radius:14px; background:#FFF1F1; border:1px solid #F5C9CB;')}>
+                  <span style={css(font(700, 13.5) + ';color:#B4141B;')}>Đã chọn {ucRows.filter((s) => ucPicked.has(s.id)).length} use case</span>
+                  <button onClick={() => setUcPicked(new Set())} style={css(btn('plain'))}>Bỏ chọn</button>
+                  <span style={{ flex: 1 }}></span>
+                  <button disabled={bulkBusy} onClick={() => removePicked(ucRows)} style={css('height:36px; padding:0 18px; border:none; border-radius:999px; background:#D8232A; color:#fff; cursor:pointer;' + font(700, 13) + (bulkBusy ? 'opacity:.6;' : ''))}>{bulkBusy ? 'Đang xoá…' : `Xoá ${ucRows.filter((s) => ucPicked.has(s.id)).length} use case đã chọn`}</button>
+                </div>
+              )}
+              {/* scrolls sideways on narrow screens instead of squeezing the columns */}
+              <div style={css('margin-top:16px; overflow-x:auto;' + card)}>
+                <div style={{ minWidth: 980 }}>
+                <div style={headRow(UC_COLS)}><input type="checkbox" aria-label="Chọn tất cả use case đang hiện" checked={ucRows.length > 0 && ucRows.every((s) => ucPicked.has(s.id))} onChange={(e) => setUcPicked(e.target.checked ? new Set(ucRows.map((s) => s.id)) : new Set())} style={{ margin: 0, cursor: 'pointer' }} /><span>USE CASE</span><span>NGƯỜI GỬI</span><span>NGÀY GỬI</span><span>REVIEW BỞI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {ucRows.map((s) => {
                   const st = UC_STATUS[s.reviewStatus] || UC_STATUS.pending
                   return (
                     <div key={s.id} style={bodyRow(UC_COLS)}>
+                      <input type="checkbox" aria-label={'Chọn ' + s.title} checked={ucPicked.has(s.id)} onChange={(e) => setUcPicked((prev) => { const n = new Set(prev); if (e.target.checked) n.add(s.id); else n.delete(s.id); return n })} style={{ margin: 0, cursor: 'pointer' }} />
                       <div style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => navigate('/review/' + encodeURIComponent(s.id))}>
                         <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a; overflow-wrap:anywhere;')}>{s.title}</div>
                         <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0]].filter(Boolean).join(' · ')}</div>
@@ -595,7 +622,9 @@ export default function AdminConsolePage() {
                   )
                 })}
                 {ucRows.length === 0 && empty(ucStatus === 'pending' && !ucq ? 'Không có use case nào đang chờ duyệt.' : ucStatus === 'changes_requested' && !ucq ? 'Không có use case nào đang đợi tác giả chỉnh sửa.' : 'Không có use case nào khớp bộ lọc.')}
+                </div>
               </div>
+              </>
               )}
             </div>
           )}
