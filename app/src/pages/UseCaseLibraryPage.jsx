@@ -826,7 +826,7 @@ export default function UseCaseLibraryPage() {
                             <PendingAttachments files={att.files('rep:' + replyTarget.parentId)} onRemove={(x) => att.remove('rep:' + replyTarget.parentId, x)} error={att.errorFor('rep:' + replyTarget.parentId)} />
                             <div style={css('display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;')}>
                               {/* same switch as the comment box above: replies follow it too */}
-                              <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} alias={cmtAlias} onAlias={setCmtAlias} label="Trả lời ẩn danh" /></div>
+                              <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} alias={cmtAlias} onAlias={setCmtAlias} label="Bình luận ẩn danh" /></div>
                               <AttachButton onFiles={(fl) => att.add('rep:' + replyTarget.parentId, fl)} size={32} />
                               <button onClick={cancelReply} style={css('height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
                               <button onClick={() => submitReply(dsel.id)} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${replyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>
@@ -1115,11 +1115,6 @@ export default function UseCaseLibraryPage() {
                         </div>
                       )}
                     </div>
-                  )}
-                  {shareBooth && (
-                      <div style={css('margin-bottom:14px; padding:12px 16px; border-radius:14px; background:#EEF3FF; border:1px solid #CFDDFB; font-size:12.5px; line-height:1.55; color:#1E3A7A;')}>
-                        <b>{t('Từ AI Exhibition 2026:')}</b> {t('Bài toán, Giải pháp và thành viên đã được điền sẵn từ Exhibition, bạn sửa lại nếu cần rồi bổ sung các phần còn trống. Khi Admin duyệt, bài này thay cho khung "Thông tin đang được cập nhật" của booth.')}
-                      </div>
                   )}
                   {/* Stepper: one step per part of the detail page; click any step to jump. */}
                   <div role="tablist" aria-label={t('Các bước')} style={css('display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;')}>

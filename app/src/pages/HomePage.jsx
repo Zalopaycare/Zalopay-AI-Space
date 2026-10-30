@@ -347,7 +347,7 @@ export default function HomePage() {
                   </div>
                   <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
                     {/* like · comment · save on the left, the way in on the right */}
-                    <CardActions compact helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).length} onReply={q.onOpen} saved={!!q.saved} onSave={q.onSave} />
+                    <CardActions compact helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).reduce((n, a) => n + 1 + (a.comments || []).length, 0)} onReply={q.onOpen} saved={!!q.saved} onSave={q.onSave} />
                     <TagRow topics={q.topics || []} tools={q.tools || []} />
                     <button onClick={(e) => { e.stopPropagation(); navigate('/questions/' + encodeURIComponent(q.id)) }} className={hoverClass('color:#5B21B6 !important;')} style={css(`margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding:0; border:none; background:transparent; cursor:pointer; font:700 13px ${FONT}; color:#7C3AED;`)}>
                       {t('Xem thêm')}

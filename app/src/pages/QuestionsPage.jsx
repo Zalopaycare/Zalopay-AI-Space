@@ -538,7 +538,7 @@ export default function QuestionsPage() {
                         <FileLinks files={q.files} />
                         {/* like · comment · save, the same row as every other card */}
                         <div style={css('display:inline-flex; margin-top:10px;')}>
-                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={inModal || q.expanded} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
+                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.reduce((n, a) => n + 1 + a.comments.length, 0)} replyActive={inModal || q.expanded} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
                         </div>
                       </div>
                     </div>
@@ -563,7 +563,7 @@ export default function QuestionsPage() {
                               </div>
                             )}
                             <PendingAttachments files={att.files('ans:' + q.id)} onRemove={(k) => att.remove('ans:' + q.id, k)} error={att.errorFor('ans:' + q.id)} />
-                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời & bình luận ẩn danh" />
+                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" />
                             <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px;')}>
                               <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
                               <span style={{ marginLeft: 'auto' }}></span>
@@ -681,7 +681,7 @@ export default function QuestionsPage() {
                                           )}
                                           {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (<>
                                             <div style={css('margin-left:70px;')}><PendingAttachments files={att.files('rep:' + a.id + ':' + c.id)} onRemove={(i) => att.remove('rep:' + a.id + ':' + c.id, i)} error={att.errorFor('rep:' + a.id + ':' + c.id)} /></div>
-                                            <div style={css('margin:6px 0 0 70px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Trả lời ẩn danh" /></div>
+                                            <div style={css('margin:6px 0 0 70px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" /></div>
                                           </>)}
                                         </div>
                                       )

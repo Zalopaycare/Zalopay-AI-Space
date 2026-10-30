@@ -259,7 +259,8 @@ export default function ProfilePage() {
       const swap = (list) => list.map((x) => (x.id === q.id ? d.question : x))
       setMyQuestions(swap); setSavedQuestions(swap)
     }).catch(() => {}),
-    answers: q.answers.length,
+    // the 💬 count: every reply and every comment under them
+    answers: q.answers.reduce((n, a) => n + 1 + (a.comments || []).length, 0),
     onOpen: () => navigate(`/questions/${encodeURIComponent(q.id)}`),
     // ⋯ menu, same actions as the Questions page card
     menu: {
