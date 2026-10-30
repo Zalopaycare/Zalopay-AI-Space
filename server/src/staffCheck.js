@@ -15,11 +15,17 @@ const ORG_FIELDS = ['companyName', 'department', 'officeLocation', 'jobTitle', '
 const list = (v) => String(v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 const ALWAYS = new Set([...list(process.env.ADMIN_EMAILS), ...list(process.env.STAFF_EXTRA_EMAILS)])
 
+// Zalopay's companies, as plain names (STAFF_COMPANIES="Zion,Zalopay"): nothing for a config screen to
+// mangle. When only STAFF_MATCH turns the check on, these two are what it was meant to match.
+const COMPANIES = list(process.env.STAFF_COMPANIES).length ? list(process.env.STAFF_COMPANIES) : process.env.STAFF_MATCH ? ['zion', 'zalopay'] : []
+// STAFF_MATCH (a regex) still counts too, cleaned of the quotes or doubled backslashes a config screen may add.
+const cleanPattern = (v) => String(v).trim().replace(/^(['"])(.*)\1$/, '$2').replace(/\\\\/g, '\\')
 let pattern = null
-try { if (process.env.STAFF_MATCH) pattern = new RegExp(process.env.STAFF_MATCH, 'i') } catch (e) { console.error('[staff] STAFF_MATCH is not a valid regex:', e.message) }
-// A pattern that doesn't compile keeps the check on and lets nobody through but ALWAYS.
-export const staffCheckOn = () => !!process.env.STAFF_MATCH
-const matches = (org) => !!pattern && !!org.companyName && pattern.test(String(org.companyName).trim())
+try { if (process.env.STAFF_MATCH) pattern = new RegExp(cleanPattern(process.env.STAFF_MATCH), 'i') } catch (e) { console.error('[staff] STAFF_MATCH is not a valid regex:', e.message) }
+export const staffCheckOn = () => COMPANIES.length > 0 || !!process.env.STAFF_MATCH
+// "Zion", "Zion JSC", "Zalopay - …": the company name is one of them, or starts with it as a whole word
+const companyIs = (name) => { const n = String(name).trim().toLowerCase(); return COMPANIES.some((c) => n === c || new RegExp('^' + c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![a-z0-9])').test(n)) }
+const matches = (org) => !!org.companyName && (companyIs(org.companyName) || (!!pattern && pattern.test(String(org.companyName).trim())))
 
 /** The signed-in person's organisation fields from Microsoft, or null when Graph can't be read. */
 export async function orgOf(accessToken) {
