@@ -13,6 +13,7 @@ import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
 import { companyDomains } from '../auth.js'
+import { maintenanceOn } from '../maintenance.js'
 import { orgOf, verdict, saveOrg, accessTicket, readTicket, ACCESS_COOKIE, adminEmails } from '../staffCheck.js'
 import { notify } from '../notifications.js'
 import { appUrl } from '../mentions.js'
@@ -94,7 +95,7 @@ router.post('/verify-code', (req, res) => {
 })
 
 router.get('/config', (req, res) => {
-  res.json({ ssoEnabled: ssoConfigured, emailLogin: emailLoginOn() })
+  res.json({ ssoEnabled: ssoConfigured, emailLogin: emailLoginOn(), maintenance: maintenanceOn() })
 })
 
 router.get('/sso/login', async (req, res) => {
