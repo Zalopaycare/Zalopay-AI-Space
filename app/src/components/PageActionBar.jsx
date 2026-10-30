@@ -21,7 +21,7 @@ const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose
           style={css('display:flex; align-items:center; gap:10px; height:48px; padding:0 8px 0 10px; box-sizing:border-box; border-radius:14px; background:rgba(255,255,255,.07); border:1px solid rgba(160,196,255,.28); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); cursor:pointer; transition:background .16s, border-color .16s;')}
         >
           <img src={mascot} alt="" className="zp-mascot" style={css('flex:none; width:50px; height:auto; margin:-10px -3px -8px -4px; filter:drop-shadow(0 6px 12px rgba(3,20,80,.45));')} />
-          <span style={css(`flex:1; min-width:0; font:400 13.5px ${FONT}; color:rgba(219,230,255,.78); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{t(prompt)}</span>
+          <span style={css(`flex:1; min-width:0; font:400 13.5px var(--zp-font-text); color:rgba(219,230,255,.78); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{t(prompt)}</span>
           <span style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px ${FONT}; box-shadow:0 10px 22px rgba(44,95,255,.4);`)}>{t(cta)}</span>
         </div>
         )}
@@ -41,7 +41,7 @@ const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose
               placeholder={t(placeholder)}
               aria-label={t(placeholder)}
               className="zp-search-input"
-              style={css(`flex:1; min-width:0; border:none; outline:none; background:transparent; font:400 13px ${FONT}; color:#0F172A;`)}
+              style={css(`flex:1; min-width:0; border:none; outline:none; background:transparent; font:400 13px var(--zp-font-text); color:#0F172A;`)}
               {...inputProps}
             />
             {query && (

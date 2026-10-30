@@ -481,7 +481,7 @@ export default function QuestionsPage() {
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:6px; min-height:24px;')}>
                           <span style={css('font:700 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span><AnonTag p={q} />
-                          <span style={css('font:400 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap;')}>{q.time}{q.edited ? ' · đã sửa' : ''}</span>
+                          <span style={css('font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;')}>{q.time}{q.edited ? ' · đã sửa' : ''}</span>
                           <span style={{ flex: 1 }}></span>
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
@@ -525,7 +525,7 @@ export default function QuestionsPage() {
                       </div>
                         </div>
                         {q.hasTitle !== false && q.title && <div style={css('margin-top:2px; font:700 15px/1.45 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.title}</div>}
-                        <p style={css(`margin:${q.hasTitle !== false && q.title ? 2 : 1}px 0 0; font:400 ${inModal ? 15.5 : 15}px/1.55 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:pre-wrap; overflow-wrap:anywhere;`)}>
+                        <p style={css(`margin:${q.hasTitle !== false && q.title ? 2 : 1}px 0 0; font:400 ${inModal ? 15.5 : 15}px/1.55 var(--zp-font-text); color:#0F172A; white-space:pre-wrap; overflow-wrap:anywhere;`)}>
                           {renderMentions(q.bodyShown)}
                           {q.truncated && (
                             <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:600 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; vertical-align:baseline;')}>{t('Xem thêm')}</button>
@@ -554,7 +554,7 @@ export default function QuestionsPage() {
                                     <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
                                     <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
                                       <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
-                                      <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
+                                      <span style={css('font:400 11.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
                                     </span>
                                   </div>
                                 ))}
@@ -582,14 +582,14 @@ export default function QuestionsPage() {
                                 <div className="zp-cmt">
                                   <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                     <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{a.author}</span><AnonTag p={a} />
-                                    {a.team ? <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{a.team}</span> : null}
-                                    <span style={css('font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {a.time}{a.edited ? ' · đã sửa' : ''}</span>
+                                    {a.team ? <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>{a.team}</span> : null}
+                                    <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {a.time}{a.edited ? ' · đã sửa' : ''}</span>
                                     <span style={{ flex: 1 }}></span>
                                     <CommentMenu isOwner={isMine(a)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'answer', id: a.id })} onDelete={() => askDeleteAnswer(q.id, a.id, isMine(a), a.body)} onReport={() => cmodals.askReport('answer', a.id)} />
                                   </div>
                                   {editing?.kind === 'answer' && editing.id === a.id
                                     ? <InlineEdit initial={a.body} onSave={(b) => saveAnswerEdit(q.id, a.id, b)} onCancel={() => setEditing(null)} />
-                                    : <div style={css('margin-top:1px; font:400 14px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E293B; white-space:pre-wrap; text-wrap:pretty;')}>{a.bodyEl}</div>}
+                                    : <div style={css('margin-top:1px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; text-wrap:pretty;')}>{a.bodyEl}</div>}
                                   <CommentFiles files={a.files} />
                                 </div>
                                 <div style={css('display:flex; align-items:center; gap:16px; margin:5px 0 0; flex-wrap:wrap;')}>
@@ -618,14 +618,14 @@ export default function QuestionsPage() {
                                             <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                               <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                                 <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span><AnonTag p={c} />
-                                                {c.team ? <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{c.team}</span> : null}
-                                                <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {c.time}{c.edited ? ' · đã sửa' : ''}</span>
+                                                {c.team ? <span style={css('font:400 11.5px var(--zp-font-text); color:#94a3b8;')}>{c.team}</span> : null}
+                                                <span style={css('font:400 11.5px var(--zp-font-text); color:#94a3b8;')}>· {c.time}{c.edited ? ' · đã sửa' : ''}</span>
                                                 <span style={{ flex: 1 }}></span>
                                                 <CommentMenu isOwner={isMine(c)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: c.id })} onDelete={() => askDeleteComment(q.id, a.id, c.id, isMine(c), c.body)} onReport={() => cmodals.askReport('comment', c.id)} />
                                               </div>
                                               {editing?.kind === 'comment' && editing.id === c.id
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
-                                                : <div style={css('margin-top:1px; font:400 13.5px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E293B;')}>{c.bodyEl}</div>}
+                                                : <div style={css('margin-top:1px; font:400 13.5px/1.5 var(--zp-font-text); color:#1E293B;')}>{c.bodyEl}</div>}
                                               <CommentFiles files={c.files} />
                                               <button onClick={() => startCommentReply(a.id, c.id, c.author, c.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                                             </div>
@@ -644,13 +644,13 @@ export default function QuestionsPage() {
                                               <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                                 <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                                   <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span><AnonTag p={r} />
-                                                  <span style={css('font:400 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>· {r.time}{r.edited ? ' · đã sửa' : ''}</span>
+                                                  <span style={css('font:400 11px var(--zp-font-text); color:#94a3b8;')}>· {r.time}{r.edited ? ' · đã sửa' : ''}</span>
                                                   <span style={{ flex: 1 }}></span>
                                                   <CommentMenu isOwner={isMine(r)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: r.id })} onDelete={() => askDeleteComment(q.id, a.id, r.id, isMine(r), r.body)} onReport={() => cmodals.askReport('comment', r.id)} />
                                                 </div>
                                                 {editing?.kind === 'comment' && editing.id === r.id
                                                   ? <InlineEdit initial={r.body} onSave={(b) => saveCommentEdit(q.id, a.id, r.id, b)} onCancel={() => setEditing(null)} />
-                                                  : <div style={css('margin-top:1px; font:400 13px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#1E293B;')}>{r.bodyEl}</div>}
+                                                  : <div style={css('margin-top:1px; font:400 13px/1.5 var(--zp-font-text); color:#1E293B;')}>{r.bodyEl}</div>}
                                                 <CommentFiles files={r.files} />
                                                 <button onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                                               </div>
@@ -693,7 +693,7 @@ export default function QuestionsPage() {
                                                 <span style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
                                                 <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
                                                   <span style={css('font:700 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.name}</span>
-                                                  <span style={css('font:400 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
+                                                  <span style={css('font:400 11.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{m.sub}</span>
                                                 </span>
                                               </div>
                                             ))}
@@ -752,7 +752,7 @@ export default function QuestionsPage() {
           <div style={css('position:relative; background:transparent; padding:22px var(--zp-gutter) 0;')}>
             <div style={css('position:relative; z-index:2; max-width:760px; margin:0 auto;')}>
               <h1 style={css('margin:0; text-align:center; font:800 50px/1.06 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; letter-spacing:-.02em; background:linear-gradient(180deg,#ffffff 0%,#dfeaff 46%,#a9caff 100%); -webkit-background-clip:text; background-clip:text; color:transparent;')}>{t('AI Thread')}</h1>
-              <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Chia sẻ, hỏi đáp và thảo luận mọi thứ về AI.')}</p>
+              <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Chia sẻ, hỏi đáp và thảo luận mọi thứ về AI.')}</p>
             </div>
           </div>
 
@@ -769,7 +769,7 @@ export default function QuestionsPage() {
               <div style={css('background:#fff; border-radius:24px; overflow:visible; box-shadow:0 24px 60px rgba(3,12,40,.35);')}>
                 <div onClick={() => setView('ask')} role="button" style={css('display:flex; align-items:center; gap:12px; padding:16px 20px; cursor:text;')}>
                   <Avatar user={user} size={38} fontSize={13} />
-                  <span style={css('flex:1; min-width:0; font:400 15px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Có gì mới?')}</span>
+                  <span style={css('flex:1; min-width:0; font:400 15px var(--zp-font-text); color:#94a3b8;')}>{t('Có gì mới?')}</span>
                   <button onClick={(e) => { e.stopPropagation(); setView('ask') }} style={css('flex:none; height:36px; padding:0 18px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; color:#0F172A; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Đăng')}</button>
                 </div>
                 {feed.map((q) => renderQCard(q, false))}
@@ -777,7 +777,7 @@ export default function QuestionsPage() {
                 {isEmpty && (
                   <div style={css('border-top:1px solid #EEF1F7; padding:56px 0; text-align:center;')}>
                     <div style={css('font:800 17px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{emptyTitle}</div>
-                    <div style={css('margin-top:8px; font:400 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{emptyHint}</div>
+                    <div style={css('margin-top:8px; font:400 14px var(--zp-font-text); color:#64748b;')}>{emptyHint}</div>
                     <button onClick={() => setView('ask')} style={css('margin-top:20px; height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Đăng thread')}</button>
                   </div>
                 )}
@@ -794,7 +794,7 @@ export default function QuestionsPage() {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
               </div>
               <div style={css('margin-top:16px; font:800 16px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{t('Bạn muốn xoá vĩnh viễn bài viết này?')}</div>
-              <div style={css('margin-top:8px; font:400 13.5px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Hành động này không thể hoàn tác.')}</div>
+              <div style={css('margin-top:8px; font:400 13.5px/1.5 var(--zp-font-text); color:#64748b;')}>{t('Hành động này không thể hoàn tác.')}</div>
               <div style={css('display:flex; gap:10px; margin-top:22px;')}>
                 <button onClick={() => setConfirmDeleteId(null)} style={css('flex:1; height:44px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Quay lại')}</button>
                 <button onClick={() => deleteQuestion(confirmDeleteId)} style={css('flex:1; height:44px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Đồng ý')}</button>
@@ -874,7 +874,7 @@ export default function QuestionsPage() {
                 </div>
               </div>
               <div style={css('display:flex; align-items:center; gap:10px; padding:12px 20px 18px;')}>
-                <span style={css('flex:1; min-width:0; font:400 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{editQId ? t('Thay đổi được cập nhật ngay.') : t('Bài được đăng ngay, ai cũng thấy.')}</span>
+                <span style={css('flex:1; min-width:0; font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>{editQId ? t('Thay đổi được cập nhật ngay.') : t('Bài được đăng ngay, ai cũng thấy.')}</span>
                 <button onClick={postQuestion} style={css(`flex:none; height:40px; padding:0 22px; border:none; border-radius:999px; background:#0F172A; color:#fff; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${askOpacity};`)}>{editQId ? t('Lưu') : t('Đăng')}</button>
               </div>
             </div>

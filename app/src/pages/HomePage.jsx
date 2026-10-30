@@ -266,7 +266,7 @@ export default function HomePage() {
                         </span>
                         <span style={css('flex:1; min-width:0;')}>
                           <span style={css(`display:block; font:700 14px/1.35 ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.title}</span>
-                          <span style={css(`display:block; margin-top:2px; font:400 12.5px ${FONT}; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.sub}</span>
+                          <span style={css(`display:block; margin-top:2px; font:400 12.5px var(--zp-font-text); color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.sub}</span>
                         </span>
                       </button>
                       )
@@ -309,7 +309,7 @@ export default function HomePage() {
                     <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</span>
                     <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
                       <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span><AnonTag p={q} />
-                      <span style={css(`font:400 12.5px ${FONT}; color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
+                      <span style={css(`font:400 12.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;`)}>· {q.timeLabel}</span>
                     </div>
                     <div style={css('position:relative; flex:none;')}>
                       <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === 'q:' + q.id ? null : 'q:' + q.id)) }} title={t('Thêm')} aria-label={t('Tuỳ chọn khác')} aria-haspopup="menu" style={css('width:32px; height:32px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#5B6675; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
@@ -359,7 +359,7 @@ export default function HomePage() {
               {trending.length === 0 && (
                 <div style={css('grid-column:1 / -1; padding:44px 24px; text-align:center; background:#fff; border:1px dashed #C9D4E6; border-radius:20px;')}>
                   <div style={css(`font:800 16px ${FONT}; color:#0F172A;`)}>{t('Chưa có câu hỏi nào')}</div>
-                  <div style={css(`margin-top:8px; font:400 14px ${FONT}; color:#64748b;`)}>{t('Hãy là người đầu tiên đặt câu hỏi về AI.')}</div>
+                  <div style={css(`margin-top:8px; font:400 14px var(--zp-font-text); color:#64748b;`)}>{t('Hãy là người đầu tiên đặt câu hỏi về AI.')}</div>
                 </div>
               )}
             </div>
@@ -425,7 +425,7 @@ export default function HomePage() {
                     <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
                       <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{item.title}</h3>
                       {/* same as the Use Case Library card: the people behind it right under the name */}
-                      <div style={css(`margin-top:4px; font:400 12.5px/1.45 ${FONT}; color:#5B6B82;`)}>
+                      <div style={css(`margin-top:4px; font:400 12.5px/1.45 var(--zp-font-text); color:#5B6B82;`)}>
                         <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {item.byline || item.author}<AnonTag p={item} />
                       </div>
                       {item.desc && <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>}
@@ -454,7 +454,7 @@ export default function HomePage() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
             </div>
             <div style={css(`margin-top:16px; font:800 16px ${FONT}; color:#0F172A;`)}>{t('Bạn muốn xoá vĩnh viễn bài viết này?')}</div>
-            <div style={css(`margin-top:8px; font:400 13.5px/1.5 ${FONT}; color:#64748b;`)}>{t('Hành động này không thể hoàn tác.')}</div>
+            <div style={css(`margin-top:8px; font:400 13.5px/1.5 var(--zp-font-text); color:#64748b;`)}>{t('Hành động này không thể hoàn tác.')}</div>
             <div style={css('display:flex; gap:10px; margin-top:22px;')}>
               <button onClick={() => setConfirmDeleteId(null)} style={css(`flex:1; height:44px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px ${FONT}; cursor:pointer;`)}>{t('Quay lại')}</button>
               <button onClick={() => confirmDelete(confirmDeleteId)} style={css(`flex:1; height:44px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px ${FONT}; cursor:pointer;`)}>{t('Đồng ý')}</button>

@@ -1,12 +1,18 @@
-/* Page side gutter: 40px on desktop, 16px on phones. */
-:root { --zp-gutter: 40px; }
+/* Page side gutter: 40px on desktop, 16px on phones.
+   Fonts: running text (posts, comments, descriptions, what people type) in the device's own UI font,
+   as on Threads; headings and buttons keep the brand face. */
+:root {
+  --zp-gutter: 40px;
+  --zp-font-text: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --zp-font-brand: 'Aeonik Pro', 'Geist', 'Be Vietnam Pro', system-ui, sans-serif;
+}
 @media (max-width: 699px) { :root { --zp-gutter: 16px; } }
 
 * { box-sizing: border-box; }
 html { background: #04060d; color-scheme: dark; }
 body {
   margin: 0;
-  font-family: 'Aeonik Pro', 'Geist', 'Be Vietnam Pro', system-ui, sans-serif;
+  font-family: var(--zp-font-text);
   background: #07070c;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
@@ -36,7 +42,8 @@ a { color: #1a5fff; text-decoration: none; }
 
 image-slot-placeholder { --is-empty-bg: rgba(255, 255, 255, .06); }
 
-input, textarea, button { font-family: inherit; }
+input, textarea { font-family: inherit; }
+h1, h2, h3, button { font-family: var(--zp-font-brand); }
 
 .zp-card .zp-card-title { transition: color .16s ease; }
 .zp-card:hover .zp-card-title { color: #2c5fff !important; }

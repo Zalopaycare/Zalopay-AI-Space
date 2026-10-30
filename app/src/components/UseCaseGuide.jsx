@@ -139,7 +139,7 @@ function Note({ b }) {
   return (
     <div style={css(`display:flex; gap:12px; padding:13px 16px; border-radius:14px; background:${tn.bg}; border:1px solid ${tn.border};`)}>
       <span style={css(`flex:none; width:22px; height:22px; border-radius:50%; background:${tn.title}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT}; margin-top:1px;`)}>{tn.icon}</span>
-      <div style={css(`font:400 13.5px/1.6 ${FONT}; color:${tn.text};`)}>
+      <div style={css(`font:400 13.5px/1.6 var(--zp-font-text); color:${tn.text};`)}>
         {b.title && <div style={css(`font:800 13.5px ${FONT}; color:${tn.title}; margin-bottom:2px;`)}>{b.title}</div>}
         <Fill text={b.text} />
       </div>
@@ -169,14 +169,14 @@ function Block({ b }) {
       return (
         <div>
           {b.title && <SubTitle>{b.title}</SubTitle>}
-          <p style={css(`margin:0; font:400 14px/1.7 ${FONT}; color:#3A4757; text-wrap:pretty; white-space:pre-line;`)}><Fill text={b.text} /></p>
+          <p style={css(`margin:0; font:400 14px/1.7 var(--zp-font-text); color:#3A4757; text-wrap:pretty; white-space:pre-line;`)}><Fill text={b.text} /></p>
         </div>
       )
     case 'bullets':
       return (
         <div style={css('display:flex; flex-direction:column; gap:9px;')}>
           {b.items.map((it, i) => (
-            <div key={i} style={css(`display:flex; gap:10px; font:400 14px/1.65 ${FONT}; color:#3A4757;`)}>
+            <div key={i} style={css(`display:flex; gap:10px; font:400 14px/1.65 var(--zp-font-text); color:#3A4757;`)}>
               <span style={css(`flex:none; margin-top:8px; width:6px; height:6px; border-radius:50%; background:${b.tone === 'danger' ? '#E0353F' : '#2c5fff'};`)}></span><span><Fill text={it} /></span>
             </div>
           ))}
@@ -194,7 +194,7 @@ function Block({ b }) {
             {b.items.map((it, i) => (
               <div key={i} style={css('display:flex; gap:12px; align-items:flex-start;')}>
                 <span style={css(`flex:none; min-width:24px; height:24px; padding:0 ${parent ? 6 : 0}px; box-sizing:border-box; border-radius:999px; background:${parent ? '#F4F7FE' : '#E7ECFB'}; border:1px solid ${parent ? '#DCE6FB' : '#B9CCF8'}; color:#2c5fff; display:flex; align-items:center; justify-content:center; font:800 ${parent ? 11 : 12}px ${FONT};`)}>{num(i)}</span>
-                <span style={css(`font:400 14px/1.65 ${FONT}; color:#3A4757; text-wrap:pretty;`)}><Fill text={it} /></span>
+                <span style={css(`font:400 14px/1.65 var(--zp-font-text); color:#3A4757; text-wrap:pretty;`)}><Fill text={it} /></span>
               </div>
             ))}
           </div>
@@ -209,7 +209,7 @@ function Block({ b }) {
           </span>
           <div style={css('min-width:0;')}>
             <div style={css(`font:700 14px ${MONO}; color:#0F172A;`)}>{b.name}</div>
-            <div style={css(`margin-top:2px; font:400 12.5px ${FONT}; color:#64748b;`)}>{b.sub}</div>
+            <div style={css(`margin-top:2px; font:400 12.5px var(--zp-font-text); color:#64748b;`)}>{b.sub}</div>
           </div>
         </div>
       )
@@ -224,7 +224,7 @@ function Block({ b }) {
             <CopyButton text={b.code} />
           </div>
           <pre style={css(`margin:0; padding:12px 14px; border:1px solid #DDE3EC; border-radius:12px; background:#F7F9FD; font:400 12px/1.7 ${MONO}; color:#0F172A; white-space:pre-wrap; overflow-wrap:anywhere;`)}>{b.code}</pre>
-          {b.note && <div style={css(`margin-top:6px; font:400 12.5px/1.55 ${FONT}; color:#64748b;`)}><Fill text={b.note} /></div>}
+          {b.note && <div style={css(`margin-top:6px; font:400 12.5px/1.55 var(--zp-font-text); color:#64748b;`)}><Fill text={b.note} /></div>}
         </div>
       )
     case 'result': return <Result b={b} />
@@ -261,7 +261,7 @@ export function Figure({ img }) {
           style={{ display: 'block', margin: '0 auto', width: tall ? 'auto' : '100%', maxWidth: dims ? `min(100%, ${dims.w}px)` : '100%', maxHeight: tall ? 560 : undefined, height: 'auto', objectFit: 'contain' }}
         />
       </button>
-      {img.caption && <figcaption style={css(`margin-top:7px; font:400 12px/1.45 ${FONT}; color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
+      {img.caption && <figcaption style={css(`margin-top:7px; font:400 12px/1.45 var(--zp-font-text); color:#64748b;`)}><Fill text={img.caption} /></figcaption>}
       {open && createPortal(
         <div role="dialog" aria-modal="true" aria-label={plainText(img.caption) || 'Ảnh'} onClick={() => setOpen(false)} style={css('position:fixed; inset:0; z-index:5000; background:rgba(3,6,18,.86); backdrop-filter:blur(4px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:24px; box-sizing:border-box; cursor:zoom-out;')}>
           <img src={img.src} alt={plainText(img.caption)} style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 110px)', objectFit: 'contain', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,.6)', background: '#fff' }} />

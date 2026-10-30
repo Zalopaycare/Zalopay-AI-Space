@@ -47,7 +47,7 @@ export default function LoginModal() {
     <div onClick={close} style={css('position:fixed; inset:0; z-index:5000; background:rgba(4,8,20,.66); backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:24px; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
       <div ref={dialog.ref} {...dialog.dialogProps} onClick={(e) => e.stopPropagation()} style={css('width:100%; max-width:400px; background:#fff; border-radius:20px; padding:28px; box-shadow:0 30px 70px rgba(0,0,0,.4);')}>
         <div style={css('font:800 19px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>Đăng nhập</div>
-        <div style={css('margin-top:6px; font:400 13.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>
+        <div style={css('margin-top:6px; font:400 13.5px/1.6 var(--zp-font-text); color:#64748b;')}>
           Dùng email công ty để đăng nhập và tham gia thảo luận.
         </div>
 
@@ -84,7 +84,7 @@ export default function LoginModal() {
 
         {stage === 'code' && (
           <form onSubmit={submitCode} style={css('margin-top:18px; display:flex; flex-direction:column; gap:12px;')}>
-            <div style={css('font:400 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>
+            <div style={css('font:400 13px var(--zp-font-text); color:#3A4757;')}>
               Đã gửi mã 6 số tới <strong>{email}</strong>. Kiểm tra hộp thư (và mục Spam).
             </div>
             {devCode && (

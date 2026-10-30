@@ -13,7 +13,7 @@ export default function RequireAuth({ children }) {
       <div style={css('min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F7F8FA; padding:24px;')}>
         <div style={css('max-width:420px; text-align:center;')}>
           <img src={logo} alt="Zalopay AI Space" style={{ height: 30, width: 'auto', margin: '0 auto', display: 'block' }} />
-          <div style={css('margin-top:18px; font:400 14.5px/1.6 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>
+          <div style={css('margin-top:18px; font:400 14.5px/1.6 var(--zp-font-text); color:#64748b;')}>
             Nơi mọi người khám phá, tìm hiểu và chia sẻ mọi thứ về AI.
           </div>
           <button

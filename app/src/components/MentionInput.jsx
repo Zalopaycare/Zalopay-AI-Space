@@ -87,7 +87,7 @@ const MentionInput = forwardRef(function MentionInput({ value, onChange, onEnter
               <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${m.bg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10.5px ${FONT};${avatarPhotoCss(m.avatarUrl)}`)}>{m.initials}</span>
               <span style={css('flex:1; min-width:0; display:flex; flex-direction:column;')}>
                 <span style={css(`font:700 13px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{m.name}</span>
-                <span style={css(`font:400 11.5px ${FONT}; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{m.sub}</span>
+                <span style={css(`font:400 11.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{m.sub}</span>
               </span>
             </div>
           ))}
