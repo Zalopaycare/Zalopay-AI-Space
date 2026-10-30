@@ -1,10 +1,16 @@
+/* Aeonik Pro, the brand face, ships with the site (public/fonts) so every machine shows the same
+   letters; until now only machines with it installed did, the rest fell back to Be Vietnam Pro.
+   Three weights: 500 renders as 400, 600 as 700 and 800 as 900 (the browser picks the nearest). */
+@font-face { font-family: 'Aeonik Pro'; src: url('/fonts/AeonikPro-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Aeonik Pro'; src: url('/fonts/AeonikPro-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Aeonik Pro'; src: url('/fonts/AeonikPro-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+
 /* Page side gutter: 40px on desktop, 16px on phones.
-   Fonts: running text (posts, comments, descriptions, what people type) in the device's own UI font,
-   as on Threads; headings and buttons keep the brand face. */
+   Fonts: one face everywhere, running text included, so Mac and Windows look alike. */
 :root {
   --zp-gutter: 40px;
-  --zp-font-text: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --zp-font-brand: 'Aeonik Pro', 'Geist', 'Be Vietnam Pro', system-ui, sans-serif;
+  --zp-font-brand: 'Aeonik Pro', 'Be Vietnam Pro', system-ui, sans-serif;
+  --zp-font-text: var(--zp-font-brand);
 }
 @media (max-width: 699px) { :root { --zp-gutter: 16px; } }
 
