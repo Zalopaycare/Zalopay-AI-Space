@@ -1,14 +1,26 @@
+import { useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { css } from '../lib/style.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 
 // While the site is under maintenance (MAINTENANCE=on on the server), everyone but the admins and the
-// people in MAINTENANCE_ALLOW sees this page instead of the app. They sign in from here and use the site as usual.
+// people in MAINTENANCE_ALLOW sees this page instead of the app, with nothing to click. Signing in happens
+// on its own: someone not signed in is sent to Microsoft once per browser session, and comes back either
+// let in or to this page. /?login shows a sign-in button as a way in when that fails (or without SSO).
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
+const TRIED = 'zp-maint-sso'
 
 export default function MaintenanceGate({ children }) {
-  const { user, loading, maintenance, openLogin, logout } = useAuth()
-  if (!maintenance || user?.isAdmin || user?.maintenanceOk) return children
+  const { user, loading, maintenance, ssoEnabled, openLogin } = useAuth()
+  const closed = maintenance && !user?.isAdmin && !user?.maintenanceOk
+  const askLogin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('login')
+  useEffect(() => {
+    if (!closed || loading || user || !ssoEnabled || askLogin) return
+    let tried = false
+    try { tried = sessionStorage.getItem(TRIED) === '1'; sessionStorage.setItem(TRIED, '1') } catch { /* storage off: try once anyway */ }
+    if (!tried) window.location.href = '/api/auth/sso/login?next=' + encodeURIComponent(window.location.pathname + window.location.hash)
+  }, [closed, loading, user, ssoEnabled, askLogin])
+  if (!closed) return children
   return (
     <div style={css('min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 16px; box-sizing:border-box; background:radial-gradient(70% 45% at 50% 0%, rgba(44,95,255,.22), transparent 70%), #04060d;')}>
       <img src={logo} alt="Zalopay AI Space" style={{ height: 22, width: 'auto' }} />
@@ -18,13 +30,8 @@ export default function MaintenanceGate({ children }) {
         </div>
         <h1 style={css(`margin:16px 0 0; font:800 22px/1.3 ${FONT}; color:#0F172A;`)}>Web đang được sửa chữa</h1>
         <p style={css(`margin:10px 0 0; font:400 14px/1.65 var(--zp-font-text); color:#3A4757;`)}>Zalopay AI Space tạm đóng để nâng cấp. Bạn quay lại sau nhé, cảm ơn bạn đã chờ!</p>
-        {!loading && !user && (
+        {askLogin && !loading && !user && (
           <button onClick={() => openLogin()} style={css(`margin-top:20px; height:42px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 13.5px ${FONT}; cursor:pointer;`)}>Đăng nhập</button>
-        )}
-        {!loading && user && (
-          <div style={css(`margin-top:18px; font:400 12.5px/1.6 var(--zp-font-text); color:#64748b;`)}>
-            Bạn đang đăng nhập bằng {user.email}. <button onClick={logout} style={css(`border:none; background:none; padding:0; cursor:pointer; font:700 12.5px ${FONT}; color:#2c5fff;`)}>Đăng xuất</button>
-          </div>
         )}
       </div>
     </div>
