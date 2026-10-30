@@ -1143,7 +1143,7 @@ export default function UseCaseLibraryPage() {
                       const all = done === req.length
                       return (
                         <div className="zp-msform-plain" style={css(`margin:-12px 0 18px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:${all ? '#00893F' : '#B45300'};`)}>
-                          <span style={css('flex:none; width:120px; height:6px; border-radius:999px; background:#EEF1F7; overflow:hidden;')}><span style={css(`display:block; height:100%; width:${Math.round((done / req.length) * 100)}%; background:${all ? '#00A352' : '#F59E0B'};`)}></span></span>
+                          <span style={css('flex:none; width:120px; height:6px; border-radius:999px; background:#DCE3EE; overflow:hidden;')}><span style={css(`display:block; height:100%; width:${Math.round((done / req.length) * 100)}%; background:${all ? '#00A352' : '#F59E0B'};`)}></span></span>
                           {all ? `✓ ${t('Đã điền đủ mục bắt buộc ở bước này')}` : `${t('Đã điền')} ${done}/${req.length} ${t('mục bắt buộc')}`}
                         </div>
                       )

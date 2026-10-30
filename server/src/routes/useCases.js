@@ -198,7 +198,10 @@ router.get('/submissions', requireAuth, (req, res) => {
   if (onlyMine) {
     // mine, plus my team's write-ups of the AI Exhibition booths I own
     const booths = pendingCases.filter((p) => isBoothOwner(p, req.user.email)).map((p) => p.id)
-    rows = db.prepare(`SELECT * FROM use_case_submissions WHERE author_id = ? OR json_extract(extra, '$.booth') IN (${booths.map(() => '?').join(',') || "''"}) ORDER BY created_at DESC`).all(req.user.id, ...booths)
+    // (no booths: mine only — an empty IN ('') used to match every post, whose booth is '')
+    rows = booths.length
+      ? db.prepare(`SELECT * FROM use_case_submissions WHERE author_id = ? OR json_extract(extra, '$.booth') IN (${booths.map(() => '?').join(',')}) ORDER BY created_at DESC`).all(req.user.id, ...booths)
+      : db.prepare('SELECT * FROM use_case_submissions WHERE author_id = ? ORDER BY created_at DESC').all(req.user.id)
   }
   else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' ORDER BY COALESCE(published_at, created_at) DESC").all()
   else if (req.user.is_admin) rows = db.prepare('SELECT * FROM use_case_submissions ORDER BY created_at DESC').all()

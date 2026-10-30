@@ -183,7 +183,7 @@ export default function ProfilePage() {
   }, [])
   const notif = useNotifications(!!user)
   const section = /#(overview|activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'overview'
-  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu' }[section])
+  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Thread của tôi', saved: 'Đã lưu' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -219,7 +219,7 @@ export default function ProfilePage() {
   const loadFailed = Object.keys(loadErr).length > 0
   const loadErrorBox = loadFailed ? (
     <div role="alert" style={css(`display:flex; align-items:center; gap:12px; margin:0 0 12px; padding:10px 14px; border-radius:12px; background:#FFF4E3; border:1px solid #F5D29A; font:600 13px ${FONT}; color:#7A4700;`)}>
-      <span style={css('flex:1;')}>{t('Không tải được')} {[loadErr.usecases && t('use case của bạn'), loadErr.questions && t('câu hỏi'), loadErr.saved && t('mục đã lưu')].filter(Boolean).join(', ')}.</span>
+      <span style={css('flex:1;')}>{t('Không tải được')} {[loadErr.usecases && t('use case của bạn'), loadErr.questions && t('thread'), loadErr.saved && t('mục đã lưu')].filter(Boolean).join(', ')}.</span>
       <button onClick={() => setReloadKey((k) => k + 1)} style={css(`flex:none; height:30px; padding:0 14px; border:none; border-radius:999px; background:#2c5fff; color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Thử lại')}</button>
     </div>
   ) : null
@@ -383,7 +383,7 @@ export default function ProfilePage() {
     .sort((x, y) => (x.ts === undefined ? -1 : y.ts === undefined ? 1 : String(y.ts).localeCompare(String(x.ts))))
     .slice(0, 4)
 
-  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : ''
+  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Thread của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
   return (
     <Layout active="profile">
@@ -408,8 +408,8 @@ export default function ProfilePage() {
               <div className="zp-profile-stats">
                 {[
                   ['usecase', 'Use case của bạn', myUseCases.length, `${myUseCases.filter((c) => c.reviewStatus === 'approved').length} ${t('đã đăng')}`],
-                  ['question', 'Câu hỏi của bạn', myQuestions.length, `${myQuestions.filter((q) => q.answers.length).length} ${t('đã có câu trả lời')}`],
-                  ['saved', 'Đã lưu', savedUseCaseIds.length + savedQuestions.length, `${savedUseCaseIds.length} use case · ${savedQuestions.length} ${t('câu hỏi')}`],
+                  ['question', 'Thread của bạn', myQuestions.length, `${myQuestions.filter((q) => q.answers.length).length} ${t('đã có câu trả lời')}`],
+                  ['saved', 'Đã lưu', savedUseCaseIds.length + savedQuestions.length, `${savedUseCaseIds.length} use case · ${savedQuestions.length} ${t('thread')}`],
                 ].map(([key, label, n, sub]) => (
                   <div key={key} style={css('display:flex; flex-direction:column; padding:16px 18px; border-radius:18px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 10px 24px rgba(30,50,90,.08);')}>
                     <div style={css(`font:700 13px ${FONT}; color:#64748b;`)}>{t(label)}</div>
@@ -509,7 +509,7 @@ export default function ProfilePage() {
         {(section === 'question' || section === 'overview') && (
           <section style={css(`position:relative; padding:${section === 'overview' ? '22px var(--zp-gutter) 40px' : '18px var(--zp-gutter) 40px'};`)}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
-              {section === 'overview' && <h2 id="my-questions" style={css(`scroll-margin-top:80px; margin:0; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Câu hỏi của tôi')}</h2>}
+              {section === 'overview' && <h2 id="my-questions" style={css(`scroll-margin-top:80px; margin:0; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Thread của tôi')}</h2>}
               {myQuestionCards.length > 0 && <div style={{ marginBottom: 2 }}><StatusTabs tabs={qTabs} active={activeQTab.key} onPick={setQTab} /></div>}
               {draftItem.map((r) => (
                 <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
@@ -523,10 +523,10 @@ export default function ProfilePage() {
               ))}
               {activeQTab.items.map((q) => <QuestionCard key={q.id} q={q} />)}
               {loaded && myQuestionCards.length > 0 && activeQTab.items.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{activeQTab.key === 'waiting' ? t('Câu hỏi nào của bạn cũng đã có người trả lời.') : t('Chưa có câu hỏi nào được trả lời.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{activeQTab.key === 'waiting' ? t('Thread nào của bạn cũng đã có người trả lời.') : t('Chưa có thread nào được trả lời.')}</div>
               )}
               {loaded && myQuestionCards.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có câu hỏi nào.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có thread nào.')}</div>
               )}
             </div>
           </section>
@@ -544,9 +544,9 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <h3 style={subHeading}>{t('Câu hỏi đã lưu')}</h3>
+              <h3 style={subHeading}>{t('Thread đã lưu')}</h3>
               {savedQuestionCards.length === 0 ? (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu câu hỏi nào.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu thread nào.')}</div>
               ) : (
                 <div style={css('display:flex; flex-direction:column; gap:12px;')}>
                   {savedQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
