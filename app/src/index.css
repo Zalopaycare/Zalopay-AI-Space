@@ -136,10 +136,9 @@ h1, h2, h3, button { font-family: var(--zp-font-brand); }
 html.zp-vt .zp-page-in { animation: none; }
 @media (prefers-reduced-motion: reduce) { .zp-page-in { animation: none; } }
 
-/* comment ⋯ menu: shown while hovering its comment bubble (always on touch screens) */
-.zp-cmt-more { opacity: 0; transition: opacity .12s ease; }
+/* comment ⋯ menu: always there (people missed it when it only showed on hover), full strength on hover */
+.zp-cmt-more { opacity: .75; transition: opacity .12s ease; }
 .zp-cmt:hover .zp-cmt-more, .zp-cmt-more[data-open], .zp-cmt-more:focus-within { opacity: 1; }
-@media (hover: none) { .zp-cmt-more { opacity: 1; } }
 
 /* MentionField draws its text in a mirror layer; keep the real field's placeholder visible */
 .zp-mention-field::placeholder { color: #94a3b8; opacity: 1; }

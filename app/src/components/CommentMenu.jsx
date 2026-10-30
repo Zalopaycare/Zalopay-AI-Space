@@ -129,3 +129,13 @@ export function useCommentModals(api) {
 export const Chevron = ({ up }) => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ transform: up ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><path d="m6 9 6 6 6-6"></path></svg>
 )
+
+/** ♡ + count under a comment, before "Trả lời". */
+export function CommentLike({ liked = false, likes = 0, onClick, size = 12, style }) {
+  return (
+    <button onClick={onClick} aria-pressed={liked} aria-label={liked ? 'Bỏ thích' : 'Thích'} style={{ ...css(`display:inline-flex; align-items:center; gap:5px; margin-right:14px; border:none; background:transparent; padding:0; cursor:pointer; font:700 ${size}px ${FONT}; color:${liked ? '#E0245E' : '#64748b'};`), ...style }}>
+      <svg width={size + 2} height={size + 2} viewBox="0 0 24 24" fill={liked ? '#E0245E' : 'none'} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+      {likes > 0 ? likes : 'Thích'}
+    </button>
+  )
+}

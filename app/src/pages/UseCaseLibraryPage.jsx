@@ -17,7 +17,7 @@ import { markOtherPick, focusIfJustPicked } from '../lib/focusOther.js'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../components/CommentMenu.jsx'
+import CommentMenu, { InlineEdit, useCommentModals, Chevron, CommentLike } from '../components/CommentMenu.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import Layout from '../components/Layout.jsx'
@@ -775,6 +775,7 @@ export default function UseCaseLibraryPage() {
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
                             : <div style={css('margin-top:4px; font-size:12.5px; line-height:1.55; color:#3A4757;')}>{renderMentions(c.body)}</div>}
                           <CommentFiles files={c.files} />
+                          <CommentLike liked={c.liked} likes={c.likes} size={12.5} style={{ marginTop: 6 }} onClick={() => requireLogin(() => api.reactUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} />
                           <button onClick={() => startReply(c.id, c.author, c.id)} style={css('margin-top:6px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                         </div>
                       </div>
@@ -798,7 +799,8 @@ export default function UseCaseLibraryPage() {
                               ? <InlineEdit initial={r.body} onSave={(b) => api.editUseCaseComment(dsel.id, r.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
                               : <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{renderMentions(r.body)}</div>}
                             <CommentFiles files={r.files} />
-                            <button onClick={() => startReply(c.id, r.author, r.id)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                            <CommentLike liked={r.liked} likes={r.likes} size={12} style={{ marginTop: 5 }} onClick={() => requireLogin(() => api.reactUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} />
+                          <button onClick={() => startReply(c.id, r.author, r.id)} style={css('margin-top:5px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                           </div>
                         </div>
                       ))}

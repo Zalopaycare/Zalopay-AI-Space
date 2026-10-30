@@ -66,6 +66,8 @@ export const api = {
   archiveSubmission: (id) => request(`/use-cases/submissions/${id}/archive`, { method: 'POST' }),
   postAnswer: (id, body, opts = {}) => request(`/questions/${id}/answers`, { method: 'POST', body: JSON.stringify({ body, ...opts }) }),
   reactAnswer: (id, answerId) => request(`/questions/${id}/answers/${answerId}/react`, { method: 'POST' }),
+  reactAnswerComment: (id, answerId, commentId) => request(`/questions/${id}/answers/${answerId}/comments/${commentId}/react`, { method: 'POST' }),
+  reactUseCaseComment: (id, commentId) => request(`/use-cases/${id}/comments/${commentId}/react`, { method: 'POST' }),
   acceptAnswer: (id, answerId) => request(`/questions/${id}/answers/${answerId}/accept`, { method: 'POST' }),
   editAnswer: (id, answerId, body) => request(`/questions/${id}/answers/${answerId}`, { method: 'PATCH', body: JSON.stringify({ body }) }),
   deleteAnswer: (id, answerId, reason) => request(`/questions/${id}/answers/${answerId}`, delBody(reason)),

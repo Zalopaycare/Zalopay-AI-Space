@@ -25,7 +25,11 @@ router.get('/:id/meta', requireAuth, (req, res) => {
   const comments = db.prepare('SELECT * FROM use_case_comments WHERE use_case_id = ? ORDER BY created_at ASC').all(id).map((c) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)
     const brief = { author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', initials: u ? initialsOf(u) : '??', avatarColor: u ? colorOf(u) : null, avatarUrl: u ? avatarUrlOf(u) : null, authorId: c.author_id }
-    return { id: c.id, ...maskAuthor(brief, c, req.user), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at, files: commentFilesOf('uccomment', c.id) }
+    return {
+      id: c.id, ...maskAuthor(brief, c, req.user), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at, files: commentFilesOf('uccomment', c.id),
+      likes: db.prepare("SELECT COUNT(*) n FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ?").get(c.id).n,
+      liked: req.user ? !!db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").get(c.id, req.user.id) : false,
+    }
   })
   res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
 })
@@ -421,9 +425,20 @@ router.post('/submissions/:id/review', requireAuth, (req, res) => {
 })
 
 export const deleteUseCaseCommentTx = db.transaction((commentId) => {
+  for (const id of [commentId, ...db.prepare('SELECT id FROM use_case_comments WHERE parent_id = ?').all(commentId).map((r) => r.id)]) db.prepare("DELETE FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ?").run(id)
   dropCommentFiles('uccomment', [commentId, ...db.prepare('SELECT id FROM use_case_comments WHERE parent_id = ?').all(commentId).map((r) => r.id)])
   db.prepare('DELETE FROM use_case_comments WHERE parent_id = ?').run(commentId)
   db.prepare('DELETE FROM use_case_comments WHERE id = ?').run(commentId)
+})
+
+// Like / unlike a comment on a use case.
+router.post('/:id/comments/:commentId/react', requireAuth, (req, res) => {
+  const { id, commentId } = req.params
+  if (!db.prepare('SELECT 1 FROM use_case_comments WHERE id = ? AND use_case_id = ?').get(commentId, id)) return res.status(404).json({ error: 'not_found' })
+  const has = db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").get(commentId, req.user.id)
+  if (has) db.prepare("DELETE FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ? AND user_id = ?").run(commentId, req.user.id)
+  else db.prepare("INSERT INTO comment_reactions (kind, comment_id, user_id) VALUES ('uccomment', ?, ?)").run(commentId, req.user.id)
+  res.json({ ok: true })
 })
 
 router.patch('/:id/comments/:commentId', requireAuth, (req, res) => {

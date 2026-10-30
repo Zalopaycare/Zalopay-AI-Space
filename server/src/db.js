@@ -162,6 +162,13 @@ if (!useCaseCommentColumns.includes('parent_id')) {
   db.exec('ALTER TABLE use_case_comments ADD COLUMN parent_id TEXT')
 }
 
+// Likes on comments: kind 'acomment' (under a thread's reply) or 'uccomment' (on a use case).
+db.exec(`CREATE TABLE IF NOT EXISTS comment_reactions (
+  kind TEXT NOT NULL, comment_id TEXT NOT NULL, user_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (kind, comment_id, user_id)
+)`)
+
 // Archived posts: hidden from everyone but their author (Của tôi > Đã lưu trữ), who can post them again.
 for (const table of ['questions', 'use_case_submissions']) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)

@@ -33,6 +33,8 @@ function loadQuestion(id, viewer) {
     const aAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(a.author_id)
     const comments = db.prepare('SELECT * FROM answer_comments WHERE answer_id = ? ORDER BY created_at ASC').all(a.id).map((c) => ({
       id: c.id, ...maskAuthor(userBrief(db.prepare('SELECT * FROM users WHERE id = ?').get(c.author_id)), c, viewer), time: c.created_at, body: c.body, parentId: c.parent_id || null, edited: !!c.edited_at, files: commentFilesOf('acomment', c.id),
+      likes: db.prepare("SELECT COUNT(*) n FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ?").get(c.id).n,
+      liked: userId ? !!db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").get(c.id, userId) : false,
     }))
     const helpful = db.prepare('SELECT COUNT(*) n FROM answer_reactions WHERE answer_id = ?').get(a.id).n
     const iHelped = userId ? !!db.prepare('SELECT 1 FROM answer_reactions WHERE answer_id = ? AND user_id = ?').get(a.id, userId) : false
@@ -233,6 +235,16 @@ router.post('/:id/answers/:answerId/react', requireAuth, (req, res) => {
   res.json({ question: loadQuestion(id, req.user) })
 })
 
+// Like / unlike a comment under a reply.
+router.post('/:id/answers/:answerId/comments/:commentId/react', requireAuth, (req, res) => {
+  const { id, answerId, commentId } = req.params
+  if (!db.prepare('SELECT 1 FROM answer_comments WHERE id = ? AND answer_id = ?').get(commentId, answerId)) return res.status(404).json({ error: 'not_found' })
+  const has = db.prepare("SELECT 1 FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").get(commentId, req.user.id)
+  if (has) db.prepare("DELETE FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ? AND user_id = ?").run(commentId, req.user.id)
+  else db.prepare("INSERT INTO comment_reactions (kind, comment_id, user_id) VALUES ('acomment', ?, ?)").run(commentId, req.user.id)
+  res.json({ question: loadQuestion(id, req.user) })
+})
+
 router.post('/:id/answers/:answerId/accept', requireAuth, (req, res) => {
   const { id, answerId } = req.params
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id)
@@ -299,6 +311,7 @@ export const deleteAnswerTx = db.transaction((answerId) => {
   if (a.accepted) db.prepare('UPDATE questions SET resolved = 0, accepted_answer_id = NULL WHERE id = ?').run(a.question_id)
 })
 export const deleteCommentTx = db.transaction((commentId) => {
+  for (const id of [commentId, ...db.prepare('SELECT id FROM answer_comments WHERE parent_id = ?').all(commentId).map((r) => r.id)]) db.prepare("DELETE FROM comment_reactions WHERE kind = 'acomment' AND comment_id = ?").run(id)
   dropCommentFiles('acomment', [commentId, ...db.prepare('SELECT id FROM answer_comments WHERE parent_id = ?').all(commentId).map((r) => r.id)])
   db.prepare('DELETE FROM answer_comments WHERE parent_id = ?').run(commentId)
   db.prepare('DELETE FROM answer_comments WHERE id = ?').run(commentId)

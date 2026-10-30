@@ -25,7 +25,7 @@ import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
-import CommentMenu, { InlineEdit, useCommentModals, Chevron } from '../components/CommentMenu.jsx'
+import CommentMenu, { InlineEdit, useCommentModals, Chevron, CommentLike } from '../components/CommentMenu.jsx'
 import MentionField, { MENTION_SPLIT, shortMention, expandMentions, renderMentions } from '../components/MentionField.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -644,6 +644,7 @@ export default function QuestionsPage() {
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
                                                 : <div style={css('margin-top:1px; font:400 13.5px/1.5 var(--zp-font-text); color:#1E293B;')}>{c.bodyEl}</div>}
                                               <CommentFiles files={c.files} />
+                                              <CommentLike liked={c.liked} likes={c.likes} size={12} style={{ marginTop: 3 }} onClick={() => requireLogin(() => api.reactAnswerComment(q.id, a.id, c.id).then((d) => patch(q.id, d.question)).catch(() => {}))} />
                                               <button onClick={() => startCommentReply(a.id, c.id, c.author, c.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                                             </div>
                                           </div>
@@ -669,7 +670,8 @@ export default function QuestionsPage() {
                                                   ? <InlineEdit initial={r.body} onSave={(b) => saveCommentEdit(q.id, a.id, r.id, b)} onCancel={() => setEditing(null)} />
                                                   : <div style={css('margin-top:1px; font:400 13px/1.5 var(--zp-font-text); color:#1E293B;')}>{r.bodyEl}</div>}
                                                 <CommentFiles files={r.files} />
-                                                <button onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
+                                                <CommentLike liked={r.liked} likes={r.likes} size={11.5} style={{ marginTop: 3 }} onClick={() => requireLogin(() => api.reactAnswerComment(q.id, a.id, r.id).then((d) => patch(q.id, d.question)).catch(() => {}))} />
+                                              <button onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} style={css('margin-top:3px; border:none; background:transparent; padding:0; cursor:pointer; font:700 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Trả lời')}</button>
                                               </div>
                                             </div>
                                           ))}
