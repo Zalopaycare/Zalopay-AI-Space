@@ -70,7 +70,7 @@ export default function ShareToDM({ share, onClose }) {
           <span style={css('flex:1; min-width:0; font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{share.title}</span>
         </div>
         <div style={css('flex:none; padding:10px 16px 6px;')}>
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Tìm người…')} aria-label={t('Tìm người')} style={css('width:100%; height:38px; border:1px solid #E3E8F2; border-radius:999px; padding:0 14px; font-family:inherit; font-size:13px; background:#F7F9FD; outline:none; box-sizing:border-box;')} />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Tìm người…')} aria-label={t('Tìm người')} style={css('width:100%; height:38px; border:1px solid #E3E8F2; border-radius:999px; padding:0 14px; font-family:inherit; font-size:13px; color:#0F172A; background:#F7F9FD; outline:none; box-sizing:border-box;')} />
           {picked.length > 0 && (
             <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;')}>
               {picked.map((u) => (
@@ -103,7 +103,7 @@ export default function ShareToDM({ share, onClose }) {
         <div style={css('flex:none; padding:10px 16px 14px; border-top:1px solid #EEF1F7;')}>
           {err && <div style={css('margin:0 0 6px 4px; font-size:12px; font-weight:600; color:#D8232A;')}>{err}</div>}
           {picked.length > 0 && (
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={2000} placeholder={t('Thêm lời nhắn (không bắt buộc)…')} aria-label={t('Lời nhắn')} style={css('width:100%; margin-bottom:10px; resize:none; border:1px solid #E3E8F2; border-radius:14px; padding:9px 13px; font-family:inherit; font-size:13px; line-height:1.5; background:#F7F9FD; outline:none; box-sizing:border-box;')} />
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={2000} placeholder={t('Thêm lời nhắn (không bắt buộc)…')} aria-label={t('Lời nhắn')} style={css('width:100%; margin-bottom:10px; resize:none; border:1px solid #E3E8F2; border-radius:14px; padding:9px 13px; font-family:inherit; font-size:13px; line-height:1.5; color:#0F172A; background:#F7F9FD; outline:none; box-sizing:border-box;')} />
           )}
           <div style={css('display:flex; align-items:center; gap:8px;')}>
             <button onClick={() => { copyWithToast(share.link, 'Đã sao chép link ✓'); onClose() }} className={hoverClass('background:#F0F3F9 !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border:1px solid #E3E8F2; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;')}>

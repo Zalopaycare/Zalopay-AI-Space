@@ -108,7 +108,7 @@ export default function MessagesPage() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
                 </button>
               </div>
-              <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Tìm người để nhắn…')} aria-label={t('Tìm người để nhắn')} style={css('width:100%; margin-top:10px; height:36px; border:1px solid #E3E8F2; border-radius:999px; padding:0 14px; font-family:inherit; font-size:13px; background:#F7F9FD; outline:none; box-sizing:border-box;')} />
+              <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Tìm người để nhắn…')} aria-label={t('Tìm người để nhắn')} style={css('width:100%; margin-top:10px; height:36px; border:1px solid #E3E8F2; border-radius:999px; padding:0 14px; font-family:inherit; font-size:13px; color:#0F172A; background:#F7F9FD; outline:none; box-sizing:border-box;')} />
             </div>
             <div style={css('flex:1; min-height:0; overflow-y:auto; padding:6px;')}>
               {list === null && <div style={css('padding:20px; text-align:center; color:#94a3b8; font-size:12.5px;')}>{t('Đang tải…')}</div>}
