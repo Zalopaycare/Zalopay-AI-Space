@@ -16,7 +16,7 @@ import { markOtherPick, focusIfJustPicked } from '../lib/focusOther.js'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import CommentMenu, { InlineEdit, useCommentModals, ReactionButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
+import CommentMenu, { InlineEdit, useCommentModals, LikeButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
 import { api, relativeTime } from '../lib/api.js'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import Layout from '../components/Layout.jsx'
@@ -775,9 +775,9 @@ export default function UseCaseLibraryPage() {
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
                             : <div style={css('margin-top:2px; font-size:14px; line-height:1.5; color:#1E293B;')}>{renderMentions(c.body)}</div>}
                           <CommentFiles files={c.files} />
-                          {/* ♡ (and the other reactions) · 💬, as on Threads */}
+                          {/* ♡ · 💬, as on Threads */}
                           <div style={css('display:flex; align-items:center; gap:2px; margin:4px 0 0 -8px;')}>
-                            <ReactionButton r={c.reactions} onReact={(type) => requireLogin(() => api.reactUseCaseComment(dsel.id, c.id, type).then(() => refreshMeta(dsel.id)).catch(() => {}))} />
+                            <LikeButton r={c.reactions} onLike={() => requireLogin(() => api.reactUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} />
                             <ReplyButton count={replies.length} onClick={() => startReply(c.id, c.author, c.id)} />
                           </div>
                         </div>
@@ -800,7 +800,7 @@ export default function UseCaseLibraryPage() {
                               : <div style={css('margin-top:2px; font-size:14px; line-height:1.5; color:#1E293B;')}>{renderMentions(r.body)}</div>}
                             <CommentFiles files={r.files} />
                             <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
-                              <ReactionButton r={r.reactions} onReact={(type) => requireLogin(() => api.reactUseCaseComment(dsel.id, r.id, type).then(() => refreshMeta(dsel.id)).catch(() => {}))} />
+                              <LikeButton r={r.reactions} onLike={() => requireLogin(() => api.reactUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {}))} />
                               <ReplyButton onClick={() => startReply(c.id, r.author, r.id)} />
                             </div>
                           </div>

@@ -24,7 +24,7 @@ import FilterPill from '../components/FilterPill.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
-import CommentMenu, { InlineEdit, useCommentModals, ReactionButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
+import CommentMenu, { InlineEdit, useCommentModals, LikeButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
 import MentionField, { MENTION_SPLIT, shortMention, expandMentions, renderMentions } from '../components/MentionField.jsx'
 
 const AV = ['#2c5fff', '#00A352', '#6F0CE2', '#FF8D00', '#0033C9', '#00B7FF']
@@ -416,7 +416,7 @@ export default function QuestionsPage() {
         },
         onReply: () => setOpenComments((s) => ({ ...s, [a.id]: !s[a.id] })),
         onHelpful: () => requireLogin(() => api.reactAnswer(q.id, a.id).then((d) => patch(q.id, d.question)).catch(() => {})),
-        onReact: (type) => requireLogin(() => api.reactAnswer(q.id, a.id, type).then((d) => patch(q.id, d.question)).catch(() => {})),
+        onLike: () => requireLogin(() => api.reactAnswer(q.id, a.id).then((d) => patch(q.id, d.question)).catch(() => {})),
         onAccept: () => accept(q.id, a.id),
       }
     })
@@ -595,7 +595,7 @@ export default function QuestionsPage() {
                                   <CommentFiles files={a.files} />
                                 </div>
                                 <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px; flex-wrap:wrap;')}>
-                                  <ReactionButton r={a.reactions} onReact={a.onReact} />
+                                  <LikeButton r={a.reactions} onLike={a.onLike} />
                                   <ReplyButton count={a.comments.length} onClick={a.onReply} />
                                 </div>
 
@@ -623,9 +623,9 @@ export default function QuestionsPage() {
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
                                                 : <div style={css('margin-top:1px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B;')}>{c.bodyEl}</div>}
                                               <CommentFiles files={c.files} />
-                                              {/* ♡ (and the other reactions) · 💬, as on Threads */}
+                                              {/* ♡ · 💬, as on Threads */}
                                               <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
-                                                <ReactionButton r={c.reactions} onReact={(type) => requireLogin(() => api.reactAnswerComment(q.id, a.id, c.id, type).then((d) => patch(q.id, d.question)).catch(() => {}))} />
+                                                <LikeButton r={c.reactions} onLike={() => requireLogin(() => api.reactAnswerComment(q.id, a.id, c.id).then((d) => patch(q.id, d.question)).catch(() => {}))} />
                                                 <ReplyButton count={replies.length} onClick={() => { startCommentReply(a.id, c.id, c.author, c.id); setExpandedCommentThreads((s) => new Set(s).add(c.id)) }} />
                                               </div>
                                             </div>
@@ -650,7 +650,7 @@ export default function QuestionsPage() {
                                                   : <div style={css('margin-top:1px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B;')}>{r.bodyEl}</div>}
                                                 <CommentFiles files={r.files} />
                                                 <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
-                                                  <ReactionButton r={r.reactions} onReact={(type) => requireLogin(() => api.reactAnswerComment(q.id, a.id, r.id, type).then((d) => patch(q.id, d.question)).catch(() => {}))} />
+                                                  <LikeButton r={r.reactions} onLike={() => requireLogin(() => api.reactAnswerComment(q.id, a.id, r.id).then((d) => patch(q.id, d.question)).catch(() => {}))} />
                                                   <ReplyButton onClick={() => startCommentReply(a.id, c.id, r.author, r.id)} />
                                                 </div>
                                               </div>
