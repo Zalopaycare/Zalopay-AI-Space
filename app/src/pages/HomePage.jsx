@@ -247,7 +247,7 @@ export default function HomePage() {
                   {t('Chưa có kết quả cho')} "<span style={css('color:#0F172A;')}>{homeQuery.trim()}</span>"
                 </div>
               ) : (
-                [['Use case', searchUc, '/use-cases'], ['AI Questions', searchQ, '/questions']].filter(([, list]) => list.length).map(([label, list, base]) => (
+                [['Use case', searchUc, '/use-cases'], ['AI Thread', searchQ, '/questions']].filter(([, list]) => list.length).map(([label, list, base]) => (
                   <div key={label} style={css('padding:4px 0;')}>
                     <div style={css('display:flex; align-items:center; justify-content:space-between; padding:8px 12px 4px;')}>
                       <span style={css(`font:800 11.5px ${FONT}; letter-spacing:.05em; text-transform:uppercase; color:#94a3b8;`)}>{t(label)} · {list.total}</span>

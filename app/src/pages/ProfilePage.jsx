@@ -466,7 +466,7 @@ export default function ProfilePage() {
             <div style={css('max-width:760px; margin:22px auto 0;')}>
               <h3 style={css(`margin:0 0 10px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Hoạt động gần đây')}</h3>
               {loaded && recentItems.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đặt câu hỏi hoặc chia sẻ use case đầu tiên của bạn.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đăng thread hoặc chia sẻ use case đầu tiên của bạn.')}</div>
               )}
               <div style={css('display:flex; flex-direction:column; gap:8px; padding-bottom:32px;')}>
                 {recentItems.map((r, i) => (
