@@ -407,10 +407,6 @@ export default function AdminConsolePage() {
           <div ref={acctRef} style={css('position:relative;')}>
             {acctOpen && (
               <div style={css('position:absolute; left:0; right:0; bottom:calc(100% + 8px); background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:700;')}>
-                <Link to="/profile" className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none;' + font(700, 13.5) + ';color:#0F172A; white-space:nowrap;')}>
-                  <svg style={{ flex: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
-                  Hồ sơ của tôi
-                </Link>
                 <Link to="/" className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none;' + font(700, 13.5) + ';color:#2c5fff; white-space:nowrap;')}>
                   <svg style={{ flex: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
                   Về trang chính
