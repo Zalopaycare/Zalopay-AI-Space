@@ -303,7 +303,7 @@ export default function AdminConsolePage() {
 
   // ---- questions ----
   const qq = fold(qQuery.trim())
-  const qRows = questions.filter((q) => (qStatus === 'all' || (qStatus === 'resolved' ? q.resolved : qStatus === 'unanswered' ? !q.answers.length : !!q.answers.length && !q.resolved)) && (!qq || fold(q.title + ' ' + q.body + ' ' + q.author + ' ' + (q.fullName || '')).includes(qq)))
+  const qRows = questions.filter((q) => (qStatus === 'all' || (qStatus === 'unanswered' ? !q.answers.length : !!q.answers.length)) && (!qq || fold(q.title + ' ' + q.body + ' ' + q.author + ' ' + (q.fullName || '')).includes(qq)))
   const helpful = (q) => (q.qHelpful || 0) + q.answers.reduce((n, a) => n + (a.helpful || 0), 0)
 
   // ---- users ----
@@ -630,7 +630,7 @@ export default function AdminConsolePage() {
               <Heading title="Câu hỏi" sub="Câu hỏi được đăng trực tiếp. Admin có thể xem và xoá bài không phù hợp." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={qQuery} onChange={setQQuery} placeholder="Tìm theo nội dung hoặc tác giả..." />
-                <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['waiting', 'Chờ chọn đáp án', questions.filter((q) => q.answers.length && !q.resolved).length], ['resolved', 'Đã giải quyết', questions.filter((q) => q.resolved).length]]} />
+                <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['answered', 'Đã có trả lời', questions.filter((q) => q.answers.length).length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
                 <div style={headRow(Q_COLS)}><span>CÂU HỎI</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>UPVOTE</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
@@ -643,7 +643,7 @@ export default function AdminConsolePage() {
                     <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')} title={q.anonymous ? `Đăng ẩn danh với tên "${q.author}" · tài khoản thật: ${q.account || q.realAuthor}` : [cleanName(q.fullName), q.account].filter(Boolean).join(' · ')}>{realWho(q.author, q.account || q.realAuthor, q.anonymous)}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{q.answers.length}</div>
                     <div style={css(font(800, 14) + ';color:#3A4757;')}>{helpful(q)}</div>
-                    <div><span style={css(q.resolved ? pill('#E7F9F0', '#00893F') : q.answers.length ? pill('#EAF0FF', '#2c5fff') : pill('#FFF1E0', '#B45300'))}>{q.resolved ? 'Đã giải quyết' : q.answers.length ? 'Chờ chọn đáp án' : 'Chưa có trả lời'}</span></div>
+                    <div><span style={css(q.answers.length ? pill('#E7F9F0', '#00893F') : pill('#FFF1E0', '#B45300'))}>{q.answers.length ? 'Đã có trả lời' : 'Chưa có trả lời'}</span></div>
                     <div style={css('display:flex; justify-content:flex-end; gap:7px;')}>
                       <button onClick={() => setQDetailId(q.id)} style={css(btn('plain'))}>Xem</button>
                       <button onClick={() => removeQuestion(q, reloadQuestions)} style={css(btn('reject'))}>Xoá</button>
@@ -864,7 +864,8 @@ export default function AdminConsolePage() {
       {qDetailId && (() => {
         const q = questions.find((x) => x.id === qDetailId)
         if (!q) return null
-        const st = q.resolved ? ['Đã giải quyết', '#E7F9F0', '#00893F'] : q.answers.length ? ['Chờ chọn đáp án', '#EAF0FF', '#2c5fff'] : ['Chưa có trả lời', '#FFF1E0', '#B45300']
+        // no more picking a best answer: a thread either has replies or not
+        const st = q.answers.length ? ['Đã có trả lời', '#E7F9F0', '#00893F'] : ['Chưa có trả lời', '#FFF1E0', '#B45300']
         const who = (x) => [cleanName(x.fullName), x.author].filter((v, i, a) => v && a.indexOf(v) === i).join(' · ')
         return (
           <div onClick={() => setQDetailId(null)} style={css('position:fixed; inset:0; z-index:900; background:rgba(6,14,40,.55); display:flex; align-items:center; justify-content:center; padding:32px;')}>

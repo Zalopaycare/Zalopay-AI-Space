@@ -303,7 +303,7 @@ export default function HomePage() {
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
                       {t('Thread')}
                     </span>
-                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.resolved ? '#E7F9F0' : '#FFF1E0'}; color:${q.resolved ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{q.resolved ? t('Đã trả lời') : t('Đang chờ trả lời')}</span>
+                    <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${(q.answers || []).length ? '#E7F9F0' : '#FFF1E0'}; color:${(q.answers || []).length ? '#00893F' : '#B45300'}; font:700 11.5px ${FONT};`)}>{(q.answers || []).length ? t('Đã trả lời') : t('Đang chờ trả lời')}</span>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
                     <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</span>

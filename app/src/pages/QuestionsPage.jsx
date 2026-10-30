@@ -81,6 +81,7 @@ export default function QuestionsPage() {
   const [commentDrafts, setCommentDrafts] = useState({})
   // Files picked for an answer / comment / reply before sending (keyed per composer).
   const att = useCommentAttachments()
+  const commentReplyBoxRef = useRef(null) // the reply box under a comment (MentionInput: expands @mentions on send)
   const [commentReplyTarget, setCommentReplyTarget] = useState(null) // { answerId, parentId, authorName } | null
   const [editing, setEditing] = useState(null) // { kind: 'answer' | 'comment', id }
   // Per-field map of short @handle → full email for people picked from the directory.
@@ -190,7 +191,7 @@ export default function QuestionsPage() {
   const cancelCommentReply = () => { setCommentReplyTarget(null); setCommentReplyDraft('') }
   const submitCommentReply = (qId) => {
     if (!commentReplyTarget) return
-    const body = commentReplyDraft.trim()
+    const body = (commentReplyBoxRef.current ? commentReplyBoxRef.current.expand(commentReplyDraft) : commentReplyDraft).trim()
     const key = 'rep:' + commentReplyTarget.answerId + ':' + commentReplyTarget.parentId
     if (!body && !att.files(key).length) return
     requireLogin(() => api.postAnswerComment(qId, commentReplyTarget.answerId, body, commentReplyTarget.parentId, commentReplyTarget.replyToId, { ...anonOpts(), files: att.payload(key) }).then((d) => { patch(qId, d.question); att.clear(key) }).catch(alertIfAliasTaken))
@@ -424,9 +425,9 @@ export default function QuestionsPage() {
       ...q,
       time: threadTime(q.time),
       avatarBg: q.avatarColor || AV[q.author.charCodeAt(0) % AV.length],
-      statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
-      statusFg: q.resolved ? '#00893F' : '#B45300',
-      statusLabel: q.resolved ? t('Đã trả lời') : t('Đang chờ trả lời'),
+      statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0',
+      statusFg: q.answers.length ? '#00893F' : '#B45300',
+      statusLabel: q.answers.length ? t('Đã trả lời') : t('Đang chờ trả lời'),
       bodyShown: full || !long ? q.body : q.body.slice(0, CLAMP).trimEnd() + '…',
       truncated: long && !full,
       saveBg: q.saved ? '#E7F9F0' : '#fff',
@@ -678,12 +679,16 @@ export default function QuestionsPage() {
                                             <div style={css('display:flex; gap:10px; margin:10px 0 0 36px; align-items:center;')}>
                                               <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                                               <div style={{ flex: 1 }}>
-                                                <input
+                                                {/* @ suggestions like every other box: picking someone mentions them */}
+                                                <MentionInput
+                                                  ref={commentReplyBoxRef}
                                                   autoFocus
+                                                  popupWidth={320}
                                                   value={commentReplyDraft}
-                                                  onChange={(e) => setCommentReplyDraft(e.target.value)}
-                                                  onKeyDown={(e) => { if (e.key === 'Escape') cancelCommentReply(); else enterSends(() => submitCommentReply(q.id))(e) }}
-                                                  placeholder={t('Trả lời') + ' ' + commentReplyTarget.authorName + '...'}
+                                                  onChange={setCommentReplyDraft}
+                                                  onEnter={() => submitCommentReply(q.id)}
+                                                  onKeyDown={(e) => { if (e.key === 'Escape') cancelCommentReply() }}
+                                                  placeholder={t('Trả lời') + ' ' + commentReplyTarget.authorName + ', ' + t('gõ @ để mention...')}
                                                   style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')}
                                                 />
                                               </div>
