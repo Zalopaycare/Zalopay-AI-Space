@@ -164,8 +164,8 @@ export default function QuestionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.hash])
 
-  // Comments open right under the post, where it is in the feed (no jump to the thread's own page).
-  const toggle = (id) => { if (id !== detailId) setExpanded((s) => ({ ...s, [id]: !s[id] })) }
+  // A post in the feed opens its own page, with the replies and comments under it (as on Threads).
+  const toggle = (id) => { if (id !== detailId) navigate('/questions/' + encodeURIComponent(id)) }
   const askDialog = useDialog(view === 'ask', () => setView('feed'), t('Thread mới'))
   const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
   const accept = (qid, aid) => requireLogin(() => api.acceptAnswer(qid, aid).then((d) => patch(qid, d.question)).catch(() => {}))
@@ -478,7 +478,7 @@ export default function QuestionsPage() {
   // row. In the feed the posts sit one under another in a single column; inModal = the post on its own
   // page, with the reply box and the replies under it.
   const renderQCard = (q, inModal) => (
-                  <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : hoverClass('background:#FAFBFE;')} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`position:relative; ${inModal ? '' : 'cursor:pointer; border-top:1px solid #EEF1F7;'}`)}>
+                  <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : hoverClass('box-shadow:0 0 0 2px rgba(80,140,255,.55), 0 18px 40px rgba(3,12,40,.4) !important;')} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`position:relative; ${inModal ? '' : 'cursor:pointer; background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:box-shadow .16s;'}`)}>
                     <div style={css(`display:flex; gap:12px; padding:${inModal ? '20px 22px 6px' : '16px 20px 10px'};`)}>
                       <div style={css(`flex:none; width:38px; height:38px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
@@ -538,12 +538,12 @@ export default function QuestionsPage() {
                         <FileLinks files={q.files} />
                         {/* like · comment · save, the same row as every other card */}
                         <div style={css('display:inline-flex; margin-top:10px;')}>
-                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.reduce((n, a) => n + 1 + a.comments.length, 0)} replyActive={inModal || q.expanded} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
+                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.reduce((n, a) => n + 1 + a.comments.length, 0)} replyActive={inModal} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
                         </div>
                       </div>
                     </div>
 
-                    {(inModal || q.expanded) && (
+                    {inModal && (
                       <div style={css('margin-top:8px; padding:14px 22px 16px; background:#fff; border-top:1px solid #EEF1F7;')}>
                         <div style={css('display:flex; gap:10px; padding-bottom:16px; margin-bottom:4px; border-bottom:1px solid #E6EBF3;')}>
                           <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
@@ -770,12 +770,12 @@ export default function QuestionsPage() {
           } />
           <div style={css('padding:16px var(--zp-gutter) 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              {/* one column like Threads: the posts one under another */}
-              <div style={css('background:#fff; border-radius:24px; overflow:visible; box-shadow:0 24px 60px rgba(3,12,40,.35);')}>
+              {/* one card per thread, one under another; a click opens the thread with its comments */}
+              <div style={css('display:flex; flex-direction:column; gap:14px;')}>
                 {feed.map((q) => renderQCard(q, false))}
 
                 {isEmpty && (
-                  <div style={css('border-top:1px solid #EEF1F7; padding:56px 0; text-align:center;')}>
+                  <div style={css('background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:56px 0; text-align:center;')}>
                     <div style={css('font:800 17px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{emptyTitle}</div>
                     <div style={css('margin-top:8px; font:400 14px var(--zp-font-text); color:#64748b;')}>{emptyHint}</div>
                     <button onClick={() => setView('ask')} style={css('margin-top:20px; height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Đăng thread')}</button>
