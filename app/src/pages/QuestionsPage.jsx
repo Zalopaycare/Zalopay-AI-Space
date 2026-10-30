@@ -563,13 +563,14 @@ export default function QuestionsPage() {
                               </div>
                             )}
                             <PendingAttachments files={att.files('ans:' + q.id)} onRemove={(k) => att.remove('ans:' + q.id, k)} error={att.errorFor('ans:' + q.id)} />
-                            <AnonToggle on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" />
-                            <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px;')}>
-                              <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</span>
+                            {/* one row: anonymous switch on the left, attach + Đăng on the right; the mention note small under it */}
+                            <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;')}>
+                              <AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" />
                               <span style={{ marginLeft: 'auto' }}></span>
-                              <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={40} />
-                              <button onClick={q.onPostReply} style={css(` height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Đăng')}</button>
+                              <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={36} />
+                              <button onClick={q.onPostReply} style={css(` height:36px; padding:0 18px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Đăng')}</button>
                             </div>
+                            <div style={css('margin-top:4px; font:500 11.5px var(--zp-font-text); color:#a3afc2;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</div>
                           </div>
                         </div>
 
