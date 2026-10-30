@@ -4,7 +4,8 @@
 // "Web đang được sửa chữa". Turning it off is removing the setting (or setting it to off).
 export const maintenanceOn = () => /^(1|on|true|yes)$/i.test(String(process.env.MAINTENANCE || '').trim())
 
-const allowed = () => new Set(String(process.env.MAINTENANCE_ALLOW || '').split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))
+// quotes a config screen may wrap the value in don't count
+const allowed = () => new Set(String(process.env.MAINTENANCE_ALLOW || '').replace(/['"]/g, '').split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))
 /** May this signed-in user use the site while it is under maintenance? */
 export const passesMaintenance = (user) => !!user && (!!user.is_admin || allowed().has(String(user.email || '').toLowerCase()))
 
