@@ -61,7 +61,7 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả, Ai dùng được, Phù hợp với bạn nếu, Độ khó, Công cụ AI' },
+  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả, Phù hợp với bạn nếu, Độ khó, Công cụ AI' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
@@ -348,7 +348,8 @@ export default function UseCaseLibraryPage() {
     try {
       setShareForm({ ...EMPTY_SHARE_FORM, ...(d.shareForm || {}) })
       setShareType(d.shareType || '')
-      setShareAnon(!!d.shareAnon); setShareAlias(d.shareAlias || '')
+      // a new post goes up under your name (anonymous posting was taken off the form)
+      setShareAnon(false); setShareAlias('')
       setSharePostAs(d.sharePostAs === 'team' ? 'team' : 'personal'); setShareMembers(d.shareMembers || ''); setShareBooth(d.shareBooth || ''); setShareSteps(Array.isArray(d.shareSteps) && d.shareSteps.length ? d.shareSteps : d.shareForm?.prompt ? [{ ...EMPTY_STEP, title: 'Prompt / quy trình', prompt: d.shareForm.prompt }] : [EMPTY_STEP])
       setShareHighlights(padHighlights(d.shareHighlights))
       setShareKind(d.shareKind || '')
@@ -573,7 +574,6 @@ export default function UseCaseLibraryPage() {
       'GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay\nAutomation Testing Tool – Hỗ trợ QC viết UI automation test bằng prompt\nPO Tool Kit: bộ AI skill giúp PO đi từ ý tưởng tới ticket, prototype và báo cáo'],
     ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai đưa gì vào, nhận lại gì.', 'Ai làm gì với công cụ, nhận được gì', 'input', 0, 'intro',
       'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.'],
-    ['audience', 'Ai dùng được', 'Required', 'Vai trò hoặc nhóm nào dùng được use case này.', 'Vai trò / team', 'input', 0, 'intro', 'Security, Dev'],
     ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nDùng **chữ đậm** cho tên ý, xuống dòng giữa các ý.', '', 'area', 6, 'ps',
       '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence, tìm đúng version đang deploy, rồi gõ tay từng lệnh curl để test. Thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester.\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint, test nhầm version.'],
     ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps',
@@ -581,7 +581,7 @@ export default function UseCaseLibraryPage() {
     ['result', 'Số liệu & hình ảnh', 'Optional', 'Số đo trước / sau nếu có. Mỗi dòng một ý. Chưa đo thì để trống.', '', 'area', 3, 'ps',
       'Chuẩn bị pentest: từ 0,5–2 ngày xuống khoảng 5 phút\n17/25 ticket gần nhất chỉ đưa link, trung bình 2–3 link'],
     ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file cài để người khác tự xem.', 'https://...', 'input', 0, 'apply', 'https://gitlab.zalopay.vn/…/secreq-bot'],
-    ['fitYes', 'Phù hợp với bạn nếu', 'Optional', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'intro', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
+    ['fitYes', 'Phù hợp với bạn nếu', 'Required', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'intro', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
     ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', '', 'area', 3, 'apply', 'Tài khoản O365 để đăng nhập MCP Platform.\nQuyền owner/co-owner của tài nguyên trên Gear.\nMột AI có hỗ trợ kết nối MCP (ví dụ Codex).'],
     ['success', 'Kết quả bạn sẽ thấy', 'Optional', 'Làm xong các bước thì người đọc thấy gì, để họ biết mình đã làm đúng. Mỗi dòng một ý.', '', 'area', 2, 'apply2', 'AI trả về trang tóm tắt có lệnh curl cho từng API, dòng nào cũng có link nguồn.\nTrong bảng MCP keys, khoá của bạn có trạng thái "Active".'],
     ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', '', 'area', 3, 'apply2', 'Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.\nMất khoá sau khi đóng màn hình → tạo khoá mới trong mục "MCP keys".'],
@@ -625,7 +625,7 @@ export default function UseCaseLibraryPage() {
   const missingByStep = Object.fromEntries(Object.entries(reqByStep).map(([k, list]) => [k, list.filter((x) => !x.done).map((x) => x.label)]))
   // Sendable only with every required item filled: the same list the form marks (missingByStep), plus
   // what the server insists on.
-  const valid = Object.values(missingByStep).every((l) => !l.length) && !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.audience.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && (!catOtherOn || shareCatOther.trim()) && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
+  const valid = Object.values(missingByStep).every((l) => !l.length) && !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && (!catOtherOn || shareCatOther.trim()) && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
   const missCover = showMissing && !(shareCover && !shareCover.cleared)
   const missMembers = showMissing && teamPost && !shareMemberList.length
   const missCatOther = showMissing && catOtherOn && !shareCatOther.trim()
@@ -1040,11 +1040,6 @@ export default function UseCaseLibraryPage() {
                     <DetailHero tldr={pv.tp.tldr} fit={pv.tp.apply.fit} t={t} c={pv.c} h={{ ...pv.tp.hero, posted: '' }} />
                     <DetailSections id="preview" tp={pv.tp} t={t} layout={pv.layout} />
                   </div>
-                  {!teamPost && (
-                    <div style={css('margin-top:16px; padding:12px 16px; border-radius:14px; background:#fff; border:1px solid #E6EBF3;')}>
-                      <AnonToggle compact on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
-                    </div>
-                  )}
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap;')}>
                     <button onClick={() => setShareStage('form')} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Quay lại chỉnh sửa')}</button>
                     <button
@@ -1177,7 +1172,7 @@ export default function UseCaseLibraryPage() {
                           {coverError && <div style={css('margin-top:8px; font-size:12px; font-weight:600; color:#D8232A;')}>{coverError}</div>}
                           {!coverError && coverNote && <div style={css('margin-top:8px; font-size:12px; color:#9A5B00;')}>{coverNote}</div>}
                         </div>
-                        <div style={css(`margin:-4px 0 16px; padding:14px 16px; border-radius:14px; border:1px solid ${shareAnon && !teamPost ? '#B9CCF8' : '#E6EBF3'}; background:${shareAnon && !teamPost ? '#F2F6FF' : '#F8FAFE'};`)}>
+                        <div>
                           <div style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Người đăng')}</div>
                           <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
                           <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
@@ -1186,7 +1181,8 @@ export default function UseCaseLibraryPage() {
                               return <button key={v} type="button" onClick={() => setSharePostAs(v)} aria-pressed={sharePostAs === v} style={css(`height:30px; padding:0 13px; border:1px solid ${ch.border}; border-radius:999px; background:${ch.bg}; color:${ch.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{t(label)}</button>
                             })}
                           </div>
-                          {teamPost ? (
+                          {/* use cases go up under your name (or the team's); no anonymous posting here */}
+                          {teamPost && (
                             <div style={css('margin-top:12px;')}>
                               <label htmlFor="sf-members" style={css('font-size:12.5px; font-weight:800; color:#2c5fff;')}>{t('Thành viên cùng làm')}</label>
                               <ReqTag done={!!shareMemberList.length} required t={t} style={{ marginLeft: 8 }} />
@@ -1194,11 +1190,6 @@ export default function UseCaseLibraryPage() {
                               {missMembers && <MissLine text={t('Chưa điền tên thành viên')} />}
                               <div style={css('margin-top:5px; font-size:11.5px; color:#94a3b8;')}>{shareMemberList.length ? t('Hiện trên bài') + ': ' + shareMemberList.join(', ') : t('Bài sẽ hiện tên toàn bộ thành viên thay cho tên bạn.')}</div>
                             </div>
-                          ) : (
-                            <>
-                              <div style={css('margin-top:12px; font-size:12px; color:#64748b;')}>{t('Bật "Đăng ẩn danh" để người khác thấy tên hiển thị bạn chọn thay vì tên thật.')}</div>
-                              <AnonToggle on={shareAnon} onChange={setShareAnon} alias={shareAlias} onAlias={setShareAlias} />
-                            </>
                           )}
                         </div>
                       </>
@@ -1434,35 +1425,33 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
                     <input value={x.note} onChange={set(i, 'note')} autoFocus={!x.note} placeholder={t('Điều dễ sai hoặc nguy hiểm khi cài / dùng AI ở bước này')} style={css(FIELD_INPUT + 'border-color:#F6C9CB; background:#FFF8F8; color:#B4141B;')} />
                   </>
                 )}
-                {(!(x.prompt || x.withPrompt) || !(x.note || x.withNote)) && (
+                {/* pictures / files already added to this step (shown under it on the use case page) */}
+                {allowFiles && (x.files || []).length > 0 && (
                   <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;')}>
+                    {x.files.map((f, k) => (
+                      <span key={k} style={css('display:inline-flex; align-items:center; gap:7px; max-width:100%; height:30px; padding:0 4px 0 8px; border:1px solid #DDE3EC; border-radius:999px; background:#F7F9FD; font-size:12px; font-weight:600; color:#3A4757;')}>
+                        {f.image ? <img src={f.url || f.data} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 4 }} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>}
+                        <span style={css('max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{f.name}</span>
+                        <button type="button" onClick={() => setFiles(i, x.files.filter((_, j) => j !== k))} aria-label={t('Bỏ file') + ' ' + f.name} style={css('border:none; background:none; cursor:pointer; color:#94a3b8; font-size:16px; line-height:1; padding:0 5px;')}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* the three optional extras of a step, side by side */}
+                {(!(x.prompt || x.withPrompt) || !(x.note || x.withNote) || (allowFiles && (x.files || []).length < MAX_STEP_FILES)) && (
+                  <div style={css('display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px;')}>
                     {!(x.prompt || x.withPrompt) && addBtn('Thêm prompt / lệnh mẫu', () => flag(i, 'withPrompt'))}
                     {!(x.note || x.withNote) && addBtn('Thêm lưu ý cho bước này', () => flag(i, 'withNote'), true)}
-                  </div>
-                )}
-                {/* optional pictures / files for this step, shown under it on the use case page */}
-                {allowFiles && (
-                  <div style={css('margin-top:12px;')}>
-                    {(x.files || []).length > 0 && (
-                      <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;')}>
-                        {x.files.map((f, k) => (
-                          <span key={k} style={css('display:inline-flex; align-items:center; gap:7px; max-width:100%; height:30px; padding:0 4px 0 8px; border:1px solid #DDE3EC; border-radius:999px; background:#F7F9FD; font-size:12px; font-weight:600; color:#3A4757;')}>
-                            {f.image ? <img src={f.url || f.data} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 4 }} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>}
-                            <span style={css('max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{f.name}</span>
-                            <button type="button" onClick={() => setFiles(i, x.files.filter((_, j) => j !== k))} aria-label={t('Bỏ file') + ' ' + f.name} style={css('border:none; background:none; cursor:pointer; color:#94a3b8; font-size:16px; line-height:1; padding:0 5px;')}>×</button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {(x.files || []).length < MAX_STEP_FILES && (
+                    {allowFiles && (x.files || []).length < MAX_STEP_FILES && (
                       <label className={hoverClass('background:#EEF3FF !important;')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border:1px dashed #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:12px; font-weight:700; cursor:pointer;')}>
                         <input type="file" multiple hidden onChange={(e) => { addFiles(i, [...(e.target.files || [])]); e.target.value = '' }} />
-                        + {t('Thêm hình / file')} <span style={css('font-weight:600; color:#94a3b8;')}>({t('không bắt buộc')})</span>
+                        + {t('Thêm hình minh họa hoặc file đính kèm')}
                       </label>
                     )}
-                    {fileErr[i] && <div style={css('margin-top:6px; font-size:12px; font-weight:600; color:#D8232A;')}>{fileErr[i]}</div>}
+                    <span style={css('font-size:11.5px; font-weight:600; color:#94a3b8;')}>{t('Không bắt buộc')}</span>
                   </div>
                 )}
+                {fileErr[i] && <div style={css('margin-top:6px; font-size:12px; font-weight:600; color:#D8232A;')}>{fileErr[i]}</div>}
               </div>
             </div>
           )

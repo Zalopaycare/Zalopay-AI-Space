@@ -107,7 +107,7 @@ export async function parseUseCaseDocx(file, options) {
   }
   const labels = Object.fromEntries(FIELDS.map(([h, k]) => [k, h]))
   const has = (k) => (k in form ? !!form[k] : k === 'category' ? out.category.length > 0 : !!out[k])
-  const required = ['title', 'audience', 'level', 'category', 'problem', 'solution', 'prep', 'prompt', 'result']
+  const required = ['title', 'level', 'category', 'problem', 'solution', 'prep', 'prompt', 'result']
   out.missing = required.filter((k) => !has(k)).map((k) => labels[k])
   out.filled = FIELDS.map(([, k]) => k).filter(has).length
   return out

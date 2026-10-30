@@ -309,7 +309,8 @@ function withStepFiles(id, ex) {
   }
 }
 
-const SUBMISSION_FIELDS = ['title', 'audience', 'problem', 'solution', 'prep']
+// (Ai dùng được / audience is no longer asked; older posts keep theirs)
+const SUBMISSION_FIELDS = ['title', 'problem', 'solution', 'prep']
 // Loại / Người thực hiện / Trạng thái / Team / Kết quả are optional; the steps (extra.steps) replaced the single
 // Prompt box, whose column now just carries those steps as text.
 const validSubmission = (f) => !SUBMISSION_FIELDS.some((k) => !String(f[k] || '').trim()) && Array.isArray(f.category) && f.category.length && f.level
@@ -328,7 +329,7 @@ router.post('/submissions', requireAuth, (req, res) => {
   db.prepare(`INSERT INTO use_case_submissions
     (id, title, audience, team, problem, solution, prep, prompt_text, result, limits, contact, link, kind, status_field, level, category, topics, tools, author_id)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(id, f.title.trim(), f.audience.trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
+    .run(id, f.title.trim(), String(f.audience || '').trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(),
       String(f.prompt || '').trim(), String(f.result || '').trim(), String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link),
       f.kind || '', f.status || '', f.level || '', JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), req.user.id)
   saveCover(id, cover)
@@ -363,7 +364,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (cover === false) return res.status(400).json({ error: 'bad_cover' })
   db.prepare(`UPDATE use_case_submissions SET title = ?, audience = ?, team = ?, problem = ?, solution = ?, prep = ?, prompt_text = ?, result = ?,
     limits = ?, contact = ?, link = ?, kind = ?, status_field = ?, level = ?, category = ?, topics = ?, tools = ?, review_status = ?, edited_at = datetime('now') WHERE id = ?`)
-    .run(f.title.trim(), f.audience.trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), String(f.prompt || '').trim(), String(f.result || '').trim(),
+    .run(f.title.trim(), String(f.audience || '').trim(), String(f.team || '').trim(), f.problem.trim(), f.solution.trim(), f.prep.trim(), String(f.prompt || '').trim(), String(f.result || '').trim(),
       String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link), f.kind || '', f.status || '', f.level || '',
       JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)
