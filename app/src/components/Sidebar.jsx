@@ -20,10 +20,12 @@ const itemState = (active) => (active
   ? 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)); border:1px solid rgba(130,175,255,.55); color:#dbe8ff; font-weight:700; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10);'
   : 'background:transparent; border:1px solid transparent; color:#b4c3e8; font-weight:500;')
 
-function NavLink({ to, active, icon, children, collapsed, title }) {
+// `tour`: the welcome tour's mark for this link (WelcomeTour.jsx points at it)
+function NavLink({ to, active, icon, children, collapsed, title, tour }) {
   return (
     <SoftLink
       to={to}
+      data-tour={tour}
       title={collapsed ? title : undefined}
       className={active ? undefined : hoverClass(HOVER)}
       style={css(itemBase + itemState(active) + (collapsed ? 'justify-content:center; padding:0;' : ''))}
@@ -109,13 +111,13 @@ export default function Sidebar({ active }) {
       </nav>
 
       <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
-        <NavLink to="/#ask" collapsed={collapsed} title={t('Đăng thread')} icon={
+        <NavLink to="/#ask" tour="post" collapsed={collapsed} title={t('Đăng thread')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
         }>{t('Đăng thread')}</NavLink>
-        <NavLink to="/use-cases?share=1" collapsed={collapsed} title={t('Chia sẻ use case')} icon={
+        <NavLink to="/use-cases?share=1" tour="share" collapsed={collapsed} title={t('Chia sẻ use case')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
         }>{t('Chia sẻ use case')}</NavLink>
-        <NavLink to="/chat" active={active === 'chat'} collapsed={collapsed} title={t('Chat với Admin')} icon={
+        <NavLink to="/chat" tour="chat" active={active === 'chat'} collapsed={collapsed} title={t('Chat với Admin')} icon={
           <span style={css('position:relative; display:inline-flex; flex:none;')}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></svg>
             {collapsed && chatCount > 0 && <span style={css('position:absolute; top:-6px; right:-8px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:#FF3B30; color:#fff; font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{chatCount}</span>}
@@ -142,7 +144,7 @@ export default function Sidebar({ active }) {
       {!collapsed && (
         <>
           <div style={css('display:flex; align-items:center; padding:0 12px; margin-top:26px; margin-bottom:6px; font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#8aa0d6;')}>{t('Của tôi')}</div>
-          <div style={css('display:flex; flex-direction:column; gap:2px;')}>
+          <div data-tour="mine" style={css('display:flex; flex-direction:column; gap:2px;')}>
             <SubLink to="/profile" active={sub === 'overview'} icon={
               <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
             }>{t('Hồ sơ')}</SubLink>
@@ -158,7 +160,7 @@ export default function Sidebar({ active }) {
 
       <div style={{ flex: 1 }}></div>
       {user && (
-        <div ref={menuRef} style={css('position:relative; margin-top:16px;')}>
+        <div ref={menuRef} data-tour="account" style={css('position:relative; margin-top:16px;')}>
           {menuOpen && menuPos && createPortal(
             // Portalled to <body>: the sidebar clips its overflow, so a popup inside it would be cut off when collapsed.
             <div ref={popRef} style={css(`position:fixed; left:${menuPos.left}px; bottom:${menuPos.bottom}px; width:${menuPos.width}px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:2100;`)}>

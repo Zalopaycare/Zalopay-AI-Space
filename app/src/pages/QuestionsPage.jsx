@@ -768,7 +768,7 @@ export default function QuestionsPage() {
           </section>
 
           {/* the same bar as the Use Case Library: post prompt on top, search and sort under it */}
-          <PageActionBar prompt="Bạn có gì muốn hỏi hay chia sẻ về AI?" cta="Đăng thread" onCompose={() => requireLogin(() => setView('ask'))} query={query} onQuery={setQuery} placeholder="Tìm bài viết, tác giả..." filters={
+          <PageActionBar tour="compose" prompt="Bạn có gì muốn hỏi hay chia sẻ về AI?" cta="Đăng thread" onCompose={() => requireLogin(() => setView('ask'))} query={query} onQuery={setQuery} placeholder="Tìm bài viết, tác giả..." filters={
             <FilterPill
               label={t(sort === 'top' ? 'Nổi bật' : 'Mới nhất')}
               name="qsort" openDrop={openDrop} setOpenDrop={setOpenDrop} width={180} align="right"

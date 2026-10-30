@@ -1,99 +1,140 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api } from '../lib/api.js'
-import { css, hoverClass } from '../lib/style.js'
+import { css } from '../lib/style.js'
 
-// A short tour of what the site does, shown once to everyone who hasn't seen it (the server remembers,
-// so it doesn't come back on another device) and again from the account menu ("Hướng dẫn sử dụng").
+// The welcome tour, as a guided walk over the real page: everything dims, the feature in question is
+// cut out of the dark with a glowing frame, and a glass card next to it says what it does. Shown once
+// to everyone who hasn't seen it (the server remembers, so not again on another device), and again
+// from the account menu ("Hướng dẫn sử dụng"). It runs on the home page, where most of what it points
+// at lives; a mark that isn't on screen (the sidebar on a phone) gets the card in the middle instead.
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const OPEN_EVENT = 'zp-open-tour'
 /** Opens the tour from anywhere (the account menu). */
 export const openTour = () => window.dispatchEvent(new Event(OPEN_EVENT))
 
-const icon = (d) => <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+// `at`: the element to light up (a data-tour mark or a selector); none = the card alone, centred.
 const STEPS = [
-  {
-    title: 'Chào mừng đến Zalopay AI Space',
-    text: 'Nơi các Zalopay Starter chia sẻ, hỏi đáp và học nhau cách dùng AI trong công việc. Xem nhanh các phần chính nhé, chưa tới một phút.',
-    icon: icon(<><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"></path><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></>),
-  },
-  {
-    title: 'AI Space: hỏi đáp và thảo luận',
-    text: 'Trang chủ là nơi mọi người đăng thread: hỏi một câu, chia sẻ mẹo hay, khoe kết quả. Bấm vào một thread để đọc và bình luận. Thả ♡, lưu bài để đọc lại, gõ @ để gọi tên đồng nghiệp (họ nhận email). Ngại thì bật đăng ẩn danh.',
-    icon: icon(<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></>),
-  },
-  {
-    title: 'Use Case Library: cách dùng AI đã chạy thật',
-    text: 'Mỗi use case kể bài toán, giải pháp và các bước để bạn tự làm lại, kèm lưu ý an toàn. Lọc theo Category hoặc Công cụ AI, sắp theo Mới nhất hay Được yêu thích nhất.',
-    icon: icon(<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></>),
-  },
-  {
-    title: 'Chia sẻ use case của bạn',
-    text: 'Bấm "Chia sẻ use case" ở thanh bên: điền form từng bước (có thể kèm hình minh họa hoặc file), hoặc tải template Word về điền rồi tải lên. Admin xem và góp ý trước khi đăng; nháp được lưu tự động.',
-    icon: icon(<><path d="M12 5v14"></path><path d="M5 12h14"></path><circle cx="12" cy="12" r="10"></circle></>),
-  },
-  {
-    title: 'Thông báo, Đã lưu và Hồ sơ',
-    text: 'Ở mục "Của tôi" bên trái: Thông báo khi có người trả lời, bình luận hay tag bạn; Đã lưu là các bài bạn đánh dấu; Hồ sơ gom thread và use case của bạn.',
-    icon: icon(<><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></>),
-  },
-  {
-    title: 'Cần giúp? Chat với Admin',
-    text: 'Có câu hỏi, góp ý hay thấy lỗi, nhắn ở "Chat với Admin" trên thanh bên. Muốn xem lại hướng dẫn này: menu tài khoản ở góc dưới bên trái > Hướng dẫn sử dụng.',
-    icon: icon(<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></>),
-  },
+  { title: 'Chào mừng đến Zalopay AI Space', text: 'Nơi các Zalopay Starter chia sẻ, hỏi đáp và học nhau cách dùng AI trong công việc. Đi một vòng chưa tới một phút nhé.' },
+  { at: '[data-tour="nav-home"]', title: 'AI Space', text: 'Trang chủ: mọi người đăng thread hỏi đáp, chia sẻ mẹo hay và kết quả làm với AI.' },
+  { at: '[data-tour="compose"]', title: 'Đăng thread', text: 'Bấm vào đây để hỏi hay chia sẻ. Gõ @ để gọi tên đồng nghiệp (họ nhận email); ngại thì bật đăng ẩn danh.' },
+  { at: '[data-qid]', title: 'Một thread', text: 'Bấm vào để đọc và bình luận. ♡ để thích, 💬 để trả lời, 🔖 để lưu đọc lại sau.' },
+  { at: '[data-tour="nav-usecases"]', title: 'Use Case Library', text: 'Các cách dùng AI đã chạy thật: bài toán, giải pháp và từng bước để bạn tự làm lại. Lọc theo Category và Công cụ AI.' },
+  { at: '[data-tour="share"]', title: 'Chia sẻ use case', text: 'Điền form từng bước (kèm hình minh họa hoặc file), hoặc tải template Word về điền. Admin xem và góp ý trước khi đăng.' },
+  { at: '[data-tour="mine"]', title: 'Của tôi', text: 'Thông báo khi có người trả lời, bình luận hay tag bạn; Đã lưu là bài bạn đánh dấu; Hồ sơ gom bài của bạn.' },
+  { at: '[data-tour="chat"]', title: 'Chat với Admin', text: 'Có câu hỏi, góp ý hay thấy lỗi thì nhắn ở đây.' },
+  { at: '[data-tour="account"]', title: 'Xem lại hướng dẫn', text: 'Menu tài khoản > Hướng dẫn sử dụng để đi lại vòng này bất cứ lúc nào. Chúc bạn khám phá vui!' },
 ]
+const PAD = 8 // room around the lit-up element
+const CARD_W = 340
+
+/** Where the element is on screen, or null when it isn't showing (hidden, zero-size or off screen). */
+function rectOf(sel) {
+  const el = sel && document.querySelector(sel)
+  if (!el) return null
+  const r = el.getBoundingClientRect()
+  if (!r.width || !r.height || r.right <= 0 || r.left >= window.innerWidth || r.bottom <= 0 || r.top >= window.innerHeight) return null
+  return { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 }
+}
+
+/** The card beside the lit-up box: below it, else above, else to its right; kept on screen. */
+function cardPos(box, h) {
+  const vw = window.innerWidth, vh = window.innerHeight, w = Math.min(CARD_W, vw - 24)
+  if (!box) return { top: Math.max(16, (vh - h) / 2), left: (vw - w) / 2, w }
+  const clampX = (x) => Math.max(12, Math.min(vw - w - 12, x))
+  if (box.top + box.height + 14 + h < vh - 12) return { top: box.top + box.height + 14, left: clampX(box.left), w }
+  if (box.top - 14 - h > 12) return { top: box.top - 14 - h, left: clampX(box.left), w }
+  return { top: Math.max(12, Math.min(vh - h - 12, box.top)), left: clampX(box.left + box.width + 14), w }
+}
 
 export default function WelcomeTour() {
   const { user, setUser } = useAuth()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
-  // first visit: open by itself once the account is known
-  useEffect(() => { if (user && !user.tourSeen) { setStep(0); setOpen(true) } }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [box, setBox] = useState(null)
+  const [cardH, setCardH] = useState(200)
+  const cardRef = useRef(null)
+
+  const start = () => { if (window.location.pathname !== '/') navigate('/'); setStep(0); setOpen(true) }
+  // first visit: start by itself once the account is known
+  useEffect(() => { if (user && !user.tourSeen) start() }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const onOpen = () => { setStep(0); setOpen(true) }
-    window.addEventListener(OPEN_EVENT, onOpen)
-    return () => window.removeEventListener(OPEN_EVENT, onOpen)
-  }, [])
+    window.addEventListener(OPEN_EVENT, start)
+    return () => window.removeEventListener(OPEN_EVENT, start)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const close = () => {
     setOpen(false)
     if (user && !user.tourSeen) api.updateMe({ tourSeen: true }).then((d) => d?.user && setUser(d.user)).catch(() => {})
   }
+
+  // light up this step's element: bring it into view, then follow it on scroll / resize
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    const sel = STEPS[step].at
+    const el = sel && document.querySelector(sel)
+    if (el && el.getBoundingClientRect().height) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    let raf = 0
+    const measure = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setBox(rectOf(sel))) }
+    measure()
+    const settle = setTimeout(measure, 420) // after the smooth scroll (and the page, if it was just opened)
+    window.addEventListener('resize', measure)
+    window.addEventListener('scroll', measure, true)
+    return () => { clearTimeout(settle); cancelAnimationFrame(raf); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
+  }, [open, step, pathname])
+  useLayoutEffect(() => { if (cardRef.current) setCardH(cardRef.current.offsetHeight) }, [open, step])
+
   useEffect(() => {
     if (!open) return undefined
     const onKey = (e) => {
       if (e.key === 'Escape') close()
-      if (e.key === 'ArrowRight') setStep((s) => Math.min(STEPS.length - 1, s + 1))
+      if (e.key === 'ArrowRight' || e.key === 'Enter') setStep((s) => (s < STEPS.length - 1 ? s + 1 : s))
       if (e.key === 'ArrowLeft') setStep((s) => Math.max(0, s - 1))
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!open || !user) return null
   const s = STEPS[step]
   const last = step === STEPS.length - 1
+  const pos = cardPos(box, cardH)
+  const two = (n) => String(n).padStart(2, '0')
   return createPortal(
-    <div style={css('position:fixed; inset:0; z-index:5500; background:rgba(2,6,20,.66); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:16px;')}>
-      <div role="dialog" aria-modal="true" aria-label={s.title} style={css('width:min(460px, 100%); background:#fff; border-radius:24px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.5);')}>
-        <div style={css('position:relative; padding:28px 28px 22px; background:radial-gradient(120% 90% at 50% 0%, #3b6cff 0%, #1b3cb3 55%, #0b1a5c 100%); color:#fff; text-align:center;')}>
-          <button onClick={close} style={css(`position:absolute; top:14px; right:16px; border:none; background:transparent; color:rgba(255,255,255,.75); font:600 12.5px ${FONT}; cursor:pointer;`)}>Bỏ qua</button>
-          <div style={css('width:64px; height:64px; margin:6px auto 0; border-radius:20px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center;')}>{s.icon}</div>
-          <div style={css(`margin-top:12px; font:600 11.5px ${FONT}; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.7);`)}>{step + 1} / {STEPS.length}</div>
+    <div className="zp-tour" style={css('position:fixed; inset:0; z-index:5500;')}>
+      {/* the dark, with a hole where the feature is (a huge shadow around the frame); clicks stay off the page */}
+      <div style={css('position:absolute; inset:0;')} onClick={(e) => e.stopPropagation()}></div>
+      {box ? (
+        <div className="zp-tour-frame" style={css(`position:absolute; top:${box.top}px; left:${box.left}px; width:${box.width}px; height:${box.height}px; border-radius:14px; box-shadow:0 0 0 9999px rgba(2,6,22,.74), 0 0 0 1.5px rgba(120,200,255,.95), 0 0 26px 4px rgba(64,150,255,.55); transition:top .35s cubic-bezier(.4,0,.2,1), left .35s cubic-bezier(.4,0,.2,1), width .35s cubic-bezier(.4,0,.2,1), height .35s cubic-bezier(.4,0,.2,1); pointer-events:none;`)}>
+          {/* corner brackets, like a target lock */}
+          {['top:-6px; left:-6px; border-width:2px 0 0 2px;', 'top:-6px; right:-6px; border-width:2px 2px 0 0;', 'bottom:-6px; left:-6px; border-width:0 0 2px 2px;', 'bottom:-6px; right:-6px; border-width:0 2px 2px 0;'].map((c, i) => (
+            <span key={i} className="zp-tour-corner" style={css(`position:absolute; width:14px; height:14px; border-style:solid; border-color:#7FE3FF; ${c}`)}></span>
+          ))}
+          <span style={css('position:absolute; inset:0; border-radius:14px; overflow:hidden;')}><span className="zp-tour-scan"></span></span>
         </div>
-        <div style={css('padding:22px 26px 22px;')}>
-          <h2 style={css(`margin:0; font:800 20px/1.3 ${FONT}; color:#0F172A; text-align:center;`)}>{s.title}</h2>
-          <p style={css('margin:10px 0 0; font:400 14.5px/1.6 var(--zp-font-text); color:#475569; text-align:center; min-height:92px;')}>{s.text}</p>
-          <div style={css('display:flex; justify-content:center; gap:6px; margin-top:14px;')}>
-            {STEPS.map((_, i) => (
-              <button key={i} onClick={() => setStep(i)} aria-label={'Trang ' + (i + 1)} style={css(`width:${i === step ? 20 : 7}px; height:7px; padding:0; border:none; border-radius:999px; background:${i === step ? '#2c5fff' : '#D5DCE8'}; cursor:pointer; transition:width .2s;`)}></button>
-            ))}
+      ) : (
+        <div style={css('position:absolute; inset:0; background:rgba(2,6,22,.78); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);')}></div>
+      )}
+
+      <div key={step} ref={cardRef} role="dialog" aria-modal="true" aria-label={s.title} className="zp-tour-card" style={css(`position:absolute; top:${pos.top}px; left:${pos.left}px; width:${pos.w}px; box-sizing:border-box; padding:16px 18px 14px; border-radius:16px; background:linear-gradient(160deg, rgba(22,40,110,.92) 0%, rgba(8,14,44,.94) 100%); border:1px solid rgba(130,190,255,.42); box-shadow:0 18px 50px rgba(0,0,0,.55), 0 0 30px rgba(44,120,255,.25), inset 0 1px 0 rgba(255,255,255,.08); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); color:#E8F0FF; transition:top .35s cubic-bezier(.4,0,.2,1), left .35s cubic-bezier(.4,0,.2,1);`)}>
+        <div style={css('position:absolute; left:18px; right:18px; top:0; height:2px; border-radius:2px; background:linear-gradient(90deg, transparent, #5FD4FF, #8A7CFF, transparent);')}></div>
+        <div style={css('display:flex; align-items:center; gap:8px;')}>
+          <span style={css(`font:700 11px ${FONT}; letter-spacing:.14em; color:#7FE3FF;`)}>{two(step + 1)} / {two(STEPS.length)}</span>
+          <span style={css('flex:1; height:1px; background:linear-gradient(90deg, rgba(127,227,255,.5), transparent);')}></span>
+          <button onClick={close} style={css(`border:none; background:transparent; padding:0; color:rgba(200,215,255,.7); font:600 12px ${FONT}; cursor:pointer;`)}>Bỏ qua</button>
+        </div>
+        <div style={css(`margin-top:8px; font:800 17px/1.3 ${FONT}; color:#fff;`)}>{s.title}</div>
+        <div style={css('margin-top:6px; font:400 13.5px/1.55 var(--zp-font-text); color:rgba(214,226,255,.86);')}>{s.text}</div>
+        <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px;')}>
+          <div style={css('flex:1; display:flex; gap:4px;')}>
+            {STEPS.map((_, i) => <span key={i} style={css(`height:3px; flex:${i === step ? 3 : 1}; border-radius:2px; background:${i <= step ? '#5FD4FF' : 'rgba(150,175,230,.25)'}; transition:flex .3s, background .3s;`)}></span>)}
           </div>
-          <div style={css('display:flex; gap:10px; margin-top:20px;')}>
-            {step > 0 && <button onClick={() => setStep(step - 1)} className={hoverClass('background:#F1F4FA !important;')} style={css(`flex:none; height:42px; padding:0 18px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 13.5px ${FONT}; cursor:pointer;`)}>Quay lại</button>}
-            <button onClick={() => (last ? close() : setStep(step + 1))} style={css(`flex:1; height:42px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:800 13.5px ${FONT}; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.35);`)}>{last ? 'Bắt đầu khám phá' : 'Tiếp'}</button>
-          </div>
+          {step > 0 && <button onClick={() => setStep(step - 1)} style={css(`height:32px; padding:0 13px; border:1px solid rgba(130,190,255,.4); border-radius:999px; background:transparent; color:#CFE0FF; font:700 12.5px ${FONT}; cursor:pointer;`)}>Quay lại</button>}
+          <button onClick={() => (last ? close() : setStep(step + 1))} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(90deg,#3E8BFF,#5FD4FF); color:#04122E; font:800 12.5px ${FONT}; cursor:pointer; box-shadow:0 0 18px rgba(95,212,255,.45);`)}>{last ? 'Bắt đầu' : 'Tiếp'}</button>
         </div>
       </div>
     </div>,

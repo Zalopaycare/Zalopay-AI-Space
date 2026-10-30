@@ -104,6 +104,21 @@ export default function AdminConsolePage() {
   useEffect(() => { if (isAdmin && section === 'booths') reloadBooths() }, [isAdmin, section]) // eslint-disable-line react-hooks/exhaustive-deps
   // "Yêu cầu truy cập": people sign-in turned away (Microsoft doesn't list them under Zalopay) asking to be let in
   const [access, setAccess] = useState({ requests: [], grants: [] })
+  const [admins, setAdmins] = useState([])
+  const [newAdmin, setNewAdmin] = useState('')
+  const [adminMsg, setAdminMsg] = useState('')
+  const reloadAdmins = () => api.adminAdmins().then((d) => setAdmins(d.admins || [])).catch(() => {})
+  const addAdmin = () => {
+    const email = newAdmin.trim().toLowerCase()
+    if (!email) return
+    setAdminMsg('')
+    api.addAdmin(email).then((d) => { setAdmins(d.admins || []); setNewAdmin(''); setAdminMsg('Đã thêm ' + email + ' làm admin.') }).catch((e) => setAdminMsg(e.message || 'Chưa thêm được, thử lại nhé.'))
+  }
+  const removeAdmin = (email) => {
+    if (!window.confirm('Bỏ quyền admin của ' + email + '?')) return
+    setAdminMsg('')
+    api.removeAdmin(email).then((d) => setAdmins(d.admins || [])).catch((e) => setAdminMsg(e.message || 'Chưa bỏ được, thử lại nhé.'))
+  }
   const reloadAccess = () => api.adminAccess().then(setAccess).catch(() => {})
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
@@ -155,7 +170,7 @@ export default function AdminConsolePage() {
   const reloadStats = () => api.adminStats().then(setAdminStats).catch(() => {})
   const reloadLive = () => api.adminLive().then(setLive).catch(() => {})
   const reloadPublished = () => api.adminPublished().then((d) => setPublished(d.useCases || [])).catch(() => {})
-  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports(), reloadStats(), reloadLive(), reloadPublished(), reloadAccess()]).then(() => setUpdatedAt(new Date()))
+  const reloadAll = () => Promise.all([reloadSubmissions(), reloadQuestions(), reloadUsers(), reloadReports(), reloadStats(), reloadLive(), reloadPublished(), reloadAccess(), reloadAdmins()]).then(() => setUpdatedAt(new Date()))
   useEffect(() => { if (isAdmin) { reloadAll(); checkDirectory() } }, [isAdmin])
   // Keep the numbers live while the console is open.
   useEffect(() => { if (!isAdmin) return; const t = setInterval(reloadAll, 60_000); return () => clearInterval(t) }, [isAdmin])
@@ -337,6 +352,7 @@ export default function AdminConsolePage() {
     ['inbox', 'Hộp thư', '#6F0CE2', chatInbox],
     ['booths', 'Booth Exhibition', '#FF8D00', 0],
     ['access', 'Yêu cầu truy cập', '#D8232A', access.requests.filter((r) => r.status === 'pending').length],
+    ['admins', 'Quản trị viên', '#6F0CE2', 0],
   ]
 
   const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:14px; align-items:center;`
@@ -750,6 +766,31 @@ export default function AdminConsolePage() {
               </div>
             )
           })()}
+
+          {section === 'admins' && (
+            <div>
+              <Heading title="Quản trị viên" sub="Admin duyệt use case, xử lý báo cáo, trả lời Hộp thư và vào được web cả khi đang bảo trì. Thêm bằng email công ty; người chưa đăng nhập lần nào cũng thêm được." />
+              <div style={css('display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;')}>
+                <input value={newAdmin} onChange={(e) => setNewAdmin(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addAdmin() }} placeholder="ten@vng.com.vn" aria-label="Email người cần thêm làm admin" style={css('flex:1 1 280px; height:44px; padding:0 16px; border:1px solid #E6EBF3; border-radius:12px; background:#fff;' + font(500, 14) + ';color:#0F172A; outline:none;')} />
+                <button onClick={addAdmin} disabled={!newAdmin.trim()} style={css(`height:44px; padding:0 22px; border:none; border-radius:12px; background:${newAdmin.trim() ? 'linear-gradient(180deg,#4480ff 0%,#2c5fff 100%)' : '#E3E8F2'}; color:${newAdmin.trim() ? '#fff' : '#94a3b8'};` + font(800, 14) + `;cursor:${newAdmin.trim() ? 'pointer' : 'default'};`)}>Thêm admin</button>
+              </div>
+              {adminMsg && <div style={css('margin-top:10px;' + font(600, 13) + ';color:#475569;')}>{adminMsg}</div>}
+              <div style={css('margin-top:16px; overflow:hidden;' + card)}>
+                {!admins.length ? empty('Chưa có admin nào.') : admins.map((a) => (
+                  <div key={a.email} style={css('display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid #F3F5FA;')}>
+                    <Avatar user={a} size={34} />
+                    <div style={css('flex:1; min-width:0;')}>
+                      <div style={css(font(700, 14) + ';color:#0F172A;')}>{a.name}{a.email === user?.email ? ' (bạn)' : ''}</div>
+                      <div style={css(font(400, 12.5) + ';color:#64748b;')}>{a.email}</div>
+                    </div>
+                    {a.fromEnv
+                      ? <span title="Có trong ADMIN_EMAILS trên Coolify" style={css('height:24px; padding:0 10px; border-radius:999px; background:#EEF3FF; color:#2c5fff; display:inline-flex; align-items:center;' + font(700, 11.5))}>Cấu hình Coolify</span>
+                      : a.email !== user?.email && <button onClick={() => removeAdmin(a.email)} className={hoverClass('background:#FFF1F1 !important;')} style={css('height:32px; padding:0 14px; border:1px solid #F6C1C4; border-radius:999px; background:#fff; color:#D8232A; cursor:pointer;' + font(700, 12.5))}>Bỏ quyền</button>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {section === 'access' && (
             <div>

@@ -895,13 +895,10 @@ export default function UseCaseLibraryPage() {
                       data-card-id={c.id}
                       onClick={c.onOpen}
                       className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
-                      style={css((openMenuId === c.id ? 'z-index:5; ' : '') + 'position:relative; display:flex; flex-direction:column; border:1px solid rgba(60,120,255,.45); border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 0 0 1px rgba(60,120,255,.10), 0 0 16px rgba(60,120,255,.22), 0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
+                      style={css((openMenuId === c.id ? 'z-index:5; ' : '') + 'position:relative; display:flex; flex-direction:column; border:1px solid rgba(60,120,255,.45); border-radius:18px; background:#ffffff; cursor:pointer; padding:12px 14px; box-shadow:0 0 0 1px rgba(60,120,255,.10), 0 0 16px rgba(60,120,255,.22), 0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
-                      <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;')}>
-                        <span style={css('display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#E4ECFF; color:#2c5fff; font:800 11.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
-                          {t('Use case')}
-                        </span>
+                      {/* no "Use case" label (every card here is one): the ⋯ menu sits in the corner */}
+                      <div style={css('position:absolute; top:10px; right:10px; z-index:2;')}>
                         <div style={css('position:relative; flex:none;')}>
                           <button onClick={(e) => { e.stopPropagation(); setOpenMenuId((mid) => (mid === c.id ? null : c.id)) }} title={t('Thêm')} aria-label={t('Tuỳ chọn khác')} aria-haspopup="menu" style={css('width:32px; height:32px; border-radius:10px; background:#fff; border:1px solid #E6EBF3; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; color:#5B6675;')}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
@@ -934,7 +931,7 @@ export default function UseCaseLibraryPage() {
                       </div>
                       <div style={css('display:flex; gap:13px;')}>
                         <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
-                        <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
+                        <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; padding-right:34px;')}>
                           <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
                           {/* the people behind it right under the name, like the AI Exhibition tiles */}
                           <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}>
@@ -944,7 +941,7 @@ export default function UseCaseLibraryPage() {
                           {c.overview && <p style={css('margin:4px 0 0; font-size:14px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>}
                         </div>
                       </div>
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
+                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px; padding-top:6px; border-top:1px solid #EEF1F7;')}>
                         {/* like · comment · save on the left, the way in on the right */}
                         <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} saved={c.saveFill === 'currentColor'} onSave={c.onSave} />
                         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>

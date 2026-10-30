@@ -1,7 +1,7 @@
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import express from 'express'
 import { db } from '../db.js'
-import { requireAuth } from '../auth.js'
+import { requireAuth, getOrCreateUser, isCompanyEmail } from '../auth.js'
 import { domainName, initialsOf, handleOf } from '../mentions.js'
 import { anonName } from '../anon.js'
 import { adminReportRoutes } from '../reports.js'
@@ -18,6 +18,36 @@ const orgInfo = (raw) => { try { return raw ? JSON.parse(raw) : null } catch { r
 router.use(requireAuth, (req, res, next) => (req.user.is_admin ? next() : res.status(403).json({ error: 'admin_only' })))
 
 // Everyone who has signed in, with what they've contributed.
+// ---- Quản trị viên: who the admins are, and adding / removing them from the console ----
+// ADMIN_EMAILS (a Coolify setting) are admins at every sign-in, so they're listed but can't be removed here.
+const envAdmins = () => String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+function adminList() {
+  const env = new Set(envAdmins())
+  const rows = db.prepare('SELECT * FROM users WHERE is_admin = 1 ORDER BY name COLLATE NOCASE').all()
+  const listed = new Set(rows.map((u) => u.email.toLowerCase()))
+  return [
+    ...rows.map((u) => ({ email: u.email, name: domainName(u.email, u.name), initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u), fromEnv: env.has(u.email.toLowerCase()) })),
+    // in ADMIN_EMAILS but never signed in yet
+    ...[...env].filter((e) => !listed.has(e)).map((e) => ({ email: e, name: handleOf(e), initials: handleOf(e).slice(0, 2).toUpperCase(), fromEnv: true })),
+  ]
+}
+router.get('/admins', (req, res) => res.json({ admins: adminList() }))
+// Body { email }: the account becomes an admin; someone who hasn't signed in yet gets their account made now.
+router.post('/admins', (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase()
+  if (!isCompanyEmail(email)) return res.status(400).json({ error: 'bad_email', message: 'Nhập email công ty, ví dụ ten@vng.com.vn.' })
+  const u = getOrCreateUser(email)
+  db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(u.id)
+  res.json({ admins: adminList() })
+})
+router.delete('/admins/:email', (req, res) => {
+  const email = String(req.params.email || '').trim().toLowerCase()
+  if (envAdmins().includes(email)) return res.status(400).json({ error: 'from_env', message: 'Admin này nằm trong cấu hình ADMIN_EMAILS trên Coolify, bỏ ở đó.' })
+  if (email === req.user.email.toLowerCase()) return res.status(400).json({ error: 'self', message: 'Không tự bỏ quyền admin của mình được.' })
+  db.prepare('UPDATE users SET is_admin = 0 WHERE lower(email) = ?').run(email)
+  res.json({ admins: adminList() })
+})
+
 router.get('/users', (req, res) => {
   const count = (sql) => Object.fromEntries(db.prepare(sql).all().map((r) => [r.id, r.n]))
   const questions = count('SELECT author_id id, COUNT(*) n FROM questions GROUP BY author_id')

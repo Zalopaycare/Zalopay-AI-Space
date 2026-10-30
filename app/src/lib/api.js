@@ -38,6 +38,10 @@ export const api = {
   accessRequestInfo: () => request('/auth/access-request'),
   sendAccessRequest: (note) => request('/auth/access-request', { method: 'POST', body: JSON.stringify({ note }) }),
   adminAccess: () => request('/admin/access'),
+  // Quản trị viên: list, add by company email, take the role back
+  adminAdmins: () => request('/admin/admins'),
+  addAdmin: (email) => request('/admin/admins', { method: 'POST', body: JSON.stringify({ email }) }),
+  removeAdmin: (email) => request(`/admin/admins/${encodeURIComponent(email)}`, { method: 'DELETE' }),
   decideAccess: (id, decision) => request(`/admin/access/${id}/${decision}`, { method: 'POST' }),
   revokeAccess: (email) => request(`/admin/access/grants/${encodeURIComponent(email)}`, { method: 'DELETE' }),
   requestCode: (email) => request('/auth/request-code', { method: 'POST', body: JSON.stringify({ email }) }),

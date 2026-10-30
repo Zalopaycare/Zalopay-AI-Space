@@ -258,3 +258,12 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-msform > div:not(.zp-msform-plain) { background: #fff; border: 1px solid #E3E8F0; border-radius: 12px; padding: 16px 18px !important; margin: 0 0 12px !important; counter-increment: zp-q; }
 .zp-msform > div:not(.zp-msform-plain) > :first-child::before { content: counter(zp-q) "."; margin-right: 2px; font-size: 13px; font-weight: 800; color: #0F172A; }
 .zp-msform > div:not(.zp-msform-plain):focus-within { border-color: #9DB7F5; box-shadow: inset 4px 0 0 #2c5fff; }
+
+/* Welcome tour (WelcomeTour.jsx): the frame's brackets breathe and a scan line sweeps the lit-up feature. */
+@keyframes zp-tour-corner { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes zp-tour-scan { from { top: -40px; } to { top: 100%; } }
+.zp-tour-corner { animation: zp-tour-corner 1.6s ease-in-out infinite; }
+.zp-tour-scan { position: absolute; left: 0; right: 0; top: -40px; height: 40px; background: linear-gradient(180deg, transparent, rgba(127,227,255,.22), transparent); animation: zp-tour-scan 2.4s ease-in-out infinite; }
+.zp-tour-card { animation: zp-tour-in .28s ease-out; }
+@keyframes zp-tour-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .zp-tour-corner, .zp-tour-scan, .zp-tour-card { animation: none; } }

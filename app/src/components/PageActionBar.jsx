@@ -9,13 +9,14 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
  * Composer prompt + search box pinned to the very top of Home, Use Case Library and Questions,
  * with identical geometry on every page so switching pages doesn't make the top of the page jump.
  */
-const PageActionBar = forwardRef(function PageActionBar({ prompt, cta, onCompose, query, onQuery, onSubmit, placeholder, searchOnly = false, maxWidth = 760, filters = null, onKeyDown, onFocus, inputProps = {} }, inputRef) {
+const PageActionBar = forwardRef(function PageActionBar({ tour, prompt, cta, onCompose, query, onQuery, onSubmit, placeholder, searchOnly = false, maxWidth = 760, filters = null, onKeyDown, onFocus, inputProps = {} }, inputRef) {
   const { t } = useI18n()
   return (
     <div style={css('position:relative; z-index:6; padding:16px var(--zp-gutter) 0;')}>
       <div style={{ maxWidth, margin: '0 auto' }}>
         {!searchOnly && (
         <div
+          data-tour={tour}
           onClick={onCompose}
           className={hoverClass('background:rgba(255,255,255,.12); border-color:rgba(160,196,255,.5);')}
           style={css('display:flex; align-items:center; gap:10px; height:48px; padding:0 8px 0 10px; box-sizing:border-box; border-radius:14px; background:rgba(255,255,255,.07); border:1px solid rgba(160,196,255,.28); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); cursor:pointer; transition:background .16s, border-color .16s;')}

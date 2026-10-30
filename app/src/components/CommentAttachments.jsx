@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
 import FileLinks from './FileLinks.jsx'
 
@@ -77,7 +78,34 @@ export function PendingAttachments({ files, onRemove, error }) {
 }
 
 /** Files on a posted answer/comment: images as thumbnails (open full size), the rest as download links. */
+/** A picture shown large over the page (click outside, ✕ or Esc closes; ← → step through several). */
+function Lightbox({ images, index, onIndex, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowRight') onIndex((index + 1) % images.length)
+      if (e.key === 'ArrowLeft') onIndex((index - 1 + images.length) % images.length)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [index, images.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  const f = images[index]
+  const nav = (d) => (e) => { e.stopPropagation(); onIndex((index + d + images.length) % images.length) }
+  const round = 'position:absolute; width:44px; height:44px; border:none; border-radius:50%; background:rgba(255,255,255,.14); color:#fff; font-size:22px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;'
+  return createPortal(
+    <div onClick={(e) => { e.stopPropagation(); onClose() }} role="dialog" aria-modal="true" aria-label={f.name} style={css('position:fixed; inset:0; z-index:6000; background:rgba(2,6,20,.88); display:flex; align-items:center; justify-content:center; padding:56px 64px;')}>
+      <img src={f.url} alt={f.name} onClick={(e) => e.stopPropagation()} style={css('max-width:100%; max-height:100%; object-fit:contain; border-radius:12px; box-shadow:0 30px 80px rgba(0,0,0,.6);')} />
+      <button onClick={(e) => { e.stopPropagation(); onClose() }} aria-label="Đóng" style={css(round + 'top:14px; right:16px;')}>✕</button>
+      {images.length > 1 && <button onClick={nav(-1)} aria-label="Hình trước" style={css(round + 'left:12px; top:50%; transform:translateY(-50%);')}>‹</button>}
+      {images.length > 1 && <button onClick={nav(1)} aria-label="Hình sau" style={css(round + 'right:12px; top:50%; transform:translateY(-50%);')}>›</button>}
+      {images.length > 1 && <div style={css('position:absolute; bottom:18px; left:0; right:0; text-align:center; color:rgba(255,255,255,.75); font-size:13px; font-weight:600;')}>{index + 1} / {images.length}</div>}
+    </div>,
+    document.body,
+  )
+}
+
 export function CommentFiles({ files, style }) {
+  const [big, setBig] = useState(-1) // which picture is open over the page
   if (!files || !files.length) return null
   const images = files.filter((f) => f.image)
   const docs = files.filter((f) => !f.image)
@@ -85,13 +113,15 @@ export function CommentFiles({ files, style }) {
     <div style={{ marginTop: 6, ...style }}>
       {images.length > 0 && (
         <div style={css('display:flex; flex-wrap:wrap; gap:6px;')}>
-          {images.map((f) => (
-            <a key={f.url} href={f.url} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} title={f.name}>
-              <img src={f.url} alt={f.name} loading="lazy" style={css('display:block; width:120px; height:90px; object-fit:cover; border-radius:10px; border:1px solid #E6EBF3; background:#F1F4FA;')} />
+          {images.map((f, i) => (
+            // opens over the page; ctrl / cmd-click still opens it in a new tab
+            <a key={f.url} href={f.url} target="_blank" rel="noopener" onClick={(e) => { e.stopPropagation(); if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); setBig(i) }} title={f.name}>
+              <img src={f.url} alt={f.name} loading="lazy" style={css('display:block; width:120px; height:90px; object-fit:cover; border-radius:10px; border:1px solid #E6EBF3; background:#F1F4FA; cursor:zoom-in;')} />
             </a>
           ))}
         </div>
       )}
+      {big >= 0 && images[big] && <Lightbox images={images} index={big} onIndex={setBig} onClose={() => setBig(-1)} />}
       {docs.length > 0 && <FileLinks files={docs} style={{ marginTop: images.length ? 6 : 0 }} />}
     </div>
   )
