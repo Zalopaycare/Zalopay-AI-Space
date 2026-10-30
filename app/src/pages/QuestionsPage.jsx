@@ -165,7 +165,8 @@ export default function QuestionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.hash])
 
-  const toggle = (id) => { if (id !== detailId) navigate('/questions/' + encodeURIComponent(id)) }
+  // Comments open right under the post, where it is in the feed (no jump to the thread's own page).
+  const toggle = (id) => { if (id !== detailId) setExpanded((s) => ({ ...s, [id]: !s[id] })) }
   const askDialog = useDialog(view === 'ask', () => setView('feed'), t('Thread mới'))
   const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
   const accept = (qid, aid) => requireLogin(() => api.acceptAnswer(qid, aid).then((d) => patch(qid, d.question)).catch(() => {}))
@@ -553,12 +554,12 @@ export default function QuestionsPage() {
                         <FileLinks files={q.files} />
                         {/* like · comment · save, the same row as every other card */}
                         <div style={css('display:inline-flex; margin-top:10px;')}>
-                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={inModal} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
+                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={inModal || q.expanded} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
                         </div>
                       </div>
                     </div>
 
-                    {inModal && (
+                    {(inModal || q.expanded) && (
                       <div style={css('margin-top:8px; padding:14px 22px 16px; background:#fff; border-top:1px solid #EEF1F7;')}>
                         <div style={css('display:flex; gap:10px; padding-bottom:16px; margin-bottom:4px; border-bottom:1px solid #E6EBF3;')}>
                           <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
@@ -779,7 +780,8 @@ export default function QuestionsPage() {
             </div>
           </div>
 
-          <PageActionBar searchOnly query={query} onQuery={setQuery} placeholder="Tìm bài viết, tác giả..." filters={
+          {/* the same bar as the Use Case Library: post prompt on top, search and sort under it */}
+          <PageActionBar prompt="Bạn có gì muốn hỏi hay chia sẻ về AI?" cta="Đăng thread" onCompose={() => requireLogin(() => setView('ask'))} query={query} onQuery={setQuery} placeholder="Tìm bài viết, tác giả..." filters={
             <FilterPill
               label={t(sort === 'top' ? 'Nổi bật' : 'Mới nhất')}
               name="qsort" openDrop={openDrop} setOpenDrop={setOpenDrop} width={180} align="right"
@@ -788,13 +790,8 @@ export default function QuestionsPage() {
           } />
           <div style={css('padding:16px var(--zp-gutter) 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              {/* one column like Threads: "Có gì mới?" on top, then the posts one under another */}
+              {/* one column like Threads: the posts one under another */}
               <div style={css('background:#fff; border-radius:24px; overflow:visible; box-shadow:0 24px 60px rgba(3,12,40,.35);')}>
-                <div onClick={() => setView('ask')} role="button" style={css('display:flex; align-items:center; gap:12px; padding:16px 20px; cursor:text;')}>
-                  <Avatar user={user} size={38} fontSize={13} />
-                  <span style={css('flex:1; min-width:0; font:400 15px var(--zp-font-text); color:#94a3b8;')}>{t('Có gì mới?')}</span>
-                  <button onClick={(e) => { e.stopPropagation(); setView('ask') }} style={css('flex:none; height:36px; padding:0 18px; border:1px solid #DDE3EC; border-radius:12px; background:#fff; color:#0F172A; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Đăng')}</button>
-                </div>
                 {feed.map((q) => renderQCard(q, false))}
 
                 {isEmpty && (
