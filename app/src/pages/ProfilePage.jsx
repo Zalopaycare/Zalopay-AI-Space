@@ -15,8 +15,7 @@ import { api, relativeTime, threadTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import { allCases, prdMeta, avatarColor, avatarPhoto } from '../data/useCases.js'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
-import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
-import { showToast } from '../components/Toaster.jsx'
+import { usePublishedUseCases } from '../lib/publishedUseCases.js'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
@@ -169,7 +168,7 @@ export default function ProfilePage() {
   useScrollReturn(pubLoaded ? pubV + 1 : false)
   const location = useLocation()
 
-  // Section is driven by the Sidebar's "Của tôi" sub-links (/profile#usecase|#question|#saved|#archived).
+  // Section is driven by the Sidebar's "Của tôi" sub-links (/profile#usecase|#question|#saved).
   // react-router's useLocation() re-renders on hash-only navigation within the same route, but we
   // also listen for the native `hashchange` event as a fallback, per the known SPA gotcha.
   const [hash, setHash] = useState(location.hash)
@@ -183,8 +182,8 @@ export default function ProfilePage() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
   const notif = useNotifications(!!user)
-  const section = /#(overview|activity|usecase|question|saved|archived)\b/.exec(hash || '')?.[1] || 'overview'
-  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu', archived: 'Bài đã ẩn' }[section])
+  const section = /#(overview|activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'overview'
+  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Câu hỏi của tôi', saved: 'Đã lưu' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -384,17 +383,7 @@ export default function ProfilePage() {
     .sort((x, y) => (x.ts === undefined ? -1 : y.ts === undefined ? 1 : String(y.ts).localeCompare(String(x.ts))))
     .slice(0, 4)
 
-  // ---- archived section: my threads and published use cases I put away; "Đăng lại" makes them public again ----
-  const archivedItems = [
-    ...myQuestions.filter((q) => q.archived).map((q) => ({ kind: 'thread', id: q.id, title: q.title, href: '/questions/' + encodeURIComponent(q.id), time: q.time })),
-    ...myUseCases.filter((c) => c.archived).map((c) => ({ kind: 'usecase', id: c.id, title: c.title, time: c.publishedAt || c.time })),
-  ]
-  const repost = (it) => (it.kind === 'thread' ? api.archiveQuestion(it.id).then((d) => setMyQuestions((l) => l.map((x) => (x.id === it.id ? d.question : x))))
-    : api.archiveSubmission(it.id).then((d) => { setMyUseCases((l) => l.map((x) => (x.id === it.id ? d.submission : x))); loadPublishedUseCases(true) }))
-    .then(() => showToast('Đã đăng lại'))
-    .catch(() => showToast('Chưa làm được, thử lại nhé'))
-
-  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : section === 'archived' ? t('Bài đã ẩn') : ''
+  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Câu hỏi của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
   return (
     <Layout active="profile">
@@ -538,31 +527,6 @@ export default function ProfilePage() {
               )}
               {loaded && myQuestionCards.length === 0 && (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có câu hỏi nào.')}</div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {section === 'archived' && (
-          <section style={css('position:relative; padding:14px var(--zp-gutter) 28px;')}>
-            <div style={css('max-width:760px; margin:0 auto;')}>
-              <p style={css('margin:0 0 14px; font-size:13.5px; line-height:1.55; color:#a9b8dc;')}>{t('Bài bạn ẩn không còn hiện với người khác nhưng chưa bị xoá (khác với Đã lưu: bài của người khác bạn đánh dấu để đọc lại). Bấm Đăng lại để bài hiện công khai như cũ.')}</p>
-              {archivedItems.length === 0 ? (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa ẩn bài nào. Mở menu ⋯ trên thread hay use case của bạn và chọn Ẩn bài.')}</div>
-              ) : (
-                <div style={css('display:flex; flex-direction:column; gap:10px;')}>
-                  {archivedItems.map((it) => (
-                    <div key={it.kind + it.id} style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 16px; border-radius:16px; background:#fff; border:1px solid #E6EBF3;')}>
-                      <span style={css(`flex:none; height:23px; padding:0 10px; border-radius:999px; display:inline-flex; align-items:center; background:${it.kind === 'thread' ? '#E7ECFB' : '#E4ECFF'}; color:#2c5fff; font:800 11.5px ${FONT};`)}>{it.kind === 'thread' ? t('Thread') : t('Use case')}</span>
-                      <div style={css('flex:1; min-width:180px;')}>
-                        <div style={css('font-size:14px; font-weight:700; line-height:1.4; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{it.title}</div>
-                        {it.time && <div style={css('margin-top:2px; font-size:12px; color:#94a3b8;')}>{threadTime(it.time)}</div>}
-                      </div>
-                      {it.href && <button onClick={() => navigate(it.href)} style={css('flex:none; height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;')}>{t('Xem')}</button>}
-                      <button onClick={() => repost(it)} style={css('flex:none; height:32px; padding:0 15px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>{t('Đăng lại')}</button>
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
           </section>

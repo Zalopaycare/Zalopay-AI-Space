@@ -46,22 +46,14 @@ function loadQuestion(id, viewer) {
   return {
     id: q.id, title: qTitle(q), hasTitle: !!q.title, body: q.body, ...maskAuthor(userBrief(author), q, viewer), time: q.created_at, ts: q.created_at,
     category: asArr(q.category), topics: asArr(q.topics), tools: asArr(q.tools),
-    resolved: !!q.resolved, saved, edited: !!q.edited_at, archived: !!q.archived_at,
+    resolved: !!q.resolved, saved, edited: !!q.edited_at,
     files: db.prepare('SELECT idx, name, size FROM question_files WHERE question_id = ? ORDER BY idx').all(id).map((f) => ({ name: f.name, size: f.size, url: `/api/questions/${id}/files/${f.idx}` })),
     images: db.prepare('SELECT idx FROM question_images WHERE question_id = ? ORDER BY idx').all(id).map((r) => `/api/questions/${id}/images/${r.idx}`), qHelpful, iHelpedQ, answers,
   }
 }
 
-// An archived thread exists only for its author (and admins): everyone else gets "not found" on every route.
-router.param('id', (req, res, next, id) => {
-  const q = db.prepare('SELECT author_id, archived_at FROM questions WHERE id = ?').get(id)
-  if (q && q.archived_at && q.author_id !== req.user?.id && !req.user?.is_admin) return res.status(404).json({ error: 'not_found' })
-  next()
-})
-
-// The feed, plus my own archived threads (flagged `archived`, listed under Của tôi > Đã lưu trữ).
 router.get('/', requireAuth, (req, res) => {
-  const ids = db.prepare('SELECT id FROM questions WHERE archived_at IS NULL OR author_id = ? ORDER BY created_at DESC').all(req.user.id).map((r) => r.id)
+  const ids = db.prepare('SELECT id FROM questions ORDER BY created_at DESC').all().map((r) => r.id)
   res.json({ questions: ids.map((id) => loadQuestion(id, req.user)) })
 })
 
@@ -183,15 +175,6 @@ router.post('/:id/react', requireAuth, (req, res) => {
     notifyUpvotes(owner.email, { ref: 'q:' + id, count: voters.length, lastVoter: domainName(one.email, one.name), title: qTitle(q), href: `/questions/${id}` })
   }
   res.json({ question: loadQuestion(id, req.user) })
-})
-
-// Archive my thread (hide it without deleting), or post it again.
-router.post('/:id/archive', requireAuth, (req, res) => {
-  const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(req.params.id)
-  if (!q) return res.status(404).json({ error: 'not_found' })
-  if (q.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
-  db.prepare(`UPDATE questions SET archived_at = ${q.archived_at ? 'NULL' : "datetime('now')"} WHERE id = ?`).run(q.id)
-  res.json({ question: loadQuestion(q.id, req.user) })
 })
 
 router.post('/:id/save', requireAuth, (req, res) => {

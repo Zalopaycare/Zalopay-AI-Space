@@ -169,12 +169,6 @@ db.exec(`CREATE TABLE IF NOT EXISTS comment_reactions (
   PRIMARY KEY (kind, comment_id, user_id)
 )`)
 
-// Archived posts: hidden from everyone but their author (Của tôi > Đã lưu trữ), who can post them again.
-for (const table of ['questions', 'use_case_submissions']) {
-  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)
-  if (!cols.includes('archived_at')) db.exec(`ALTER TABLE ${table} ADD COLUMN archived_at TEXT`)
-}
-
 // "(đã sửa)" markers for edited answers and comments.
 for (const table of ['question_answers', 'answer_comments', 'use_case_comments', 'questions', 'use_case_submissions']) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)

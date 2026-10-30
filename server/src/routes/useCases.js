@@ -184,7 +184,7 @@ export function serializeSubmission(r, viewer) {
     // Only admins learn which admin reviewed it.
     reviewedBy: viewer && viewer.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
     extra: parseExtra(r.extra),
-    canEdit: canEditSubmission(r, viewer), archived: !!r.archived_at,
+    canEdit: canEditSubmission(r, viewer),
     coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
   }
 }
@@ -199,7 +199,7 @@ router.get('/submissions', requireAuth, (req, res) => {
     const booths = pendingCases.filter((p) => isBoothOwner(p, req.user.email)).map((p) => p.id)
     rows = db.prepare(`SELECT * FROM use_case_submissions WHERE author_id = ? OR json_extract(extra, '$.booth') IN (${booths.map(() => '?').join(',') || "''"}) ORDER BY created_at DESC`).all(req.user.id, ...booths)
   }
-  else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' AND archived_at IS NULL ORDER BY COALESCE(published_at, created_at) DESC").all()
+  else if (onlyApproved) rows = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' ORDER BY COALESCE(published_at, created_at) DESC").all()
   else if (req.user.is_admin) rows = db.prepare('SELECT * FROM use_case_submissions ORDER BY created_at DESC').all()
   else return res.status(403).json({ error: 'admin_only' })
   res.json({ submissions: rows.map((r) => serializeSubmission(r, req.user)) })
@@ -226,16 +226,6 @@ const saveCover = (id, cover) => {
   if (cover === undefined) return
   db.prepare('UPDATE use_case_submissions SET cover_mime = ?, cover_data = ? WHERE id = ?').run(cover ? cover.mime : null, cover ? cover.data : null, id)
 }
-
-// Archive my published use case (off the Library without deleting it), or post it again. No review needed
-// to bring it back: it was approved as it is.
-router.post('/submissions/:id/archive', requireAuth, (req, res) => {
-  const r = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(req.params.id)
-  if (!r) return res.status(404).json({ error: 'not_found' })
-  if (r.author_id !== req.user.id) return res.status(403).json({ error: 'not_owner' })
-  db.prepare(`UPDATE use_case_submissions SET archived_at = ${r.archived_at ? 'NULL' : "datetime('now')"} WHERE id = ?`).run(r.id)
-  res.json({ submission: serializeSubmission(db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(r.id), req.user) })
-})
 
 router.get('/submissions/:id/cover', requireAuth, (req, res) => {
   const r = db.prepare('SELECT cover_mime, cover_data FROM use_case_submissions WHERE id = ?').get(req.params.id)
