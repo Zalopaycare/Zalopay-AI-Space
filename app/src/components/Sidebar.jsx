@@ -79,7 +79,7 @@ export default function Sidebar({ active }) {
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
   // #usecase / #question are parts of the profile page now, so they light up "Hồ sơ".
-  const sub = active === 'profile' ? ({ usecase: 'overview', question: 'overview' }[/#(overview|activity|usecase|question|saved)\b/.exec(hash)?.[1]] || /#(activity|saved)\b/.exec(hash)?.[1] || 'overview') : null
+  const sub = active === 'profile' ? ({ usecase: 'overview', question: 'overview' }[/#(overview|activity|usecase|question|saved|archived)\b/.exec(hash)?.[1]] || /#(activity|saved|archived)\b/.exec(hash)?.[1] || 'overview') : null
   const { unread: unreadCount } = useNotifications(!!user)
   // unread admin replies in my "Chat với Admin" (admins answer others from the Admin Console)
   const chatCount = useChatUnread(!!user).mine
@@ -154,6 +154,10 @@ export default function Sidebar({ active }) {
             <SubLink to="/profile#saved" active={sub === 'saved'} icon={
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             }>{t('Đã lưu')}</SubLink>
+            {/* my threads and use cases put away without deleting them; they can be posted again from there */}
+            <SubLink to="/profile#archived" active={sub === 'archived'} icon={
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+            }>{t('Đã lưu trữ')}</SubLink>
           </div>
         </>
       )}

@@ -162,6 +162,12 @@ if (!useCaseCommentColumns.includes('parent_id')) {
   db.exec('ALTER TABLE use_case_comments ADD COLUMN parent_id TEXT')
 }
 
+// Archived posts: hidden from everyone but their author (Của tôi > Đã lưu trữ), who can post them again.
+for (const table of ['questions', 'use_case_submissions']) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)
+  if (!cols.includes('archived_at')) db.exec(`ALTER TABLE ${table} ADD COLUMN archived_at TEXT`)
+}
+
 // "(đã sửa)" markers for edited answers and comments.
 for (const table of ['question_answers', 'answer_comments', 'use_case_comments', 'questions', 'use_case_submissions']) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name)

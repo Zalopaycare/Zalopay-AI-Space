@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
+import { showToast } from '../components/Toaster.jsx'
 import { fold } from '../lib/fold.js'
 import { parseUseCaseDocx, TEMPLATE_URL } from '../lib/docxImport.js'
 import { rememberReturn, hasReturn, useScrollReturn } from '../lib/scrollReturn.js'
@@ -312,6 +313,15 @@ export default function UseCaseLibraryPage() {
     const url = window.location.origin + '/use-cases/' + ucId
     copyWithToast(url, 'Đã sao chép link ✓')
     setOpenMenuId(null)
+  }
+
+  const archiveCase = (ucId) => {
+    setOpenMenuId(null)
+    api.archiveSubmission(ucId).then(() => {
+      loadPublishedUseCases(true)
+      if (id === ucId) navigate('/use-cases')
+      showToast('Đã lưu trữ, xem lại ở Của tôi > Đã lưu trữ')
+    }).catch(() => showToast('Chưa làm được, thử lại nhé'))
   }
 
   const deleteUseCase = (ucId, reason) => {
@@ -902,6 +912,13 @@ export default function UseCaseLibraryPage() {
                                 <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (c.canEdit) navigate('/use-cases?edit=' + c.id); else openCaseEdit(c) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
                                   {t('Chỉnh sửa Use Case')}
+                                </button>
+                              )}
+                              {/* my own post: put it away without deleting it (Của tôi > Đã lưu trữ posts it again) */}
+                              {c.submitted && !!c.authorId && c.authorId === user?.id && (
+                                <button onClick={(e) => { e.stopPropagation(); archiveCase(c.id) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+                                  {t('Lưu trữ')}
                                 </button>
                               )}
                               {c.canDelete && (

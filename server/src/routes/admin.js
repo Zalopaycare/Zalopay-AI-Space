@@ -165,7 +165,7 @@ router.get('/published', (req, res) => {
     applied: n('SELECT COUNT(*) n FROM use_case_applied WHERE use_case_id = ?', id),
   })
   const showcase = visibleShowcase().map((c) => ({ id: c.id, source: 'showcase', title: c.title, author: c.ownerName && !/cần bổ sung/.test(c.ownerName) ? c.ownerName : c.author, team: /cần bổ sung/.test(c.ownerTeam || '') ? '' : c.ownerTeam || '', type: c.type || '', status: c.status || '', postedAt: c.postedAt || null, ...stats(c.id) }))
-  const subs = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved'").all().map((r) => {
+  const subs = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved' AND archived_at IS NULL").all().map((r) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
     const rv = r.reviewed_by ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(r.reviewed_by) : null
     return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', account: u ? handleOf(u.email) : '', anonymous: !!r.anonymous, alias: r.anonymous ? anonName(r) : null, team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, approvedBy: rv ? domainName(rv.email, rv.name) : null, ...stats(r.id) }

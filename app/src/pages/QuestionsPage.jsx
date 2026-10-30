@@ -6,6 +6,7 @@ import CardActions from '../components/CardActions.jsx'
 import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { copyWithToast } from '../lib/clipboard.js'
+import { showToast } from '../components/Toaster.jsx'
 import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
 import { AI_TOOLS, OTHER as TOOL_OTHER, normalizeTool } from '../lib/taxonomy.js'
@@ -360,6 +361,7 @@ export default function QuestionsPage() {
   // ---- derive feed ----
   const qs = fold(query.trim())
   const match = (q) => {
+    if (q.archived) return false // only its author has it, under Của tôi > Đã lưu trữ
     if (quick === 'waiting' && q.resolved) return false
     if (quick === 'resolved' && !q.resolved) return false
     if (quick === 'mine' && !(user && q.authorId === user.id)) return false
@@ -444,6 +446,8 @@ export default function QuestionsPage() {
       // Admins can remove any question (the server allows it); only the author can edit.
       canDelete: !!user && (q.authorId === user.id || !!user.isAdmin),
       onEdit: () => startEditQuestion(q),
+      archived: !!q.archived,
+      onArchive: () => { setOpenMenuId(null); api.archiveQuestion(q.id).then((d) => { patch(q.id, d.question); showToast(d.question.archived ? 'Đã lưu trữ, xem lại ở Của tôi > Đã lưu trữ' : 'Đã đăng lại') }).catch(() => showToast('Chưa làm được, thử lại nhé')) },
       onToggle: () => toggle(q.id),
       onExpandBody: () => setFullBody((s) => ({ ...s, [q.id]: !s[q.id] })),
       onSave: (e) => { if (e) e.stopPropagation(); requireLogin(() => api.saveQuestion(q.id).then((d) => patch(q.id, d.question)).catch(() => {})) },
@@ -507,6 +511,13 @@ export default function QuestionsPage() {
                                 {t('Chỉnh sửa')}
                               </button>
                             )}
+                            {/* the author can put a thread away without deleting it, and post it again later */}
+                            {q.canEdit && (
+                              <button onClick={q.onArchive} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+                                {q.archived ? t('Đăng lại') : t('Lưu trữ')}
+                              </button>
+                            )}
                             {/* everyone but the author can flag a post to the admins */}
                             {!q.canEdit && (
                               <button onClick={() => { setOpenMenuId(null); requireLogin(() => cmodals.askReport('thread', q.id)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
@@ -524,6 +535,12 @@ export default function QuestionsPage() {
                         )}
                       </div>
                         </div>
+                        {q.archived && (
+                          <div style={css('display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0 4px; padding:8px 12px; border-radius:12px; background:#FFF7E0; border:1px solid #F5DB8B; font-size:12.5px; color:#7A5A00;')}>
+                            <span style={css('flex:1; min-width:180px;')}>{t('Bài đã lưu trữ: chỉ bạn thấy, người khác không thấy nữa.')}</span>
+                            <button onClick={q.onArchive} style={css('flex:none; height:28px; padding:0 13px; border:none; border-radius:999px; background:#2c5fff; color:#fff; font-family:inherit; font-size:12px; font-weight:800; cursor:pointer;')}>{t('Đăng lại')}</button>
+                          </div>
+                        )}
                         {q.hasTitle !== false && q.title && <div style={css('margin-top:2px; font:700 15px/1.45 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.title}</div>}
                         <p style={css(`margin:${q.hasTitle !== false && q.title ? 2 : 1}px 0 0; font:400 ${inModal ? 15.5 : 15}px/1.55 var(--zp-font-text); color:#0F172A; white-space:pre-wrap; overflow-wrap:anywhere;`)}>
                           {renderMentions(q.bodyShown)}

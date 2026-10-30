@@ -24,7 +24,7 @@ const latestSubmission = (boothId) => db.prepare(`SELECT id, review_status, auth
   WHERE json_extract(extra, '$.booth') = ? ORDER BY created_at DESC LIMIT 1`).get(boothId)
 // Booths whose write-up is published: the use case replaces the booth (its link redirects there).
 const doneBooths = () => Object.fromEntries(db.prepare(`SELECT json_extract(extra, '$.booth') booth, id FROM use_case_submissions
-  WHERE review_status = 'approved' AND json_extract(extra, '$.booth') IS NOT NULL ORDER BY COALESCE(published_at, created_at)`).all().map((r) => [r.booth, r.id]))
+  WHERE review_status = 'approved' AND archived_at IS NULL AND json_extract(extra, '$.booth') IS NOT NULL ORDER BY COALESCE(published_at, created_at)`).all().map((r) => [r.booth, r.id]))
 
 const pendingFor = (user) => {
   const done = doneBooths()

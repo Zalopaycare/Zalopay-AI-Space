@@ -128,7 +128,7 @@ export default function HomePage() {
 
   // Again when the signed-in user changes their photo, so their own posts pick it up at once.
   useEffect(() => {
-    api.listQuestions().then((d) => setQuestions(d.questions || [])).catch(() => {})
+    api.listQuestions().then((d) => setQuestions((d.questions || []).filter((q) => !q.archived))).catch(() => {})
   }, [user?.avatarUrl])
 
   const refreshUcMeta = (ucId) => api.useCaseMeta(ucId).then((d) => setUcMeta((s) => ({ ...s, [ucId]: d }))).catch(() => {})

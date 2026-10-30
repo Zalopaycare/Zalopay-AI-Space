@@ -89,13 +89,14 @@ export function notifyOnce(email, kind, { ref, text, href, actor = '' }) {
 }
 
 const BUILTIN_CASES = new Set(SHOWCASE_IDS)
-function stillExists(r) {
+// `uid`: the reader; an archived post still exists for its author only.
+function stillExists(r, uid) {
   const href = String(r.href || '')
   if (href.startsWith('/messages')) return false // "Tin nhắn" was taken down: its notifications lead nowhere
   let m = /^\/use-cases\/([^/?#]+)/.exec(href)
-  if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || PENDING_BY_ID.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(id) }
+  if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || PENDING_BY_ID.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ? AND (archived_at IS NULL OR author_id = ?)').get(id, uid) }
   m = /^\/questions(?:#q=|\/)([^&/?#]+)/.exec(href) // old "#q=" links and the new /questions/<id>
-  if (m) return !!db.prepare('SELECT 1 FROM questions WHERE id = ?').get(decodeURIComponent(m[1]))
+  if (m) return !!db.prepare('SELECT 1 FROM questions WHERE id = ? AND (archived_at IS NULL OR author_id = ?)').get(decodeURIComponent(m[1]), uid)
   return true
 }
 
@@ -105,7 +106,7 @@ router.get('/', requireAuth, (req, res) => {
   const email = req.user.email.toLowerCase()
   // Hide notifications about posts that no longer exist (e.g. a use case its author deleted),
   // so the list and the unread badge only count things you can still open. Rows stay in the DB.
-  const rows = db.prepare('SELECT * FROM notifications WHERE email = ? ORDER BY created_at DESC, id DESC LIMIT 200').all(email).filter(stillExists).slice(0, 100)
+  const rows = db.prepare('SELECT * FROM notifications WHERE email = ? ORDER BY created_at DESC, id DESC LIMIT 200').all(email).filter((r) => stillExists(r, req.user.id)).slice(0, 100)
   const unread = rows.filter((r) => !r.read).length
   res.json({
     unread,
