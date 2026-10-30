@@ -1,37 +1,29 @@
-import { css } from '../lib/style.js'
+import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 
-const PILL = 'flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; white-space:nowrap; transition:background .16s, border-color .16s;'
+const BTN = 'flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px; border:none; border-radius:999px; background:transparent; cursor:pointer; white-space:nowrap; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#475569;'
 
-/** The Upvote + Bình luận (+ Lưu, given `onSave`) pills every preview card (threads and use cases, on every page) ends with. */
+/** Like · Comment (· Save, given `onSave`) as icons with their counts, as on Threads: the row every
+ *  preview card (threads and use cases, on every page) ends with, on the left of the card. */
 export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply, saved = false, onSave, compact = false }) {
   const { t } = useI18n()
-  const pill = compact ? PILL + 'height:28px; padding:0 10px; gap:5px; font-size:12px;' : PILL
+  const btn = compact ? BTN + 'height:30px; padding:0 8px; font-size:12.5px;' : BTN
+  const size = compact ? 18 : 19
   const stop = (fn) => (e) => { e.stopPropagation(); if (fn) fn(e) }
+  const hover = hoverClass('background:#F1F4FA !important;')
   return (
-    <div style={css(`margin-left:auto; display:flex; align-items:center; gap:${compact ? 6 : 8}px;`)}>
-      <button
-        onClick={stop(onHelpful)}
-        style={css(`${pill} border:1px solid ${helped ? '#B9CCF8' : '#DDE3EC'}; background:${helped ? '#EAF1FF' : '#fff'}; color:#3A4757;`)}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill={helped ? '#2c5fff' : 'none'} stroke="#2c5fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-        <span style={css('color:#2c5fff;')}>{helpful}</span> {t('Upvote')}
+    <div style={css(`display:flex; align-items:center; gap:${compact ? 2 : 4}px; margin-left:${compact ? -8 : -10}px;`)}>
+      <button onClick={stop(onHelpful)} aria-pressed={helped} title={t('Thích')} aria-label={t('Thích')} className={hover} style={css(btn + (helped ? 'color:#E0245E;' : ''))}>
+        <svg width={size} height={size} viewBox="0 0 24 24" fill={helped ? '#E0245E' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+        {helpful > 0 && helpful}
       </button>
-      <button
-        onClick={stop(onReply)}
-        style={css(`${pill} border:1px solid ${replyActive ? '#B9CCF8' : '#DDE3EC'}; background:${replyActive ? '#EAF1FF' : '#fff'}; color:${replyActive ? '#2c5fff' : '#3A4757'};`)}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-        {replies} {t('Bình luận')}
+      <button onClick={stop(onReply)} title={t('Bình luận')} aria-label={t('Bình luận')} className={hover} style={css(btn + (replyActive ? 'color:#2c5fff;' : ''))}>
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
+        {replies > 0 && replies}
       </button>
       {onSave && (
-        <button
-          onClick={stop(onSave)}
-          aria-pressed={saved}
-          style={css(`${pill} border:1px solid ${saved ? '#B9CCF8' : '#DDE3EC'}; background:${saved ? '#EAF1FF' : '#fff'}; color:${saved ? '#2c5fff' : '#3A4757'};`)}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? '#2c5fff' : 'none'} stroke={saved ? '#2c5fff' : 'currentColor'} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-          {saved ? t('Đã lưu') : t('Lưu')}
+        <button onClick={stop(onSave)} aria-pressed={saved} title={saved ? t('Bỏ lưu') : t('Lưu')} aria-label={saved ? t('Bỏ lưu') : t('Lưu')} className={hover} style={css(btn + (saved ? 'color:#2c5fff;' : ''))}>
+          <svg width={size - 1} height={size - 1} viewBox="0 0 24 24" fill={saved ? '#2c5fff' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
         </button>
       )}
     </div>

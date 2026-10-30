@@ -719,8 +719,7 @@ export default function UseCaseLibraryPage() {
 
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}
-              {/* Same Upvote + Bình luận pair as the use case cards, top-left of the comment box (the
-                  shrink-wrapped holder cancels the pair's right-alignment); "Bình luận" jumps to the box. */}
+              {/* The same like · comment row as the use case cards, top-left of the comment box; comment jumps to the box. */}
               <div style={css('display:inline-flex;')}>
                 <CardActions
                   helpful={base}
@@ -944,11 +943,12 @@ export default function UseCaseLibraryPage() {
                         </div>
                       </div>
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
-                        <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
+                        {/* like · comment · save on the left, the way in on the right */}
+                        <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} saved={c.saveFill === 'currentColor'} onSave={c.onSave} />
+                        <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
                           {t('Xem Use Case')}
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                         </button>
-                        <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} saved={c.saveFill === 'currentColor'} onSave={c.onSave} />
                       </div>
                     </div>
                   ))}

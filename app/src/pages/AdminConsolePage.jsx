@@ -553,7 +553,7 @@ export default function AdminConsolePage() {
               </div>
               {ucStatus === 'published' ? (
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG · {sortHead('postedAt', 'NGÀY ĐĂNG')}</span><span>DUYỆT BỞI</span><span>{sortHead('upvotes', 'UPVOTE')}</span><span>{sortHead('comments', 'BÌNH LUẬN')}</span><span>{sortHead('saves', 'LƯU')}</span><span>{sortHead('applied', 'ĐÃ ÁP DỤNG')}</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG · {sortHead('postedAt', 'NGÀY ĐĂNG')}</span><span>DUYỆT BỞI</span><span>{sortHead('upvotes', 'THÍCH')}</span><span>{sortHead('comments', 'BÌNH LUẬN')}</span><span>{sortHead('saves', 'LƯU')}</span><span>{sortHead('applied', 'ĐÃ ÁP DỤNG')}</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {pubRows.map((c) => {
                   const sub = c.source === 'community' ? submissions.find((x) => x.id === c.id) : null
                   return (
@@ -633,7 +633,7 @@ export default function AdminConsolePage() {
                 <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['answered', 'Đã có trả lời', questions.filter((q) => q.answers.length).length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(Q_COLS)}><span>CÂU HỎI</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>UPVOTE</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(Q_COLS)}><span>THREAD</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>THÍCH</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {qRows.map((q) => (
                   <div key={q.id} style={bodyRow(Q_COLS)}>
                     <div style={{ minWidth: 0 }}>
@@ -896,7 +896,7 @@ export default function AdminConsolePage() {
                 {q.answers.map((a) => (
                   <div key={a.id} style={css(`padding:12px 14px; border-radius:14px; border:1px solid ${a.accepted ? '#BEE9D3' : '#EEF1F7'}; background:${a.accepted ? '#F2FBF6' : '#F8FAFE'};`)}>
                     <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;' + font(700, 12.5) + ';color:#0f172a;')}>
-                      {who(a)}<span style={css(font(500, 12) + ';color:#94a3b8;')}>· {relativeTime(a.time)} · {a.helpful || 0} upvote</span>
+                      {who(a)}<span style={css(font(500, 12) + ';color:#94a3b8;')}>· {relativeTime(a.time)} · {a.helpful || 0} lượt thích</span>
                       {a.accepted && <span style={css(pill('#00A352', '#fff'))}>Câu trả lời được chọn</span>}
                     </div>
                     <div style={css('margin-top:6px;' + font(400, 13.5, 1.6) + ';color:#334155; white-space:pre-wrap; word-break:break-word;')}>{a.body}</div>

@@ -375,7 +375,7 @@ export default function QuestionsPage() {
   // On a question's own page only that question is built, whatever the list filters say.
   let list = detailId ? questions.filter((q) => q.id === detailId) : questions.filter(match)
   const tsNum = (v) => new Date(String(v).includes('T') ? v : String(v).replace(' ', 'T') + 'Z').getTime()
-  // "Nổi bật nhất": most upvotes (question + its answers), then most comments, then newest.
+  // "Nổi bật nhất": most likes (thread + its answers), then most comments, then newest.
   const score = (q) => helpfulSum(q) + (q.qHelpful || 0)
   list = sort === 'top' ? list.slice().sort((a, b) => score(b) - score(a) || b.answers.length - a.answers.length || tsNum(b.ts) - tsNum(a.ts))
     : list.slice().sort((a, b) => tsNum(b.ts) - tsNum(a.ts))
@@ -551,8 +551,7 @@ export default function QuestionsPage() {
                         </p>
                         {q.hasImages && <ImageThumbs srcs={q.images} height={inModal ? 260 : 220} />}
                         <FileLinks files={q.files} />
-                        {/* the same Upvote + Bình luận pair as the use case cards (copy link and save are in the ⋯ menu);
-                            the shrink-wrapped holder cancels the pair's right-alignment */}
+                        {/* like · comment · save, the same row as every other card */}
                         <div style={css('display:inline-flex; margin-top:10px;')}>
                           <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={inModal} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
                         </div>
