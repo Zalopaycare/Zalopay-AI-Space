@@ -11,7 +11,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { api, relativeTime } from '../lib/api.js'
+import { api, relativeTime, threadTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import { allCases, prdMeta, avatarColor, avatarPhoto } from '../data/useCases.js'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
@@ -249,7 +249,7 @@ export default function ProfilePage() {
     avatarUrl: q.avatarUrl || null,
     author: q.author,
     team: q.team,
-    time: relativeTime(q.time),
+    time: threadTime(q.time),
     title: q.title,
     hasTitle: q.hasTitle,
     body: q.body,
@@ -367,7 +367,7 @@ export default function ProfilePage() {
   const recentItems = [].concat(draftItem)
     .concat(myQuestions.map((q) => ({
       tagLabel: t('Thread'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
-      title: q.title, meta: relativeTime(q.time), ts: q.time,
+      title: q.title, meta: threadTime(q.time), ts: q.time,
       statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
       statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0', statusColor: q.answers.length ? '#00893F' : '#B45300',
       cta: t('Xem chi tiết'), primary: false,

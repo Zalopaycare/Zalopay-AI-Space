@@ -13,7 +13,7 @@ import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { api, relativeTime } from '../lib/api.js'
+import { api, relativeTime, threadTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -420,7 +420,7 @@ export default function QuestionsPage() {
 
     return {
       ...q,
-      time: relativeTime(q.time),
+      time: threadTime(q.time),
       avatarBg: q.avatarColor || AV[q.author.charCodeAt(0) % AV.length],
       statusBg: q.resolved ? '#E7F9F0' : '#FFF1E0',
       statusFg: q.resolved ? '#00893F' : '#B45300',

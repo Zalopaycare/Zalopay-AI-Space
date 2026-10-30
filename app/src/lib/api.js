@@ -115,6 +115,19 @@ export const api = {
   deleteSubmission: (id, reason) => request(`/use-cases/submissions/${id}`, delBody(reason)),
 }
 
+/** A thread's posting time: relative within a day ("3 giờ trước"), "Hôm qua" for the day before,
+ *  then the date like the use case cards ("Posted 28/10/26"). */
+export function threadTime(iso) {
+  const raw = String(iso || '')
+  const then = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T') + 'Z')
+  if (Number.isNaN(then.getTime())) return ''
+  if (Date.now() - then.getTime() < 86_400_000) return relativeTime(raw)
+  const yesterday = new Date(Date.now() - 86_400_000)
+  if (then.toDateString() === yesterday.toDateString()) return 'Hôm qua'
+  const p = (n) => String(n).padStart(2, '0')
+  return `Posted ${p(then.getDate())}/${p(then.getMonth() + 1)}/${String(then.getFullYear()).slice(2)}`
+}
+
 export function relativeTime(iso) {
   const then = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z').getTime()
   const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000))

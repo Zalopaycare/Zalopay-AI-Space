@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { api, relativeTime } from '../lib/api.js'
+import { api, threadTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
 import { allCases, prdMeta, avatarColor, avatarPhoto, newestFirst, postedShort } from '../data/useCases.js'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
@@ -144,7 +144,7 @@ export default function HomePage() {
   const searchUc = searchNeedle ? pick(allCases.filter((c) => matches(searchNeedle, c.title, c.desc, c.author, c.tools || [], (prdMeta[c.id] || {}).topics || []))
     .map((c) => ({ id: c.id, title: c.title, sub: [c.author, ...(c.tools || [])].filter(Boolean).join(' · '), href: '/use-cases/' + c.id }))) : []
   const searchQ = searchNeedle ? pick(questions.filter((q) => matches(searchNeedle, q.title, q.body, q.author, q.topics || [], q.tools || []))
-    .map((q) => ({ id: q.id, title: q.title, sub: [q.author, relativeTime(q.time), ...(q.topics || [])].filter(Boolean).join(' · '), href: '/questions/' + encodeURIComponent(q.id) }))) : []
+    .map((q) => ({ id: q.id, title: q.title, sub: [q.author, threadTime(q.time), ...(q.topics || [])].filter(Boolean).join(' · '), href: '/questions/' + encodeURIComponent(q.id) }))) : []
 
   // Keyboard: ↑/↓ walk the results, Enter opens the highlighted one, or (none highlighted) the page
   // with more matches pre-filtered by the query; Esc closes the panel.
@@ -169,7 +169,7 @@ export default function HomePage() {
     .slice(0, 3)
     .map((q) => ({
       ...q,
-      timeLabel: relativeTime(q.time),
+      timeLabel: threadTime(q.time),
       avatarBg: q.avatarColor || AV[q.author.charCodeAt(0) % AV.length],
       cat: [].concat(q.category).filter(Boolean)[0] || '',
       helpfulTotal: helpfulTotal(q),
