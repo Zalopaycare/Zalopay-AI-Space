@@ -29,7 +29,7 @@ export default function App() {
           <PageFade>
             <MaintenanceGate>
             <Routes>
-              {/* AI Thread is the home page (there's no separate Home any more) */}
+              {/* AI Space (the threads) is the home page; there's no separate Home any more */}
               <Route path="/" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
               <Route path="/use-cases" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
               <Route path="/use-cases/:id" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />

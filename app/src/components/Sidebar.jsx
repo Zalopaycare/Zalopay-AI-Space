@@ -94,10 +94,10 @@ export default function Sidebar({ active }) {
       inert={narrow && !drawerOpen ? true : undefined}
       style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:58px; bottom:0; width:${narrow ? 260 : collapsed ? 68 : 224}px; z-index:2000; ${narrow ? `transform:translateX(${drawerOpen ? 0 : -105}%); transition:transform .22s ease; box-shadow:${drawerOpen ? '12px 0 40px rgba(0,0,0,.5)' : 'none'};` : ''} display:flex; flex-direction:column; padding:${collapsed ? '16px 9px 16px' : '16px 12px 16px'}; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.30), transparent 70%), radial-gradient(90% 35% at 100% 100%, rgba(60,110,255,.16), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.72) 0%, rgba(9,16,46,.80) 50%, rgba(5,9,26,.88) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16); box-shadow:1px 0 24px rgba(20,50,160,.18); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
       <nav style={css('display:flex; flex-direction:column; gap:2px;')}>
-        {/* AI Thread is the home page */}
-        <NavLink to="/" active={active === 'question'} collapsed={collapsed} title={t('AI Thread')} icon={
+        {/* AI Space (the threads) is the home page */}
+        <NavLink to="/" active={active === 'question'} collapsed={collapsed} title={t('AI Space')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
-        }>{t('AI Thread')}</NavLink>
+        }>{t('AI Space')}</NavLink>
         {mobile && (
           <>
             <NavLink to="/use-cases" active={active === 'usecase'} collapsed={false} title={t('Use Case Library')} icon={

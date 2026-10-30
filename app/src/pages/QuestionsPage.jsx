@@ -77,7 +77,7 @@ export default function QuestionsPage() {
   const [expanded, setExpanded] = useState(() => (detailId ? { [detailId]: true } : {}))
   useEffect(() => { setExpanded(detailId ? { [detailId]: true } : {}); if (detailId) window.scrollTo(0, 0) }, [detailId])
   const detailTitle = detailId ? (questions.find((q) => q.id === detailId) || {}).title : ''
-  useTitle(detailTitle ? String(detailTitle).slice(0, 60) + ' · AI Thread' : 'AI Thread')
+  useTitle(detailTitle ? String(detailTitle).slice(0, 60) + ' · AI Space' : 'AI Space')
   const [fullBody, setFullBody] = useState({})
   const [replyDrafts, setReplyDrafts] = useState({})
   const [replyMention, setReplyMention] = useState(null)
@@ -760,9 +760,11 @@ export default function QuestionsPage() {
         ) : (
         <div>
           {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
-          <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:2; padding:14px var(--zp-gutter) 0; background:transparent; text-align:center; overflow:hidden;')}>
-            <HeroWordmark />
-            <p className="zp-tagline" style={css('position:relative; margin:10px auto 0; max-width:760px; font:500 15px/1.5 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:rgba(214,226,250,.86); text-wrap:balance;')}>{t('Không gian chia sẻ, hỏi đáp và thảo luận mọi thứ về AI.')}</p>
+          {/* same box as the Use Case Library title (22px down, 53px tall, the line under it alike), so switching tabs doesn't jump;
+              the wordmark keeps 10px below itself, hence no margin above the line and 10px under the section */}
+          <section className={playIntro ? 'zp-intro' : undefined} style={css('position:relative; z-index:2; padding:22px var(--zp-gutter) 10px; background:transparent; text-align:center; overflow:visible;')}>
+            <HeroWordmark width={361} ufoInline={false} />
+            <p className="zp-tagline" style={css('position:relative; margin:0 auto; max-width:760px; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Không gian chia sẻ, hỏi đáp và thảo luận mọi thứ về AI.')}</p>
           </section>
 
           {/* the same bar as the Use Case Library: post prompt on top, search and sort under it */}
