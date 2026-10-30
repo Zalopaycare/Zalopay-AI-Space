@@ -94,12 +94,6 @@ export const api = {
   chatThreads: () => request('/chat/threads'),
   chatThread: (uid, after = 0) => request(`/chat/threads/${uid}?after=${after}`),
   chatReply: (uid, body, files = []) => request(`/chat/threads/${uid}`, { method: 'POST', body: JSON.stringify({ body, files }) }),
-  // "Tin nhắn": one-to-one conversations. `share` = { kind: 'usecase' | 'thread', id } forwards one into the chat.
-  dmConversations: () => request('/dm/conversations'),
-  dmUnread: () => request('/dm/unread'),
-  dmPeople: (q) => request('/dm/people?q=' + encodeURIComponent(q || '')),
-  dmWith: (uid, after = 0) => request(`/dm/with/${uid}?after=${after}`),
-  dmSend: (uid, body, files = [], share = null) => request(`/dm/with/${uid}`, { method: 'POST', body: JSON.stringify({ body, files, share }) }),
   presence: (path) => request('/auth/presence', { method: 'POST', body: JSON.stringify({ path }) }),
   adminLive: () => request('/admin/live'),
   adminPublished: () => request('/admin/published'),

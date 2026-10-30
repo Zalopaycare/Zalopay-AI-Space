@@ -262,26 +262,6 @@ CREATE TABLE IF NOT EXISTS use_case_interest (
   PRIMARY KEY (use_case_id, user_id)
 );
 
--- "Tin nhắn": one-to-one messages between people; a message may carry a forwarded use case or thread.
-CREATE TABLE IF NOT EXISTS dm_messages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  from_id INTEGER NOT NULL REFERENCES users(id),
-  to_id INTEGER NOT NULL REFERENCES users(id),
-  body TEXT NOT NULL DEFAULT '',
-  share_kind TEXT,
-  share_id TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS dm_pair ON dm_messages (from_id, to_id, id);
-CREATE INDEX IF NOT EXISTS dm_to ON dm_messages (to_id, id);
--- the newest message of a conversation each person has seen
-CREATE TABLE IF NOT EXISTS dm_seen (
-  user_id INTEGER NOT NULL,
-  other_id INTEGER NOT NULL,
-  last_id INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (user_id, other_id)
-);
-
 -- Sign-in is for Zalopay staff (staffCheck.js). Someone Microsoft doesn't list under Zalopay can ask an
 -- admin for access from the "no access" page; an admin who checks they are Zalopay staff grants it.
 CREATE TABLE IF NOT EXISTS access_requests (

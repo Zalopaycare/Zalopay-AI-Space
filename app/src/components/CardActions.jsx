@@ -3,9 +3,8 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 
 const PILL = 'flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; white-space:nowrap; transition:background .16s, border-color .16s;'
 
-/** The helpful + reply pill pair every preview card (questions and use cases, on every page) ends with;
- *  `onShare` adds a third pill, "Gửi" (forward to a message). */
-export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply, onShare, compact = false }) {
+/** The helpful + reply pill pair every preview card (questions and use cases, on every page) ends with. */
+export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply, compact = false }) {
   const { t } = useI18n()
   const pill = compact ? PILL + 'height:28px; padding:0 10px; gap:5px; font-size:12px;' : PILL
   const stop = (fn) => (e) => { e.stopPropagation(); if (fn) fn(e) }
@@ -25,12 +24,6 @@ export default function CardActions({ helpful = 0, helped = false, onHelpful, re
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         {replies} {t('Bình luận')}
       </button>
-      {onShare && (
-        <button onClick={stop(onShare)} title={t('Gửi qua tin nhắn')} style={css(`${pill} border:1px solid #DDE3EC; background:#fff; color:#3A4757;`)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"></path><path d="M22 2 11 13"></path></svg>
-          {t('Gửi')}
-        </button>
-      )}
     </div>
   )
 }

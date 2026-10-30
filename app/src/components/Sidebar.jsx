@@ -7,7 +7,6 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import { useNotifications } from '../lib/notifications.js'
 import { useChatUnread } from '../lib/chat.js'
-import { useDmUnread } from '../lib/dm.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import Avatar from './Avatar.jsx'
 
@@ -84,8 +83,6 @@ export default function Sidebar({ active }) {
   const { unread: unreadCount } = useNotifications(!!user)
   // unread admin replies in my "Chat với Admin" (admins answer others from the Admin Console)
   const chatCount = useChatUnread(!!user).mine
-  // conversations in "Tin nhắn" with something I haven't read
-  const dmCount = useDmUnread(!!user)
   const homeActive = active === 'home'
 
   return (
@@ -120,15 +117,6 @@ export default function Sidebar({ active }) {
         <NavLink to="/questions#ask" collapsed={collapsed} title={t('Đăng thread')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
         }>{t('Đăng thread')}</NavLink>
-        <NavLink to="/messages" active={active === 'messages'} collapsed={collapsed} title={t('Tin nhắn')} icon={
-          <span style={css('position:relative; display:inline-flex; flex:none;')}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"></path><path d="M22 2 11 13"></path></svg>
-            {collapsed && dmCount > 0 && <span style={css('position:absolute; top:-6px; right:-8px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:#FF3B30; color:#fff; font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{dmCount}</span>}
-          </span>
-        }>
-          <span style={css('flex:1; min-width:0;')}>{t('Tin nhắn')}</span>
-          {dmCount > 0 && <span style={css('flex:none; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#FF3B30; color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{dmCount}</span>}
-        </NavLink>
         <NavLink to="/chat" active={active === 'chat'} collapsed={collapsed} title={t('Chat với Admin')} icon={
           <span style={css('position:relative; display:inline-flex; flex:none;')}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></svg>

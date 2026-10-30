@@ -77,6 +77,7 @@ export function notifyOnce(email, kind, { ref, text, href, actor = '' }) {
 const BUILTIN_CASES = new Set(SHOWCASE_IDS)
 function stillExists(r) {
   const href = String(r.href || '')
+  if (href.startsWith('/messages')) return false // "Tin nhắn" was taken down: its notifications lead nowhere
   let m = /^\/use-cases\/([^/?#]+)/.exec(href)
   if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || PENDING_BY_ID.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(id) }
   m = /^\/questions(?:#q=|\/)([^&/?#]+)/.exec(href) // old "#q=" links and the new /questions/<id>
