@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import AnonTag from '../components/AnonTag.jsx'
 import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
+import CardActions from '../components/CardActions.jsx'
 import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import { copyWithToast } from '../lib/clipboard.js'
@@ -473,7 +474,6 @@ export default function QuestionsPage() {
   // One post, Threads-style: avatar on the left, then name · time, the text, images and the ♡ / 💬 / share
   // row. In the feed the posts sit one under another in a single column; inModal = the post on its own
   // page, with the reply box and the replies under it.
-  const ACT = 'display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px; border:none; border-radius:999px; background:transparent; cursor:pointer; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#475569;'
   const renderQCard = (q, inModal) => (
                   <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : hoverClass('background:#FAFBFE;')} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`position:relative; ${inModal ? '' : 'cursor:pointer; border-top:1px solid #EEF1F7;'}`)}>
                     <div style={css(`display:flex; gap:12px; padding:${inModal ? '20px 22px 6px' : '16px 20px 10px'};`)}>
@@ -526,22 +526,10 @@ export default function QuestionsPage() {
                         </p>
                         {q.hasImages && <ImageThumbs srcs={q.images} height={inModal ? 260 : 220} />}
                         <FileLinks files={q.files} />
-                        {/* ♡ like · 💬 replies · share · save, as on Threads */}
-                        <div style={css('display:flex; align-items:center; gap:6px; margin:8px 0 0 -10px;')}>
-                          <button onClick={q.onHelpfulQ} aria-pressed={!!q.iHelpedQ} title={t('Thích')} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT + (q.iHelpedQ ? 'color:#E0245E;' : ''))}>
-                            <svg width="19" height="19" viewBox="0 0 24 24" fill={q.iHelpedQ ? '#E0245E' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
-                            {q.qHelpful > 0 && q.qHelpful}
-                          </button>
-                          <button onClick={q.onToggle} title={t('Trả lời')} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT)}>
-                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
-                            {q.answers.length > 0 && q.answers.length}
-                          </button>
-                          <button onClick={() => copyLink(q.id)} title={t('Sao chép link')} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT)}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"></path><path d="M22 2 11 13"></path></svg>
-                          </button>
-                          <button onClick={q.onSave} aria-pressed={!!q.saved} title={q.saveLabel} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT + (q.saved ? 'color:#00893F;' : ''))}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill={q.saved ? '#00A352' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                          </button>
+                        {/* the same Upvote + Bình luận pair as the use case cards (copy link and save are in the ⋯ menu);
+                            the shrink-wrapped holder cancels the pair's right-alignment */}
+                        <div style={css('display:inline-flex; margin-top:10px;')}>
+                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={inModal} onReply={q.onToggle} />
                         </div>
                       </div>
                     </div>
