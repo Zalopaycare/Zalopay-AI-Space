@@ -8,8 +8,8 @@ import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../mentions.js'
-import { notify, notifyUpvotes } from '../notifications.js'
-import { PENDING_BY_ID, pendingCases, isBoothOwner } from '../showcase.js'
+import { notify, notifyUpvotes, notifyParticipants } from '../notifications.js'
+import { PENDING_BY_ID, pendingCases, isBoothOwner, boothAccounts, showcaseCases } from '../showcase.js'
 
 const router = express.Router()
 // Only http(s) links are stored (a "javascript:…" link would run code when clicked).
@@ -125,18 +125,21 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   const href = `/use-cases/${encodeURIComponent(id)}#comments`
 
   // Notify, most specific first and each person once: whoever was replied to, the thread
-  // starter, then the use case's owner. Built-in use cases name their owner by domain account
-  // (e.g. "NamNTH"), matched only against people who have actually signed in.
+  // starter, then the use case's owners, then everyone else who commented on it. Built-in use cases
+  // and booths name their owners by domain account (e.g. "namnth3"), matched only against people
+  // who have actually signed in.
   const who = anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : domainName(req.user.email, req.user.name)
   const userById = (uid) => (uid ? db.prepare('SELECT * FROM users WHERE id = ?').get(uid) : null)
   const commentAuthor = (cId) => { const c = cId ? db.prepare('SELECT author_id FROM use_case_comments WHERE id = ? AND use_case_id = ?').get(cId, id) : null; return c ? userById(c.author_id) : null }
   const ownerHandle = String(req.body?.ownerHandle || '').trim().toLowerCase()
-  const owner = sub ? userById(sub.author_id) : (ownerHandle ? db.prepare('SELECT * FROM users').all().find((u) => handleOf(u.email) === ownerHandle) : null)
+  const builtin = showcaseCases.find((c) => c.id === id)
+  const handles = new Set([ownerHandle, ...(builtin?.members || []), ...(PENDING_BY_ID.has(id) ? boothAccounts(PENDING_BY_ID.get(id)) : [])].map((h) => String(h || '').toLowerCase()).filter(Boolean))
+  const owners = sub ? [userById(sub.author_id)] : (handles.size ? db.prepare('SELECT * FROM users').all().filter((u) => handles.has(handleOf(u.email))) : [])
   const replyToId = req.body?.replyToId ? String(req.body.replyToId) : parentId
   const targets = [
     [commentAuthor(replyToId), `${who} đã reply comment của bạn trong ${where}`],
     [commentAuthor(parentId), `${who} đã reply trong một thread bạn tham gia ở ${where}`],
-    [owner, `${who} đã comment vào ${where} của bạn`],
+    ...owners.map((o) => [o, `${who} đã comment vào ${where} của bạn`]),
   ]
   const told = new Set([req.user.email.toLowerCase()])
   for (const [u, text] of targets) {
@@ -146,6 +149,8 @@ router.post('/:id/comments', requireAuth, (req, res) => {
     sendMail({ to: u.email, subject: text, text: `${anon.anonymous ? who : req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
   notifyMentions(req, { text: body, where, path: href, skip: [...told], as: anon.anonymous ? who : null })
+  const commenters = db.prepare('SELECT DISTINCT author_id FROM use_case_comments WHERE use_case_id = ?').all(id).map((r) => r.author_id)
+  notifyParticipants(commenters, told, { ref: 'joined:uc:' + id, text: `${who} cũng đã bình luận trong ${where}, nơi bạn đã bình luận`, href, actor: anon.anonymous ? who : req.user.name })
   res.status(201).json({ id: cid, authorId: req.user.id, anonymous: !!anon.anonymous, author: anon.anonymous ? who : domainName(req.user.email, req.user.name), initials: initialsOf(req.user), avatarColor: colorOf(req.user), avatarUrl: avatarUrlOf(req.user), time: new Date().toISOString(), body, parentId, files: commentFilesOf('uccomment', cid) })
 })
 

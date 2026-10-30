@@ -63,6 +63,20 @@ export function notifyInterest(ownerEmail, { ref, count, title, href = '/use-cas
 // and marked unread again, so a busy chat doesn't flood the list.
 export function notifyChat(email, { ref, text, href, actor = '' }) { notifyOnce(email, 'chat', { ref, text, href, actor }) }
 
+/** Everyone who took part in a post (answered, commented) hears about new activity on it, so nothing
+ *  about a post you're in passes you by. One notification per post and reader, rewritten with the
+ *  latest each time, and in-app only so a busy post doesn't flood anyone's mailbox.
+ *  `skip`: emails already told directly (the actor, the person replied to, the owner…). */
+export function notifyParticipants(userIds, skip, { ref, text, href, actor = '' }) {
+  const done = new Set([...skip].map((e) => String(e || '').toLowerCase()))
+  for (const uid of new Set(userIds)) {
+    const u = db.prepare('SELECT email FROM users WHERE id = ?').get(uid)
+    if (!u || done.has(u.email.toLowerCase())) continue
+    done.add(u.email.toLowerCase())
+    notifyOnce(u.email, 'comment', { ref, text, href, actor })
+  }
+}
+
 /** One notification of `kind` per ref and reader: rewritten, unread again and moved to the top when sent again. */
 export function notifyOnce(email, kind, { ref, text, href, actor = '' }) {
   if (!email) return

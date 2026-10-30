@@ -96,8 +96,8 @@ function QuestionCard({ q }) {
     >
       <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
         <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px ${FONT};`)}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 18h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
-          {t('Câu hỏi')}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
+          {t('Thread')}
         </span>
         <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
         {q.menu && <QuestionMenu m={q.menu} />}
@@ -253,7 +253,7 @@ export default function ProfilePage() {
     title: q.title,
     hasTitle: q.hasTitle,
     body: q.body,
-    tagLabel: t('Câu hỏi'),
+    tagLabel: t('Thread'),
     statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
     statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0',
     statusColor: q.answers.length ? '#00893F' : '#B45300',
@@ -358,7 +358,7 @@ export default function ProfilePage() {
   let qDraft = null
   try { qDraft = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null') } catch { /* ignore */ }
   const draftItem = qDraft && (qDraft.title || qDraft.body) ? [{
-    tagLabel: t('Câu hỏi'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
+    tagLabel: t('Thread'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
     title: qDraft.title || t('(Chưa có tiêu đề)'), meta: t('Bản nháp') + ' · ' + relativeTime(qDraft.savedAt),
     statusLabel: t('Đang nháp'), statusBg: '#EDF0FA', statusColor: '#3A4757',
     cta: t('Tiếp tục'), primary: true,
@@ -366,7 +366,7 @@ export default function ProfilePage() {
   }] : []
   const recentItems = [].concat(draftItem)
     .concat(myQuestions.map((q) => ({
-      tagLabel: t('Câu hỏi'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
+      tagLabel: t('Thread'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
       title: q.title, meta: relativeTime(q.time), ts: q.time,
       statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
       statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0', statusColor: q.answers.length ? '#00893F' : '#B45300',

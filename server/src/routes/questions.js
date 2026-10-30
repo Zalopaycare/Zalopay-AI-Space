@@ -6,7 +6,7 @@ import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, initialsOf, handleOf } from '../mentions.js'
-import { notify, notifyUpvotes } from '../notifications.js'
+import { notify, notifyUpvotes, notifyParticipants } from '../notifications.js'
 import { anonFields, maskAuthor, anonName } from '../anon.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
 
@@ -55,6 +55,10 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ questions: ids.map((id) => loadQuestion(id, req.user)) })
 })
 
+// Everyone who answered or commented in a thread.
+const participantsOf = (qid) => db.prepare(`SELECT author_id FROM question_answers WHERE question_id = ?
+  UNION SELECT c.author_id FROM answer_comments c JOIN question_answers a ON a.id = c.answer_id WHERE a.question_id = ?`).all(qid, qid).map((r) => r.author_id)
+
 export const deleteQuestionTx = db.transaction((id) => {
   const answerIds = db.prepare('SELECT id FROM question_answers WHERE question_id = ?').all(id).map((r) => r.id)
   for (const aid of answerIds) {
@@ -77,7 +81,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   const block = removalCheck(req, q.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   deleteQuestionTx(req.params.id)
-  afterRemoval(req, { authorId: q.author_id, what: 'câu hỏi', title: qTitle(q), content: q.body })
+  afterRemoval(req, { authorId: q.author_id, what: 'thread', title: qTitle(q), content: q.body })
   res.json({ ok: true })
 })
 
@@ -119,7 +123,7 @@ router.post('/', requireAuth, (req, res) => {
     decodedFiles.forEach((f, i) => db.prepare('INSERT INTO question_files (question_id, idx, name, mime, size, data) VALUES (?,?,?,?,?,?)').run(id, i, f.name, f.mime, f.data.length, f.data))
   })()
   const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
-  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `câu hỏi "${label}"`, path: `/questions/${id}`, as: anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : null })
+  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `thread "${label}"`, path: `/questions/${id}`, as: anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : null })
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
@@ -195,10 +199,11 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
-    notify(qAuthor.email, { kind: 'answer', text: `${who} đã comment vào câu hỏi của bạn: "${qTitle(q)}"`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
-    sendMail({ to: qAuthor.email, subject: 'Có câu trả lời mới cho câu hỏi của bạn', text: `${anon.anonymous ? who : req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions/${id}` }).catch(() => {})
+    notify(qAuthor.email, { kind: 'answer', text: `${who} đã trả lời thread của bạn: "${qTitle(q)}"`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
+    sendMail({ to: qAuthor.email, subject: 'Có trả lời mới trong thread của bạn', text: `${anon.anonymous ? who : req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions/${id}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `câu hỏi "${qTitle(q)}"`, path: `/questions/${id}`, skip: [qAuthor?.email], as: anon.anonymous ? who : null })
+  notifyMentions(req, { text: body, where: `thread "${qTitle(q)}"`, path: `/questions/${id}`, skip: [qAuthor?.email], as: anon.anonymous ? who : null })
+  notifyParticipants(participantsOf(id), [req.user.email, qAuthor?.email], { ref: 'joined:q:' + id, text: `${who} cũng đã trả lời trong "${qTitle(q)}", thread bạn tham gia`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
 
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
@@ -248,7 +253,7 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
     [commentAuthor(replyToId), `${who} đã reply comment của bạn trong "${label}"`],
     [commentAuthor(parentId), `${who} đã reply trong một thread bạn tham gia ở "${label}"`],
     [userById(answer.author_id), parentId ? `${who} đã reply trong thread comment của bạn ở "${label}"` : `${who} đã reply comment của bạn trong "${label}"`],
-    [userById(q.author_id), `${who} đã comment trong câu hỏi của bạn: "${label}"`],
+    [userById(q.author_id), `${who} đã bình luận trong thread của bạn: "${label}"`],
   ]
   const told = new Set([req.user.email.toLowerCase()])
   for (const [u, text] of targets) {
@@ -257,7 +262,8 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
     notify(u.email, { kind: 'comment', text, href, actor: anon.anonymous ? who : req.user.name })
     sendMail({ to: u.email, subject: text, text: `${anon.anonymous ? who : req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `câu hỏi "${label}"`, path: href, skip: [...told], as: anon.anonymous ? who : null })
+  notifyMentions(req, { text: body, where: `thread "${label}"`, path: href, skip: [...told], as: anon.anonymous ? who : null })
+  notifyParticipants(participantsOf(id), told, { ref: 'joined:q:' + id, text: `${who} cũng đã bình luận trong "${label}", thread bạn tham gia`, href, actor: anon.anonymous ? who : req.user.name })
 
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
