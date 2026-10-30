@@ -110,8 +110,8 @@ function QuestionCard({ q }) {
         </div>
       </div>
       <div style={css('padding:6px 16px 0;')}>
-        {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
-        <p style={css(`margin:5px 0 0; font:400 13.5px/1.55 var(--zp-font-text); color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{renderMentions(q.body)}</p>
+        {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
+        <p style={css(`margin:5px 0 0; font:400 14px/1.55 var(--zp-font-text); color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{renderMentions(q.body)}</p>
       </div>
       <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
         <CardActions compact helpful={q.helpful} helped={q.helped} onHelpful={q.onHelpful} replies={q.answers} onReply={q.onOpen} />

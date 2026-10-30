@@ -768,12 +768,12 @@ export default function UseCaseLibraryPage() {
                         <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
-                            <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{c.author} <AnonTag p={c} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
+                            <div style={css('flex:1; min-width:0; font-size:13px; font-weight:600; color:#0F172A;')}>{c.author} <AnonTag p={c} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
                             <CommentMenu isOwner={!!user && c.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(c.id)} onDelete={() => (user && c.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(c.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, c.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', c.id)} />
                           </div>
                           {editingCmt === c.id
                             ? <InlineEdit initial={c.body} onSave={(b) => api.editUseCaseComment(dsel.id, c.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
-                            : <div style={css('margin-top:4px; font-size:12.5px; line-height:1.55; color:#3A4757;')}>{renderMentions(c.body)}</div>}
+                            : <div style={css('margin-top:2px; font-size:14px; line-height:1.5; color:#1E293B;')}>{renderMentions(c.body)}</div>}
                           <CommentFiles files={c.files} />
                           {/* ♡ (and the other reactions) · 💬, as on Threads */}
                           <div style={css('display:flex; align-items:center; gap:2px; margin:4px 0 0 -8px;')}>
@@ -792,12 +792,12 @@ export default function UseCaseLibraryPage() {
                           <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={css('display:flex; align-items:center; gap:8px;')}>
-                              <div style={css('flex:1; min-width:0; font-size:12px; font-weight:600; color:#0F172A;')}>{r.author} <AnonTag p={r} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
+                              <div style={css('flex:1; min-width:0; font-size:13px; font-weight:600; color:#0F172A;')}>{r.author} <AnonTag p={r} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
                               <CommentMenu isOwner={!!user && r.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(r.id)} onDelete={() => (user && r.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(r.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, r.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', r.id)} />
                             </div>
                             {editingCmt === r.id
                               ? <InlineEdit initial={r.body} onSave={(b) => api.editUseCaseComment(dsel.id, r.id, b).then(() => { refreshMeta(dsel.id); setEditingCmt(null) }).catch(() => {})} onCancel={() => setEditingCmt(null)} />
-                              : <div style={css('margin-top:3px; font-size:13px; line-height:1.6; color:#3A4757;')}>{renderMentions(r.body)}</div>}
+                              : <div style={css('margin-top:2px; font-size:14px; line-height:1.5; color:#1E293B;')}>{renderMentions(r.body)}</div>}
                             <CommentFiles files={r.files} />
                             <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
                               <ReactionButton r={r.reactions} onReact={(type) => requireLogin(() => api.reactUseCaseComment(dsel.id, r.id, type).then(() => refreshMeta(dsel.id)).catch(() => {}))} />
@@ -936,7 +936,7 @@ export default function UseCaseLibraryPage() {
                             <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {c.byline || c.author}<AnonTag p={c} />
                           </div>
                           {postedShort(c) && <div style={css('margin-top:2px; font-size:12px; line-height:1.45; color:#94a3b8;')}>{postedShort(c)}</div>}
-                          {c.overview && <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>}
+                          {c.overview && <p style={css('margin:4px 0 0; font-size:14px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>}
                         </div>
                       </div>
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>

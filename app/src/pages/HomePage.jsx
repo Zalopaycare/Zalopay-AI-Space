@@ -342,8 +342,8 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div style={css('flex:1; padding:6px 16px 0;')}>
-                    {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 16px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
-                    <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 13.5px' : '500 15px'}/1.55 ${FONT}; color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{renderMentions(q.body)}</p>
+                    {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
+                    <p className={q.hasTitle !== false ? undefined : 'zp-card-body'} style={css(`margin:${q.hasTitle !== false ? 5 : 2}px 0 0; font:${q.hasTitle !== false ? '400 14px' : '400 15px'}/1.55 var(--zp-font-text); color:${q.hasTitle !== false ? '#3A4757' : '#0F172A'}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{renderMentions(q.body)}</p>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
                     {/* like · comment · save on the left, the way in on the right */}
@@ -430,7 +430,7 @@ export default function HomePage() {
                         <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {item.byline || item.author}<AnonTag p={item} />
                       </div>
                       {postedShort(allCases.find((x) => x.id === item.id) || item) && <div style={css(`margin-top:2px; font:400 12px/1.45 var(--zp-font-text); color:#94a3b8;`)}>{postedShort(allCases.find((x) => x.id === item.id) || item)}</div>}
-                      {item.desc && <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>}
+                      {item.desc && <p style={css('margin:4px 0 0; font-size:14px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{item.desc}</p>}
                     </div>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>

@@ -613,15 +613,15 @@ export default function QuestionsPage() {
                                             <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${c.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</div>
                                             <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                               <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
-                                                <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span><AnonTag p={c} />
-                                                {c.team ? <span style={css('font:400 11.5px var(--zp-font-text); color:#94a3b8;')}>{c.team}</span> : null}
-                                                <span style={css('font:400 11.5px var(--zp-font-text); color:#94a3b8;')}>· {c.time}{c.edited ? ' · đã sửa' : ''}</span>
+                                                <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span><AnonTag p={c} />
+                                                {c.team ? <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>{c.team}</span> : null}
+                                                <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {c.time}{c.edited ? ' · đã sửa' : ''}</span>
                                                 <span style={{ flex: 1 }}></span>
                                                 <CommentMenu isOwner={isMine(c)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: c.id })} onDelete={() => askDeleteComment(q.id, a.id, c.id, isMine(c), c.body)} onReport={() => cmodals.askReport('comment', c.id)} />
                                               </div>
                                               {editing?.kind === 'comment' && editing.id === c.id
                                                 ? <InlineEdit initial={c.body} onSave={(b) => saveCommentEdit(q.id, a.id, c.id, b)} onCancel={() => setEditing(null)} />
-                                                : <div style={css('margin-top:1px; font:400 13.5px/1.5 var(--zp-font-text); color:#1E293B;')}>{c.bodyEl}</div>}
+                                                : <div style={css('margin-top:1px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B;')}>{c.bodyEl}</div>}
                                               <CommentFiles files={c.files} />
                                               {/* ♡ (and the other reactions) · 💬, as on Threads */}
                                               <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
@@ -640,14 +640,14 @@ export default function QuestionsPage() {
                                               <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${r.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</div>
                                               <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                                 <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
-                                                  <span style={css('font:600 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span><AnonTag p={r} />
-                                                  <span style={css('font:400 11px var(--zp-font-text); color:#94a3b8;')}>· {r.time}{r.edited ? ' · đã sửa' : ''}</span>
+                                                  <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span><AnonTag p={r} />
+                                                  <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {r.time}{r.edited ? ' · đã sửa' : ''}</span>
                                                   <span style={{ flex: 1 }}></span>
                                                   <CommentMenu isOwner={isMine(r)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: r.id })} onDelete={() => askDeleteComment(q.id, a.id, r.id, isMine(r), r.body)} onReport={() => cmodals.askReport('comment', r.id)} />
                                                 </div>
                                                 {editing?.kind === 'comment' && editing.id === r.id
                                                   ? <InlineEdit initial={r.body} onSave={(b) => saveCommentEdit(q.id, a.id, r.id, b)} onCancel={() => setEditing(null)} />
-                                                  : <div style={css('margin-top:1px; font:400 13px/1.5 var(--zp-font-text); color:#1E293B;')}>{r.bodyEl}</div>}
+                                                  : <div style={css('margin-top:1px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B;')}>{r.bodyEl}</div>}
                                                 <CommentFiles files={r.files} />
                                                 <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px;')}>
                                                   <ReactionButton r={r.reactions} onReact={(type) => requireLogin(() => api.reactAnswerComment(q.id, a.id, r.id, type).then((d) => patch(q.id, d.question)).catch(() => {}))} />
