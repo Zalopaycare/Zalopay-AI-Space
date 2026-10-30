@@ -4,13 +4,19 @@ import { requireAuth } from './auth.js'
 import { notify } from './notifications.js'
 import { sendMail } from './mailer.js'
 import { appUrl, domainName } from './mentions.js'
-import { deleteAnswerTx, deleteCommentTx } from './routes/questions.js'
+import { deleteQuestionTx, deleteAnswerTx, deleteCommentTx } from './routes/questions.js'
 import { deleteUseCaseCommentTx } from './routes/useCases.js'
 
-// "Báo cáo comment này đến admin": anyone can flag an answer, an answer comment or a use
-// case comment; admins get a notification + email and resolve it from the admin console.
+// "Báo cáo đến admin": anyone can flag a thread, an answer, an answer comment or a use case
+// comment; admins get a notification + email and resolve it from the admin console.
 
 const TYPES = {
+  thread: {
+    // a thread's title and body together, so the report shows what was posted
+    row: (id) => { const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(id); return q && { ...q, body: [q.title, q.body].filter(Boolean).join('\n') } },
+    path: (r) => `/questions/${r.id}`,
+    remove: (id) => deleteQuestionTx(id),
+  },
   answer: {
     row: (id) => db.prepare('SELECT * FROM question_answers WHERE id = ?').get(id),
     path: (r) => `/questions/${r.question_id}`,
@@ -50,12 +56,13 @@ reportRoutes.post('/', requireAuth, (req, res) => {
   db.prepare('INSERT INTO reports (target_type, target_id, path, excerpt, target_author_id, reporter_id, reason) VALUES (?,?,?,?,?,?,?)')
     .run(type, id, t.path(row), excerpt, row.author_id, req.user.id, reason)
   const who = domainName(req.user.email, req.user.name)
+  const what = type === 'thread' ? 'một thread' : 'một comment'
   for (const to of adminEmails()) {
-    notify(to, { kind: 'report', text: `${who} báo cáo một comment: "${excerpt.slice(0, 80)}${excerpt.length > 80 ? '…' : ''}"`, href: '/admin#reports', actor: req.user.name })
+    notify(to, { kind: 'report', text: `${who} báo cáo ${what}: "${excerpt.slice(0, 80)}${excerpt.length > 80 ? '…' : ''}"`, href: '/admin#reports', actor: req.user.name })
     sendMail({
       to,
-      subject: 'Có comment bị báo cáo trên Zalopay AI Space',
-      text: `${req.user.name} (${req.user.email}) đã báo cáo một comment:\n\n"${excerpt}"${reason ? `\n\nLý do: ${reason}` : ''}\n\nXử lý tại: ${appUrl(req)}/admin#reports`,
+      subject: `Có ${type === 'thread' ? 'thread' : 'comment'} bị báo cáo trên Zalopay AI Space`,
+      text: `${req.user.name} (${req.user.email}) đã báo cáo ${what}:\n\n"${excerpt}"${reason ? `\n\nLý do: ${reason}` : ''}\n\nXử lý tại: ${appUrl(req)}/admin#reports`,
     }).catch((e) => console.error('[reports] admin notify failed:', e.message))
   }
   res.status(201).json({ ok: true })

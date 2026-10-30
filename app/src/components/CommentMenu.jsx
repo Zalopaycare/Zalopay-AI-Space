@@ -81,7 +81,7 @@ export function InlineEdit({ initial, onSave, onCancel }) {
 
 /**
  * Delete-confirm and report dialogs + a small toast, shared by every comment thread.
- * askDelete(run) / askReport(type, id) open them; render `modals` once in the page.
+ * askDelete(run) / askReport(type, id) open them (type 'thread' reports a whole post); render `modals` once in the page.
  */
 export function useCommentModals(api) {
   const [del, setDel] = useState(null) // { run }
@@ -109,9 +109,9 @@ export function useCommentModals(api) {
       {rep && (
         <div onClick={() => setRep(null)} style={css(overlay)}>
           <div onClick={(e) => e.stopPropagation()} style={css(box)}>
-            <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>Báo cáo comment đến admin</div>
-            <div style={css(`margin-top:8px; font:400 13.5px/1.6 ${FONT}; color:#64748b;`)}>Admin sẽ xem và xử lý. Người viết comment không biết ai đã báo cáo.</div>
-            <textarea autoFocus value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="Lý do (không bắt buộc): nội dung không phù hợp, spam, thông tin nhạy cảm..." style={css(`width:100%; margin-top:14px; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:10px 13px; font:400 13.5px/1.6 ${FONT}; color:#0F172A; outline:none; resize:vertical;`)}></textarea>
+            <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>Báo cáo {rep.type === 'thread' ? 'bài' : 'comment'} đến admin</div>
+            <div style={css(`margin-top:8px; font:400 13.5px/1.6 ${FONT}; color:#64748b;`)}>Admin sẽ xem và xử lý. Người viết {rep.type === 'thread' ? 'bài' : 'comment'} không biết ai đã báo cáo.</div>
+            <textarea autoFocus value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="Lý do (không bắt buộc): nội dung không phù hợp, spam, thông tin nhạy cảm..." style={css(`width:100%; margin-top:14px; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:10px 13px; font:400 13.5px/1.6 ${FONT}; color:#0F172A; background:#fff; color-scheme:light; outline:none; resize:vertical;`)}></textarea>
             <div style={css('display:flex; justify-content:flex-end; gap:10px; margin-top:16px;')}>
               <button onClick={() => setRep(null)} style={css(b(false))}>Huỷ</button>
               <button onClick={() => { const r = rep; setRep(null); api.report(r.type, r.id, reason.trim()).then(() => setToast('Đã gửi báo cáo đến admin. Cảm ơn bạn!')).catch(() => setToast('Không gửi được báo cáo, thử lại sau.')) }} style={css(b(true))}>Gửi báo cáo</button>

@@ -55,7 +55,7 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ questions: ids.map((id) => loadQuestion(id, req.user)) })
 })
 
-const deleteQuestionTx = db.transaction((id) => {
+export const deleteQuestionTx = db.transaction((id) => {
   const answerIds = db.prepare('SELECT id FROM question_answers WHERE question_id = ?').all(id).map((r) => r.id)
   for (const aid of answerIds) {
     dropCommentFiles('acomment', db.prepare('SELECT id FROM answer_comments WHERE answer_id = ?').all(aid).map((r) => r.id))

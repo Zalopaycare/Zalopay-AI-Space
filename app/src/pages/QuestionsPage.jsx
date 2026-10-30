@@ -507,6 +507,13 @@ export default function QuestionsPage() {
                                 {t('Chỉnh sửa')}
                               </button>
                             )}
+                            {/* everyone but the author can flag a post to the admins */}
+                            {!q.canEdit && (
+                              <button onClick={() => { setOpenMenuId(null); requireLogin(() => cmodals.askReport('thread', q.id)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 8 2a6 6 0 0 0 3.6-1.2.5.5 0 0 1 .4.4V14a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.5"></path></svg>
+                                {t('Báo cáo bài viết')}
+                              </button>
+                            )}
                             {q.canDelete && (
                               <button onClick={() => { setOpenMenuId(null); if (q.canEdit) setConfirmDeleteId(q.id); else askRemovalReason({ what: 'câu hỏi', title: q.title }).then((r) => r && deleteQuestion(q.id, r)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
@@ -529,7 +536,7 @@ export default function QuestionsPage() {
                         {/* the same Upvote + Bình luận pair as the use case cards (copy link and save are in the ⋯ menu);
                             the shrink-wrapped holder cancels the pair's right-alignment */}
                         <div style={css('display:inline-flex; margin-top:10px;')}>
-                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={inModal} onReply={q.onToggle} />
+                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.length} replyActive={inModal} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
                         </div>
                       </div>
                     </div>

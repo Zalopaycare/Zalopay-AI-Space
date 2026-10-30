@@ -669,7 +669,7 @@ export default function AdminConsolePage() {
                     <div key={r.id} style={bodyRow(R_COLS)}>
                       <div style={{ minWidth: 0 }}>
                         <div style={css(font(600, 13.5, 1.55) + ';color:#0f172a; white-space:pre-wrap; word-break:break-word;')}>"{r.excerpt}"</div>
-                        <div style={css('margin-top:5px;' + font(400, 12) + ';color:#94a3b8;')}>Viết bởi {r.author} · {r.type === 'uc_comment' ? 'comment ở use case' : r.type === 'answer' ? 'comment ở câu hỏi' : 'reply ở câu hỏi'}{r.exists ? '' : ' · nội dung đã bị xoá'}</div>
+                        <div style={css('margin-top:5px;' + font(400, 12) + ';color:#94a3b8;')}>Viết bởi {r.author} · {r.type === 'thread' ? 'thread' : r.type === 'uc_comment' ? 'comment ở use case' : r.type === 'answer' ? 'comment ở câu hỏi' : 'reply ở câu hỏi'}{r.exists ? '' : ' · nội dung đã bị xoá'}</div>
                         {r.reason && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#F8FAFE; border:1px solid #EEF1F7;' + font(500, 12.5, 1.5) + ';color:#3A4757;')}>Lý do: {r.reason}</div>}
                       </div>
                       <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{r.reporter}<div style={css('margin-top:3px;' + font(400, 11.5) + ';color:#94a3b8;')}>{relativeTime(r.time)}</div></div>

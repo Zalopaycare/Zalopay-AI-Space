@@ -351,7 +351,7 @@ export default function HomePage() {
                   </div>
                   <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
                     <TagRow topics={q.topics || []} tools={q.tools || []} />
-                    <CardActions compact helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).length} onReply={q.onOpen} />
+                    <CardActions compact helpful={q.helpfulTotal} helped={q.iHelpedQ} onHelpful={q.onLike} replies={(q.answers || []).length} onReply={q.onOpen} saved={!!q.saved} onSave={q.onSave} />
                   </div>
                 </div>
               ))}
@@ -436,7 +436,7 @@ export default function HomePage() {
                       {t('Xem Use Case')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
-                    <CardActions compact helpful={item.helpful} helped={item.helped} onHelpful={item.onHelpful} replies={item.commentCount} onReply={() => { rememberReturn(item.id); navigate(`/use-cases/${item.id}#comments`) }} />
+                    <CardActions compact helpful={item.helpful} helped={item.helped} onHelpful={item.onHelpful} saved={!!item.saved} onSave={item.onSaveToggle} replies={item.commentCount} onReply={() => { rememberReturn(item.id); navigate(`/use-cases/${item.id}#comments`) }} />
                   </div>
                 </div>
               ))}
