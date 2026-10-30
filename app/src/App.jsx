@@ -14,6 +14,7 @@ import AdminConsolePage from './pages/AdminConsolePage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
 import ChatPage from './pages/ChatPage.jsx'
 import NoAccessPage from './pages/NoAccessPage.jsx'
+import MaintenanceGate from './components/MaintenanceGate.jsx'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <PageFade>
+            <MaintenanceGate>
             <Routes>
               <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
               <Route path="/use-cases" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
@@ -37,6 +39,7 @@ export default function App() {
               {/* where sign-in sends someone Microsoft doesn't list under Zalopay: ask the admins for access */}
               <Route path="/no-access" element={<NoAccessPage />} />
             </Routes>
+            </MaintenanceGate>
           </PageFade>
           <LoginModal />
           <Toaster />

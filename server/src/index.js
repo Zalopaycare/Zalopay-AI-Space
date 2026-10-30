@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { attachUser } from './auth.js'
+import { maintenanceGate } from './maintenance.js'
 import { aliasGuard } from './anon.js'
 import authRoutes from './routes/auth.js'
 import questionRoutes from './routes/questions.js'
@@ -38,6 +39,8 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '72mb' }))
 app.use(cookieParser())
 app.use(attachUser)
+// MAINTENANCE=on: only admins get past the sign-in endpoints (maintenance.js)
+app.use(maintenanceGate)
 app.use('/api', aliasGuard)
 
 app.get('/api/health', (req, res) => res.json({ ok: true }))
