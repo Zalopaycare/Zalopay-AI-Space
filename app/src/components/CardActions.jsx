@@ -7,7 +7,7 @@ const BTN = 'flex:none; display:inline-flex; align-items:center; gap:6px; height
  *  preview card (threads and use cases, on every page) ends with, on the left of the card. */
 export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply, saved = false, saves = 0, onSave, compact = false }) {
   const { t } = useI18n()
-  const btn = compact ? BTN + 'height:30px; padding:0 8px; font-size:12.5px;' : BTN
+  const btn = compact ? BTN + 'height:26px; padding:0 8px; font-size:12.5px;' : BTN
   const size = compact ? 18 : 19
   const stop = (fn) => (e) => { e.stopPropagation(); if (fn) fn(e) }
   const hover = hoverClass('background:#F1F4FA !important;')

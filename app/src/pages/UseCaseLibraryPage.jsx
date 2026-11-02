@@ -1025,7 +1025,7 @@ export default function UseCaseLibraryPage() {
                           <span style={css('align-self:flex-start; display:inline-flex; align-items:center; height:20px; margin-top:6px; padding:0 9px; border-radius:999px; background:#EEF3FF; border:1px solid #D6E1FF; color:#2c5fff; font-size:11px; font-weight:700; white-space:nowrap;')}>{categoryLabel(c.category)}</span>
                         </div>
                       </div>
-                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px; padding-top:6px; border-top:1px solid #EEF1F7;')}>
+                      <div style={css('display:flex; align-items:center; gap:8px; margin-top:6px; padding-top:2px; margin-bottom:-4px; border-top:1px solid #EEF1F7;')}>
                         {/* like · comment · save on the left, the way in on the right */}
                         <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} saved={c.saveFill === 'currentColor'} saves={c.saves} onSave={c.onSave} />
                         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
