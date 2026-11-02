@@ -8,7 +8,7 @@ import { sendMail, devLoginCodeAllowed } from '../mailer.js'
 import { ssoConfigured, getOidcConfig, SSO_SCOPE, SSO_SCOPE_BASE, SSO_REDIRECT_URI } from '../sso.js'
 import { saveGraphTokens, dropGraphTokens } from '../graphTokens.js'
 import { AVATAR_COLORS, colorOf, avatarUrlOf } from '../avatarColors.js'
-import { aliasTaken, ALIAS_TAKEN_MESSAGE } from '../anon.js'
+import { aliasTaken, ALIAS_TAKEN_MESSAGE, cleanAlias, resetMemberNames } from '../anon.js'
 import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
@@ -225,8 +225,9 @@ router.patch('/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'login_required' })
   // Name and team are not editable here: they come from the Microsoft account at sign-in (anti-impersonation).
   if (req.body?.anonAlias !== undefined) {
-    const alias = String(req.body.anonAlias || '').replace(/\s+/g, ' ').trim().slice(0, 40)
+    const alias = cleanAlias(req.body.anonAlias)
     db.prepare('UPDATE users SET anon_alias = ? WHERE id = ?').run(alias || null, req.user.id)
+    resetMemberNames()
   }
   if (req.body?.tourSeen === true) db.prepare("UPDATE users SET tour_seen_at = COALESCE(tour_seen_at, datetime('now')) WHERE id = ?").run(req.user.id)
   if (req.body?.avatarColor !== undefined) {

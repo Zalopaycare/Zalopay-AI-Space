@@ -285,12 +285,24 @@ export default function ReviewPage() {
     </ol>
   )
 
-  const cards = sorted.map((th) => (
+  const cardOf = (th) => (
     <Thread key={th.id} th={th} active={active === th.id} me={user} isAdmin={isAdmin} isOwner={data.isOwner}
       refEl={(el) => { cardRefs.current[th.id] = el }}
       style={wide ? { position: 'absolute', left: 0, right: 0, top: tops[th.id] ?? 0, transition: 'top .18s ease' } : {}}
       onFocus={() => pickThread(th.id)} onReply={reply} onResolve={resolve} onDelete={remove} />
-  ))
+  )
+  // Narrow windows have no rail beside the post: each section's góp ý, and the box for a new one, sit right
+  // under that section instead of at the bottom of the page. The rail below keeps only what has no section.
+  const shownKeys = new Set(['title', 'general', ...parts.flatMap((pt) => pt.blocks.filter((b) => b.value.trim() || b.required || threadsFor(b.key).length).map((b) => b.key))])
+  const inline = (field) => {
+    if (wide) return null
+    const list = sorted.filter((th) => th.field === field)
+    const drafting = draft && draft.field === field
+    return (list.length > 0 || drafting) && (
+      <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:12px;')}>{list.map(cardOf)}{drafting && draftCard}</div>
+    )
+  }
+  const cards = (wide ? sorted : sorted.filter((th) => !shownKeys.has(th.field))).map(cardOf)
   const draftCard = draft && (
     <div ref={(el) => { cardRefs.current.__draft = el }} style={css(`${wide ? `position:absolute; left:0; right:0; top:${tops.__draft ?? 0}px;` : ''} background:#fff; border:2px solid #2c5fff; border-radius:14px; padding:12px; box-shadow:0 14px 34px rgba(6,14,40,.35);`)}>
       <div style={css(f(800, 12) + ';color:#2c5fff;')}>Góp ý mới · {(blocks.find((b) => b.key === draft.field) || { label: draft.field === 'title' ? 'Tên use case' : 'Chung' }).label}</div>
@@ -348,6 +360,7 @@ export default function ReviewPage() {
                 <h1 data-text="title" style={css('flex:1; min-width:0; margin:0; word-break:break-word;' + f(800, 26, 1.3) + ';color:#0f172a;')}>{withMarks(sub.title, threadsFor('title'), active, pickThread)}</h1>
                 <span style={css('display:flex; align-items:center; gap:6px; margin-top:6px;')}>{countBadge('title')}{addBtn('title')}</span>
               </div>
+              {inline('title')}
               <div style={css('margin-top:8px;' + f(400, 13.5) + ';color:#64748b;')}>
                 {sub.author}{sub.realAuthor && sub.anonymous ? ` (${sub.realAuthor})` : ''}{sub.team ? ' · ' + sub.team : ''} · gửi {relativeTime(sub.time)}{sub.edited ? ' · đã chỉnh sửa' : ''}
               </div>
@@ -359,6 +372,7 @@ export default function ReviewPage() {
                 {countBadge('general')}{isAdmin && underReview && addBtn('general')}
                 {isAdmin && underReview && <span style={css(f(500, 12) + ';color:#94a3b8;')}>Góp ý chung cho cả bài</span>}
               </div>
+              {inline('general')}
 
               {parts.map((pt) => {
                 const shown = pt.blocks.filter((b) => b.value.trim() || b.required || threadsFor(b.key).length)
@@ -377,6 +391,7 @@ export default function ReviewPage() {
                         </div>
                         {b.steps ? stepsOf(b) : textOf(b.key, b.value, b.mono)}
                         {b.key === 'link' && b.value && !safeHref(b.value) && <div style={css('margin-top:6px;' + f(700, 12) + ';color:#D8232A;')}>⚠ Link không hợp lệ (chỉ nhận http/https), sẽ không bấm được.</div>}
+                        {inline(b.key)}
                       </div>
                     ))}
                   </section>
@@ -385,10 +400,10 @@ export default function ReviewPage() {
             </article>
 
             <aside aria-label="Góp ý" style={css(`position:relative; min-width:0; ${wide ? 'align-self:stretch;' : 'display:flex; flex-direction:column; gap:10px;'}`)}>
-              {!wide && <div style={css(f(800, 15) + ';color:#fff; margin-bottom:4px;')}>Góp ý</div>}
+              {!wide && (cards.length > 0 || (draft && !shownKeys.has(draft.field))) && <div style={css(f(800, 15) + ';color:#fff; margin-bottom:4px;')}>Góp ý khác</div>}
               {cards}
-              {draftCard}
-              {!sorted.length && !draft && (
+              {(wide || (draft && !shownKeys.has(draft.field))) && draftCard}
+              {wide && !sorted.length && !draft && (
                 <div style={css(`${wide ? 'position:sticky; top:150px;' : ''} padding:16px; border-radius:14px; border:1px dashed rgba(130,170,255,.35); color:#a9b8dc;` + f(500, 13, 1.6))}>
                   {isAdmin && underReview ? 'Chưa có góp ý. Bôi đen chữ trong bài hoặc bấm “Góp ý” cạnh tên mục để thêm.' : resolvedCount ? 'Mọi góp ý đã được xử lý.' : 'Chưa có góp ý nào.'}
                 </div>

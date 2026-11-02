@@ -31,7 +31,8 @@ router.get('/:id/meta', requireAuth, (req, res) => {
       reactions: summarize(db.prepare("SELECT type, user_id FROM comment_reactions WHERE kind = 'uccomment' AND comment_id = ?").all(c.id), req.user?.id),
     }
   })
-  res.json({ helpful, iHelped, saved, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
+  const saves = db.prepare('SELECT COUNT(*) AS n FROM use_case_saves WHERE use_case_id = ?').get(id).n
+  res.json({ helpful, iHelped, saved, saves, comments, rating: ratingOf(id, req.user?.id), ...appliedOf(id, req.user?.id) })
 })
 
 const appliedOf = (id, userId) => ({
@@ -182,8 +183,10 @@ export function serializeSubmission(r, viewer) {
     anonymous: !!who.anonymous, alias: who.anonymous ? who.alias : null, realAuthor: who.realAuthor || null,
     authorAccount: viewer && viewer.is_admin && author ? handleOf(author.email) : undefined,
     publishedAt: r.published_at || null, reviewedAt: r.reviewed_at || null,
-    // Only admins learn which admin reviewed it.
+    // Only admins learn which admin reviewed it. Decisions made before reviewed_by existed fall back to the
+    // admins who left góp ý on the review page (reviewCommenters), shown as such.
     reviewedBy: viewer && viewer.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
+    reviewCommenters: viewer && viewer.is_admin ? reviewCommenters(r.id) : undefined,
     extra: withStepFiles(r.id, parseExtra(r.extra)),
     canEdit: canEditSubmission(r, viewer),
     coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
@@ -210,6 +213,19 @@ router.get('/submissions', requireAuth, (req, res) => {
 })
 
 const reviewerName = (uid) => { const u = uid ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(uid) : null; return u ? domainName(u.email, u.name) : null }
+/** Admins who left góp ý on a submission's review page, first one first. */
+export const reviewCommenters = (subId) => [...new Set(db.prepare(`SELECT u.email, u.name FROM review_comments c JOIN users u ON u.id = c.author_id
+  WHERE c.submission_id = ? AND u.is_admin = 1 ORDER BY c.created_at`).all(subId).map((u) => domainName(u.email, u.name)))]
+
+// The author's own pending / published posts with the same title (case and spacing ignored): the share form
+// warns before a duplicate is sent, and POST answers with `duplicates` too. A warning only, never a block.
+const sameTitle = (userId, title, exceptId = '') => db.prepare(`SELECT id, title, review_status status FROM use_case_submissions
+  WHERE author_id = ? AND id != ? AND review_status IN ('pending', 'changes_requested', 'approved')`).all(userId, exceptId)
+  .filter((r) => r.title.toLowerCase().replace(/\s+/g, ' ').trim() === String(title || '').toLowerCase().replace(/\s+/g, ' ').trim())
+router.get('/submissions/check-title', requireAuth, (req, res) => {
+  const title = String(req.query.title || '').trim()
+  res.json({ duplicates: title ? sameTitle(req.user.id, title, String(req.query.except || '')) : [] })
+})
 
 const adminEmailsFor = (req) => {
   const envAdmins = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
@@ -336,17 +352,18 @@ router.post('/submissions', requireAuth, (req, res) => {
   const anon = anonFields(f)
   db.prepare('UPDATE use_case_submissions SET extra = ?, anonymous = ?, alias = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), anon.anonymous, anon.alias, id)
   saveStepFiles(id, f.extra && f.extra.steps)
+  const duplicates = sameTitle(req.user.id, f.title, id)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
   for (const to of adminEmailsFor(req)) {
-    notify(to, { kind: 'submission', text: `${domainName(req.user.email, req.user.name)} gửi use case mới chờ duyệt: "${f.title.trim()}"`, href: '/admin', actor: req.user.name })
+    notify(to, { kind: 'submission', text: `${domainName(req.user.email, req.user.name)} gửi use case mới chờ duyệt: "${f.title.trim()}"`, href: `/review/${encodeURIComponent(id)}`, actor: req.user.name })
     sendMail({
       to,
       subject: `Use case mới chờ duyệt: ${f.title.trim()}`,
       text: `${req.user.name} (${req.user.email}) vừa gửi một use case mới và đang chờ duyệt:\n\n"${f.title.trim()}"\n\nVấn đề: ${f.problem.trim().slice(0, 300)}\n\nDuyệt tại: ${appUrl(req)}/admin`,
     }).catch((e) => console.error('[use-cases] admin notify failed:', e.message))
   }
-  res.status(201).json({ id })
+  res.status(201).json({ id, duplicates })
 })
 
 // Author edits a submission the admin sent back ("Yêu cầu chỉnh sửa") and resubmits it for review.
@@ -374,14 +391,14 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
     for (const to of adminEmailsFor(req)) {
-      notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng, chờ duyệt lại: "${f.title.trim()}"`, href: '/admin', actor: req.user.name })
+      notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa use case đã đăng, chờ duyệt lại: "${f.title.trim()}"`, href: `/review/${encodeURIComponent(row.id)}`, actor: req.user.name })
       sendMail({ to, subject: `Use case đã đăng vừa được chỉnh sửa, chờ duyệt lại: ${f.title.trim()}`, text: `${req.user.name} đã chỉnh sửa use case "${f.title.trim()}". Bài đã tạm ẩn khỏi Use Case Library cho đến khi được duyệt lại.\n\nDuyệt tại: ${appUrl(req)}/admin` }).catch(() => {})
     }
   }
   if (row.review_status === 'changes_requested') {
     const who = domainName(req.user.email, req.user.name)
     for (const to of adminEmailsFor(req)) {
-      notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa và gửi lại use case: "${f.title.trim()}"`, href: '/admin', actor: req.user.name })
+      notify(to, { kind: 'submission', text: `${who} đã chỉnh sửa và gửi lại use case: "${f.title.trim()}"`, href: `/review/${encodeURIComponent(row.id)}`, actor: req.user.name })
       sendMail({ to, subject: `Use case đã được chỉnh sửa, chờ duyệt lại: ${f.title.trim()}`, text: `${req.user.name} đã bổ sung theo yêu cầu và gửi lại use case "${f.title.trim()}".${row.admin_note ? `\n\nYêu cầu trước đó: ${row.admin_note}` : ''}\n\nDuyệt tại: ${appUrl(req)}/admin` }).catch(() => {})
     }
   }

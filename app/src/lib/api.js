@@ -112,6 +112,8 @@ export const api = {
   mySavedUseCaseIds: () => request('/use-cases/saved/mine'),
   commentUseCase: (id, body, parentId, title, extra = {}) => request(`/use-cases/${id}/comments`, { method: 'POST', body: JSON.stringify({ body, parentId: parentId || null, title: title || '', ...extra }) }),
   submitUseCase: (payload) => request('/use-cases/submissions', { method: 'POST', body: JSON.stringify(payload) }),
+  // my own pending / published posts with this title, for a "trùng tên" warning before sending (never blocks)
+  checkUseCaseTitle: (title, except = '') => request(`/use-cases/submissions/check-title?title=${encodeURIComponent(title)}&except=${encodeURIComponent(except)}`),
   listSubmissions: (params = '') => request(`/use-cases/submissions${params}`),
   updateSubmission: (id, payload) => request(`/use-cases/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   getReview: (id) => request(`/review/${encodeURIComponent(id)}`),

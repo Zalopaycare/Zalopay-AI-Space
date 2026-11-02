@@ -97,6 +97,14 @@ function stillExists(r) {
   if (m) { const id = decodeURIComponent(m[1]); return BUILTIN_CASES.has(id) || PENDING_BY_ID.has(id) || !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(id) }
   m = /^\/questions(?:#q=|\/)([^&/?#]+)/.exec(href) // old "#q=" links and the new /questions/<id>
   if (m) return !!db.prepare('SELECT 1 FROM questions WHERE id = ?').get(decodeURIComponent(m[1]))
+  // a submission's review page (new "use case chờ duyệt" notifications and review comments)
+  m = /^\/review\/([^/?#]+)/.exec(href)
+  if (m) return !!db.prepare('SELECT 1 FROM use_case_submissions WHERE id = ?').get(decodeURIComponent(m[1]))
+  // older "use case chờ duyệt" notifications only point at /admin: look the submission up by the quoted title
+  if (r.kind === 'submission' && href === '/admin') {
+    const t = /: "([^"]*)"$/.exec(String(r.text || ''))
+    if (t) return !!db.prepare('SELECT 1 FROM use_case_submissions WHERE title = ?').get(t[1])
+  }
   return true
 }
 

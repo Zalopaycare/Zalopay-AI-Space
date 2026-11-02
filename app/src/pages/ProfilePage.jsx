@@ -44,12 +44,6 @@ const UC_TABS = [
   { key: 'rejected', label: 'Từ chối', color: '#EF4444' },
   { key: 'all', label: 'Tất cả', color: '#6EA8FF' },
 ]
-// Status tabs on "Câu hỏi của tôi": waiting for a first answer vs already answered.
-const Q_TABS = [
-  { key: 'waiting', label: 'Đang đợi câu trả lời', color: '#FFB020' },
-  { key: 'answered', label: 'Đã có câu trả lời', color: '#22C55E' },
-  { key: 'all', label: 'Tất cả', color: '#6EA8FF' },
-]
 const hexA = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`
 
 // Same bright gradient/glow text treatment as the Use Case Library hero title.
@@ -67,10 +61,6 @@ function BoardCard({ p }) {
       <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
         <span style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${p.statusBg}; color:${p.statusColor}; font:700 11.5px ${FONT};`)}>{p.statusLabel}</span>
         <span style={css(`margin-left:auto; margin-right:4px; font:400 12.5px var(--zp-font-text); color:#94a3b8;`)}>{p.time}</span>
-        <span style={css(`flex:none; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 11px 0 9px; border-radius:999px; background:#E7F9F0; color:#00893F; font:800 11.5px ${FONT};`)}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-          {p.kindLabel}
-        </span>
       </div>
       <h4 style={css(`margin:12px 0 0; font:800 16.5px/1.35 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{p.title}</h4>
       <p style={css(`margin:8px 0 0; font:400 13.5px/1.55 var(--zp-font-text); color:#5B6675;`)}>{p.desc}</p>
@@ -95,10 +85,6 @@ function QuestionCard({ q }) {
       style={css('position:relative; background:#ffffff; border:1px solid rgba(168,85,247,.45); border-radius:20px; cursor:pointer; box-shadow:0 0 0 1px rgba(168,85,247,.10), 0 0 16px rgba(168,85,247,.22), 0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
     >
       <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
-        <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#F1E7FF; color:#6F0CE2; font:800 11.5px ${FONT};`)}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
-          {t('Thread')}
-        </span>
         <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
         {q.menu && <QuestionMenu m={q.menu} />}
       </div>
@@ -114,7 +100,7 @@ function QuestionCard({ q }) {
         <p style={css(`margin:5px 0 0; font:400 14px/1.55 var(--zp-font-text); color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{renderMentions(q.body)}</p>
       </div>
       <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
-        <CardActions compact helpful={q.helpful} helped={q.helped} onHelpful={q.onHelpful} replies={q.answers} onReply={q.onOpen} />
+        <CardActions compact helpful={q.helpful} helped={q.helped} onHelpful={q.onHelpful} replies={q.answers} onReply={q.onOpen} saved={q.menu.saved} saves={q.saves} onSave={q.menu.onSave} />
         <TagRow topics={q.topics} tools={q.tools} />
       </div>
     </div>
@@ -130,14 +116,8 @@ function UseCaseCard({ c }) {
       className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
       style={css('position:relative; border:1px solid rgba(60,120,255,.45); border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 0 0 1px rgba(60,120,255,.10), 0 0 16px rgba(60,120,255,.22), 0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
     >
-      <div style={css('display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;')}>
-        <span style={css(`display:inline-flex; align-items:center; gap:6px; height:23px; padding:0 10px 0 9px; border-radius:999px; background:#E4ECFF; color:#2c5fff; font:800 11.5px ${FONT};`)}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
-          {t('Use case')}
-        </span>
-        {c.menu && <QuestionMenu m={c.menu} kind="use case" />}
-      </div>
-      <div style={css('display:flex; gap:13px;')}>
+      {c.menu && <div style={css('position:absolute; top:12px; right:12px; z-index:2;')}><QuestionMenu m={c.menu} kind="use case" /></div>}
+      <div style={css('display:flex; gap:13px; padding-right:34px;')}>
         <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
           <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.title}</h3>
@@ -150,7 +130,7 @@ function UseCaseCard({ c }) {
       </div>
       <TagRow topics={c.topics} tools={c.toolsR.map((x) => x.name)} style={{ marginTop: 10 }} />
       <div style={css('display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:10px; border-top:1px solid #EEF1F7;')}>
-        <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} />
+        <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} saved={!!c.menu?.saved} onSave={c.menu?.onSave} />
         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css(`flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font:800 12.5px ${FONT}; color:#2c5fff; white-space:nowrap; transition:gap .16s;`)}>
           {t('Xem Use Case')}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
@@ -174,7 +154,6 @@ export default function ProfilePage() {
   const [hash, setHash] = useState(location.hash)
   const [showAllNotif, setShowAllNotif] = useState(false)
   const [ucTab, setUcTab] = useState(null) // null = first tab that has posts
-  const [qTab, setQTab] = useState(null)
   useEffect(() => { setHash(location.hash) }, [location.hash])
   useEffect(() => {
     const onHash = () => setHash(window.location.hash)
@@ -247,7 +226,7 @@ export default function ProfilePage() {
     title: q.title,
     hasTitle: q.hasTitle,
     body: q.body,
-    tagLabel: t('Thread'),
+    saves: q.saves || 0,
     statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
     statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0',
     statusColor: q.answers.length ? '#00893F' : '#B45300',
@@ -280,12 +259,6 @@ export default function ProfilePage() {
   })
   const myQuestionCards = myQuestions.map(mapQuestion)
   const savedQuestionCards = savedQuestions.map(mapQuestion)
-  const qTabs = Q_TABS.map((tab) => {
-    const items = tab.key === 'all' ? myQuestionCards : myQuestionCards.filter((q) => (tab.key === 'answered' ? q.answers > 0 : q.answers === 0))
-    return { ...tab, label: t(tab.label), count: items.length, items }
-  })
-  // Default: questions still waiting first, then answered ones, else "Tất cả".
-  const activeQTab = qTabs.find((x) => x.key === qTab) || qTabs.find((x) => x.key !== 'all' && x.count > 0) || qTabs[qTabs.length - 1]
 
   // ---- use case board (status columns, always in this order) ----
   const ucCta = (c) => ({ changes_requested: t('Xem góp ý & chỉnh sửa'), rejected: t('Gửi use case mới'), draft: t('Tiếp tục'), approved: t('Xem trong Use Case Library') })[c.reviewStatus] || t('Xem use case')
@@ -299,7 +272,6 @@ export default function ProfilePage() {
       statusBg: st.bg,
       statusColor: st.color,
       time: relativeTime(c.time),
-      kindLabel: t('Use case'),
       title: c.title,
       desc: c.problem,
       hasReason: (c.reviewStatus === 'rejected' || c.reviewStatus === 'changes_requested') && !!c.adminNote,
@@ -350,6 +322,11 @@ export default function ProfilePage() {
       },
     }))
 
+  // The share form's autosaved draft (kept in this browser): shown on top of "Use case của tôi".
+  let ucDraft = null
+  try { ucDraft = JSON.parse(localStorage.getItem('zp-usecase-draft-v1') || 'null') } catch { /* ignore */ }
+  const ucDraftTitle = ucDraft && ucDraft.shareForm ? String(ucDraft.shareForm.title || '').trim() : ''
+  const hasUcDraft = !!(ucDraft && ucDraft.shareForm && Object.values(ucDraft.shareForm).some((v) => String(v || '').trim()))
   let qDraft = null
   try { qDraft = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null') } catch { /* ignore */ }
   const draftItem = qDraft && (qDraft.title || qDraft.body) ? [{
@@ -491,6 +468,16 @@ export default function ProfilePage() {
               {section === 'overview' && <h2 id="my-usecases" style={css(`scroll-margin-top:80px; margin:0 0 12px; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Use case của tôi')}</h2>}
               <StatusTabs tabs={ucTabs} active={activeUcTab.key} onPick={setUcTab} />
               <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
+                {hasUcDraft && (
+                  <div onClick={() => navigate('/use-cases?share=1')} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
+                    <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
+                    <div style={css('flex:1; min-width:0;')}>
+                      <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{ucDraftTitle || t('(Chưa có tên use case)')}</div>
+                      <div style={css(`margin-top:3px; font:400 12.5px var(--zp-font-text); color:#94a3b8;`)}>{t('Use case đang điền dở, chưa gửi duyệt')}{ucDraft.savedAt ? ' · ' + t('lưu lúc') + ' ' + ucDraft.savedAt : ''}</div>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); navigate('/use-cases?share=1') }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
+                  </div>
+                )}
                 {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
                 {activeUcTab.items.length === 0 && (
                   <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>
@@ -511,7 +498,6 @@ export default function ProfilePage() {
           <section style={css(`position:relative; padding:${section === 'overview' ? '22px var(--zp-gutter) 40px' : '18px var(--zp-gutter) 40px'};`)}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
               {section === 'overview' && <h2 id="my-questions" style={css(`scroll-margin-top:80px; margin:0; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Thread của tôi')}</h2>}
-              {myQuestionCards.length > 0 && <div style={{ marginBottom: 2 }}><StatusTabs tabs={qTabs} active={activeQTab.key} onPick={setQTab} /></div>}
               {draftItem.map((r) => (
                 <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
                   <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
@@ -522,10 +508,7 @@ export default function ProfilePage() {
                   <button onClick={(e) => { e.stopPropagation(); r.onOpen() }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
                 </div>
               ))}
-              {activeQTab.items.map((q) => <QuestionCard key={q.id} q={q} />)}
-              {loaded && myQuestionCards.length > 0 && activeQTab.items.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{activeQTab.key === 'waiting' ? t('Thread nào của bạn cũng đã có người trả lời.') : t('Chưa có thread nào được trả lời.')}</div>
-              )}
+              {myQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
               {loaded && myQuestionCards.length === 0 && (
                 <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có thread nào.')}</div>
               )}
@@ -591,8 +574,8 @@ function StatusTabs({ tabs, active, onPick }) {
   )
 }
 
-/** ⋯ menu on a question card: copy link, save, and (own posts) edit / delete with a confirm step. */
-function QuestionMenu({ m, kind = 'câu hỏi' }) {
+/** ⋯ menu on a thread / use case card: copy link and (own posts) edit / delete with a confirm step; saving is on the card's action row. */
+function QuestionMenu({ m, kind = 'thread' }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [confirm, setConfirm] = useState(false)
@@ -623,7 +606,6 @@ function QuestionMenu({ m, kind = 'câu hỏi' }) {
           ) : (
             <>
               <button role="menuitem" onClick={pick(m.onCopy)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{t('Sao chép link')}</button>
-              <button role="menuitem" onClick={pick(m.onSave)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{m.saved ? t('Bỏ lưu') : t('Lưu ' + kind)}</button>
               {m.canEdit && <button role="menuitem" onClick={pick(m.onEdit)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>{t('Chỉnh sửa')}</button>}
               {m.canDelete && <button role="menuitem" onClick={(e) => { e.stopPropagation(); setConfirm(true) }} className={hoverClass('background:#FFF4F4;')} style={css(item('#D8232A'))}>{t('Xoá ' + kind)}</button>}
             </>
@@ -675,7 +657,7 @@ function ProfileCard({ user, setUser }) {
       </div>
       <div style={css(`margin-top:6px; font:500 12px ${FONT}; color:#94a3b8;`)}>{t('Họ tên và phòng ban lấy tự động từ tài khoản Microsoft công ty khi bạn đăng nhập, không chỉnh sửa được.')}</div>
       <div style={{ marginTop: 14 }}>
-        {field(t('Tên hiển thị khi ẩn danh'), t('Tự điền mỗi khi bạn bật "Đăng ẩn danh". Để trống thì hiện "Anonymous" kèm một số riêng của bạn (ví dụ Anonymous 4821).'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
+        {field(t('Tên hiển thị khi ẩn danh'), t('Mọi bài và bình luận ẩn danh của bạn đều hiện tên này (đổi tên thì bài cũ cũng đổi theo). Để trống thì hiện "Anonymous" kèm một số riêng của bạn (ví dụ Anonymous 4821).'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
       </div>
       <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
         <button onClick={save} disabled={!dirty || state === 'saving'} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:${dirty ? 'pointer' : 'default'}; opacity:${dirty && state !== 'saving' ? 1 : 0.5};`)}>{state === 'saving' ? t('Đang lưu...') : t('Lưu thay đổi')}</button>

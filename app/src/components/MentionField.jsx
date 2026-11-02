@@ -1,4 +1,4 @@
-import { forwardRef, useRef } from 'react'
+import { forwardRef, useLayoutEffect, useRef } from 'react'
 
 // Matches "@handle" and "@name@company.domain" mention tokens.
 export const MENTION_SPLIT = /(@[A-Za-z0-9._-]+(?:@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)?)/g
@@ -6,11 +6,17 @@ export const MENTION_SPLIT = /(@[A-Za-z0-9._-]+(?:@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-
 /** "@nhanltp@vng.com.vn" → "@nhanltp": show the domain account, keep the full address stored. */
 export const shortMention = (tok) => '@' + tok.slice(1).split('@')[0]
 
-/** Body text with @mentions shown as bold blue "@handle" (full address on hover). */
+// Web addresses in a post ("https://claude.ai", "www.example.com"), minus trailing punctuation.
+const URL_SPLIT = /((?:https?:\/\/|www\.)[^\s<>"]*[^\s<>".,;:!?)\]}'])/gi
+const linkify = (text, key) => String(text).split(URL_SPLIT).map((p, i) => (i % 2
+  ? <a key={key + '-' + i} href={/^www\./i.test(p) ? 'https://' + p : p} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#2c5fff', textDecoration: 'underline', textUnderlineOffset: 2, overflowWrap: 'anywhere' }}>{p}</a>
+  : p))
+
+/** Body text with @mentions shown as bold blue "@handle" (full address on hover) and links clickable. */
 export function renderMentions(text) {
   return String(text || '').split(MENTION_SPLIT).map((p, i) => (p.charAt(0) === '@' && p.length > 1
     ? <span key={i} title={p.slice(1)} style={{ color: '#2c5fff', fontWeight: 700 }}>{shortMention(p)}</span>
-    : p))
+    : linkify(p, i)))
 }
 
 /**
@@ -26,9 +32,19 @@ export function expandMentions(text, map) {
  * An <input>/<textarea> that highlights @mentions while typing. A mirror layer behind the
  * transparent-text field draws the same text with mention tokens tinted, so the look changes
  * without shifting the caret (same font metrics — colour and background only, no bold).
+ * `autoGrow` (with multiline): the box grows with the text, so a long comment wraps onto new lines
+ * instead of scrolling sideways.
  */
-const MentionField = forwardRef(function MentionField({ multiline = false, style, value, onScroll, ...rest }, ref) {
+const MentionField = forwardRef(function MentionField({ multiline = false, autoGrow = false, style, value, onScroll, ...rest }, ref) {
   const mirror = useRef(null)
+  const own = useRef(null)
+  const setRef = (el) => { own.current = el; if (typeof ref === 'function') ref(el); else if (ref) ref.current = el }
+  useLayoutEffect(() => {
+    const el = own.current
+    if (!autoGrow || !multiline || !el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + el.offsetHeight - el.clientHeight + 'px'
+  }, [autoGrow, multiline, value])
   const Tag = multiline ? 'textarea' : 'input'
   const sync = (e) => { if (mirror.current) { mirror.current.scrollTop = e.target.scrollTop; mirror.current.scrollLeft = e.target.scrollLeft } onScroll && onScroll(e) }
   const parts = String(value || '').split(MENTION_SPLIT)
@@ -52,13 +68,13 @@ const MentionField = forwardRef(function MentionField({ multiline = false, style
         {multiline ? '​' : null}
       </div>
       <Tag
-        ref={ref}
+        ref={setRef}
         value={value}
         onScroll={sync}
         onInput={sync}
         {...rest}
         className={'zp-mention-field' + (rest.className ? ' ' + rest.className : '')}
-        style={{ ...shared, position: 'relative', background: 'transparent', color: 'transparent', caretColor: fieldStyle.color || '#0F172A' }}
+        style={{ ...shared, position: 'relative', background: 'transparent', color: 'transparent', caretColor: fieldStyle.color || '#0F172A', ...(autoGrow ? { resize: 'none', overflow: 'hidden' } : {}) }}
       />
     </div>
   )

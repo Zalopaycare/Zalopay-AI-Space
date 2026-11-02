@@ -8,7 +8,7 @@ import { css } from '../lib/style.js'
 // Only terms mentioned at least MIN_MENTIONS times in the period are counted; spellings that differ only in
 // case/spacing are merged, and garbled labels (U+FFFD) are dropped.
 
-const MIN_MENTIONS = 3
+const MIN_MENTIONS = 1 // the admin dashboard is small: every mention counts (it was 3, which left both cards empty)
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const DAY = 86_400_000
 const PERIODS = [
@@ -68,7 +68,7 @@ export default function TrendCard({ title, mentions, color = '#2c5fff' }) {
       </div>
       {list.length === 0 ? (
         <div style={css(`padding:14px 0; font:600 13px ${FONT}; color:#94a3b8;`)}>
-          {mode === 'top' ? `Chưa có mục nào được nhắc từ ${MIN_MENTIONS} lần trở lên trong khoảng này.` : 'Chưa có mục nào đang tăng so với kỳ trước.'}
+          {mode === 'top' ? 'Chưa có mục nào được nhắc trong khoảng này, thử chọn khoảng dài hơn.' : 'Chưa có mục nào đang tăng so với kỳ trước.'}
         </div>
       ) : (
         <div style={css('display:flex; flex-direction:column; gap:4px;')}>
@@ -87,7 +87,7 @@ export default function TrendCard({ title, mentions, color = '#2c5fff' }) {
         </div>
       )}
       <div style={css(`margin-top:10px; font:500 11.5px/1.5 ${FONT}; color:#94a3b8;`)}>
-        Điểm 0–100 như Google Trends: 100 là mục được nhắc nhiều nhất. Chỉ tính mục được nhắc từ {MIN_MENTIONS} lần trở lên trong câu hỏi và use case.
+        Điểm 0–100 như Google Trends: 100 là mục được nhắc nhiều nhất. Đếm trong thread và use case (kể cả use case mẫu).
       </div>
     </div>
   )

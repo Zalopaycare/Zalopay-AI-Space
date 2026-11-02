@@ -49,6 +49,12 @@ const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,
 const mentionScan = (v) => { const m = /(?:^|\s)@([\p{L}\w.-]*)$/u.exec(v); return m ? m[1].toLowerCase() : null }
 const insertMention = (v, handle) => v.replace(/@([\p{L}\w.-]*)$/u, '@' + handle + ' ')
 const renderBody = renderMentions
+// The grey avatar's letters for an anonymous name (as the server makes them).
+const anonInitials = (name) => {
+  if (!name || /^Anonymous( \d+)?$/.test(name)) return 'AN'
+  const w = String(name).split(/\s+/).filter(Boolean)
+  return (w.length === 1 ? w[0].slice(0, 2) : w[0][0] + w[w.length - 1][0]).toUpperCase()
+}
 
 export default function QuestionsPage() {
   const { t } = useI18n()
@@ -105,12 +111,11 @@ export default function QuestionsPage() {
   const [askTopicsSel, setAskTopicsSel] = useState([])
   const [askFiles, setAskFiles] = useState([]) // [{ name, size, dataUrl }] — uploaded with the question
   const [askAnon, setAskAnon] = useState(false)
-  const [askAlias, setAskAlias] = useState('')
   const [ansAnon, setAnsAnon] = useState(false) // answer boxes: post the next answer anonymously
-  const [ansAlias, setAnsAlias] = useState('')
   // One switch for everything you write under a question: answers, comments and replies.
-  const anonOpts = () => ({ anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '' })
+  const anonOpts = () => ({ anonymous: ansAnon })
   const [askImages, setAskImages] = useState([]) // [{name, dataUrl}] — up to MAX_ASK_IMAGES, uploaded with the question
+  const [askKeep, setAskKeep] = useState({ images: [], files: [] }) // editing: the attachments already posted that stay
   const [askEmojiOpen, setAskEmojiOpen] = useState(false)
   const [askDraftSaved, setAskDraftSaved] = useState(false)
   const [askError, setAskError] = useState('')
@@ -123,10 +128,24 @@ export default function QuestionsPage() {
   const askDocInputRef = useRef(null)
 
   const patch = (id, updated) => setQuestions((qs) => qs.map((q) => (q.id === id ? updated : q)))
+  // In your own anonymous thread, what you write under it starts out anonymous too (one slip would
+  // put your real name right under your anonymous post); switched off, a line in red says so.
+  const detailRaw = detailId ? questions.find((q) => q.id === detailId) : null
+  const ownAnonThread = !!(detailRaw && detailRaw.anonymous && user && detailRaw.authorId === user.id)
+  useEffect(() => { setAnsAnon(ownAnonThread) }, [detailId, ownAnonThread])
+  const anonWarn = ownAnonThread ? 'Bạn đang bình luận bằng tên thật trong thread ẩn danh của mình.' : ''
 
   const reload = () => api.listQuestions().then((d) => { setQuestions(d.questions); setLoaded(true) }).catch(() => setLoaded(true))
-  // Again when the signed-in user changes their photo, so their own posts pick it up at once.
-  useEffect(() => { reload() }, [user?.avatarUrl])
+  // Again when the signed-in user changes their photo or anonymous name, so their own posts pick it up at once.
+  useEffect(() => { reload() }, [user?.avatarUrl, user?.anonName])
+  // Live: new threads, comments and likes show up without reloading (every 20s while the tab is in
+  // view, and right away when you come back to it).
+  useEffect(() => {
+    const pull = () => { if (document.visibilityState === 'visible') reload() }
+    const t = setInterval(pull, 20_000)
+    document.addEventListener('visibilitychange', pull)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', pull) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // deep-link: #ask opens the ask-question composer directly (from Sidebar's "Đăng thread" quick action)
   useEffect(() => {
@@ -217,7 +236,7 @@ export default function QuestionsPage() {
   // Your own post: the usual confirm. An admin removing someone else's: ask for the reason (sent to the author).
   const askDeleteAnswer = (qId, aId, mine = true, body = '') => (mine
     ? cmodals.askDelete(() => api.deleteAnswer(qId, aId).then((d) => patch(qId, d.question)).catch(() => {}))
-    : askRemovalReason({ what: 'câu trả lời', title: body.slice(0, 80) }).then((r) => r && api.deleteAnswer(qId, aId, r).then((d) => patch(qId, d.question)).catch(() => {})))
+    : askRemovalReason({ what: 'bình luận', title: body.slice(0, 80) }).then((r) => r && api.deleteAnswer(qId, aId, r).then((d) => patch(qId, d.question)).catch(() => {})))
   const askDeleteComment = (qId, aId, cId, mine = true, body = '') => (mine
     ? cmodals.askDelete(() => api.deleteAnswerComment(qId, aId, cId).then((d) => patch(qId, d.question)).catch(() => {}))
     : askRemovalReason({ what: 'bình luận', title: body.slice(0, 80) }).then((r) => r && api.deleteAnswerComment(qId, aId, cId, r).then((d) => patch(qId, d.question)).catch(() => {})))
@@ -262,11 +281,11 @@ export default function QuestionsPage() {
   })
 
   const onPickImages = (fileList) => {
-    const files = Array.from(fileList || []).slice(0, MAX_ASK_IMAGES - askImages.length)
+    const files = Array.from(fileList || []).slice(0, MAX_ASK_IMAGES - askImages.length - askKeep.images.length)
     files.forEach((file) => {
       if (!file.type.startsWith('image/')) return
       shrinkImage(file).then((dataUrl) => {
-        if (dataUrl) setAskImages((s) => (s.length >= MAX_ASK_IMAGES ? s : [...s, { name: file.name, dataUrl }]))
+        if (dataUrl) setAskImages((s) => (s.length + askKeep.images.length >= MAX_ASK_IMAGES ? s : [...s, { name: file.name, dataUrl }]))
       })
     })
   }
@@ -280,7 +299,7 @@ export default function QuestionsPage() {
   // Attach a document (any type, ≤ 10 MB, up to 3); it's uploaded with the question and downloadable.
   const pickAskFile = (file) => {
     if (!file) return
-    if (askFiles.length >= 3) { setAskError('Tối đa 3 tài liệu cho mỗi câu hỏi.'); return }
+    if (askFiles.length + askKeep.files.length >= 3) { setAskError('Tối đa 3 tài liệu cho mỗi thread.'); return }
     if (file.size > 10 * 1024 * 1024) { setAskError('Tài liệu quá lớn (tối đa 10 MB).'); return }
     const r = new FileReader()
     r.onload = () => { setAskFiles((s) => [...s, { name: file.name, size: file.size, dataUrl: String(r.result) }]); setAskError('') }
@@ -290,11 +309,11 @@ export default function QuestionsPage() {
 
   const postQuestion = () => {
     const tt = askTitle.trim(), bb = (askBoxRef.current ? askBoxRef.current.expand(askBody) : askBody).trim()
-    if (!bb) { setAskError('Cần có nội dung câu hỏi trước khi đăng.'); return }
+    if (!bb) { setAskError('Cần có nội dung trước khi đăng.'); return }
     requireLogin(() => {
       const payload = {
         title: tt, body: bb,
-        anonymous: askAnon, alias: askAnon ? askAlias.trim() : '',
+        anonymous: askAnon,
         files: askFiles.map((f) => ({ name: f.name, data: f.dataUrl })),
         category: DEFAULT_CATEGORY,
         topics: askTopicsSel.map((x) => (x === OTHER ? askTopicOtherText.trim() || OTHER : x)),
@@ -302,7 +321,11 @@ export default function QuestionsPage() {
         images: askImages.map((img) => img.dataUrl),
       }
       if (editQId) {
-        const { images, category, files, ...changes } = payload
+        const { category, ...changes } = payload
+        // what was already posted and stays, by its number (the end of its URL)
+        const idxOf = (url) => Number(String(url).split('/').pop())
+        changes.keepImages = askKeep.images.map(idxOf)
+        changes.keepFiles = askKeep.files.map((f) => idxOf(f.url))
         api.updateQuestion(editQId, changes).then((d) => {
           patch(editQId, d.question)
           setView('feed')
@@ -315,9 +338,9 @@ export default function QuestionsPage() {
         setView('feed')
         setExpanded((s) => ({ ...s, [id]: true }))
         try { localStorage.removeItem(QUESTION_DRAFT_KEY) } catch { /* ignore */ }
-        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false); setAskAnon(false); setAskAlias('')
+        setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false); setAskAnon(false)
         window.scrollTo(0, 0)
-      }).catch((e) => setAskError(e?.data?.message || 'Không đăng được câu hỏi, thử lại.'))
+      }).catch((e) => setAskError(e?.data?.message || 'Không đăng được thread, thử lại.'))
     })
   }
 
@@ -335,13 +358,14 @@ export default function QuestionsPage() {
     setAskTitle(q.hasTitle ? q.title : ''); setAskBody(q.body || '')
     setAskTopicsSel(tps); setAskTopicOtherText(tpo); setAskToolsSel(tls); setAskToolOtherText(tlo)
     setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
-    setAskAnon(!!q.anonymous); setAskAlias(q.anonymous && q.alias && !/^Anonymous( \d+)?$/.test(q.alias) ? q.alias : '')
+    setAskKeep({ images: (q.images || []).filter((u) => String(u).startsWith('/api/')), files: q.files || [] })
+    setAskAnon(!!q.anonymous)
     setEditQId(q.id); setOpenMenuId(null); setExpanded({}); setView('ask')
   }
   // Leaving the composer drops the edit so the next new thread starts blank.
   useEffect(() => {
     if (view === 'ask' || !editQId) return
-    setEditQId(null); setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskError(''); setAskAnon(false); setAskAlias('')
+    setEditQId(null); setAskKeep({ images: [], files: [] }); setAskFiles([]); setAskImages([]); setAskTitle(''); setAskBody(''); setAskToolsSel([]); setAskTopicsSel([]); setAskToolOtherText(''); setAskTopicOtherText(''); setAskError(''); setAskAnon(false)
   }, [view])
   // #edit=<id> (from Home's card menu) opens that question in the composer once the list is loaded.
   useEffect(() => {
@@ -439,7 +463,7 @@ export default function QuestionsPage() {
       saveBorder: q.saved ? '#BEE9D3' : '#DDE3EC',
       saveColor: q.saved ? '#00893F' : '#94a3b8',
       saveFill: q.saved ? '#00A352' : 'none',
-      saveLabel: q.saved ? t('Đã lưu') : 'Lưu câu hỏi',
+      saveLabel: q.saved ? t('Đã lưu') : t('Lưu'),
       // Server-stored images; older posts may only have the poster's local copy.
       images: (q.images && q.images.length) ? q.images : [0, 1].map((i) => 'qimg-' + q.id + '-' + i).filter(hasImageSlot).map(readImageSlot),
       hasImages: (q.images && q.images.length > 0) || [0, 1].some((i) => hasImageSlot('qimg-' + q.id + '-' + i)),
@@ -465,7 +489,7 @@ export default function QuestionsPage() {
         const key = 'ans:' + q.id
         if (!raw && !att.files(key).length) return
         const body = takeMentions('q:' + q.id, raw)
-        requireLogin(() => api.postAnswer(q.id, body, { anonymous: ansAnon, alias: ansAnon ? ansAlias.trim() : '', files: att.payload(key) }).then((d) => { patch(q.id, d.question); att.clear(key) }).catch((e) => { if (alertIfAliasTaken(e)) setReplyDrafts((s) => ({ ...s, [q.id]: raw })) }))
+        requireLogin(() => api.postAnswer(q.id, body, { ...anonOpts(), files: att.payload(key) }).then((d) => { patch(q.id, d.question); att.clear(key) }).catch((e) => { if (alertIfAliasTaken(e)) setReplyDrafts((s) => ({ ...s, [q.id]: raw })) }))
         setReplyDrafts((s) => ({ ...s, [q.id]: '' })); setReplyMention(null)
       },
     }
@@ -489,7 +513,8 @@ export default function QuestionsPage() {
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css('display:flex; align-items:center; gap:6px; min-height:24px;')}>
                           <span style={css('font:700 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span><AnonTag p={q} />
-                          <span style={css('font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;')}>{q.time}{q.edited ? ' · đã sửa' : ''}</span>
+                          {q.team ? <span style={css('min-width:0; font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{q.team}</span> : null}
+                          <span style={css('font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;')}>{q.team ? '· ' : ''}{q.time}{q.edited ? ' · đã sửa' : ''}</span>
                           <span style={{ flex: 1 }}></span>
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
@@ -505,10 +530,6 @@ export default function QuestionsPage() {
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                               {t('Sao chép link')}
                             </button>
-                            <button onClick={() => { q.onSave(); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill={q.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                              {q.saveLabel}
-                            </button>
                             {q.canEdit && (
                               <button onClick={() => q.onEdit()} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
@@ -523,7 +544,7 @@ export default function QuestionsPage() {
                               </button>
                             )}
                             {q.canDelete && (
-                              <button onClick={() => { setOpenMenuId(null); if (q.canEdit) setConfirmDeleteId(q.id); else askRemovalReason({ what: 'câu hỏi', title: q.title }).then((r) => r && deleteQuestion(q.id, r)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
+                              <button onClick={() => { setOpenMenuId(null); if (q.canEdit) setConfirmDeleteId(q.id); else askRemovalReason({ what: 'thread', title: q.title }).then((r) => r && deleteQuestion(q.id, r)) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A; text-align:left;')}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
                                 {t('Xoá bài viết')}
                               </button>
@@ -532,8 +553,8 @@ export default function QuestionsPage() {
                         )}
                       </div>
                         </div>
-                        {q.hasTitle !== false && q.title && <div style={css('margin-top:2px; font:700 15px/1.45 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.title}</div>}
-                        <p style={css(`margin:${q.hasTitle !== false && q.title ? 2 : 1}px 0 0; font:400 ${inModal ? 15.5 : 15}px/1.55 var(--zp-font-text); color:#0F172A; white-space:pre-wrap; overflow-wrap:anywhere;`)}>
+                        {q.hasTitle !== false && q.title && <div style={css('margin-top:2px; font:700 14.5px/1.45 "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.title}</div>}
+                        <p style={css(`margin:${q.hasTitle !== false && q.title ? 2 : 1}px 0 0; font:400 14px/1.55 var(--zp-font-text); color:#0F172A; white-space:pre-wrap; overflow-wrap:anywhere;`)}>
                           {renderMentions(q.bodyShown)}
                           {q.truncated && (
                             <button onClick={q.onExpandBody} style={css('display:inline; margin-left:6px; padding:0; border:none; background:transparent; cursor:pointer; font:600 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#94a3b8; vertical-align:baseline;')}>{t('Xem thêm')}</button>
@@ -543,7 +564,7 @@ export default function QuestionsPage() {
                         <FileLinks files={q.files} />
                         {/* like · comment · save, the same row as every other card */}
                         <div style={css('display:inline-flex; margin-top:10px;')}>
-                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.reduce((n, a) => n + 1 + a.comments.length, 0)} replyActive={inModal} onReply={q.onToggle} saved={!!q.saved} onSave={q.onSave} />
+                          <CardActions helpful={q.qHelpful || 0} helped={!!q.iHelpedQ} onHelpful={q.onHelpfulQ} replies={q.answers.reduce((n, a) => n + 1 + a.comments.length, 0)} replyActive={inModal} onReply={q.onToggle} saved={!!q.saved} saves={q.saves || 0} onSave={q.onSave} />
                         </div>
                       </div>
                     </div>
@@ -553,7 +574,7 @@ export default function QuestionsPage() {
                         <div style={css('display:flex; gap:10px; padding-bottom:16px; margin-bottom:4px; border-bottom:1px solid #E6EBF3;')}>
                           <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                           <div style={{ flex: 1, position: 'relative' }}>
-                            <MentionField multiline id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onBlur={() => setReplyMention(null)} onKeyDown={withEsc(q.replyMentionOpen, () => setReplyMention(null), enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false }))} rows={1} placeholder={t('Trả lời') + ' ' + q.author + '…'} style={css('width:100%; border:1px solid #E6EBF3; border-radius:18px; padding:10px 16px; font-size:14.5px; line-height:1.55; color:#0F172A; background:#F7F8FA; outline:none; resize:vertical; display:block; box-sizing:border-box;')} />
+                            <MentionField multiline autoGrow id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onBlur={() => setReplyMention(null)} onKeyDown={withEsc(q.replyMentionOpen, () => setReplyMention(null), enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false }))} rows={1} placeholder={t('Trả lời') + ' ' + q.author + '…'} style={css('width:100%; border:1px solid #E6EBF3; border-radius:18px; padding:10px 16px; font-size:14.5px; line-height:1.55; color:#0F172A; background:#F7F8FA; outline:none; display:block; box-sizing:border-box;')} />
                             {q.replyMentionOpen && (
                               <div style={css('position:absolute; left:0; top:calc(100% + 6px); width:340px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                 {q.replyMentions.map((m) => (
@@ -570,10 +591,10 @@ export default function QuestionsPage() {
                             <PendingAttachments files={att.files('ans:' + q.id)} onRemove={(k) => att.remove('ans:' + q.id, k)} error={att.errorFor('ans:' + q.id)} />
                             {/* one row: anonymous switch on the left, attach + Đăng on the right; the mention note small under it */}
                             <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;')}>
-                              <AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" />
+                              <AnonToggle compact on={ansAnon} onChange={setAnsAnon} warn={anonWarn} label="Bình luận ẩn danh" />
                               <span style={{ marginLeft: 'auto' }}></span>
                               <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={36} />
-                              <button onClick={q.onPostReply} style={css(` height:36px; padding:0 18px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Đăng')}</button>
+                              <button onClick={q.onPostReply} style={css(` height:36px; padding:0 18px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi')}</button>
                             </div>
                             <div style={css('margin-top:4px; font:500 11.5px var(--zp-font-text); color:#a3afc2;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</div>
                           </div>
@@ -664,12 +685,13 @@ export default function QuestionsPage() {
                                           ))}
 
                                           {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (
-                                            <div style={css('display:flex; gap:10px; margin:10px 0 0 36px; align-items:center;')}>
+                                            <div style={css('display:flex; gap:10px; margin:10px 0 0 36px; align-items:flex-end;')}>
                                               <div style={css(`flex:none; width:24px; height:24px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 9.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                                               <div style={{ flex: 1 }}>
                                                 {/* @ suggestions like every other box: picking someone mentions them */}
                                                 <MentionInput
                                                   ref={commentReplyBoxRef}
+                                                  multiline autoGrow rows={1}
                                                   autoFocus
                                                   popupWidth={320}
                                                   value={commentReplyDraft}
@@ -677,7 +699,7 @@ export default function QuestionsPage() {
                                                   onEnter={() => submitCommentReply(q.id)}
                                                   onKeyDown={(e) => { if (e.key === 'Escape') cancelCommentReply() }}
                                                   placeholder={t('Trả lời') + ' ' + commentReplyTarget.authorName + ', ' + t('gõ @ để mention...')}
-                                                  style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')}
+                                                  style={css('width:100%; border:1px solid #E6EBF3; border-radius:18px; padding:8px 15px; font-size:13px; line-height:1.5; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box; display:block;')}
                                                 />
                                               </div>
                                               <AttachButton onFiles={(fl) => att.add('rep:' + a.id + ':' + c.id, fl)} size={32} />
@@ -687,15 +709,15 @@ export default function QuestionsPage() {
                                           )}
                                           {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (<>
                                             <div style={css('margin-left:70px;')}><PendingAttachments files={att.files('rep:' + a.id + ':' + c.id)} onRemove={(i) => att.remove('rep:' + a.id + ':' + c.id, i)} error={att.errorFor('rep:' + a.id + ':' + c.id)} /></div>
-                                            <div style={css('margin:6px 0 0 70px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" /></div>
+                                            <div style={css('margin:6px 0 0 70px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} warn={anonWarn} label="Bình luận ẩn danh" /></div>
                                           </>)}
                                         </div>
                                       )
                                     })}
-                                    <div style={css('display:flex; gap:10px; align-items:center;')}>
+                                    <div style={css('display:flex; gap:10px; align-items:flex-end;')}>
                                       <div style={css(`flex:none; width:26px; height:26px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 10px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                                       <div style={css('flex:1; position:relative;')}>
-                                        <MentionField id={'cmt-in-' + a.id} value={a.commentDraft} onChange={a.onCommentChange} onBlur={() => setCommentMention(null)} onKeyDown={withEsc(a.mentionOpen, () => setCommentMention(null), enterSends(a.onPostComment, () => { if (a.mentionOpen && a.mentions[0]) { a.mentions[0].onPick(); return true } return false }))} placeholder={t('Trả lời') + ' ' + a.author + ', ' + t('gõ @ để mention...')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:999px; padding:9px 15px; font-size:13.5px; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box;')} />
+                                        <MentionField multiline autoGrow rows={1} id={'cmt-in-' + a.id} value={a.commentDraft} onChange={a.onCommentChange} onBlur={() => setCommentMention(null)} onKeyDown={withEsc(a.mentionOpen, () => setCommentMention(null), enterSends(a.onPostComment, () => { if (a.mentionOpen && a.mentions[0]) { a.mentions[0].onPick(); return true } return false }))} placeholder={t('Trả lời') + ' ' + a.author + ', ' + t('gõ @ để mention...')} style={css('width:100%; border:1px solid #E6EBF3; border-radius:18px; padding:8px 15px; font-size:13.5px; line-height:1.5; color:#0F172A; background:#ffffff; outline:none; box-sizing:border-box; display:block;')} />
                                         {a.mentionOpen && (
                                           <div style={css('position:absolute; left:0; bottom:calc(100% + 6px); width:320px; background:#ffffff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:6px; z-index:80;')}>
                                             {a.mentions.map((m) => (
@@ -714,7 +736,7 @@ export default function QuestionsPage() {
                                       <button onClick={a.onPostComment} style={css('flex:none; height:34px; padding:0 15px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
                                     </div>
                                     <div style={css('margin-left:36px;')}><PendingAttachments files={att.files('cmt:' + a.id)} onRemove={(k) => att.remove('cmt:' + a.id, k)} error={att.errorFor('cmt:' + a.id)} /></div>
-                                    <div style={css('margin:6px 0 0 36px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} alias={ansAlias} onAlias={setAnsAlias} label="Bình luận ẩn danh" /></div>
+                                    <div style={css('margin:6px 0 0 36px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} warn={anonWarn} label="Bình luận ẩn danh" /></div>
                                   </div>
                                 )}
                               </div>
@@ -744,10 +766,13 @@ export default function QuestionsPage() {
         {detailId ? (
           <div style={css('padding:22px var(--zp-gutter) 60px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              <button onClick={() => (window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/'))} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 14px; padding:4px 0; border:none; background:none; cursor:pointer; color:#a9b8dc; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
-                {t('Thread')}
-              </button>
+              {/* stays at the top while the thread scrolls, as a pill so it reads over the white card */}
+              <div style={css('position:sticky; top:68px; z-index:20; margin:0 0 14px; height:36px;')}>
+                <button onClick={() => (window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/'))} className={hoverClass('color:#fff !important; background:rgba(30,46,96,.95) !important;')} style={css('display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 14px 0 11px; border:1px solid rgba(150,180,255,.25); border-radius:999px; background:rgba(14,24,58,.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); cursor:pointer; color:#c9d6f5; font:700 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                  {t('Quay lại')}
+                </button>
+              </div>
               {detailQ ? (
                 <div style={css('background:#fff; border-radius:22px; overflow:visible; box-shadow:0 24px 60px rgba(3,12,40,.35);')}>{renderQCard(detailQ, true)}</div>
               ) : (
@@ -775,7 +800,8 @@ export default function QuestionsPage() {
               options={[['latest', 'Mới nhất'], ['top', 'Nổi bật']].map(([k, l]) => ({ label: t(l), active: sort === k, onClick: () => { setSort(k); setOpenDrop(null) } }))}
             />
           } />
-          <div style={css('padding:16px var(--zp-gutter) 60px;')}>
+          {/* room at the bottom for the last card's ⋯ menu (the page clips anything below it) */}
+          <div style={css('padding:16px var(--zp-gutter) 110px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               {/* one card per thread, one under another; a click opens the thread with its comments */}
               <div style={css('display:flex; flex-direction:column; gap:14px;')}>
@@ -820,12 +846,32 @@ export default function QuestionsPage() {
                 {!editQId ? <button onClick={saveAskDraft} title={t('Lưu nháp')} style={css('justify-self:end; border:none; background:none; padding:0; cursor:pointer; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Lưu nháp')}</button> : <span />}
               </div>
               <div style={css('display:flex; gap:12px; padding:18px 20px 6px;')}>
-                <Avatar user={user} size={40} fontSize={14} />
+                {/* switched to anonymous, the header shows how the post will look to others */}
+                {askAnon
+                  ? <div style={css('flex:none; width:40px; height:40px; border-radius:50%; background:#64748B; color:#fff; display:flex; align-items:center; justify-content:center; font:800 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{anonInitials(user?.anonName)}</div>
+                  : <Avatar user={user} size={40} fontSize={14} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={css('font:700 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{user ? (user.domain || user.name) : t('Chưa đăng nhập')}</div>
+                  <div style={css('font:700 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{askAnon ? (user?.anonName || 'Anonymous') : user ? (user.domain || user.name) : t('Chưa đăng nhập')}</div>
                   <div style={{ marginTop: 2 }}><MentionInput ref={askBoxRef} inputRef={askBodyRef} multiline rows={4} popupWidth={340} placement="below" value={askBody} onChange={(v) => { setAskBody(v); setAskError('') }} placeholder={t('Có gì mới? Gõ @ để nhắc tên đồng nghiệp.')} style={css('width:100%; border:none; outline:none; background:transparent; padding:0; font-size:15.5px; line-height:1.6; color:#0F172A; resize:vertical; display:block; box-sizing:border-box;')} /></div>
-                      {(askImages.length > 0 || askFiles.length > 0) && (
+                      {(askImages.length > 0 || askFiles.length > 0 || askKeep.images.length > 0 || askKeep.files.length > 0) && (
                         <div style={css('display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;')}>
+                          {askKeep.images.map((url) => (
+                            <span key={url} style={css('position:relative; width:72px; height:72px; border-radius:12px; overflow:hidden; border:1px solid #E6EBF3;')}>
+                              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                              <button onClick={() => setAskKeep((k) => ({ ...k, images: k.images.filter((u) => u !== url) }))} aria-label={t('Bỏ hình này')} style={css('position:absolute; top:3px; right:3px; width:20px; height:20px; border:none; border-radius:50%; background:rgba(0,0,0,.6); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;')}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                              </button>
+                            </span>
+                          ))}
+                          {askKeep.files.map((f) => (
+                            <span key={f.url} style={css('display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 8px 0 12px; border:1px solid #E6EBF3; border-radius:10px; background:#F8FAFE; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+                              {f.name}
+                              <button onClick={() => setAskKeep((k) => ({ ...k, files: k.files.filter((x) => x.url !== f.url) }))} aria-label={t('Bỏ tài liệu này')} style={css('width:18px; height:18px; border:none; border-radius:6px; background:transparent; cursor:pointer; color:#94a3b8; display:flex; align-items:center; justify-content:center; padding:0;')}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                              </button>
+                            </span>
+                          ))}
                           {askImages.map((img, i) => (
                             <span key={i} style={css('position:relative; width:72px; height:72px; border-radius:12px; overflow:hidden; border:1px solid #E6EBF3;')}>
                               <img src={img.dataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -848,18 +894,14 @@ export default function QuestionsPage() {
 
                   <div style={css('display:flex; align-items:center; gap:2px; margin:8px 0 0 -8px;')}>
                         <input ref={askImageInputRef} type="file" accept="image/*" multiple hidden onChange={(e) => { onPickImages(e.target.files); e.target.value = '' }} />
-                        {!editQId && (
-                          <button onClick={() => askImageInputRef.current?.click()} title={t('Thêm hình ảnh')} aria-label={t('Thêm hình ảnh')} disabled={askImages.length >= MAX_ASK_IMAGES} className={hoverClass('background:#F1F4FA;')} style={css(`width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center; opacity:${askImages.length >= MAX_ASK_IMAGES ? .4 : 1};`)}>
-                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-4.5-4.5L7 20"></path></svg>
-                          </button>
-                        )}
+                        <button onClick={() => askImageInputRef.current?.click()} title={t('Thêm hình ảnh')} aria-label={t('Thêm hình ảnh')} disabled={askImages.length + askKeep.images.length >= MAX_ASK_IMAGES} className={hoverClass('background:#F1F4FA;')} style={css(`width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center; opacity:${askImages.length + askKeep.images.length >= MAX_ASK_IMAGES ? .4 : 1};`)}>
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-4.5-4.5L7 20"></path></svg>
+                        </button>
 
                         <input ref={askDocInputRef} type="file" hidden onChange={(e) => { pickAskFile(e.target.files?.[0]); e.target.value = '' }} />
-                        {!editQId && (
-                          <button onClick={() => askDocInputRef.current?.click()} title={t('Thêm tài liệu')} aria-label={t('Thêm tài liệu')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
-                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L10.13 17.1a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                          </button>
-                        )}
+                        <button onClick={() => askDocInputRef.current?.click()} title={t('Thêm tài liệu')} aria-label={t('Thêm tài liệu')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L10.13 17.1a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        </button>
 
                         <div style={{ position: 'relative' }}>
                           <button onClick={() => setAskEmojiOpen((o) => !o)} title={t('Chèn emoji')} aria-label={t('Chèn emoji')} className={hoverClass('background:#F1F4FA;')} style={css('width:36px; height:36px; border:none; border-radius:10px; background:transparent; cursor:pointer; color:#5B6675; display:flex; align-items:center; justify-content:center;')}>
@@ -876,7 +918,7 @@ export default function QuestionsPage() {
 
 
                   </div>
-                  <AnonToggle on={askAnon} onChange={setAskAnon} alias={askAlias} onAlias={setAskAlias} />
+                  <AnonToggle on={askAnon} onChange={setAskAnon} />
                   {askError && <div style={css('margin-top:10px; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{askError}</div>}
                 </div>
               </div>

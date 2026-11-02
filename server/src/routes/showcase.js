@@ -97,7 +97,8 @@ function invite(p, req) {
 router.post('/admin/booths/invite', requireAuth, requireAdmin, (req, res) => {
   const todo = pendingCases.filter((p) => { const sub = latestSubmission(p.id); return !sub || sub.review_status === 'rejected' })
   todo.forEach((p) => invite(p, req))
-  res.json({ ok: true, invited: todo.length })
+  // recipients: every owner account told (the console states this number before sending)
+  res.json({ ok: true, invited: todo.length, recipients: new Set(todo.flatMap(ownerEmails)).size })
 })
 router.post('/admin/booths/:id/invite', requireAuth, requireAdmin, (req, res) => {
   const p = PENDING_BY_ID.get(req.params.id)

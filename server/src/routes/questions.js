@@ -47,7 +47,7 @@ function loadQuestion(id, viewer) {
   return {
     id: q.id, title: qTitle(q), hasTitle: !!q.title, body: q.body, ...maskAuthor(userBrief(author), q, viewer), time: q.created_at, ts: q.created_at,
     category: asArr(q.category), topics: asArr(q.topics), tools: asArr(q.tools),
-    resolved: !!q.resolved, saved, edited: !!q.edited_at,
+    resolved: !!q.resolved, saved, saves: db.prepare('SELECT COUNT(*) AS n FROM saved_questions WHERE question_id = ?').get(id).n, edited: !!q.edited_at,
     files: db.prepare('SELECT idx, name, size FROM question_files WHERE question_id = ? ORDER BY idx').all(id).map((f) => ({ name: f.name, size: f.size, url: `/api/questions/${id}/files/${f.idx}` })),
     images: db.prepare('SELECT idx FROM question_images WHERE question_id = ? ORDER BY idx').all(id).map((r) => `/api/questions/${id}/images/${r.idx}`), qHelpful, iHelpedQ, answers,
   }
@@ -130,7 +130,8 @@ router.post('/', requireAuth, (req, res) => {
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
-// The author edits their own question (text, topic and tool tags; images stay as posted).
+// The author edits their own question: text, topic and tool tags, and the attachments (keepImages /
+// keepFiles = the numbers of the ones to keep, images / files = new ones, as on posting).
 router.patch('/:id', requireAuth, (req, res) => {
   const q = db.prepare('SELECT * FROM questions WHERE id = ?').get(req.params.id)
   if (!q) return res.status(404).json({ error: 'not_found' })
@@ -140,6 +141,26 @@ router.patch('/:id', requireAuth, (req, res) => {
   db.prepare("UPDATE questions SET title = ?, body = ?, topics = ?, tools = ?, edited_at = datetime('now') WHERE id = ?")
     .run(String(title).trim(), String(body).trim(), JSON.stringify(tagList(topics)), JSON.stringify(tagList(tools)), q.id)
   if (req.body && req.body.anonymous !== undefined) { const an = anonFields(req.body); db.prepare('UPDATE questions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, q.id) }
+  const b = req.body || {}
+  if (Array.isArray(b.keepImages) || Array.isArray(b.keepFiles)) {
+    const keepImg = new Set((b.keepImages || []).map(Number)), keepFile = new Set((b.keepFiles || []).map(Number))
+    const oldImg = db.prepare('SELECT idx FROM question_images WHERE question_id = ?').all(q.id).filter((r) => keepImg.has(r.idx))
+    const oldFile = db.prepare('SELECT idx FROM question_files WHERE question_id = ?').all(q.id).filter((r) => keepFile.has(r.idx))
+    const addImg = (Array.isArray(b.images) ? b.images : []).slice(0, Math.max(0, MAX_IMAGES - oldImg.length)).map(decodeImage)
+    const addFile = (Array.isArray(b.files) ? b.files : []).slice(0, Math.max(0, MAX_FILES - oldFile.length)).map(decodeFile)
+    if (addImg.some((d) => !d)) return res.status(400).json({ error: 'bad_image' })
+    if (addFile.some((d) => !d)) return res.status(400).json({ error: 'bad_file' })
+    // New attachments get numbers never used before (image URLs are cached as immutable).
+    const maxIdx = Math.max(-1, ...db.prepare('SELECT idx FROM question_images WHERE question_id = ? UNION ALL SELECT idx FROM question_files WHERE question_id = ?').all(q.id, q.id).map((r) => r.idx))
+    const base = Math.max(Math.floor(Date.now() / 1000) * 10, maxIdx + 1)
+    db.transaction(() => {
+      // (an empty keep list drops them all: "NOT IN (NULL)" would match nothing)
+      db.prepare(`DELETE FROM question_images WHERE question_id = ?${oldImg.length ? ` AND idx NOT IN (${oldImg.map(() => '?').join(',')})` : ''}`).run(q.id, ...oldImg.map((r) => r.idx))
+      db.prepare(`DELETE FROM question_files WHERE question_id = ?${oldFile.length ? ` AND idx NOT IN (${oldFile.map(() => '?').join(',')})` : ''}`).run(q.id, ...oldFile.map((r) => r.idx))
+      addImg.forEach((img, i) => db.prepare('INSERT INTO question_images (question_id, idx, mime, data) VALUES (?,?,?,?)').run(q.id, base + i, img.mime, img.data))
+      addFile.forEach((f, i) => db.prepare('INSERT INTO question_files (question_id, idx, name, mime, size, data) VALUES (?,?,?,?,?,?)').run(q.id, base + i, f.name, f.mime, f.data.length, f.data))
+    })()
+  }
   res.json({ question: loadQuestion(q.id, req.user) })
 })
 

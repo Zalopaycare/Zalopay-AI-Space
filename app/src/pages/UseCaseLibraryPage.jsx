@@ -135,8 +135,7 @@ export default function UseCaseLibraryPage() {
   const [shareStep, setShareStep] = useState(0)
   const [shareType, setShareType] = useState('')
   const [cmtAnon, setCmtAnon] = useState(false) // comments + replies on the detail page
-  const [cmtAlias, setCmtAlias] = useState('')
-  const cmtAnonOpts = () => ({ anonymous: cmtAnon, alias: cmtAnon ? cmtAlias.trim() : '' })
+  const cmtAnonOpts = () => ({ anonymous: cmtAnon })
   const [shareAnon, setShareAnon] = useState(false)
   const [shareAlias, setShareAlias] = useState('')
   // Posted for myself or for a team; a team post shows every member ("a, b, c") instead of me.
@@ -404,8 +403,11 @@ export default function UseCaseLibraryPage() {
 
   const submitShare = () => {
     if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Bắt buộc trước khi gửi duyệt.'); return }
-    requireLogin(() => {
-      (editing ? (p) => api.updateSubmission(editing.id, p) : api.submitUseCase)({
+    requireLogin(async () => {
+      // the same title as another of your own posts (waiting, being fixed or published): ask before sending a second one
+      const dup = await api.checkUseCaseTitle(shareForm.title.trim(), editing?.id || '').then((d) => d.duplicates || []).catch(() => [])
+      if (dup.length && !window.confirm(`Bạn đã có use case cùng tên "${dup[0].title}". Vẫn gửi bài này?`)) return
+      ;(editing ? (p) => api.updateSubmission(editing.id, p) : api.submitUseCase)({
         title: shareForm.title.trim(), audience: shareForm.audience.trim(), team: shareForm.team.trim(),
         problem: shareForm.problem.trim(), solution: shareForm.solution.trim(), prep: shareForm.prep.trim(),
         prompt: stepsAsText(shareStepList), result: shareForm.result.trim(), limits: shareForm.limits.trim(),
@@ -498,6 +500,7 @@ export default function UseCaseLibraryPage() {
       statusColor: statusMeta(c.status).color,
       onOpen: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}`) },
       onOpenComments: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}#comments`) },
+      saves: live ? live.saves || 0 : 0,
       saveFill: saved ? 'currentColor' : 'none',
       saveColor: saved ? '#2c5fff' : '#59667A',
       saveColorD: saved ? '#9fd0ff' : '#c3c3d4',
@@ -721,9 +724,11 @@ export default function UseCaseLibraryPage() {
             {dsel.pending && !dsel.pending.owner && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
 
+            {/* a booth with no write-up yet isn't a post: nothing to like or comment on until it's published */}
+            {!dsel.pending && (
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}
-              {/* The same like · comment row as the use case cards, top-left of the comment box; comment jumps to the box. */}
+              {/* The same like · comment · save row as the use case cards, top-left of the comment box; comment jumps to the box. */}
               <div style={css('display:inline-flex;')}>
                 <CardActions
                   helpful={base}
@@ -731,6 +736,9 @@ export default function UseCaseLibraryPage() {
                   onHelpful={() => requireLogin(() => api.reactUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
                   replies={commentsList.length}
                   onReply={() => document.querySelector('#comments textarea, #comments [contenteditable="true"]')?.focus()}
+                  saved={!!(ucMeta[dsel.id] || {}).saved}
+                  saves={(ucMeta[dsel.id] || {}).saves || 0}
+                  onSave={() => requireLogin(() => api.saveUseCase(dsel.id).then(() => refreshMeta(dsel.id)).catch(() => {}))}
                 />
               </div>
 
@@ -750,7 +758,7 @@ export default function UseCaseLibraryPage() {
                   />
                   <PendingAttachments files={att.files('cmt:' + dsel.id)} onRemove={(x) => att.remove('cmt:' + dsel.id, x)} error={att.errorFor('cmt:' + dsel.id)} />
                   <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:8px;')}>
-                    <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} alias={cmtAlias} onAlias={setCmtAlias} label="Bình luận ẩn danh" /></div>
+                    <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} label="Bình luận ẩn danh" /></div>
                     <AttachButton onFiles={(fl) => att.add('cmt:' + dsel.id, fl)} size={32} />
                     <button
                       onClick={postDComment}
@@ -830,7 +838,7 @@ export default function UseCaseLibraryPage() {
                             <PendingAttachments files={att.files('rep:' + replyTarget.parentId)} onRemove={(x) => att.remove('rep:' + replyTarget.parentId, x)} error={att.errorFor('rep:' + replyTarget.parentId)} />
                             <div style={css('display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;')}>
                               {/* same switch as the comment box above: replies follow it too */}
-                              <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} alias={cmtAlias} onAlias={setCmtAlias} label="Bình luận ẩn danh" /></div>
+                              <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} label="Bình luận ẩn danh" /></div>
                               <AttachButton onFiles={(fl) => att.add('rep:' + replyTarget.parentId, fl)} size={32} />
                               <button onClick={cancelReply} style={css('height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
                               <button onClick={() => submitReply(dsel.id)} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${replyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>
@@ -843,6 +851,7 @@ export default function UseCaseLibraryPage() {
                 })}
               </div>
             </div>
+            )}
             </div>
             <Toc items={toc} t={t} alignTo="uc-overview" />
             </div>
@@ -909,10 +918,6 @@ export default function UseCaseLibraryPage() {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"></path></svg>
                                 {t('Sao chép link')}
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); c.onSave(e); setOpenMenuId(null) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill={c.saveFill} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                                {c.saveFill === 'currentColor' ? t('Bỏ lưu') : t('Lưu use case')}
-                              </button>
                               {(c.canEdit || c.canEditCase) && (
                                 <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); if (c.canEdit) navigate('/use-cases?edit=' + c.id); else openCaseEdit(c) }} style={css('display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border:none; background:transparent; cursor:pointer; border-radius:10px; font:600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; text-align:left;')}>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
@@ -943,7 +948,7 @@ export default function UseCaseLibraryPage() {
                       </div>
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px; padding-top:6px; border-top:1px solid #EEF1F7;')}>
                         {/* like · comment · save on the left, the way in on the right */}
-                        <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} saved={c.saveFill === 'currentColor'} onSave={c.onSave} />
+                        <CardActions compact helpful={c.helpful} helped={c.helped} onHelpful={c.onHelpful} replies={c.comments} onReply={c.onOpenComments} saved={c.saveFill === 'currentColor'} saves={c.saves} onSave={c.onSave} />
                         <button onClick={(e) => { e.stopPropagation(); c.onOpen() }} className={hoverClass('gap:9px;')} style={css('flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:6px; border:none; background:transparent; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
                           {t('Xem Use Case')}
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>

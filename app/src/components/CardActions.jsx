@@ -3,9 +3,9 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 
 const BTN = 'flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 10px; border:none; border-radius:999px; background:transparent; cursor:pointer; white-space:nowrap; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#475569;'
 
-/** Like · Comment (· Save, given `onSave`) as icons with their counts, as on Threads: the row every
+/** Like · Comment (· Save, given `onSave`) as icons with their counts (`saves` = how many saved it), as on Threads: the row every
  *  preview card (threads and use cases, on every page) ends with, on the left of the card. */
-export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply, saved = false, onSave, compact = false }) {
+export default function CardActions({ helpful = 0, helped = false, onHelpful, replies = 0, replyActive = false, onReply, saved = false, saves = 0, onSave, compact = false }) {
   const { t } = useI18n()
   const btn = compact ? BTN + 'height:30px; padding:0 8px; font-size:12.5px;' : BTN
   const size = compact ? 18 : 19
@@ -24,6 +24,7 @@ export default function CardActions({ helpful = 0, helped = false, onHelpful, re
       {onSave && (
         <button onClick={stop(onSave)} aria-pressed={saved} title={saved ? t('Bỏ lưu') : t('Lưu')} aria-label={saved ? t('Bỏ lưu') : t('Lưu')} className={hover} style={css(btn + (saved ? 'color:#2c5fff;' : ''))}>
           <svg width={size - 1} height={size - 1} viewBox="0 0 24 24" fill={saved ? '#2c5fff' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          {saves > 0 && saves}
         </button>
       )}
     </div>

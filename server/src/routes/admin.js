@@ -11,6 +11,7 @@ import { appUrl } from '../mentions.js'
 import { vnDay } from '../auth.js'
 import { onlineNow, lastSeen } from '../presence.js'
 import { visibleShowcase, hideShowcase } from '../showcase.js'
+import { reviewCommenters } from './useCases.js'
 
 const router = express.Router()
 const orgInfo = (raw) => { try { return raw ? JSON.parse(raw) : null } catch { return null } }
@@ -198,7 +199,7 @@ router.get('/published', (req, res) => {
   const subs = db.prepare("SELECT * FROM use_case_submissions WHERE review_status = 'approved'").all().map((r) => {
     const u = db.prepare('SELECT * FROM users WHERE id = ?').get(r.author_id)
     const rv = r.reviewed_by ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(r.reviewed_by) : null
-    return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', account: u ? handleOf(u.email) : '', anonymous: !!r.anonymous, alias: r.anonymous ? anonName(r) : null, team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, approvedBy: rv ? domainName(rv.email, rv.name) : null, ...stats(r.id) }
+    return { id: r.id, source: 'community', title: r.title, author: u ? domainName(u.email, u.name) : 'Người dùng đã xoá', account: u ? handleOf(u.email) : '', anonymous: !!r.anonymous, alias: r.anonymous ? anonName(r) : null, team: r.team || '', type: '', status: r.status_field || '', postedAt: r.published_at || r.created_at, approvedBy: rv ? domainName(rv.email, rv.name) : null, reviewCommenters: rv ? [] : reviewCommenters(r.id), ...stats(r.id) }
   })
   res.json({ useCases: [...subs, ...showcase].sort((a, b) => String(b.postedAt || '').localeCompare(String(a.postedAt || '')) || b.id.localeCompare(a.id, undefined, { numeric: true })) })
 })
