@@ -71,6 +71,9 @@ const SHARE_STEPS = [
 const FIELD_INPUT = 'width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13.5px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;'
 const FIELD_AREA = FIELD_INPUT + ' line-height:1.6; resize:vertical;'
 // A required field left empty, once "Xem trước & gửi" has pointed it out: red border, and a red line under it.
+// the amber "Need your review" tag, and the buttons on the bars under a use case's header
+const REVIEW_TAG = 'display:inline-flex; align-items:center; height:20px; padding:0 9px; border-radius:999px; background:#FFF1D6; border:1px solid #F3C97A; color:#9A5B00; font-size:11px; font-weight:800; white-space:nowrap;'
+const BAR_BTN = 'display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 15px; border:1px solid rgba(130,170,255,.45); border-radius:999px; background:rgba(60,110,255,.18); color:#dbe8ff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;'
 const MISS_FIELD = 'border-color:#E0353F; background:#FFF8F8; box-shadow:0 0 0 3px rgba(224,53,63,.12);'
 function MissLine({ text }) {
   return (
@@ -474,6 +477,13 @@ export default function UseCaseLibraryPage() {
     setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
   }
 
+  // "Need your review": a use case AI Space wrote from the team's docs whose owners haven't confirmed it yet.
+  // Only they and the admins see it (they're the ones who can do something about it).
+  const showcaseTpl = (c) => { const tp = (caseDetail[c.id] || {}).tpl; return !c.submitted && !c.pending && tp && tp.id === c.id ? tp : null }
+  const needsReview = (c) => { const tp = showcaseTpl(c); return !!user && !!tp && !tp.review && (!!user.isAdmin || !!tp.isOwner) }
+  const [confirming, setConfirming] = useState(false)
+  const confirmReview = (id) => { setConfirming(true); api.confirmCaseReview(id).then(() => loadPublishedUseCases(true)).catch(() => {}).finally(() => setConfirming(false)) }
+
   // ---- card mapper shared by grid + list views ----
   const mapCard = (c) => {
     const cd = caseDetail[c.id] || {}
@@ -715,10 +725,25 @@ export default function UseCaseLibraryPage() {
                   ? (file) => cropCover(file).then(({ data }) => api.adminSetCover(dsel.id, data)).then(() => loadPublishedUseCases(true))
                   : null}
               />
-            {user?.isAdmin && !dsel.pending && !dsel.submitted && (caseDetail[dsel.id] || {}).tpl && (
+            {/* a use case AI Space wrote from the team's docs: its owners confirm the content (admins may too, or fix it) */}
+            {needsReview(dsel) && (
+              <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,176,32,.08); border:1px solid rgba(255,176,32,.4);')}>
+                <span style={css('flex:1; min-width:240px; font-size:12.5px; line-height:1.55; color:#f3dcb4;')}>
+                  <span style={css(REVIEW_TAG + 'margin-right:8px;')}>{t('Need your review')}</span>
+                  {t('AI Space viết use case này từ tài liệu của team. Owner xem lại giúp: nội dung đúng thì bấm "Nội dung đã đúng"; cần sửa chỗ nào thì')} {user?.isAdmin ? t('bấm Chỉnh sửa.') : t('nhắn Admin qua Chat với Admin.')}
+                </span>
+                {!user?.isAdmin && <button onClick={() => navigate('/chat')} style={css(BAR_BTN)}>{t('Nhắn Admin')}</button>}
+                {user?.isAdmin && <button onClick={() => openCaseEdit(dsel)} style={css(BAR_BTN)}>✎ {t('Chỉnh sửa')}</button>}
+                <button onClick={() => confirmReview(dsel.id)} disabled={confirming} style={css(BAR_BTN + 'border-color:#22C55E; background:rgba(34,197,94,.18); color:#bff5d2;' + (confirming ? 'opacity:.6;' : ''))}>✓ {t('Nội dung đã đúng')}</button>
+              </div>
+            )}
+            {user?.isAdmin && !needsReview(dsel) && showcaseTpl(dsel) && (
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(130,170,255,.22);')}>
-                <span style={css('flex:1; min-width:220px; font-size:12.5px; color:#a9b8dc;')}>{t('Admin: sửa nội dung use case này bằng form đăng bài. Lưu xong trang cập nhật ngay.')}</span>
-                <button onClick={() => openCaseEdit(dsel)} style={css('display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 15px; border:1px solid rgba(130,170,255,.45); border-radius:999px; background:rgba(60,110,255,.18); color:#dbe8ff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>✎ {t('Chỉnh sửa')}</button>
+                <span style={css('flex:1; min-width:220px; font-size:12.5px; line-height:1.55; color:#a9b8dc;')}>
+                  {t('Chỉ admin thấy: bấm Chỉnh sửa để sửa nội dung use case này (mở form đăng bài, điền sẵn nội dung hiện tại). Lưu là trang cập nhật ngay, không qua bước duyệt.')}
+                  {showcaseTpl(dsel).review?.by ? ' ' + t('Đã review bởi') + ' ' + showcaseTpl(dsel).review.by + '.' : ''}
+                </span>
+                <button onClick={() => openCaseEdit(dsel)} style={css(BAR_BTN)}>✎ {t('Chỉnh sửa')}</button>
               </div>
             )}
             {dsel.pending && <BoothOwnerBar p={dsel.pending} t={t} />}
@@ -938,6 +963,7 @@ export default function UseCaseLibraryPage() {
                       <div style={css('display:flex; gap:13px;')}>
                         <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; padding-right:34px;')}>
+                          {needsReview(c) && <span title={t('AI Space viết use case này từ tài liệu của team: owner xem lại và xác nhận nội dung')} style={css(REVIEW_TAG + 'align-self:flex-start; margin-bottom:5px;')}>{t('Need your review')}</span>}
                           <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
                           {/* the people behind it right under the name, like the AI Exhibition tiles */}
                           <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}>

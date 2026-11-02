@@ -56,12 +56,25 @@ export function saveCoverFile(id, buf) {
 const EDIT_DIR = path.join(process.env.DATA_DIR || '/data', 'showcase-edits')
 const edits = new Map()
 try { for (const f of fs.readdirSync(EDIT_DIR)) if (f.endsWith('.json')) edits.set(f.slice(0, -5), JSON.parse(fs.readFileSync(path.join(EDIT_DIR, f), 'utf8'))) } catch { /* no edits yet */ }
+// "Need your review": AI Space wrote these cases from the teams' docs, so each waits for its owners to say
+// the content is right. Who confirmed (an owner, or an admin) and when: <DATA_DIR>/showcase-reviewed.json.
+const REVIEWED_FILE = path.join(process.env.DATA_DIR || '/data', 'showcase-reviewed.json')
+let reviewed = {}
+try { reviewed = JSON.parse(fs.readFileSync(REVIEWED_FILE, 'utf8')) || {} } catch { /* none reviewed yet */ }
+export const caseReview = (id) => reviewed[id] || null
+export function markCaseReviewed(id, userId) {
+  reviewed[id] = { by: userId, at: new Date().toISOString() }
+  try { fs.mkdirSync(path.dirname(REVIEWED_FILE), { recursive: true }) } catch { /* exists */ }
+  fs.writeFileSync(REVIEWED_FILE, JSON.stringify(reviewed))
+}
+
 export function saveShowcaseEdit(id, edit) {
   fs.mkdirSync(EDIT_DIR, { recursive: true })
   fs.writeFileSync(path.join(EDIT_DIR, `${id}.json`), JSON.stringify(edit))
   edits.set(id, edit)
 }
-const lines = (t) => String(t || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim()).filter(Boolean)
+// (a "* " bullet needs its space, so a line opening in **bold** or *italic* keeps its marks)
+const lines = (t) => String(t || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-•]|\*(?=\s)|\d+[.)])\s*/, '').trim()).filter(Boolean)
 // A step's own words (untitled text, its first prompt or command, its first warning) are what the form edits;
 // pictures, tables, titled blocks and further prompts stay as they were, after the edited ones.
 const isOwnText = (b) => b.type === 'text' && !b.title

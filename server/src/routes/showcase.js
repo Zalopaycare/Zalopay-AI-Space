@@ -3,7 +3,7 @@ import { requireAuth } from '../auth.js'
 import { db } from '../db.js'
 import { notifyInterest, notifyOnce } from '../notifications.js'
 import { domainName } from '../mentions.js'
-import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit } from '../showcase.js'
+import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit, caseReview, markCaseReviewed } from '../showcase.js'
 import path from 'node:path'
 
 const router = express.Router()
@@ -47,7 +47,18 @@ const pendingFor = (user) => {
 router.get('/', requireAuth, (req, res) => {
   res.set('Cache-Control', 'private, no-store')
   // isOwner: the signed-in person is in the case's team (account@vng.com.vn), so they may add its cover
-  res.json({ cases: visibleShowcase().map((c) => ({ ...c, isOwner: isBoothOwner(c, req.user.email) })), pending: pendingFor(req.user), boothDone: doneBooths() })
+  // review: who confirmed the content is right (null = still "Need your review")
+  const reviewOf = (id) => { const r = caseReview(id); return r ? { by: userName(r.by), at: r.at } : null }
+  res.json({ cases: visibleShowcase().map((c) => ({ ...c, isOwner: isBoothOwner(c, req.user.email), review: reviewOf(c.id) })), pending: pendingFor(req.user), boothDone: doneBooths() })
+})
+
+// An owner of the case (or an admin) confirms its content is right: the "Need your review" tag goes away.
+router.post('/:id/reviewed', requireAuth, (req, res) => {
+  const c = showcaseCases.find((x) => x.id === req.params.id)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  if (!req.user.is_admin && !isBoothOwner(c, req.user.email)) return res.status(403).json({ error: 'not_owner' })
+  markCaseReviewed(c.id, req.user.id)
+  res.json({ review: { by: userName(req.user.id), at: caseReview(c.id).at } })
 })
 
 // "Quan tâm" toggle on a booth with no write-up yet; the owners' notification follows the count.
@@ -142,6 +153,8 @@ router.post('/admin/edit/:id', requireAuth, requireAdmin, (req, res) => {
     by: req.user.id, at: new Date().toISOString(),
   }
   saveShowcaseEdit(req.params.id, edit)
+  // an admin who went through the content and saved it has reviewed it
+  markCaseReviewed(req.params.id, req.user.id)
   res.json({ ok: true })
 })
 

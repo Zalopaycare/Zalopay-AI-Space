@@ -85,6 +85,7 @@ export const api = {
   useCaseMeta: (id) => request(`/use-cases/${id}/meta`),
   reactUseCase: (id) => request(`/use-cases/${id}/react`, { method: 'POST' }),
   showcase: () => request('/showcase'),
+  confirmCaseReview: (id) => request(`/showcase/${encodeURIComponent(id)}/reviewed`, { method: 'POST' }),
   interestPending: (id) => request(`/showcase/pending/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
   // Admin Console "Booth Exhibition": every booth's write-up status, and inviting owners to write it up
   adminBooths: () => request('/showcase/admin/booths'),
