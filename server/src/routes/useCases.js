@@ -5,7 +5,7 @@ import express from 'express'
 import { tagList } from '../tags.js'
 import { decodeCommentFiles, saveCommentFiles, commentFilesOf, dropCommentFiles } from '../commentFiles.js'
 import { db, nextId } from '../db.js'
-import { requireAuth } from '../auth.js'
+import { requireAuth, envAdminEmails } from '../auth.js'
 import { sendMail } from '../mailer.js'
 import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../mentions.js'
 import { notify, notifyUpvotes, notifyParticipants } from '../notifications.js'
@@ -187,7 +187,8 @@ export function serializeSubmission(r, viewer) {
     // Only admins learn which admin reviewed it. Decisions made before reviewed_by existed fall back to the
     // admins who left góp ý on the review page (reviewCommenters), shown as such.
     reviewedBy: viewer && viewer.is_admin ? reviewerName(r.reviewed_by) : undefined, edited: !!r.edited_at,
-    reviewCommenters: viewer && viewer.is_admin ? reviewCommenters(r.id) : undefined,
+    // (none while the post still waits for its first decision: góp ý alone isn't a review yet)
+    reviewCommenters: viewer && viewer.is_admin ? (r.reviewed_by || (r.review_status === 'pending' && !r.reviewed_at) ? [] : reviewCommenters(r.id)) : undefined,
     extra: withStepFiles(r.id, parseExtra(r.extra)),
     canEdit: canEditSubmission(r, viewer),
     coverUrl: r.cover_data ? `/api/use-cases/submissions/${r.id}/cover?v=${encodeURIComponent(r.edited_at || r.created_at)}` : null,
@@ -214,9 +215,11 @@ router.get('/submissions', requireAuth, (req, res) => {
 })
 
 const reviewerName = (uid) => { const u = uid ? db.prepare('SELECT email, name FROM users WHERE id = ?').get(uid) : null; return u ? domainName(u.email, u.name) : null }
-/** Admins who left góp ý on a submission's review page, first one first. */
+/** Admins who left góp ý on a submission's review page, first one first. The author's own replies don't
+ *  count, even when the author is an admin too. */
 export const reviewCommenters = (subId) => [...new Set(db.prepare(`SELECT u.email, u.name FROM review_comments c JOIN users u ON u.id = c.author_id
-  WHERE c.submission_id = ? AND u.is_admin = 1 ORDER BY c.created_at`).all(subId).map((u) => domainName(u.email, u.name)))]
+  JOIN use_case_submissions s ON s.id = c.submission_id
+  WHERE c.submission_id = ? AND u.is_admin = 1 AND c.author_id != s.author_id ORDER BY c.created_at`).all(subId).map((u) => domainName(u.email, u.name)))]
 
 // The author's own pending / published posts with the same title (case and spacing ignored): the share form
 // warns before a duplicate is sent, and POST answers with `duplicates` too. A warning only, never a block.
@@ -229,7 +232,7 @@ router.get('/submissions/check-title', requireAuth, (req, res) => {
 })
 
 const adminEmailsFor = (req) => {
-  const envAdmins = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const envAdmins = envAdminEmails()
   const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
   return [...new Set([...envAdmins, ...dbAdmins])].filter((e) => e !== req.user.email.toLowerCase())
 }

@@ -1,6 +1,7 @@
 // Admin removals of other people's posts: a reason is required, and the author is told what was
 // removed and why (in-app notification + email). Removing your own post needs neither.
 import { db } from './db.js'
+import { envAdminEmails } from './auth.js'
 import { notify } from './notifications.js'
 import { sendMail } from './mailer.js'
 import { appUrl, domainName } from './mentions.js'
@@ -39,7 +40,7 @@ export function notifyRemoval(req, { authorId, what, title, content }) {
 }
 
 const adminEmails = (exceptEmail) => {
-  const env = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const env = envAdminEmails()
   const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
   return [...new Set([...env, ...dbAdmins])].filter((e) => e !== String(exceptEmail || '').toLowerCase())
 }

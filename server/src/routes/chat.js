@@ -1,6 +1,6 @@
 import express from 'express'
 import { db } from '../db.js'
-import { requireAuth } from '../auth.js'
+import { requireAuth, envAdminEmails } from '../auth.js'
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { domainName, initialsOf } from '../mentions.js'
 import { notifyChat } from '../notifications.js'
@@ -34,7 +34,7 @@ function markSeen(userId, side) {
 const seenOf = (userId) => db.prepare('SELECT * FROM admin_chat_seen WHERE user_id = ?').get(userId) || { user_seen: 0, admin_seen: 0 }
 
 const adminEmails = (exceptEmail) => {
-  const env = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const env = envAdminEmails()
   const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
   return [...new Set([...env, ...dbAdmins])].filter((e) => e !== String(exceptEmail || '').toLowerCase())
 }

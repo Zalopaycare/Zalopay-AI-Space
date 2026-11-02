@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import TrendCard from '../components/TrendCard.jsx'
 import { useTitle } from '../hooks/useTitle.js'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime } from '../lib/api.js'
@@ -48,16 +48,25 @@ const pctOf = (part, base) => (base >= MIN_PCT_BASE ? Math.round((part / base) *
 const cleanName = (n) => String(n || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^([^\s.]+)\.\s+/, '$1 ').trim()
 const fmtDay = (d) => (d ? d.split('-').reverse().join('/') : '—') // "2026-09-30" -> "30/09/2026"
 // "/use-cases/c7" -> "Đang xem use case: Chuẩn bị pentest…" for the online list.
-const PAGE_NAMES = { '/': 'AI Space', '/use-cases': 'Use Case Library', '/questions': 'AI Space', '/profile': 'Trang cá nhân', '/admin': 'Trang Admin' }
+const PAGE_NAMES = { '/': 'AI Space', '/use-cases': 'Use Case Library', '/questions': 'AI Space', '/profile': 'Trang cá nhân', '/admin': 'Trang Admin', '/chat': 'Chat với Admin' }
 const agoLabel = (now, at) => { const m = Math.max(0, Math.round((now - at) / 60_000)); return m < 1 ? 'vừa xong' : m < 60 ? `${m} phút trước` : `${Math.floor(m / 60)} giờ trước` }
 const clamp2 = 'display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;'
 const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
+// Each section has its own URL, so it can be linked to and Back / Forward work. /admin is Tổng quan;
+// /admin/inbox/<user id> opens that conversation.
+const SLUGS = { dashboard: '', usecases: 'usecases', questions: 'threads', reports: 'reports', users: 'members', inbox: 'inbox', booths: 'booths', access: 'access', admins: 'admins' }
+const SECTION_TITLES = { usecases: 'Duyệt use case', questions: 'Thread', reports: 'Báo cáo', users: 'Thành viên', inbox: 'Hộp thư', booths: 'Booth Exhibition', access: 'Yêu cầu truy cập', admins: 'Quản trị viên' }
+const SECTION_OF = Object.fromEntries(Object.entries(SLUGS).map(([k, v]) => [v, k]))
+const sectionPath = (k, sub) => '/admin' + (SLUGS[k] ? '/' + SLUGS[k] : '') + (SLUGS[k] && sub ? '/' + sub : '')
+// Thành viên › "Cần dọn": the same mailbox twice (quotes, +tag, case) shares this key
+const mailboxKey = (email) => String(email || '').toLowerCase().replace(/["'“”‘’<>\s]/g, '').split('@')[0].replace(/\+.*$/, '')
+const QUOTES = /["'“”‘’<>]/
 
 const btn = (kind) => {
   const k = { approve: ['#E7F9F0', '#BEE9D3', '#00893F'], reject: ['#FFECEC', '#F5C9CB', '#D8232A'], changes: ['#FFF4E3', '#F3DCB4', '#9A5B00'], plain: ['#fff', '#DDE3EC', '#3A4757'] }[kind]
-  return `height:30px; padding:0 10px; border:1px solid ${k[1]}; border-radius:9px; background:${k[0]}; color:${k[2]}; ${font(700, 11.5)}; cursor:pointer; white-space:nowrap;`
+  return `height:28px; padding:0 9px; border:1px solid ${k[1]}; border-radius:8px; background:${k[0]}; color:${k[2]}; ${font(700, 11)}; cursor:pointer; white-space:nowrap;`
 }
-const pill = (bg, fg) => `display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${bg}; color:${fg}; ${font(700, 11.5)}; white-space:nowrap;`
+const pill = (bg, fg) => `display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:999px; background:${bg}; color:${fg}; ${font(700, 11)}; white-space:nowrap;`
 
 function Tabs({ tabs, value, onChange, light = false }) {
   return (
@@ -97,14 +106,25 @@ const Field = ({ label, value }) => (value ? (
 ) : null)
 
 export default function AdminConsolePage() {
-  useTitle('Admin')
   usePublishedUseCases() // loads the showcase use cases so topic / AI tool counts include them
   const { user, openLogin, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const isAdmin = !!user?.isAdmin
-  const [section, setSection] = useState(() => (/#reports\b/.test(window.location.hash) ? 'reports' : /#inbox\b/.test(window.location.hash) ? 'inbox' : /#access\b/.test(window.location.hash) ? 'access' : 'dashboard'))
-  // "Hộp thư": the open "Chat với Admin" conversation; #inbox/<user id> (from a notification) opens one
-  const [chatUid, setChatUid] = useState(() => Number((/#inbox\/(\d+)/.exec(window.location.hash) || [])[1]) || null)
+  // the section comes from the URL: /admin/<slug>[/<sub>]
+  const [, slug = '', sub = ''] = /^\/admin\/?([^/]*)\/?([^/]*)/.exec(location.pathname) || []
+  const section = SECTION_OF[slug] || 'dashboard'
+  useTitle(section === 'dashboard' ? 'Admin' : `${SECTION_TITLES[section]} · Admin`)
+  const setSection = (k) => { if (k !== section || sub) navigate(sectionPath(k)) }
+  // "Hộp thư": the open "Chat với Admin" conversation, /admin/inbox/<user id>
+  const chatUid = section === 'inbox' ? Number(sub) || null : null
+  const setChatUid = (id) => navigate(sectionPath('inbox', id || ''))
+  // older links (notifications, emails) point at /admin#reports, #access, #inbox/<id>; an unknown slug goes to Tổng quan
+  useEffect(() => {
+    const m = /^#(reports|inbox|access)(?:\/(\d+))?/.exec(location.hash)
+    if (m) navigate(sectionPath(m[1], m[2]), { replace: true })
+    else if (slug && !SECTION_OF[slug]) navigate('/admin', { replace: true })
+  }, [location.hash, slug]) // eslint-disable-line react-hooks/exhaustive-deps
   const chatInbox = useChatUnread(isAdmin).inbox
   // "Booth Exhibition": AI Exhibition booths and how far their owners are with the write-up
   const [booths, setBooths] = useState(null)
@@ -171,7 +191,7 @@ export default function AdminConsolePage() {
   const [qStatus, setQStatus] = useState('all')
   const [qQuery, setQQuery] = useState('')
   const [userQuery, setUserQuery] = useState('')
-  const [userRole, setUserRole] = useState('all') // all | admin | member
+  const [userRole, setUserRole] = useState('all') // all | admin | member | cleanup ("Cần dọn")
   const [userTeam, setUserTeam] = useState('__all')
   const [ucSort, setUcSort] = useState('newest') // newest | waiting (lâu nhất trước)
   const [qDetailId, setQDetailId] = useState(null)
@@ -263,15 +283,17 @@ export default function AdminConsolePage() {
   const act = adminStats?.activity
   const dauPct = act ? pctOf(act.today - act.yesterday, act.yesterday) : null
   const dauDiff = act ? act.today - act.yesterday : 0
-  // "Use case gửi duyệt" = every community submission, split the way the Duyệt use case tabs are
-  // (Đã đăng there also lists the showcase cases, which were never submitted).
+  // "Use case gửi duyệt" = every community submission = the four tabs of Duyệt use case (Đang đợi duyệt +
+  // Đang đợi chỉnh sửa + Đã đăng + Từ chối), counted from the same list as the tabs so the sum always matches.
+  // The showcase cases AI Space wrote were never submitted: they have their own tab "Use case mẫu".
   const ucCount = (st) => submissions.filter((s) => s.reviewStatus === st).length
   const showcaseLive = published.filter((c) => c.source === 'showcase').length
   const ucSplit = `Chờ duyệt ${ucCount('pending')} · Chờ sửa ${ucCount('changes_requested')} · Đã đăng ${ucCount('approved')} · Từ chối ${ucCount('rejected')}`
+  const subKpi = fromServer(K.submissions) || daily(submissions, 'time')
   const stats = [
     { label: 'Thread', ...(fromServer(K.questions) || daily(questions, 'time')), go: () => setSection('questions') },
-    { label: 'Use case gửi duyệt', ...(fromServer(K.submissions) || daily(submissions, 'time')), go: () => { setSection('usecases'); setUcStatus('pending') },
-      split: ucSplit, splitTitle: `Tổng = các tab ở Duyệt use case. Tab Đã đăng còn có ${showcaseLive} use case mẫu (showcase), không tính ở đây.` },
+    { label: 'Use case gửi duyệt', ...subKpi, total: submissions.length, pct: pctOf(subKpi.today, submissions.length - subKpi.today), go: () => { setSection('usecases'); setUcStatus('pending') },
+      split: ucSplit + (showcaseLive ? ` · chưa tính ${showcaseLive} use case mẫu` : ''), splitTitle: `Tổng = 4 tab đầu ở Duyệt use case. ${showcaseLive} use case mẫu (showcase, AI Space viết sẵn) không qua duyệt nên nằm riêng ở tab Use case mẫu.` },
     { label: 'Thành viên', ...(fromServer(K.users) || daily(users, 'joined')), go: () => setSection('users') },
     { label: 'Comment & reply', ...(fromServer(K.comments) || { total: '—', today: 0, yesterday: 0, pct: null }), go: () => setSection('questions') },
   ]
@@ -305,8 +327,8 @@ export default function AdminConsolePage() {
   const ucq = fold(ucQuery.trim())
   const ucRows = submissions.filter((s) => (ucStatus === 'all' || s.reviewStatus === ucStatus) && (!ucq || fold(s.title + ' ' + s.author + ' ' + ucWho(s) + ' ' + s.team).includes(ucq)))
     .sort((a, b) => (ucSort === 'waiting' ? toDate(a.time) - toDate(b.time) : toDate(b.time) - toDate(a.time)))
-  // "Đã đăng": click a column header to sort by it (again to flip high→low / low→high).
-  const pubRows = published.filter((c) => !ucq || fold(c.title + ' ' + c.author + ' ' + (c.account || '') + ' ' + c.team).includes(ucq))
+  // "Đã đăng" (community posts) and "Use case mẫu" (showcase): click a column header to sort by it (again to flip).
+  const pubRows = published.filter((c) => (ucStatus === 'showcase' ? c.source === 'showcase' : c.source !== 'showcase') && (!ucq || fold(c.title + ' ' + c.author + ' ' + (c.account || '') + ' ' + c.team).includes(ucq)))
     .slice().sort((a, b) => {
       const va = pubSort.key === 'postedAt' ? String(a.postedAt || '') : a[pubSort.key] || 0
       const vb = pubSort.key === 'postedAt' ? String(b.postedAt || '') : b[pubSort.key] || 0
@@ -372,14 +394,34 @@ export default function AdminConsolePage() {
   // ---- users ----
   const uq = fold(userQuery.trim())
   const teams = Array.from(new Set(users.map((u) => u.team || ''))).sort((a, b) => (a ? a.localeCompare(b, 'vi') : 1) - (b ? 0 : 1))
+  // "Cần dọn": accounts that look dirty — no department, quotes in the name / email, or the same mailbox
+  // as another account (case, quotes or a +tag apart) — so duplicates are easy to spot and delete.
+  const byMailbox = {}
+  for (const u of users) (byMailbox[mailboxKey(u.email)] = byMailbox[mailboxKey(u.email)] || []).push(u)
+  const cleanupOf = (u) => [
+    !u.team && 'Chưa rõ phòng ban',
+    QUOTES.test(u.name + u.email) && 'Tên / email có dấu ngoặc',
+    byMailbox[mailboxKey(u.email)].length > 1 && 'Trùng với ' + byMailbox[mailboxKey(u.email)].filter((x) => x.id !== u.id).map((x) => x.email).join(', '),
+  ].filter(Boolean)
+  const needsCleanup = users.filter((u) => cleanupOf(u).length)
   const userRows = users.filter((u) => (!uq || fold(u.name + ' ' + u.email + ' ' + u.domain + ' ' + (u.team || '') + ' ' + Object.values(u.org || {}).join(' ')).includes(uq))
-    && (userRole === 'all' || (userRole === 'admin') === !!u.isAdmin)
+    && (userRole === 'all' || (userRole === 'cleanup' ? cleanupOf(u).length > 0 : (userRole === 'admin') === !!u.isAdmin))
     && (userTeam === '__all' || (u.team || '') === userTeam))
+  // duplicates side by side while tidying up
+  if (userRole === 'cleanup') userRows.sort((a, b) => mailboxKey(a.email).localeCompare(mailboxKey(b.email)) || a.id - b.id)
+  const deleteUser = (u) => setConfirm({
+    text: `Xoá tài khoản ${u.email}?`,
+    note: 'Tài khoản này chưa có nội dung hay hoạt động nào trên AI Space. Nếu người này đăng nhập lại, một tài khoản mới sẽ được tạo. Không thể hoàn tác.',
+    cta: 'Xoá tài khoản',
+    run: () => api.adminDeleteUser(u.id).then(() => { reloadUsers(); reloadLive(); reloadAdmins() }).catch((e) => window.alert(e.message || 'Chưa xoá được, thử lại nhé.')),
+  })
 
+  // "Top người đóng góp": Tổng = the counted columns added up (what the server ranks by), highest first
+  const lbRows = (adminStats?.leaderboard?.[lbPeriod] || []).map((u) => ({ ...u, total: u.answers + u.comments + u.likes + u.questions + u.useCases })).sort((a, b) => b.total - a.total)
   const periodName = lbPeriod === 'last30' ? '30-ngay' : 'tat-ca'
   const csvDate = new Date().toISOString().slice(0, 10)
-  const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Thread', 'Use case được duyệt'],
-    (adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => [i + 1, u.domain, cleanName(u.name), u.team, u.answers, u.comments, u.likes, u.questions, u.useCases]))
+  const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Thread', 'Use case được duyệt', 'Tổng'],
+    lbRows.map((u, i) => [i + 1, u.domain, cleanName(u.name), u.team, u.answers, u.comments, u.likes, u.questions, u.useCases, u.total]))
   // (Microsoft's organisation fields, AD distinguished name included, stay out of the export)
   const exportUsers = () => downloadCsv(`thanh-vien_${csvDate}.csv`, ['Tên', 'Tên hiển thị', 'Email', 'Phòng ban', 'Vai trò', 'Tham gia', 'Hoạt động gần nhất', 'Thread', 'Trả lời', 'Use case'],
     userRows.map((u) => [cleanName(u.name), u.domain, u.email, u.team, u.isAdmin ? 'Admin' : 'Thành viên', fmtDate(u.joined), fmtDay(u.lastActive), u.questions, u.answers, u.useCases]))
@@ -389,7 +431,7 @@ export default function AdminConsolePage() {
     if (!path) return 'Đang mở trang'
     const m = /^\/use-cases\/([^/?#]+)/.exec(path)
     if (m) { const c = published.find((x) => x.id === decodeURIComponent(m[1])); return 'Đang xem use case' + (c ? ': ' + c.title : '') }
-    return 'Đang xem: ' + (PAGE_NAMES[path] || path)
+    return 'Đang xem: ' + (PAGE_NAMES[path] || (path.startsWith('/admin/') ? PAGE_NAMES['/admin'] : path))
   }
 
   // [key, label, dot colour, badge count, what the badge counts (its tooltip)]
@@ -405,18 +447,21 @@ export default function AdminConsolePage() {
     ['admins', 'Quản trị viên', '#6F0CE2', 0],
   ]
 
-  const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:14px; align-items:center;`
-  const headRow = (cols) => css(grid(cols) + 'padding:11px 20px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 11.5) + ';letter-spacing:.4px;color:#64748b;')
-  const bodyRow = (cols) => css(grid(cols) + 'padding:11px 20px; border-bottom:1px solid #F3F5FA;')
-  const empty = (text) => <div style={css('padding:56px 0; text-align:center;' + font(600, 14) + ';color:#94a3b8;')}>{text}</div>
-  // Wide tables sit in a sideways-scrolling box with a min width (tableBox), so on narrow windows the
-  // text columns keep their room instead of squashing to one character a line.
-  const UC_COLS = '22px minmax(0,2fr) 110px 92px 120px 112px minmax(272px,auto)'
-  const P_COLS = 'minmax(260px,1fr) 130px 64px 92px 56px 100px 140px'
-  const Q_COLS = 'minmax(0,1fr) 110px 58px 62px 128px 118px'
-  const U_COLS = 'minmax(240px,1fr) 104px 96px 140px 64px 64px 72px 36px'
-  const R_COLS = 'minmax(280px,1fr) 150px 130px 210px'
-  const LB_COLS = '34px minmax(240px,1fr) 76px 92px 92px 76px 84px'
+  // Compact admin tables: they fit the content area of a 1280px window (≈990px beside the menu) without
+  // scrolling sideways. Long text is cut with "…" and shown whole on hover (title).
+  const grid = (cols) => `display:grid; grid-template-columns:${cols}; gap:10px; align-items:center;`
+  const headRow = (cols) => css(grid(cols) + 'padding:8px 14px; background:#F8FAFE; border-bottom:1px solid #EEF1F7;' + font(700, 10.5) + ';letter-spacing:.3px;color:#64748b;')
+  const bodyRow = (cols) => css(grid(cols) + 'padding:8px 14px; border-bottom:1px solid #F3F5FA;')
+  const ellip = 'white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;'
+  const num = css(font(800, 13) + ';color:#3A4757;')
+  const empty = (text) => <div style={css('padding:48px 0; text-align:center;' + font(600, 13.5) + ';color:#94a3b8;')}>{text}</div>
+  // The min widths (tableBox) are below that, so sideways scrolling is only a fallback for narrow windows.
+  const UC_COLS = '16px minmax(0,1fr) 92px 78px 100px 100px 252px'
+  const P_COLS = 'minmax(0,1fr) 104px 50px 70px 44px 84px 100px'
+  const Q_COLS = 'minmax(0,1fr) 104px 54px 50px 112px 104px'
+  const U_COLS = 'minmax(0,1fr) 84px 80px 100px 52px 56px 60px 30px'
+  const R_COLS = 'minmax(0,1fr) 130px 116px 190px'
+  const LB_COLS = '28px minmax(0,1fr) 64px 70px 70px 58px 66px 60px'
   const tableBox = (minWidth, children, extra = '') => <div style={css('overflow-x:auto;' + card + extra)}><div style={{ minWidth }}>{children}</div></div>
   const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
   const REP_KIND = { thread: 'thread', uc_comment: 'comment ở use case', answer: 'comment ở thread', comment: 'reply ở thread' }
@@ -445,7 +490,7 @@ export default function AdminConsolePage() {
                   </div>
                   {notif.items.length === 0 && <div style={css('padding:28px 18px; text-align:center;' + font(600, 13) + ';color:#94a3b8;')}>Chưa có thông báo nào.</div>}
                   {notif.items.map((n) => (
-                    <div key={n.id} onClick={() => { if (n.unread) markNotificationsRead([n.id]); if (n.kind === 'submission' && /^\/review\//.test(n.href || '')) navigate(n.href); else if (n.kind === 'submission') { setSection('usecases'); setUcStatus('pending') } else if (n.kind === 'report') { setSection('reports'); setRepStatus('open'); reloadReports() } else if (n.kind === 'chat') { setSection('inbox'); setChatUid(Number((/#inbox\/(\d+)/.exec(n.href) || [])[1]) || null) } else if (n.href) window.open(n.href, '_blank'); setNotifOpen(false) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F3F5FA; cursor:pointer; background:${n.unread ? '#F3F7FF' : '#fff'};`)}>
+                    <div key={n.id} onClick={() => { if (n.unread) markNotificationsRead([n.id]); if (n.kind === 'submission' && /^\/review\//.test(n.href || '')) navigate(n.href); else if (n.kind === 'submission') { setSection('usecases'); setUcStatus('pending') } else if (n.kind === 'report') { setSection('reports'); setRepStatus('open'); reloadReports() } else if (n.kind === 'chat') setChatUid(Number((/#inbox\/(\d+)/.exec(n.href) || [])[1]) || null); else if (/^\/admin\b/.test(n.href || '')) navigate(n.href); else if (n.href) window.open(n.href, '_blank'); setNotifOpen(false) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F3F5FA; cursor:pointer; background:${n.unread ? '#F3F7FF' : '#fff'};`)}>
                       <span style={css(`flex:none; width:32px; height:32px; border-radius:10px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css(font(n.unread ? 800 : 500, 13, 1.5) + `;color:${n.unread ? '#1a5fff' : '#334155'};`)}>{n.text}</div>
@@ -465,11 +510,11 @@ export default function AdminConsolePage() {
           <div style={css('padding:0 12px 10px;' + font(700, 11.5) + ';letter-spacing:.04em;color:#8aa0d6;')}>QUẢN TRỊ</div>
           <div style={css('display:flex; flex-direction:column; gap:2px;')}>
             {menu.map(([k, label, dot, badge, badgeWhat]) => (
-              <button key={k} onClick={() => setSection(k)} className={section === k ? undefined : hoverClass('background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)) !important; border-color:rgba(130,175,255,.55) !important; color:#dbe8ff !important; box-shadow:0 0 18px rgba(44,95,255,.28) !important;')} style={css(`display:flex; align-items:center; gap:11px; width:100%; height:40px; padding:0 12px; border-radius:12px; cursor:pointer; text-align:left; transition:background .15s, border-color .15s, box-shadow .15s, color .15s; ${section === k ? 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)); border:1px solid rgba(130,175,255,.55); color:#dbe8ff; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10);' : 'background:transparent; border:1px solid transparent; color:#b4c3e8;'}` + font(section === k ? 700 : 500, 14) + ';')}>
+              <Link key={k} to={sectionPath(k)} className={section === k ? undefined : hoverClass('background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)) !important; border-color:rgba(130,175,255,.55) !important; color:#dbe8ff !important; box-shadow:0 0 18px rgba(44,95,255,.28) !important;')} aria-current={section === k ? 'page' : undefined} style={css(`display:flex; align-items:center; gap:11px; box-sizing:border-box; width:100%; height:40px; padding:0 12px; border-radius:12px; cursor:pointer; text-align:left; text-decoration:none; transition:background .15s, border-color .15s, box-shadow .15s, color .15s; ${section === k ? 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)); border:1px solid rgba(130,175,255,.55); color:#dbe8ff; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10);' : 'background:transparent; border:1px solid transparent; color:#b4c3e8;'}` + font(section === k ? 700 : 500, 14) + ';')}>
                 <span style={css(`flex:none; width:8px; height:8px; border-radius:50%; background:${dot}; box-shadow:0 0 8px ${dot};`)}></span>
                 <span style={{ flex: 1 }}>{label}</span>
                 {badge > 0 && <span title={`${badge} ${badgeWhat}`} aria-label={`${badge} ${badgeWhat}`} style={css('display:flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#FF3B30; color:#fff;' + font(800, 11) + ';')}>{badge}</span>}
-              </button>
+              </Link>
             ))}
           </div>
           {/* back to the site everyone else sees */}
@@ -585,27 +630,28 @@ export default function AdminConsolePage() {
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
                     <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp <span style={css(font(600, 13) + ';color:#64748b;')}>· {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Xếp theo tổng số đóng góp: trả lời, comment, thread và use case.</p>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Xếp theo cột Tổng = trả lời + comment + like nhận + thread + use case được duyệt.</p>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px;')}>{csvBtn(exportLeaderboard)}<Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} /></div>
                 </div>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow-x:auto;')}>
-                  <div style={{ minWidth: 760 }}>
-                  <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>THREAD</span><span>USE CASE</span></div>
-                  {(adminStats?.leaderboard?.[lbPeriod] || []).map((u, i) => (
+                  <div style={{ minWidth: 640 }}>
+                  <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>THREAD</span><span title="Use case được duyệt">USE CASE</span><span style={{ color: '#2c5fff' }}>TỔNG</span></div>
+                  {lbRows.map((u, i) => (
                     <div key={u.id} style={bodyRow(LB_COLS)}>
-                      <span style={css(font(900, 15) + `;color:${i < 3 ? ['#E0A100', '#8A99AD', '#B8733A'][i] : '#94a3b8'};`)}>{i + 1}</span>
-                      <div style={css('display:flex; align-items:center; gap:10px; min-width:0;')}>
-                        <span style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11.5) + ';' + avatarPhotoCss(u.avatarUrl))}>{u.initials}</span>
+                      <span style={css(font(900, 14) + `;color:${i < 3 ? ['#E0A100', '#8A99AD', '#B8733A'][i] : '#94a3b8'};`)}>{i + 1}</span>
+                      <div style={css('display:flex; align-items:center; gap:9px; min-width:0;')}>
+                        <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 10.5) + ';' + avatarPhotoCss(u.avatarUrl))}>{u.initials}</span>
                         <div style={{ minWidth: 0 }} title={[cleanName(u.name), u.domain, u.team].filter(Boolean).join(' · ')}>
-                          <div style={css(font(700, 13.5) + ';color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{cleanName(u.name) || u.domain} <span style={css(font(500, 12) + ';color:#94a3b8;')}>· {u.domain}</span></div>
-                          <div style={css(font(400, 11.5) + ';color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{u.team || 'Chưa rõ phòng ban'}</div>
+                          <div style={css(font(700, 13) + ';color:#0f172a;' + ellip)}>{cleanName(u.name) || u.domain} <span style={css(font(500, 11.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
+                          <div style={css(font(400, 11) + ';color:#64748b;' + ellip)}>{u.team || 'Chưa rõ phòng ban'}</div>
                         </div>
                       </div>
-                      {[u.answers, u.comments, u.likes, u.questions, u.useCases].map((v, j) => <span key={j} style={css(font(700, 13.5) + ';color:#3A4757;')}>{v}</span>)}
+                      {[u.answers, u.comments, u.likes, u.questions, u.useCases].map((v, j) => <span key={j} style={css(font(700, 13) + ';color:#3A4757;')}>{v}</span>)}
+                      <span style={css(font(900, 13.5) + ';color:#2c5fff;')}>{u.total}</span>
                     </div>
                   ))}
-                  {adminStats && !(adminStats.leaderboard?.[lbPeriod] || []).length && empty('Chưa có ai đóng góp trong khoảng thời gian này.')}
+                  {adminStats && !lbRows.length && empty('Chưa có ai đóng góp trong khoảng thời gian này.')}
                   </div>
                 </div>
               </div>
@@ -631,27 +677,31 @@ export default function AdminConsolePage() {
               <Heading title="Duyệt use case" sub="Use case người dùng gửi phải được duyệt trước khi đăng. Từ chối cần kèm lý do để tác giả sửa." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={ucQuery} onChange={setUcQuery} placeholder="Tìm theo tên use case, tác giả, team..." />
-                {ucStatus !== 'published' && <Tabs value={ucSort} onChange={setUcSort} tabs={[['newest', 'Mới gửi trước'], ['waiting', 'Chờ lâu nhất trước']]} />}
-                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Đang đợi duyệt', pending.length], ['changes_requested', 'Đang đợi chỉnh sửa', submissions.filter((x) => x.reviewStatus === 'changes_requested').length], ['published', 'Đã đăng', published.length], ['rejected', 'Từ chối', submissions.filter((x) => x.reviewStatus === 'rejected').length]]} />
+                {!['published', 'showcase'].includes(ucStatus) && <Tabs value={ucSort} onChange={setUcSort} tabs={[['newest', 'Mới gửi trước'], ['waiting', 'Chờ lâu nhất trước']]} />}
               </div>
-              {ucStatus === 'published' ? tableBox(940, (
+              {/* the four tabs that make up "Use case gửi duyệt" on Tổng quan, then the showcase cases on their own */}
+              <div style={css('display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;')}>
+                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['pending', 'Đang đợi duyệt', ucCount('pending')], ['changes_requested', 'Đang đợi chỉnh sửa', ucCount('changes_requested')], ['published', 'Đã đăng', ucCount('approved')], ['rejected', 'Từ chối', ucCount('rejected')]]} />
+                <span style={css(font(600, 12) + ';color:rgba(206,219,245,.6);')}>= {submissions.length} bài gửi duyệt</span>
+                <span style={css('width:1px; height:24px; background:rgba(130,170,255,.25);')}></span>
+                <Tabs value={ucStatus} onChange={setUcStatus} tabs={[['showcase', 'Use case mẫu', showcaseLive]]} />
+              </div>
+              {ucStatus === 'showcase' && <div style={css('margin-top:10px;' + font(400, 12.5) + ';color:rgba(206,219,245,.72);')}>Use case AI Space viết sẵn (showcase): không qua duyệt nên không tính vào "Use case gửi duyệt". Cùng hiện trong Use Case Library với các bài Đã đăng.</div>}
+              {['published', 'showcase'].includes(ucStatus) ? tableBox(760, (
               <>
-                <div style={headRow(P_COLS)}><span>USE CASE ĐANG ĐĂNG · {sortHead('postedAt', 'NGÀY ĐĂNG')}</span><span>DUYỆT BỞI</span><span>{sortHead('upvotes', 'THÍCH')}</span><span>{sortHead('comments', 'BÌNH LUẬN')}</span><span>{sortHead('saves', 'LƯU')}</span><span>{sortHead('applied', 'ĐÃ ÁP DỤNG')}</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(P_COLS)}><span>{ucStatus === 'showcase' ? 'USE CASE MẪU' : 'USE CASE ĐANG ĐĂNG'} · {sortHead('postedAt', 'NGÀY ĐĂNG')}</span><span>DUYỆT BỞI</span><span>{sortHead('upvotes', 'THÍCH')}</span><span>{sortHead('comments', 'BÌNH LUẬN')}</span><span>{sortHead('saves', 'LƯU')}</span><span>{sortHead('applied', 'ĐÃ ÁP DỤNG')}</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {pubRows.map((c) => {
                   const sub = c.source === 'community' ? submissions.find((x) => x.id === c.id) : null
                   const by = reviewerOf(c.approvedBy, c.reviewCommenters)
                   return (
                     <div key={c.id} style={bodyRow(P_COLS)}>
                       <div style={{ minWidth: 0 }}>
-                        <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; overflow-wrap:break-word; text-decoration:none;' + clamp2)}>{c.title}</a>
-                        <div style={css('margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; overflow-wrap:break-word;' + font(400, 12) + ';color:#94a3b8;')}>
-                          <span style={css(c.source === 'showcase' ? pill('#EEF3FF', '#2c5fff') : pill('#F1F4FA', '#3A4757'))}>{c.source === 'showcase' ? 'Showcase' : 'Cộng đồng gửi'}</span>
-                          {[c.source === 'community' ? ucWho(c) : c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : ''].filter(Boolean).join(' · ')}
-                        </div>
+                        <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" title={c.title} className={hoverClass('color:#2c5fff !important;')} style={css(font(700, 13, 1.4) + ';color:#0f172a; text-decoration:none;' + clamp2)}>{c.title}</a>
+                        {(() => { const meta = [c.source === 'community' ? ucWho(c) : c.author, c.team !== c.author ? c.team : '', c.postedAt ? 'Đăng ' + fmtDate(c.postedAt) : ''].filter(Boolean).join(' · '); return <div title={meta} style={css('margin-top:2px;' + font(400, 11.5) + ';color:#94a3b8;' + ellip)}>{meta}</div> })()}
                       </div>
-                      <span title={c.approvedBy ? '' : by ? 'Bài duyệt trước khi hệ thống ghi người duyệt; đây là admin đã góp ý trên bài.' : ''} style={css(font(600, 12.5) + ';color:' + (c.approvedBy ? '#3A4757' : '#94a3b8') + '; overflow-wrap:break-word;')}>{c.source === 'showcase' ? '—' : by || 'Không rõ'}</span>
-                      {[c.upvotes, c.comments, c.saves, c.applied].map((v, j) => <span key={j} style={css(font(800, 14) + ';color:#3A4757;')}>{v}</span>)}
-                      <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                      <span title={c.approvedBy ? c.approvedBy : by ? by + ' (bài duyệt trước khi hệ thống ghi người duyệt; đây là admin đã góp ý trên bài)' : ''} style={css(font(600, 12) + ';color:' + (c.approvedBy ? '#3A4757' : '#94a3b8') + ';' + ellip)}>{c.source === 'showcase' ? '—' : by || 'Không rõ'}</span>
+                      {[c.upvotes, c.comments, c.saves, c.applied].map((v, j) => <span key={j} style={num}>{v}</span>)}
+                      <div style={css('display:flex; justify-content:flex-end; gap:5px;')}>
                         <a href={`/use-cases/${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Mở ↗</a>
                         {sub && <button onClick={() => remove(sub)} style={css(btn('reject'))}>Xoá</button>}
                         {c.source === 'showcase' && <button onClick={() => setConfirm({ text: `Gỡ use case mẫu "${c.title}" khỏi web? Bài sẽ không còn hiện trong Use Case Library.`, run: () => api.adminHideShowcase(c.id).then(reloadPublished).catch(() => {}) })} style={css(btn('reject'))}>Xoá</button>}
@@ -659,13 +709,13 @@ export default function AdminConsolePage() {
                     </div>
                   )
                 })}
-                {pubRows.length === 0 && empty('Không có use case nào khớp bộ lọc.')}
+                {pubRows.length === 0 && empty(ucq ? 'Không có use case nào khớp bộ lọc.' : ucStatus === 'showcase' ? 'Không có use case mẫu nào đang hiện.' : 'Chưa có use case cộng đồng gửi nào được đăng.')}
               </>
               ), 'margin-top:16px;') : (
               <>
-              {/* scrolls sideways on narrow screens instead of squeezing the columns */}
+              {/* fits a 1280px window; scrolls sideways only on narrower ones instead of squeezing the columns */}
               <div style={css('margin-top:16px; overflow-x:auto;' + card)}>
-                <div style={{ minWidth: 1000 }}>
+                <div style={{ minWidth: 860 }}>
                 <div style={headRow(UC_COLS)}><input type="checkbox" aria-label="Chọn tất cả use case đang hiện" checked={ucRows.length > 0 && ucRows.every((s) => ucPicked.has(s.id))} onChange={(e) => setUcPicked(e.target.checked ? new Set(ucRows.map((s) => s.id)) : new Set())} style={{ margin: 0, cursor: 'pointer' }} /><span>USE CASE</span><span>NGƯỜI GỬI</span><span>NGÀY GỬI</span><span>REVIEW BỞI</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {ucRows.map((s) => {
                   const st = UC_STATUS[s.reviewStatus] || UC_STATUS.pending
@@ -675,19 +725,20 @@ export default function AdminConsolePage() {
                     <div key={s.id} style={bodyRow(UC_COLS)}>
                       <input type="checkbox" aria-label={'Chọn ' + s.title} checked={ucPicked.has(s.id)} onChange={(e) => setUcPicked((prev) => { const n = new Set(prev); if (e.target.checked) n.add(s.id); else n.delete(s.id); return n })} style={{ margin: 0, cursor: 'pointer' }} />
                       <div style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => navigate('/review/' + encodeURIComponent(s.id))}>
-                        <div className={hoverClass('color:#2c5fff;')} style={css(font(700, 14) + ';color:#0f172a; overflow-wrap:break-word;')}>{s.title}</div>
-                        <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[s.team, [].concat(s.category)[0]].filter(Boolean).join(' · ')}</div>
-                        {twin && <div title={`Người gửi đã có bài cùng tên (${(UC_STATUS[twin.reviewStatus] || UC_STATUS.pending).label.toLowerCase()}), có thể là gửi trùng.`} style={css('margin-top:5px;' + pill('#FFF4E3', '#9A5B00'))}>⚠ Trùng tên với bài khác của người này</div>}
-                        {REVIEWED_BY[s.reviewStatus] && s.reviewedBy && <div style={css('margin-top:4px;' + font(600, 12) + ';color:#475569;')}>{REVIEWED_BY[s.reviewStatus]} <b style={{ color: '#0f172a' }}>{s.reviewedBy}</b>{s.reviewedAt ? ' · ' + relativeTime(s.reviewedAt) : ''}</div>}
-                        {s.reviewStatus === 'rejected' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFECEC;' + font(600, 12, 1.5) + ';color:#B4232A;')}>Lý do từ chối: {s.adminNote}</div>}
-                        {s.reviewStatus === 'changes_requested' && s.adminNote && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#FFF4E3;' + font(600, 12, 1.5) + ';color:#7A4700; white-space:pre-wrap;')}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div>}
+                        <div title={s.title} className={hoverClass('color:#2c5fff;')} style={css(font(700, 13, 1.4) + ';color:#0f172a;' + clamp2)}>{s.title}</div>
+                        {(() => { const meta = [s.team, [].concat(s.category)[0]].filter(Boolean).join(' · '); return meta && <div title={meta} style={css('margin-top:2px;' + font(400, 11.5) + ';color:#94a3b8;' + ellip)}>{meta}</div> })()}
+                        {twin && <div title={`Người gửi đã có bài cùng tên (${(UC_STATUS[twin.reviewStatus] || UC_STATUS.pending).label.toLowerCase()}), có thể là gửi trùng.`} style={css('margin-top:4px;' + pill('#FFF4E3', '#9A5B00'))}>⚠ Trùng tên với bài khác của người này</div>}
+                        {REVIEWED_BY[s.reviewStatus] && s.reviewedBy && <div style={css('margin-top:3px;' + font(600, 11.5) + ';color:#475569;' + ellip)}>{REVIEWED_BY[s.reviewStatus]} <b style={{ color: '#0f172a' }}>{s.reviewedBy}</b>{s.reviewedAt ? ' · ' + relativeTime(s.reviewedAt) : ''}</div>}
+                        {s.reviewStatus === 'rejected' && s.adminNote && <div title={s.adminNote} style={css('margin-top:5px; padding:5px 9px; border-radius:8px; background:#FFECEC;' + font(600, 11.5, 1.45) + ';color:#B4232A;')}><div style={css(clamp2)}>Lý do từ chối: {s.adminNote}</div></div>}
+                        {s.reviewStatus === 'changes_requested' && s.adminNote && <div title={s.adminNote} style={css('margin-top:5px; padding:5px 9px; border-radius:8px; background:#FFF4E3;' + font(600, 11.5, 1.45) + ';color:#7A4700;')}><div style={css(clamp2)}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div></div>}
                       </div>
-                      <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; overflow-wrap:break-word;')} title={[s.realAuthor || s.authorDomain, s.anonymous ? 'bài cũ đăng ẩn danh với tên ' + (s.alias || 'Anonymous') : ''].filter(Boolean).join(' · ')}>{ucWho(s)}</div>
-                      <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{fmtDate(s.time)}<div style={css(font(500, 11.5) + ';color:#94a3b8;')}>{relativeTime(s.time)}</div></div>
-                      <div title={s.reviewedBy || !by ? '' : 'Chưa có quyết định được ghi người duyệt; đây là admin đã góp ý trên bài.'} style={css(font(600, 12.5) + ';color:' + (s.reviewedBy ? '#3A4757' : '#94a3b8') + '; overflow-wrap:break-word;')}>{by || (s.reviewedAt ? 'Không rõ' : '—')}</div>
+                      <div style={css(font(600, 12) + ';color:#3A4757;' + ellip)} title={[ucWho(s), s.realAuthor || s.authorDomain, s.anonymous ? 'bài cũ đăng ẩn danh với tên ' + (s.alias || 'Anonymous') : ''].filter(Boolean).join(' · ')}>{ucWho(s)}</div>
+                      <div style={css(font(600, 12) + ';color:#3A4757; white-space:nowrap;')}>{fmtDate(s.time)}<div style={css(font(500, 11) + ';color:#94a3b8;' + ellip)}>{relativeTime(s.time)}</div></div>
+                      {/* who reviewed it; a post still waiting for its first decision shows "—" */}
+                      <div title={by ? (s.reviewedBy ? by : by + ' (chưa có quyết định được ghi người duyệt; đây là admin đã góp ý trên bài)') : ''} style={css(font(600, 12) + ';color:' + (s.reviewedBy ? '#3A4757' : '#94a3b8') + ';' + ellip)}>{by || (s.reviewedAt || s.reviewStatus !== 'pending' ? 'Không rõ' : '—')}</div>
                       <div><span style={css(pill(st.bg, st.fg))}>{st.label}</span></div>
-                      <div style={css('display:flex; justify-content:flex-end; gap:6px; flex-wrap:nowrap;')}>
-                        <button onClick={() => navigate('/review/' + encodeURIComponent(s.id))} style={css(btn('plain'))}>{['pending', 'changes_requested'].includes(s.reviewStatus) ? 'Xem & góp ý' : 'Xem'}</button>
+                      <div style={css('display:flex; justify-content:flex-end; gap:5px; flex-wrap:nowrap;')}>
+                        <button onClick={() => navigate('/review/' + encodeURIComponent(s.id))} title={['pending', 'changes_requested'].includes(s.reviewStatus) ? 'Xem bài & góp ý' : 'Xem bài'} style={css(btn('plain'))}>Xem</button>
                         {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'approved')} style={css(btn('approve'))}>Duyệt</button>}
                         {s.reviewStatus === 'pending' && <button onClick={() => askReview(s.id, 'changes_requested')} style={css(btn('changes'))}>Yêu cầu sửa</button>}
                         {['pending', 'changes_requested'].includes(s.reviewStatus) && <button onClick={() => askReview(s.id, 'rejected')} style={css(btn('reject'))}>Từ chối</button>}
@@ -734,14 +785,14 @@ export default function AdminConsolePage() {
                 {qRows.map((q) => (
                   <div key={q.id} style={bodyRow(Q_COLS)}>
                     <div style={{ minWidth: 0 }}>
-                      <div title={q.title} onClick={() => setQDetailId(q.id)} className={hoverClass('color:#2c5fff;')} style={css(font(700, 14, 1.4) + ';color:#0f172a; cursor:pointer;' + clamp2)}>{q.title}</div>
-                      <div style={css('margin-top:4px;' + font(400, 12) + ';color:#94a3b8;')}>{[relativeTime(q.time), ...(q.topics || [])].join(' · ')}</div>
+                      <div title={q.title} onClick={() => setQDetailId(q.id)} className={hoverClass('color:#2c5fff;')} style={css(font(700, 13, 1.4) + ';color:#0f172a; cursor:pointer;' + clamp2)}>{q.title}</div>
+                      <div title={[relativeTime(q.time), ...(q.topics || [])].join(' · ')} style={css('margin-top:2px;' + font(400, 11.5) + ';color:#94a3b8;' + ellip)}>{[relativeTime(q.time), ...(q.topics || [])].join(' · ')}</div>
                     </div>
-                    <div style={css(font(600, 12.5) + ';color:#3A4757; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')} title={q.anonymous ? `Đăng ẩn danh với tên "${q.author}" · tài khoản thật: ${q.account || q.realAuthor}` : [cleanName(q.fullName), q.account].filter(Boolean).join(' · ')}>{realWho(q.author, q.account || q.realAuthor, q.anonymous)}</div>
-                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{q.answers.length}</div>
-                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{helpful(q)}</div>
+                    <div style={css(font(600, 12) + ';color:#3A4757;' + ellip)} title={q.anonymous ? `Đăng ẩn danh với tên "${q.author}" · tài khoản thật: ${q.account || q.realAuthor}` : [cleanName(q.fullName), q.account].filter(Boolean).join(' · ')}>{realWho(q.author, q.account || q.realAuthor, q.anonymous)}</div>
+                    <div style={num}>{q.answers.length}</div>
+                    <div style={num}>{helpful(q)}</div>
                     <div><span style={css(q.answers.length ? pill('#E7F9F0', '#00893F') : pill('#FFF1E0', '#B45300'))}>{q.answers.length ? 'Đã có trả lời' : 'Chưa có trả lời'}</span></div>
-                    <div style={css('display:flex; justify-content:flex-end; gap:7px;')}>
+                    <div style={css('display:flex; justify-content:flex-end; gap:5px;')}>
                       <button onClick={() => setQDetailId(q.id)} style={css(btn('plain'))}>Xem</button>
                       <button onClick={() => removeQuestion(q, reloadQuestions)} style={css(btn('reject'))}>Xoá</button>
                     </div>
@@ -758,20 +809,20 @@ export default function AdminConsolePage() {
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px;')}>
                 <Tabs value={repStatus} onChange={setRepStatus} tabs={[['open', 'Chờ xử lý', reports.filter((r) => r.status === 'open').length], ['done', 'Đã xử lý', reports.filter((r) => r.status !== 'open').length], ['all', 'Tất cả', reports.length]]} />
               </div>
-              {tableBox(850, (<>
+              {tableBox(720, (<>
                 <div style={headRow(R_COLS)}><span>NỘI DUNG BỊ BÁO CÁO</span><span>NGƯỜI BÁO CÁO</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {repRows.map((r) => {
                   const st = REP_STATUS[r.status] || REP_STATUS.open
                   return (
                     <div key={r.id} style={bodyRow(R_COLS)}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={css(font(600, 13.5, 1.55) + ';color:#0f172a; white-space:pre-wrap; word-break:break-word;')}>"{r.excerpt}"</div>
-                        <div style={css('margin-top:5px;' + font(400, 12) + ';color:#94a3b8;')}>Viết bởi {r.author} · {REP_KIND[r.type] || 'comment'}{r.exists ? '' : ' · nội dung đã bị xoá'}</div>
-                        {r.reason && <div style={css('margin-top:8px; padding:8px 12px; border-radius:10px; background:#F8FAFE; border:1px solid #EEF1F7;' + font(500, 12.5, 1.5) + ';color:#3A4757;')}>Lý do: {r.reason}</div>}
+                        <div title={r.excerpt} style={css(font(600, 13, 1.5) + ';color:#0f172a;' + clamp2)}>"{r.excerpt}"</div>
+                        <div style={css('margin-top:2px;' + font(400, 11.5) + ';color:#94a3b8;' + ellip)}>Viết bởi {r.author} · {REP_KIND[r.type] || 'comment'}{r.exists ? '' : ' · nội dung đã bị xoá'}</div>
+                        {r.reason && <div title={r.reason} style={css('margin-top:5px; padding:5px 9px; border-radius:8px; background:#F8FAFE; border:1px solid #EEF1F7;' + font(500, 12, 1.45) + ';color:#3A4757;')}><div style={css(clamp2)}>Lý do: {r.reason}</div></div>}
                       </div>
-                      <div style={css(font(600, 12.5) + ';color:#3A4757;')}>{r.reporter}<div style={css('margin-top:3px;' + font(400, 11.5) + ';color:#94a3b8;')}>{relativeTime(r.time)}</div></div>
+                      <div title={r.reporter} style={css(font(600, 12) + ';color:#3A4757;' + ellip)}>{r.reporter}<div style={css('margin-top:2px;' + font(400, 11) + ';color:#94a3b8;')}>{relativeTime(r.time)}</div></div>
                       <div><span style={css(pill(st[1], st[2]))}>{st[0]}</span></div>
-                      <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                      <div style={css('display:flex; justify-content:flex-end; gap:5px; flex-wrap:wrap;')}>
                         {r.exists && <a href={r.path} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Xem</a>}
                         {r.status === 'open' && r.exists && <button onClick={() => setConfirm({ text: r.type === 'thread' ? 'Xoá thread bị báo cáo (cùng toàn bộ trả lời)?' : 'Xoá comment bị báo cáo (và các reply bên dưới)?', run: () => resolveReport(r, 'delete') })} style={css(btn('reject'))}>Xoá nội dung</button>}
                         {r.status === 'open' && <button onClick={() => resolveReport(r, 'dismiss')} style={css(btn('plain'))}>Bỏ qua</button>}
@@ -796,7 +847,7 @@ export default function AdminConsolePage() {
             const count = (k) => list.filter((b) => k === 'all' || b.status === k).length
             // most-wanted first: owners of booths people are waiting for get nudged first
             const rows = list.filter((b) => boothTab === 'all' || b.status === boothTab).sort((a, b) => b.interest - a.interest || a.booth - b.booth)
-            const B_COLS = 'minmax(220px,1fr) 160px 72px 120px 110px 190px'
+            const B_COLS = 'minmax(0,1fr) 140px 62px 108px 88px 164px'
             const inviteOne = (b) => api.inviteBooth(b.id).then(() => { setBoothMsg(`Đã gửi lời mời tới Owner của booth ${b.booth} · ${b.title}.`); reloadBooths() }).catch(() => {})
             // same set as the server's: no write-up yet, or the last one was rejected
             const todo = list.filter((b) => b.status === 'not_started' || b.status === 'rejected')
@@ -815,9 +866,9 @@ export default function AdminConsolePage() {
                   <button onClick={inviteAll} disabled={!todo.length} style={css(btn('approve') + 'height:36px; padding:0 14px; margin-left:auto;' + (todo.length ? '' : 'opacity:.5; cursor:default;'))}>Mời tất cả booth chưa gửi bài ({todo.length})</button>
                 </div>
                 {boothMsg && <div style={css('margin-top:12px;' + font(600, 13) + ';color:#9fe0b9;')}>{boothMsg}</div>}
-                {/* scrolls sideways on narrow windows instead of squeezing the booth names */}
+                {/* scrolls sideways only on narrow windows instead of squeezing the booth names */}
                 <div style={css('margin-top:16px; overflow-x:auto;' + card)}>
-                  <div style={{ minWidth: 900 }}>
+                  <div style={{ minWidth: 780 }}>
                   <div style={headRow(B_COLS)}><span>BOOTH</span><span>OWNER</span><span>QUAN TÂM</span><span>TRẠNG THÁI</span><span>ĐÃ MỜI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                   {booths === null && empty('Đang tải…')}
                   {rows.map((b) => {
@@ -825,20 +876,20 @@ export default function AdminConsolePage() {
                     return (
                       <div key={b.id} style={bodyRow(B_COLS)}>
                         <div style={{ minWidth: 0 }}>
-                          <div style={css(font(700, 13.5, 1.4) + ';color:#0f172a;')}>{b.booth}. {b.title}</div>
-                          <div style={css('margin-top:3px;' + font(400, 12) + ';color:#94a3b8;')}>{[b.label, b.category].filter(Boolean).join(' · ')}</div>
+                          <div title={`${b.booth}. ${b.title}`} style={css(font(700, 13, 1.4) + ';color:#0f172a;' + clamp2)}>{b.booth}. {b.title}</div>
+                          <div style={css('margin-top:2px;' + font(400, 11.5) + ';color:#94a3b8;' + ellip)}>{[b.label, b.category].filter(Boolean).join(' · ')}</div>
                         </div>
-                        <div style={css(font(600, 12) + ';color:#3A4757;')} title={[...b.pic, ...b.members].join(', ')}>
-                          <div style={css('white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{(b.members.length ? b.members : b.pic).join(', ') || '—'}</div>
-                          <div style={css('margin-top:3px;' + font(400, 11.5) + ';color:#94a3b8;')}>{b.ownersOnSite}/{b.owners} đã vào AI Space</div>
+                        <div style={css(font(600, 12) + ';color:#3A4757; min-width:0;')} title={[...b.pic, ...b.members].join(', ')}>
+                          <div style={css(ellip)}>{(b.members.length ? b.members : b.pic).join(', ') || '—'}</div>
+                          <div style={css('margin-top:2px;' + font(400, 11) + ';color:#94a3b8;' + ellip)}>{b.ownersOnSite}/{b.owners} đã vào AI Space</div>
                         </div>
-                        <div style={css(font(700, 13.5) + ';color:#B45300;')}>{b.interest}</div>
-                        <div>
+                        <div style={css(font(700, 13) + ';color:#B45300;')}>{b.interest}</div>
+                        <div style={{ minWidth: 0 }}>
                           <span style={css(pill(st[1], st[2]))}>{st[0]}</span>
-                          {b.submittedBy && <div style={css('margin-top:4px;' + font(400, 11.5) + ';color:#94a3b8;')}>{b.submittedBy}</div>}
+                          {b.submittedBy && <div title={b.submittedBy} style={css('margin-top:3px;' + font(400, 11) + ';color:#94a3b8;' + ellip)}>{b.submittedBy}</div>}
                         </div>
-                        <div title={b.invitedAt ? 'Lần mời gần nhất: ' + relativeTime(b.invitedAt) : ''} style={css(font(400, 12) + ';color:#64748b;')}>{b.invitedAt ? <>{fmtDate(b.invitedAt)}<div style={css(font(400, 11.5) + ';color:#94a3b8;')}>{b.invites} lần mời</div></> : 'Chưa mời'}</div>
-                        <div style={css('display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;')}>
+                        <div title={b.invitedAt ? 'Lần mời gần nhất: ' + relativeTime(b.invitedAt) : ''} style={css(font(400, 11.5) + ';color:#64748b; white-space:nowrap;')}>{b.invitedAt ? <>{fmtDate(b.invitedAt)}<div style={css(font(400, 11) + ';color:#94a3b8;')}>{b.invites} lần mời</div></> : 'Chưa mời'}</div>
+                        <div style={css('display:flex; justify-content:flex-end; gap:5px; flex-wrap:wrap;')}>
                           {b.status !== 'approved' && <button onClick={() => inviteOne(b)} style={css(btn('plain'))}>{b.invites ? 'Nhắc lại' : 'Mời'}</button>}
                           {(b.status === 'pending' || b.status === 'changes_requested') && b.submissionId && <button onClick={() => navigate('/review/' + encodeURIComponent(b.submissionId))} style={css(btn('changes'))}>Duyệt</button>}
                           <a href={b.status === 'approved' && b.submissionId ? `/use-cases/${encodeURIComponent(b.submissionId)}` : `/use-cases/${b.id}`} target="_blank" rel="noreferrer" title="Mở trang booth trong tab mới" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Xem ↗</a>
@@ -934,7 +985,7 @@ export default function AdminConsolePage() {
                   {teams.map((tm) => <option key={tm || '_'} value={tm}>{tm || 'Chưa rõ phòng ban'}</option>)}
                 </select>
                 {csvBtn(exportUsers)}
-                <Tabs value={userRole} onChange={setUserRole} tabs={[['all', 'Tất cả', users.length], ['admin', 'Admin', users.filter((u) => u.isAdmin).length], ['member', 'Thành viên', users.filter((u) => !u.isAdmin).length]]} />
+                <Tabs value={userRole} onChange={setUserRole} tabs={[['all', 'Tất cả', users.length], ['admin', 'Admin', users.filter((u) => u.isAdmin).length], ['member', 'Thành viên', users.filter((u) => !u.isAdmin).length], ['cleanup', 'Cần dọn', needsCleanup.length]]} />
               </div>
               <div style={css('display:flex; align-items:flex-start; gap:14px; margin-top:18px; padding:16px 18px;' + card + (dirStatus?.state === 'ok' ? 'border-color:#BEE9D3;' : dirStatus ? 'border-color:#F5C9CB;' : ''))}>
                 <span style={css(`flex:none; width:10px; height:10px; margin-top:5px; border-radius:50%; background:${!dirStatus ? '#94a3b8' : dirStatus.state === 'ok' ? '#00A352' : dirStatus.state === 'needs_login' ? '#FF8D00' : '#D8232A'};`)}></span>
@@ -959,15 +1010,20 @@ export default function AdminConsolePage() {
                 </div>
                 <button onClick={checkDirectory} style={css(btn('plain'))}>Kiểm tra lại</button>
               </div>
-              {tableBox(960, (<>
+              {tableBox(780, (<>
                 <div style={headRow(U_COLS)}><span>THÀNH VIÊN</span><span>VAI TRÒ</span><span>THAM GIA</span><span>HOẠT ĐỘNG GẦN NHẤT</span><span>THREAD</span><span>TRẢ LỜI</span><span>USE CASE</span><span></span></div>
                 {userRows.map((u, i) => (
                   <div key={u.id} style={bodyRow(U_COLS)}>
-                    <div style={css('display:flex; align-items:center; gap:12px; min-width:0;')}>
-                      <span style={css(`flex:none; width:36px; height:36px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 12) + ';' + avatarPhotoCss(u.avatarUrl))}>{u.initials}</span>
+                    <div style={css('display:flex; align-items:center; gap:10px; min-width:0;')}>
+                      <span style={css(`flex:none; width:30px; height:30px; border-radius:50%; background:${u.avatarColor || AV[i % AV.length]}; color:#fff; display:flex; align-items:center; justify-content:center;` + font(800, 11) + ';' + avatarPhotoCss(u.avatarUrl))}>{u.initials}</span>
                       <div style={{ minWidth: 0 }}>
-                        <div title={`${cleanName(u.name)} · ${u.domain}`} style={css(font(700, 14, 1.4) + ';color:#0f172a; overflow-wrap:break-word;')}>{cleanName(u.name)} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {u.domain}</span></div>
-                        <div title={u.email + (u.team ? ' · ' + u.team : '')} style={css('margin-top:3px;' + font(400, 12, 1.45) + ';color:#64748b; overflow-wrap:break-word;')}>{u.email}{u.team ? ' · ' + u.team : ''}</div>
+                        <div title={`${cleanName(u.name)} · ${u.domain}`} style={css(font(700, 13, 1.4) + ';color:#0f172a;' + ellip)}>{cleanName(u.name)} <span style={css(font(500, 12) + ';color:#94a3b8;')}>· {u.domain}</span></div>
+                        <div title={u.email + (u.team ? ' · ' + u.team : '')} style={css('margin-top:1px;' + font(400, 11.5, 1.45) + ';color:#64748b;' + ellip)}>{u.email}{u.team ? ' · ' + u.team : ''}</div>
+                        {cleanupOf(u).length > 0 && (
+                          <div style={css('display:flex; gap:4px; flex-wrap:wrap; margin-top:3px;')}>
+                            {cleanupOf(u).map((why) => <span key={why} title={why} style={css((why === 'Chưa rõ phòng ban' ? pill('#F1F4FA', '#5B6675') : pill('#FFF4E3', '#9A5B00')) + 'height:18px; padding:0 7px; max-width:100%; overflow:hidden; text-overflow:ellipsis;' + font(700, 10.5))}>{why}</span>)}
+                          </div>
+                        )}
                         {/* Microsoft's organisation fields from the last SSO sign-in (what marks Zalopay staff): folded away,
                             the AD distinguished name is only for debugging sign-in */}
                         {u.org && (u.org.companyName || u.org.officeLocation || u.org.onPremisesDistinguishedName) && (
@@ -981,14 +1037,14 @@ export default function AdminConsolePage() {
                       </div>
                     </div>
                     <div><span style={css(u.isAdmin ? pill('#EDE7FF', '#6F0CE2') : pill('#EDF0FA', '#3A4757'))}>{u.isAdmin ? 'Admin' : 'Thành viên'}</span></div>
-                    <div style={css(font(500, 12.5) + ';color:#64748b;')}>{fmtDate(u.joined)}</div>
-                    <div style={css(font(500, 12.5) + ';color:#64748b;')}>{fmtDay(u.lastActive)}</div>
-                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.questions}</div>
-                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.answers}</div>
-                    <div style={css(font(800, 14) + ';color:#3A4757;')}>{u.useCases}</div>
+                    <div style={css(font(500, 12) + ';color:#64748b; white-space:nowrap;')}>{fmtDate(u.joined)}</div>
+                    <div style={css(font(500, 12) + ';color:#64748b; white-space:nowrap;')}>{fmtDay(u.lastActive)}</div>
+                    <div style={num}>{u.questions}</div>
+                    <div style={num}>{u.answers}</div>
+                    <div style={num}>{u.useCases}</div>
                     <div style={css('display:flex; justify-content:flex-end;')}>
                       <button data-row-menu onClick={(e) => { const b = e.currentTarget.getBoundingClientRect(); setRowMenu((m) => (m?.id === u.id ? null : { id: u.id, x: b.right, y: b.bottom })) }} title="Thao tác" aria-label={'Thao tác với ' + u.email} aria-expanded={rowMenu?.id === u.id}
-                        className={hoverClass('background:#EEF3FF !important; color:#2c5fff !important;')} style={css(`width:30px; height:30px; border:1px solid #DDE3EC; border-radius:9px; background:${rowMenu?.id === u.id ? '#EEF3FF' : '#fff'}; color:#3A4757; cursor:pointer;` + font(800, 15, 1))}>⋯</button>
+                        className={hoverClass('background:#EEF3FF !important; color:#2c5fff !important;')} style={css(`width:28px; height:28px; border:1px solid #DDE3EC; border-radius:8px; background:${rowMenu?.id === u.id ? '#EEF3FF' : '#fff'}; color:#3A4757; cursor:pointer;` + font(800, 15, 1))}>⋯</button>
                     </div>
                   </div>
                 ))}
@@ -1001,11 +1057,19 @@ export default function AdminConsolePage() {
                 const self = u.email.toLowerCase() === String(user.email || '').toLowerCase()
                 const blocked = u.isAdmin && (fromEnv ? 'Admin này nằm trong cấu hình ADMIN_EMAILS trên Coolify, bỏ ở đó.' : self ? 'Không tự bỏ quyền admin của mình được.' : '')
                 const item = 'display:block; width:100%; text-align:left; padding:9px 12px; border:none; border-radius:9px; background:transparent;'
+                // why "Xoá tài khoản" isn't possible here, or '' when it is
+                const linked = Object.entries(u.links || {})
+                const noDelete = self ? 'Không tự xoá tài khoản của mình được.' : fromEnv ? 'Tài khoản nằm trong ADMIN_EMAILS trên Coolify nên không xoá được.'
+                  : linked.length ? `Không xoá được: tài khoản còn ${linked.map(([what, n]) => `${n} ${what}`).join(', ')}. Chỉ xoá được tài khoản chưa có nội dung hay hoạt động nào.` : ''
                 return (
                   <div data-row-menu role="menu" style={css(`position:fixed; top:${rowMenu.y + 6}px; left:${Math.max(8, rowMenu.x - 240)}px; width:240px; z-index:800; padding:6px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(6,14,40,.35);`)}>
                     {!u.isAdmin && <button role="menuitem" onClick={() => { setRowMenu(null); makeAdmin(u) }} className={hoverClass('background:#F3EEFF !important;')} style={css(item + 'cursor:pointer;' + font(700, 13) + ';color:#6F0CE2;')}>Đặt làm Admin</button>}
                     {u.isAdmin && <button role="menuitem" disabled={!!blocked} title={blocked || ''} onClick={() => { setRowMenu(null); removeAdmin(u.email) }} className={blocked ? undefined : hoverClass('background:#FFF1F1 !important;')} style={css(item + (blocked ? 'cursor:not-allowed; opacity:.55;' : 'cursor:pointer;') + font(700, 13) + ';color:#D8232A;')}>Gỡ Admin</button>}
                     {blocked && <div style={css('padding:2px 12px 8px;' + font(400, 11.5, 1.45) + ';color:#94a3b8;')}>{blocked}</div>}
+                    {/* only for an account nothing on the site belongs to (e.g. a duplicate); the server checks again */}
+                    <div style={css('height:1px; margin:4px 6px; background:#EEF1F7;')}></div>
+                    <button role="menuitem" disabled={!!noDelete} title={noDelete || ''} onClick={() => { setRowMenu(null); deleteUser(u) }} className={noDelete ? undefined : hoverClass('background:#FFF1F1 !important;')} style={css(item + (noDelete ? 'cursor:not-allowed; opacity:.55;' : 'cursor:pointer;') + font(700, 13) + ';color:#D8232A;')}>Xoá tài khoản</button>
+                    {noDelete && <div style={css('padding:2px 12px 8px;' + font(400, 11.5, 1.45) + ';color:#94a3b8;')}>{noDelete}</div>}
                   </div>
                 )
               })()}

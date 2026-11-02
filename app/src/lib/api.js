@@ -55,6 +55,8 @@ export const api = {
   listNotifications: () => request('/notifications'),
   markNotificationsRead: (ids) => request('/notifications/read', { method: 'POST', body: JSON.stringify(ids ? { ids } : {}) }),
   adminUsers: () => request('/admin/users'),
+  // Thành viên › ⋯ › Xoá tài khoản: only accounts with nothing on the site (the server says what is still linked)
+  adminDeleteUser: (id) => request(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   directoryStatus: () => request('/admin/directory-status'),
   adminStats: () => request('/admin/stats'),
   listUsers: (q) => request('/auth/users?q=' + encodeURIComponent(q || '')),

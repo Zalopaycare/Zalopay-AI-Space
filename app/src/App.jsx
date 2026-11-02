@@ -40,8 +40,9 @@ export default function App() {
               <Route path="/chat" element={<RequireAuth><ChatPage /></RequireAuth>} />
               {/* review page for a submitted use case: admins comment, the author replies (others get "not found") */}
               <Route path="/review/:id" element={<RequireAuth><ReviewPage /></RequireAuth>} />
-              {/* hidden — no nav link, direct URL only; has its own login + admin-role gate */}
-              <Route path="/admin" element={<AdminConsolePage />} />
+              {/* hidden — no nav link, direct URL only; has its own login + admin-role gate. Each section has its
+                  own URL (/admin/usecases, /admin/members…); /admin is Tổng quan */}
+              <Route path="/admin/*" element={<AdminConsolePage />} />
               {/* where sign-in sends someone Microsoft doesn't list under Zalopay: ask the admins for access */}
               <Route path="/no-access" element={<NoAccessPage />} />
             </Routes>

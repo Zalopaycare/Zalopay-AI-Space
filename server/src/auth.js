@@ -16,9 +16,13 @@ const ALLOWED_DOMAINS = String(process.env.COMPANY_EMAIL_DOMAINS || 'vng.com.vn'
 
 export const companyDomains = () => ALLOWED_DOMAINS
 
-/** One account per mailbox: lower-case and drop Outlook "+tag" aliases (an+1@vng.com.vn → an@vng.com.vn). */
+/** One account per mailbox: lower-case, drop what gets pasted around an address (quotes, <…>, "mailto:",
+ *  spaces: "an"@vng.com.vn used to make a second account, as mail servers deliver it to an@…) and Outlook
+ *  "+tag" aliases (an+1@vng.com.vn → an@vng.com.vn). */
 export function normalizeEmail(email) {
-  const e = String(email || '').trim().toLowerCase()
+  const raw = String(email || '')
+  const angle = /<([^<>]*)>/.exec(raw) // "Tên" <ten@vng.com.vn>: just the address
+  const e = (angle ? angle[1] : raw).replace(/^\s*mailto:/i, '').replace(/["'“”‘’<>\s]/g, '').toLowerCase()
   const at = e.lastIndexOf('@')
   if (at < 1) return e
   return e.slice(0, at).replace(/\+.*$/, '') + e.slice(at)
@@ -28,7 +32,7 @@ const isAliasEmail = (email) => /\+[^@]*@/.test(String(email || ''))
 
 export function isCompanyEmail(email) {
   const e = String(email || '').trim().toLowerCase()
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false
+  if (!/^[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]+$/.test(e)) return false
   return ALLOWED_DOMAINS.some((d) => e.endsWith('@' + d))
 }
 
@@ -39,12 +43,16 @@ export function initialsFor(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-const ADMIN_EMAILS = String(process.env.ADMIN_EMAILS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+/** ADMIN_EMAILS (a Coolify setting), cleaned of quotes a config screen may wrap the value or each address in. */
+export const envAdminEmails = () => String(process.env.ADMIN_EMAILS || '').split(/[,;\s]+/).map(normalizeEmail).filter(Boolean)
+const ADMIN_EMAILS = envAdminEmails()
 
 /** The name a new account starts with, from the email: "thy.ndm@…" → "Thy Ndm". */
 export const autoNameFor = (email) => String(email).split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
-export function getOrCreateUser(email) {
+export function getOrCreateUser(rawEmail) {
+  // every caller passes a cleaned address already; cleaning again here keeps a quoted one out of users for good
+  const email = normalizeEmail(rawEmail)
   const isAdmin = ADMIN_EMAILS.includes(email) ? 1 : 0
   const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(email)
   if (existing) {

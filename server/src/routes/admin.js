@@ -1,7 +1,7 @@
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import express from 'express'
 import { db } from '../db.js'
-import { requireAuth, getOrCreateUser, isCompanyEmail } from '../auth.js'
+import { requireAuth, getOrCreateUser, isCompanyEmail, normalizeEmail, envAdminEmails } from '../auth.js'
 import { domainName, initialsOf, handleOf } from '../mentions.js'
 import { anonName } from '../anon.js'
 import { adminReportRoutes } from '../reports.js'
@@ -18,10 +18,9 @@ const orgInfo = (raw) => { try { return raw ? JSON.parse(raw) : null } catch { r
 
 router.use(requireAuth, (req, res, next) => (req.user.is_admin ? next() : res.status(403).json({ error: 'admin_only' })))
 
-// Everyone who has signed in, with what they've contributed.
 // ---- Quản trị viên: who the admins are, and adding / removing them from the console ----
 // ADMIN_EMAILS (a Coolify setting) are admins at every sign-in, so they're listed but can't be removed here.
-const envAdmins = () => String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+const envAdmins = envAdminEmails
 function adminList() {
   const env = new Set(envAdmins())
   const rows = db.prepare('SELECT * FROM users WHERE is_admin = 1 ORDER BY name COLLATE NOCASE').all()
@@ -35,7 +34,8 @@ function adminList() {
 router.get('/admins', (req, res) => res.json({ admins: adminList() }))
 // Body { email }: the account becomes an admin; someone who hasn't signed in yet gets their account made now.
 router.post('/admins', (req, res) => {
-  const email = String(req.body?.email || '').trim().toLowerCase()
+  // cleaned like a sign-in (quotes, <…>, spaces): a pasted "Tên" <ten@vng.com.vn> used to make a second account
+  const email = normalizeEmail(req.body?.email)
   if (!isCompanyEmail(email)) return res.status(400).json({ error: 'bad_email', message: 'Nhập email công ty, ví dụ ten@vng.com.vn.' })
   const u = getOrCreateUser(email)
   db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(u.id)
@@ -49,8 +49,35 @@ router.delete('/admins/:email', (req, res) => {
   res.json({ admins: adminList() })
 })
 
+// Everything that ties an account to the site's content or history. "Xoá tài khoản" only goes ahead when
+// all of these are 0, so a delete never leaves a post, reply, reaction or admin decision without its person.
+const USER_REFS = [
+  ['questions', 'author_id', 'thread'], ['question_answers', 'author_id', 'trả lời'], ['answer_comments', 'author_id', 'reply'],
+  ['use_case_submissions', 'author_id', 'use case đã gửi'], ['use_case_comments', 'author_id', 'bình luận use case'],
+  ['review_comments', 'author_id', 'góp ý duyệt bài'], ['admin_chat_messages', 'user_id', 'tin nhắn Chat với Admin'], ['admin_chat_messages', 'sender_id', 'tin nhắn Chat với Admin'],
+  ['question_reactions', 'user_id', 'lượt thích'], ['answer_reactions', 'user_id', 'lượt thích'], ['use_case_reactions', 'user_id', 'lượt thích'], ['comment_reactions', 'user_id', 'lượt thích'],
+  ['saved_questions', 'user_id', 'lượt lưu'], ['use_case_saves', 'user_id', 'lượt lưu'], ['use_case_applied', 'user_id', '"Tôi đã áp dụng"'],
+  ['use_case_ratings', 'user_id', 'đánh giá'], ['use_case_interest', 'user_id', 'lượt quan tâm booth'], ['reports', 'reporter_id', 'báo cáo đã gửi'],
+  ['use_case_submissions', 'reviewed_by', 'quyết định duyệt bài'], ['review_comments', 'resolved_by', 'quyết định duyệt bài'], ['access_requests', 'decided_by', 'quyết định duyệt bài'],
+  ['staff_grants', 'granted_by', 'quyết định duyệt bài'], ['booth_invites', 'invited_by', 'quyết định duyệt bài'], ['rename_flags', 'by_user', 'quyết định duyệt bài'],
+]
+// a table this install hasn't created yet (it's made by the feature that uses it) just counts 0
+const safeAll = (sql, ...args) => { try { return db.prepare(sql).all(...args) } catch { return [] } }
+/** [{ what, n }] still linked to one account (non-zero only, same labels merged). */
+function userRefs(id) {
+  const m = {}
+  for (const [table, col, what] of USER_REFS) { const n = safeAll(`SELECT COUNT(*) n FROM ${table} WHERE ${col} = ?`, id)[0]?.n || 0; if (n) m[what] = (m[what] || 0) + n }
+  return Object.entries(m).map(([what, n]) => ({ what, n }))
+}
+
+// Everyone who has signed in, with what they've contributed.
 router.get('/users', (req, res) => {
   const count = (sql) => Object.fromEntries(db.prepare(sql).all().map((r) => [r.id, r.n]))
+  // what still links each account to the site (USER_REFS), { 'thread': 2, 'lượt thích': 5 }: empty = may be deleted
+  const links = {}
+  for (const [table, col, what] of USER_REFS) {
+    for (const r of safeAll(`SELECT ${col} id, COUNT(*) n FROM ${table} WHERE ${col} IS NOT NULL GROUP BY ${col}`)) { const m = (links[r.id] = links[r.id] || {}); m[what] = (m[what] || 0) + r.n }
+  }
   const questions = count('SELECT author_id id, COUNT(*) n FROM questions GROUP BY author_id')
   const answers = count('SELECT author_id id, COUNT(*) n FROM question_answers GROUP BY author_id')
   const useCases = count('SELECT author_id id, COUNT(*) n FROM use_case_submissions GROUP BY author_id')
@@ -63,9 +90,33 @@ router.get('/users', (req, res) => {
     // what Microsoft said about their organisation at the last SSO sign-in (staffCheck.js), and whether that counts as Zalopay
     org: orgInfo(u.org_info), staff: !!u.staff_ok,
     questions: questions[u.id] || 0, answers: answers[u.id] || 0, useCases: useCases[u.id] || 0, comments: comments[u.id] || 0,
-    lastActive: lastDay[u.id] || null,
+    lastActive: lastDay[u.id] || null, links: links[u.id] || {},
   }))
   res.json({ users })
+})
+
+// "Xoá tài khoản" (Thành viên › ⋯): for accounts with nothing on the site, e.g. a duplicate made by a
+// mistyped email. Refused, with what is still linked, when anything is; never yourself or an ADMIN_EMAILS admin.
+router.delete('/users/:id', (req, res) => {
+  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id))
+  if (!u) return res.status(404).json({ error: 'not_found', message: 'Không tìm thấy tài khoản này, có thể đã bị xoá.' })
+  if (u.id === req.user.id) return res.status(400).json({ error: 'self', message: 'Không tự xoá tài khoản của mình được.' })
+  // exact address: a dirty copy ("an"@…) of an ADMIN_EMAILS admin can still be deleted
+  if (envAdmins().includes(u.email.toLowerCase())) return res.status(400).json({ error: 'from_env', message: 'Tài khoản này nằm trong ADMIN_EMAILS trên Coolify nên không xoá được.' })
+  const refs = userRefs(u.id)
+  if (refs.length) {
+    return res.status(409).json({ error: 'has_content', refs,
+      message: `Không xoá được: tài khoản này vẫn còn ${refs.map((r) => `${r.n} ${r.what}`).join(', ')}. Chỉ xoá được tài khoản chưa có nội dung hay hoạt động nào trên AI Space.` })
+  }
+  db.transaction(() => {
+    // what's left is the account's own bookkeeping: days active, chat read marks, directory token, inbox, sign-in codes
+    for (const t of ['user_days', 'admin_chat_seen', 'graph_tokens']) { try { db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).run(u.id) } catch { /* table not created on this install */ } }
+    db.prepare('DELETE FROM notifications WHERE email = ?').run(u.email)
+    db.prepare('DELETE FROM login_codes WHERE email = ?').run(u.email)
+    db.prepare('DELETE FROM users WHERE id = ?').run(u.id)
+  })()
+  console.log('[admin] account deleted:', u.id, 'by', req.user.id)
+  res.json({ ok: true })
 })
 
 // ---- One definition of every count, shared by the KPI cards, the leaderboard and the department

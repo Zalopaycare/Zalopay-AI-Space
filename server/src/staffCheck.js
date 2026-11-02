@@ -12,7 +12,8 @@ import { db } from './db.js'
 // wrong pattern can't lock the admins out, and someone Microsoft lists elsewhere can be let in).
 
 const ORG_FIELDS = ['companyName', 'department', 'officeLocation', 'jobTitle', 'onPremisesDistinguishedName']
-const list = (v) => String(v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+// (quotes a config screen may wrap the value or an entry in don't count)
+const list = (v) => String(v || '').split(',').map((s) => s.replace(/["'“”‘’]/g, '').trim().toLowerCase()).filter(Boolean)
 const ALWAYS = new Set([...list(process.env.ADMIN_EMAILS), ...list(process.env.STAFF_EXTRA_EMAILS)])
 
 // Zalopay's companies, as plain names (STAFF_COMPANIES="Zion,Zalopay"): nothing for a config screen to

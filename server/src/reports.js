@@ -1,6 +1,6 @@
 import express from 'express'
 import { db } from './db.js'
-import { requireAuth } from './auth.js'
+import { requireAuth, envAdminEmails } from './auth.js'
 import { notify } from './notifications.js'
 import { sendMail } from './mailer.js'
 import { appUrl, domainName } from './mentions.js'
@@ -35,7 +35,7 @@ const TYPES = {
 }
 
 const adminEmails = () => {
-  const env = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  const env = envAdminEmails()
   const dbAdmins = db.prepare('SELECT email FROM users WHERE is_admin = 1').all().map((u) => u.email.toLowerCase())
   return [...new Set([...env, ...dbAdmins])]
 }
