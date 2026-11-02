@@ -162,6 +162,7 @@ export default function UseCaseLibraryPage() {
   // "Other" category: the author's own category name, saved in its place
   const [shareCatOther, setShareCatOther] = useState('')
   const [shareCustom, setShareCustom] = useState([]) // "Phần khác": [{ title, text }]
+  const [shareFigures, setShareFigures] = useState({}) // field → pictures under it: [{ ref | data, name, url, caption }]
   // after "Xem trước & gửi" finds gaps: required fields left empty turn red, and the form scrolls to the first one
   const [showMissing, setShowMissing] = useState(false)
   const [missTick, setMissTick] = useState(0)
@@ -237,6 +238,7 @@ export default function UseCaseLibraryPage() {
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
       { const cats = [].concat(s.category || []), own = cats.filter((x) => !CATS.includes(x)); setShareCategory([...cats.filter((x) => CATS.includes(x)), ...(own.length ? ['Other'] : [])]); setShareCatOther(own.join(', ')) }
       setShareCustom((ex.customSections || []).map((x) => ({ title: x.title || '', text: x.text || '' })))
+      setShareFigures(ex.figures || {})
       const known = (list, all) => list.filter((x) => all.includes(x))
       const extra = (list, all) => list.filter((x) => !all.includes(x))
       const tps = s.topics || [], tls = s.tools || []
@@ -341,7 +343,7 @@ export default function UseCaseLibraryPage() {
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
   // a draft keeps files already uploaded, not new ones (their data would fill the browser's storage)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps: shareSteps.map((x) => ({ ...x, files: (x.files || []).filter((f) => f.ref != null) })), shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps: shareSteps.map((x) => ({ ...x, files: (x.files || []).filter((f) => f.ref != null) })), shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList , shareFigures: Object.fromEntries(Object.entries(shareFigures).map(([k, l]) => [k, l.filter((f) => f.ref != null)])) })
 
   // A draft left from last time isn't poured into the form on its own: opening the form asks first
   // ("Bạn có 1 use case đang nháp": go on with it, or start a new one).
@@ -360,6 +362,7 @@ export default function UseCaseLibraryPage() {
       setShareCategory(Array.isArray(d.shareCategory) ? d.shareCategory : d.shareCategory ? [d.shareCategory] : [])
       setShareCatOther(d.shareCatOther || '')
       setShareCustom(Array.isArray(d.shareCustom) ? d.shareCustom : [])
+      setShareFigures(d.shareFigures && typeof d.shareFigures === 'object' ? d.shareFigures : {})
       setShareTopicSel(d.shareTopicSel || [])
       setShareTopicOtherText(d.shareTopicOtherText || '')
       setShareToolSel(d.shareToolSel || [])
@@ -395,7 +398,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareFigures, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -471,7 +474,7 @@ export default function UseCaseLibraryPage() {
   }
 
   const resetShareForm = () => {
-    setShareForm(EMPTY_SHARE_FORM); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareSteps([EMPTY_STEP]); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
+    setShareForm(EMPTY_SHARE_FORM); setShareFigures({}); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareSteps([EMPTY_STEP]); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareCatOther(''); setShareCustom([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form'); setShowMissing(false)
     setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
@@ -594,7 +597,7 @@ export default function UseCaseLibraryPage() {
       'GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay\nAutomation Testing Tool – Hỗ trợ QC viết UI automation test bằng prompt\nPO Tool Kit: bộ AI skill giúp PO đi từ ý tưởng tới ticket, prototype và báo cáo'],
     ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai đưa gì vào, nhận lại gì.', 'Ai làm gì với công cụ, nhận được gì', 'input', 0, 'intro',
       'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.'],
-    ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nDùng **chữ đậm** cho tên ý, xuống dòng giữa các ý.', '', 'area', 6, 'ps',
+    ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps',
       '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence, tìm đúng version đang deploy, rồi gõ tay từng lệnh curl để test. Thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester.\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint, test nhầm version.'],
     ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps',
       'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence + source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API, pentester copy-dán test được ngay.\n- Đánh dấu API nào là mới trong bản release để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin và che thông tin nhạy cảm.\n\n**Kết quả:** Đang được team AppSec dùng thật (MVP/pilot, đã go-live nội bộ). Rút ngắn thời gian chuẩn bị pentest từ vài tiếng xuống còn vài phút.'],
@@ -630,6 +633,8 @@ export default function UseCaseLibraryPage() {
     ...(shareBooth ? { booth: shareBooth } : {}),
     steps: shareStepList, success: shareForm.success.trim(), safety: shareForm.safety.trim(),
     customSections: shareCustom.map((x) => ({ title: x.title.trim(), text: x.text.trim() })).filter((x) => x.title && x.text),
+    // pictures under a section: kept ones by { ref } (the preview also uses their url), new ones with their data
+    figures: Object.fromEntries(Object.entries(shareFigures).filter(([, l]) => l.length)),
   })
   // Every required item of each step and whether it's filled: drives the green "Đã điền" ticks, the
   // "x/y" progress line and the stepper's counts. missingByStep = the labels still empty.
@@ -1262,6 +1267,10 @@ export default function UseCaseLibraryPage() {
                           <RichArea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))} />
                         )}
                         {miss && <MissLine text={t('Chưa điền: mục này bắt buộc')} />}
+                        {/* pictures with a caption under this section (shown under it on the page); not on an admin edit of a built-in case */}
+                        {f.isArea && FIGURE_FIELDS.includes(f.key) && !editingCase && (
+                          <FigurePicker files={shareFigures[f.key] || []} onChange={(l) => setShareFigures((m) => ({ ...m, [f.key]: l }))} t={t} />
+                        )}
                       </div>
                       )
                       }
@@ -1383,6 +1392,65 @@ export default function UseCaseLibraryPage() {
 
 /** Tự áp dụng, step by step, the way the published page shows it (a horizontal journey, one step at a
  *  time): each step has a name, what to do, an optional prompt / command and an optional red warning. */
+// The sections that take pictures with a caption (Bài toán, Giải pháp, Số liệu…), up to 3 each, 10 MB each.
+const FIGURE_FIELDS = ['problem', 'solution', 'result', 'prep', 'success', 'pitfalls', 'safety', 'limits']
+const MAX_FIGURES = 3
+const IMAGE_TYPE = /^image\/(png|jpeg|gif|webp)$/
+
+/** Attached pictures / files as rows: a picture with its caption box, any other file as a chip. */
+function AttachRows({ files, onChange, t }) {
+  const set = (k, patch) => onChange(files.map((f, j) => (j === k ? { ...f, ...patch } : f)))
+  const drop = (k) => onChange(files.filter((_, j) => j !== k))
+  const x = (f, k) => <button type="button" onClick={() => drop(k)} aria-label={t('Bỏ file') + ' ' + f.name} title={t('Bỏ')} style={css('flex:none; border:none; background:none; cursor:pointer; color:#94a3b8; font-size:18px; line-height:1; padding:0 6px;')}>×</button>
+  return (
+    <div style={css('display:flex; flex-direction:column; gap:8px; margin-top:10px;')}>
+      {files.map((f, k) => (f.image ? (
+        <div key={k} style={css('display:flex; align-items:center; gap:10px; padding:6px 6px 6px 6px; border:1px solid #E1E8F5; border-radius:12px; background:#F7F9FD;')}>
+          <img src={f.url || f.data} alt="" style={{ flex: 'none', width: 72, height: 50, objectFit: 'cover', borderRadius: 8, border: '1px solid #E1E8F5', background: '#fff' }} />
+          <input value={f.caption || ''} onChange={(e) => set(k, { caption: e.target.value })} maxLength={300} aria-label={t('Chú thích hình') + ' ' + f.name}
+            placeholder={t('Chú thích hình (không bắt buộc), ví dụ: Bài AI viết: human score 6%, AI score 94%')}
+            style={css(FIELD_INPUT + 'margin-top:0; flex:1; min-width:0; padding:7px 10px; font-size:12.5px;')} />
+          {x(f, k)}
+        </div>
+      ) : (
+        <span key={k} style={css('align-self:flex-start; display:inline-flex; align-items:center; gap:7px; max-width:100%; height:30px; padding:0 4px 0 8px; border:1px solid #DDE3EC; border-radius:999px; background:#F7F9FD; font-size:12px; font-weight:600; color:#3A4757;')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+          <span style={css('max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{f.name}</span>
+          {x(f, k)}
+        </span>
+      )))}
+    </div>
+  )
+}
+
+/** "+ Thêm hình minh họa" under a section of the form, and the pictures already added with their captions. */
+function FigurePicker({ files, onChange, t }) {
+  const [err, setErr] = useState('')
+  const add = async (list) => {
+    const imgs = list.filter((f) => IMAGE_TYPE.test(f.type))
+    const tooBig = imgs.filter((f) => f.size > 10 * 1024 * 1024)
+    const ok = imgs.filter((f) => f.size <= 10 * 1024 * 1024).slice(0, Math.max(0, MAX_FIGURES - files.length))
+    const added = await Promise.all(ok.map(async (f) => ({ name: f.name, size: f.size, image: true, data: await readFile(f), caption: '' })))
+    onChange([...files, ...added])
+    setErr(imgs.length < list.length ? t('Chỉ nhận hình (PNG, JPG, GIF, WebP)') : tooBig.length ? t('Hình lớn hơn 10 MB nên chưa thêm') + ': ' + tooBig.map((f) => f.name).join(', ') : imgs.length > ok.length ? t('Mỗi mục tối đa') + ' ' + MAX_FIGURES + ' ' + t('hình') : '')
+  }
+  return (
+    <div>
+      {files.length > 0 && <AttachRows files={files} onChange={onChange} t={t} />}
+      {files.length < MAX_FIGURES && (
+        <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px;')}>
+          <label className={hoverClass('background:#EEF3FF !important;')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border:1px dashed #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:12px; font-weight:700; cursor:pointer;')}>
+            <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden onChange={(e) => { add([...(e.target.files || [])]); e.target.value = '' }} />
+            + {t('Thêm hình minh họa')}
+          </label>
+          <span style={css('font-size:11.5px; font-weight:600; color:#94a3b8;')}>{t('Không bắt buộc · có chú thích dưới mỗi hình')}</span>
+        </div>
+      )}
+      {err && <div style={css('margin-top:6px; font-size:12px; font-weight:600; color:#D8232A;')}>{err}</div>}
+    </div>
+  )
+}
+
 // The steps of "Tự áp dụng" as a numbered path: each step is a card on a line from 1 to the last, with its
 // name and what to do; the prompt and the warning are added only when the step needs them.
 // A step's pictures / files: up to 3, 10 MB each, read in as data URLs until the form is sent.
@@ -1398,7 +1466,7 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
     const room = MAX_STEP_FILES - have.length
     const tooBig = list.filter((f) => f.size > 10 * 1024 * 1024)
     const ok = list.filter((f) => f.size <= 10 * 1024 * 1024).slice(0, Math.max(0, room))
-    const added = await Promise.all(ok.map(async (f) => ({ name: f.name, size: f.size, image: /^image\/(png|jpeg|gif|webp)$/.test(f.type), data: await readFile(f) })))
+    const added = await Promise.all(ok.map(async (f) => ({ name: f.name, size: f.size, image: IMAGE_TYPE.test(f.type), data: await readFile(f), caption: '' })))
     setFiles(i, [...have, ...added])
     setFileErr((e) => ({ ...e, [i]: tooBig.length ? t('File lớn hơn 10 MB nên chưa thêm') + ': ' + tooBig.map((f) => f.name).join(', ') : list.length > ok.length ? t('Mỗi bước tối đa') + ' ' + MAX_STEP_FILES + ' ' + t('file') : '' }))
   }
@@ -1465,18 +1533,8 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
                     <input value={x.note} onChange={set(i, 'note')} autoFocus={!x.note} placeholder={t('Điều dễ sai hoặc nguy hiểm khi cài / dùng AI ở bước này')} style={css(FIELD_INPUT + 'border-color:#F6C9CB; background:#FFF8F8; color:#B4141B;')} />
                   </>
                 )}
-                {/* pictures / files already added to this step (shown under it on the use case page) */}
-                {allowFiles && (x.files || []).length > 0 && (
-                  <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;')}>
-                    {x.files.map((f, k) => (
-                      <span key={k} style={css('display:inline-flex; align-items:center; gap:7px; max-width:100%; height:30px; padding:0 4px 0 8px; border:1px solid #DDE3EC; border-radius:999px; background:#F7F9FD; font-size:12px; font-weight:600; color:#3A4757;')}>
-                        {f.image ? <img src={f.url || f.data} alt="" style={{ width: 20, height: 20, objectFit: 'cover', borderRadius: 4 }} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>}
-                        <span style={css('max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{f.name}</span>
-                        <button type="button" onClick={() => setFiles(i, x.files.filter((_, j) => j !== k))} aria-label={t('Bỏ file') + ' ' + f.name} style={css('border:none; background:none; cursor:pointer; color:#94a3b8; font-size:16px; line-height:1; padding:0 5px;')}>×</button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {/* pictures / files already added to this step (shown under it on the use case page), pictures with a caption */}
+                {allowFiles && (x.files || []).length > 0 && <AttachRows files={x.files} onChange={(l) => setFiles(i, l)} t={t} />}
                 {/* the three optional extras of a step, side by side */}
                 {(!(x.prompt || x.withPrompt) || !(x.note || x.withNote) || (allowFiles && (x.files || []).length < MAX_STEP_FILES)) && (
                   <div style={css('display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px;')}>

@@ -285,43 +285,58 @@ function cleanExtra(e, user) {
 }
 const parseExtra = (v) => { try { return v ? JSON.parse(v) : null } catch { return null } }
 
-// Pictures and files under a step of "Tự áp dụng" (optional, up to 3 a step): kept in comment_files as
-// kind 'ucstep', target = the submission, each under its own idx; extra.steps[i].files lists that step's idx.
-// The form sends each step's files as { ref: idx } (kept) or { name, data } (new), in the steps' order;
-// steps are skipped the way cleanExtra skips them, so the lists line up.
+// Pictures and files the form attaches (optional): up to 3 under each step of "Tự áp dụng" (any file),
+// and up to 3 pictures under a section of the form (Bài toán, Giải pháp, Số liệu…), each with an
+// optional caption. All kept in comment_files as kind 'ucstep', target = the submission, each under its
+// own idx; extra.steps[i].files and extra.figures[<field>] list them as { ref: idx, caption }.
+// The form sends each one as { ref, caption } (kept) or { name, data, caption } (new), steps in their
+// order; steps are skipped the way cleanExtra skips them, so the lists line up.
 const MAX_STEP_FILES = 3
+const MAX_FIGURES = 3
+const FIGURE_FIELDS = ['problem', 'solution', 'result', 'prep', 'success', 'pitfalls', 'safety', 'limits']
 const stepFileInput = (steps) => (Array.isArray(steps) ? steps : []).slice(0, 15)
   .filter((x) => txt(x && x.title, 120) || txt(x && x.text) || txt(x && x.prompt, 8000))
   .map((x) => (Array.isArray(x.files) ? x.files.slice(0, MAX_STEP_FILES) : []))
-function saveStepFiles(id, steps) {
-  const inputs = stepFileInput(steps)
+const figureInput = (figs) => Object.fromEntries(FIGURE_FIELDS
+  .map((k) => [k, Array.isArray(figs && figs[k]) ? figs[k].slice(0, MAX_FIGURES) : []]).filter(([, l]) => l.length))
+// a stored file: an idx (older steps) or { ref, caption }
+const refOf = (f) => (typeof f === 'number' ? { ref: f, caption: '' } : f && Number.isInteger(f.ref) ? { ref: f.ref, caption: String(f.caption || '') } : null)
+function saveFormFiles(id, extra) {
+  const steps = stepFileInput(extra && extra.steps)
+  const figs = figureInput(extra && extra.figures)
   const have = new Set(db.prepare("SELECT idx FROM comment_files WHERE kind = 'ucstep' AND target_id = ?").all(id).map((r) => r.idx))
   let next = Math.max(-1, ...have) + 1
-  const refs = inputs.map((list) => list.map((f) => {
-    if (f && Number.isInteger(f.ref)) return have.has(f.ref) ? f.ref : null
+  const store = (f, imagesOnly) => {
+    const caption = String((f && f.caption) || '').replace(/\s+/g, ' ').trim().slice(0, 300)
+    if (f && Number.isInteger(f.ref)) return have.has(f.ref) ? { ref: f.ref, caption } : null
     const file = (decodeCommentFiles([f]) || [])[0]
-    if (!file) return null
+    if (!file || (imagesOnly && !/^image\/(png|jpeg|gif|webp)$/.test(file.mime))) return null
     db.prepare("INSERT INTO comment_files (kind, target_id, idx, name, mime, size, data) VALUES ('ucstep', ?, ?, ?, ?, ?, ?)").run(id, next, file.name, file.mime, file.data.length, file.data)
-    return next++
-  }).filter((x) => x !== null))
-  const used = new Set(refs.flat())
+    return { ref: next++, caption }
+  }
+  const stepRefs = steps.map((list) => list.map((f) => store(f, false)).filter(Boolean))
+  const figRefs = Object.fromEntries(Object.entries(figs).map(([k, list]) => [k, list.map((f) => store(f, true)).filter(Boolean)]).filter(([, l]) => l.length))
+  const used = new Set([...stepRefs.flat(), ...Object.values(figRefs).flat()].map((x) => x.ref))
   for (const i of have) if (!used.has(i)) db.prepare("DELETE FROM comment_files WHERE kind = 'ucstep' AND target_id = ? AND idx = ?").run(id, i)
-  const ex = parseExtra(db.prepare('SELECT extra FROM use_case_submissions WHERE id = ?').get(id)?.extra)
-  if (!ex || !Array.isArray(ex.steps)) return
-  ex.steps = ex.steps.map((s, i) => (refs[i] && refs[i].length ? { ...s, files: refs[i] } : s))
-  db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(JSON.stringify(ex), id)
+  const ex = parseExtra(db.prepare('SELECT extra FROM use_case_submissions WHERE id = ?').get(id)?.extra) || {}
+  if (Array.isArray(ex.steps)) ex.steps = ex.steps.map((s, i) => (stepRefs[i] && stepRefs[i].length ? { ...s, files: stepRefs[i] } : s))
+  if (Object.keys(figRefs).length) ex.figures = figRefs
+  else delete ex.figures
+  db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(Object.keys(ex).length ? JSON.stringify(ex) : null, id)
 }
-// extra as the page sees it: each step's file idx turned into { ref, name, size, image, url }
+// extra as the page sees it: each stored file turned into { ref, name, size, image, url, caption }
 function withStepFiles(id, ex) {
-  if (!ex || !Array.isArray(ex.steps) || !ex.steps.some((s) => (s.files || []).length)) return ex
+  const stepsWith = ex && Array.isArray(ex.steps) && ex.steps.some((s) => (s.files || []).length)
+  if (!ex || (!stepsWith && !ex.figures)) return ex
   const all = new Map(db.prepare("SELECT idx, name, mime, size FROM comment_files WHERE kind = 'ucstep' AND target_id = ?").all(id).map((f) => [f.idx, f]))
+  const view = (list) => (list || []).map(refOf).filter((r) => r && all.has(r.ref)).map(({ ref, caption }) => {
+    const f = all.get(ref)
+    return { ref, caption, name: f.name, size: f.size, image: /^image\/(png|jpeg|gif|webp)$/.test(f.mime), url: `/api/files/ucstep/${encodeURIComponent(id)}/${ref}` }
+  })
   return {
     ...ex,
-    steps: ex.steps.map((s) => ({
-      ...s,
-      files: (s.files || []).map((i) => all.get(i)).filter(Boolean)
-        .map((f) => ({ ref: f.idx, name: f.name, size: f.size, image: /^image\/(png|jpeg|gif|webp)$/.test(f.mime), url: `/api/files/ucstep/${encodeURIComponent(id)}/${f.idx}` })),
-    })),
+    ...(Array.isArray(ex.steps) ? { steps: ex.steps.map((s) => ({ ...s, files: view(s.files) })) } : {}),
+    ...(ex.figures ? { figures: Object.fromEntries(Object.entries(ex.figures).map(([k, l]) => [k, view(l)])) } : {}),
   }
 }
 
@@ -351,7 +366,7 @@ router.post('/submissions', requireAuth, (req, res) => {
   saveCover(id, cover)
   const anon = anonFields(f)
   db.prepare('UPDATE use_case_submissions SET extra = ?, anonymous = ?, alias = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), anon.anonymous, anon.alias, id)
-  saveStepFiles(id, f.extra && f.extra.steps)
+  saveFormFiles(id, f.extra)
   const duplicates = sameTitle(req.user.id, f.title, id)
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
@@ -386,7 +401,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
       JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)
   // Older clients don't send `extra`; leave what's stored untouched then.
-  if (f.extra !== undefined) { db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), row.id); saveStepFiles(row.id, f.extra && f.extra.steps) }
+  if (f.extra !== undefined) { db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), row.id); saveFormFiles(row.id, f.extra) }
   if (f.anonymous !== undefined) { const an = anonFields(f); db.prepare('UPDATE use_case_submissions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, row.id) }
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)

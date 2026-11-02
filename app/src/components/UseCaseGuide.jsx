@@ -216,6 +216,8 @@ function Block({ b }) {
         </div>
       )
     case 'image': return <div className="zp-thumbs"><Figure img={b} /></div>
+    // a step's pictures from the share form, each with its caption
+    case 'images': return <div className="zp-thumbs">{(b.images || []).map((img, i) => <Figure key={i} img={img} />)}</div>
     case 'prompt': return <Prompt b={b} />
     case 'code':
       // A command to run (not a prompt for the AI): monospace, copyable, with an optional note.

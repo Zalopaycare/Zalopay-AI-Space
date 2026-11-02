@@ -21,22 +21,32 @@ export function teamByline(s) {
   return (e.members || []).length ? e.members.join(', ') : s.team || ''
 }
 
-// A form step → a journey step: what to do, then its prompt / command, its warning in red, then its pictures / files.
-const stepSectionsOf = (steps) => (steps || []).map((x, i) => ({
-  title: x.title || `Bước ${i + 1}`,
-  blocks: [
-    x.text && { type: 'text', text: x.text },
-    x.prompt && { type: 'prompt', label: 'Prompt / lệnh mẫu', text: x.prompt },
-    x.note && { type: 'note', tone: 'warn', text: x.note },
-    (x.files || []).length && { type: 'files', files: x.files.map((f) => ({ name: f.name, size: f.size, image: !!f.image, url: f.url || f.data })) },
-  ].filter(Boolean),
-}))
+// Pictures as the page shows them: { src, caption } (a kept one by its url, a new one in the preview by its data).
+const figuresOf = (list) => (list || []).filter((f) => f && f.image !== false && (f.url || f.data)).map((f) => ({ src: f.url || f.data, caption: f.caption || '' }))
+
+// A form step → a journey step: what to do, then its prompt / command, its warning in red, then its
+// pictures (each with its caption) and its other files.
+const stepSectionsOf = (steps) => (steps || []).map((x, i) => {
+  const files = x.files || []
+  const pics = files.filter((f) => f.image), docs = files.filter((f) => !f.image)
+  return {
+    title: x.title || `Bước ${i + 1}`,
+    blocks: [
+      x.text && { type: 'text', text: x.text },
+      x.prompt && { type: 'prompt', label: 'Prompt / lệnh mẫu', text: x.prompt },
+      x.note && { type: 'note', tone: 'warn', text: x.note },
+      pics.length && { type: 'images', images: figuresOf(pics) },
+      docs.length && { type: 'files', files: docs.map((f) => ({ name: f.name, size: f.size, image: false, url: f.url || f.data })) },
+    ].filter(Boolean),
+  }
+})
 
 /** s = submission as the API returns it (title, problem, …, extra: { type, oneLine, highlights, fitYes, fitNo, pitfalls, tech }). */
 export function submissionTpl(s) {
   const e = s.extra || {}
   const hl = (e.highlights || []).filter((h) => h && (h.value || h.label))
   const resultLines = lines(s.result)
+  const fig = (k) => figuresOf((e.figures || {})[k])
   return {
     // written and rated by the author: nothing on it is AI Space's own guess
     byAuthor: true,
@@ -52,9 +62,9 @@ export function submissionTpl(s) {
       ['Giải pháp', e.oneLine || lines(s.solution)[0] || ''],
       ['Kết quả', hl[0] ? [hl[0].value, hl[0].label].filter(Boolean).join(' ') : resultLines[0] || ''],
     ],
-    problem: { text: s.problem || '' },
-    solution: { steps: lines(s.solution) },
-    result: { highlights: hl, bullets: resultLines },
+    problem: { text: s.problem || '', images: fig('problem') },
+    solution: { steps: lines(s.solution), images: fig('solution') },
+    result: { highlights: hl, bullets: resultLines, images: fig('result') },
     apply: {
       fit: { yes: lines(e.fitYes), no: lines(e.fitNo) },
       prep: lines(s.prep),
@@ -63,9 +73,10 @@ export function submissionTpl(s) {
       blocks: (e.steps || []).length ? [] : s.prompt ? [{ type: 'prompt', label: 'Prompt / quy trình', text: s.prompt }] : [],
       success: lines(e.success),
       // "Lỗi bạn gặp → cách xử lý", one per line
+      images: fig('success'), prepImages: fig('prep'), pitfallImages: fig('pitfalls'),
       pitfalls: lines(e.pitfalls).map((l) => { const m = /^(.*?)\s*(?:→|->|—)\s*(.+)$/.exec(l); return m ? { meet: m[1], why: '', fix: m[2] } : { meet: l, why: '' } }),
     },
-    safety: { rules: lines(e.safety), limits: lines(s.limits) },
+    safety: { rules: lines(e.safety), limits: lines(s.limits), images: fig('safety'), limitImages: fig('limits') },
     // the author's own extra parts ("Phần khác"), shown after the template's
     custom: (e.customSections || []).filter((x) => x && x.title && x.text),
     tech: { bullets: lines(e.tech) },

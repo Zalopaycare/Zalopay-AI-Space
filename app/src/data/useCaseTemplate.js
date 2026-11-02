@@ -42,8 +42,10 @@ function fromTpl(c, m) {
     steps: arr(a.steps), stepSections: arr(a.stepSections).map((s, i) => ({ id: s.id || 'step' + i, title: s.title, sub: s.sub || '', blocks: arr(s.blocks), open: true })), blocks: arr(a.blocks), code: arr(a.code), refTables: arr(a.refTables),
     success: arr(a.success), samples: arr(a.samples), images: arr(a.images),
     pitfalls: pit, pitfallTable: null,
+    // pictures the author put under Cần chuẩn bị / Lỗi hay gặp in the share form
+    prepImages: arr(a.prepImages), pitfallImages: arr(a.pitfallImages),
   }
-  apply.empty = !apply.intro && !apply.fit.yes.length && !apply.fit.no.length && !apply.prep.length && !apply.steps.length && !apply.stepSections.length && !apply.blocks.length && !apply.code.length && !apply.refTables.length && !apply.success.length && !apply.images.length && !pit.length
+  apply.empty = !apply.intro && !apply.fit.yes.length && !apply.fit.no.length && !apply.prep.length && !apply.steps.length && !apply.stepSections.length && !apply.blocks.length && !apply.code.length && !apply.refTables.length && !apply.success.length && !apply.images.length && !pit.length && !apply.prepImages.length && !apply.pitfallImages.length
   return {
     hero: {
       type: TYPE_LABEL[m.type] || '', status: STATUS_LABEL[m.status] || '', statusNote: m.statusNote || '',
@@ -62,7 +64,7 @@ function fromTpl(c, m) {
     solution: { analogy: ex ? '' : so.analogy || '', text: ex ? ex.solution : so.text || '', rich: !!ex, steps: ex ? [] : arr(so.steps), images: arr(so.images) },
     result: { highlights: arr(r.highlights), bullets: arr(r.bullets), beforeAfter: r.beforeAfter && arr(r.beforeAfter.rows).length ? r.beforeAfter : null, tables: arr(r.tables), note: r.note || '', images: arr(r.images) },
     apply,
-    safety: { rules: arr(sa.rules), limits: arr(sa.limits), tables: arr(sa.tables) },
+    safety: { rules: arr(sa.rules), limits: arr(sa.limits), tables: arr(sa.tables), images: arr(sa.images), limitImages: arr(sa.limitImages) },
     custom: arr(m.custom),
     demo: arr(m.demo).filter((g) => g && g.src),
     tech: { bullets: arr(te.bullets), tables: arr(te.tables), code: arr(te.code), images: arr(te.images), repo: te.repo && te.repo.label ? te.repo : null },
@@ -184,7 +186,7 @@ function buildParts(c, cd, info) {
     solution: { analogy: x.analogy || (guide && guide.sections[0]?.blocks.find((b) => b.type === 'note' && b.title === 'Hiểu đơn giản')?.text) || '', steps: cd.solution || [], images: [] },
     result: { bullets: cd.result || [], beforeAfter: ba, tables: byRole('result'), note: x.measureNote || '', images: [] },
     apply: { ...apply, blocks: [], images: [] },
-    safety: { rules: sec ? sec.blocks[0].items : texts(howto.security), limits, tables: byRole('safety') },
+    safety: { rules: sec ? sec.blocks[0].items : texts(howto.security), limits, tables: byRole('safety'), images: [], limitImages: [] },
     demo: (cd.gallery || []).filter((g) => g.src),
     // Built-ins link a code repo (dev detail); a submission's link is the author's source document.
     tech: { bullets: [], code: [], images: [], tables: byRole('tech'), repo: c.repoHref && !c.submitted ? { label: c.repo || c.repoHref, href: c.repoHref } : null },

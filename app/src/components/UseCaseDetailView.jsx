@@ -11,11 +11,11 @@ import { Section, ProblemSolution, ApplySection, BulletList, PlainTable, Images,
 export function detailLayout(tp, t, showEmpty = false) {
   const has = {
     tldr: tp.tldr.length > 0,
-    ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.text || tp.solution.steps.length),
+    ps: !!(tp.problem.text || tp.problem.bullets.length || tp.solution.text || tp.solution.steps.length || tp.problem.images.length || tp.solution.images.length),
     // Kết quả belongs to Giải pháp: it shows inside that card, not as a part of its own
     result: !!((tp.result.highlights || []).length || tp.result.bullets.length || tp.result.beforeAfter || tp.result.tables.length || tp.result.note || tp.result.images.length),
     apply: !tp.apply.empty,
-    safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length),
+    safety: !!(tp.safety.rules.length || tp.safety.limits.length || tp.safety.tables.length || (tp.safety.images || []).length || (tp.safety.limitImages || []).length),
     demo: tp.demo.length > 0,
   }
   // "Tự áp dụng" comes before "Kết quả": once the reader gets the idea, the links and steps are next.
@@ -51,7 +51,7 @@ export function DetailSections({ id, tp, t, layout }) {
       {has.safety && (() => {
         const human = tp.safety.rules.filter((x) => !isDataLine(x)), ai = tp.safety.limits.filter((x) => !isDataLine(x))
         const dataLines = [...tp.safety.rules, ...tp.safety.limits].filter(isDataLine).map(dataOf)
-        const humanOn = human.length > 0 || tp.safety.tables.length > 0, aiOn = ai.length > 0
+        const humanOn = human.length > 0 || tp.safety.tables.length > 0 || (tp.safety.images || []).length > 0, aiOn = ai.length > 0 || (tp.safety.limitImages || []).length > 0
         return (
         <Section id="uc-safety" num={num.safety} title={t('Trách nhiệm & giới hạn')}>
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>
@@ -63,9 +63,10 @@ export function DetailSections({ id, tp, t, layout }) {
                   <div style={css(SUBHEAD)}>{t('Trách nhiệm của con người')}</div>
                   {human.length > 0 && <BulletList items={human} dot="#6F0CE2" />}
                   {tp.safety.tables.map((tb, i) => <div key={i} style={{ marginTop: human.length ? 14 : 0 }}><PlainTable flat table={tb} /></div>)}
+                  <Images images={tp.safety.images} />
                 </div>
               )}
-              {aiOn && <div className={humanOn ? 'zp-ps2-sol' : undefined} style={{ minWidth: 0 }}><div style={css(SUBHEAD)}>{t('Giới hạn của AI')}</div><BulletList items={ai} dot="#E39100" /></div>}
+              {aiOn && <div className={humanOn ? 'zp-ps2-sol' : undefined} style={{ minWidth: 0 }}><div style={css(SUBHEAD)}>{t('Giới hạn của AI')}</div><BulletList items={ai} dot="#E39100" /><Images images={tp.safety.limitImages} /></div>}
             </div>
             {/* "Dữ liệu đi qua AI" is a fact, not a responsibility or a limit: its own line under both */}
             {dataLines.length > 0 && (

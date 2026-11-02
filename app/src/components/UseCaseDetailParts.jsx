@@ -228,7 +228,7 @@ export function Tldr({ rows }) {
 /** Bài toán | Giải pháp side by side in one card (one column when narrow), Số liệu & hình ảnh below. */
 export function ProblemSolution({ problem, solution, result, showEmpty = false, t, num: partNum }) {
   // One card, two columns: Bài toán (red) | Giải pháp (green); Số liệu & hình ảnh across the bottom.
-  const hasProblem = !!(problem.text || problem.bullets.length) || showEmpty
+  const hasProblem = !!(problem.text || problem.bullets.length || (problem.images || []).length) || showEmpty
   const head = (title, color) => <div style={css(SUB + `color:${color};`)}>{title}</div>
   const body = 'margin:0 0 10px; font-size:13px; line-height:1.6; color:#3A4757; text-wrap:pretty;'
   return (
@@ -242,6 +242,7 @@ export function ProblemSolution({ problem, solution, result, showEmpty = false, 
                 ? <div style={css(body)}><RichText text={problem.text} /></div>
                 : <p style={css(body + 'white-space:pre-line;')}><Fill text={problem.text} /></p>)}
               {problem.bullets.length > 0 && <BulletList items={problem.bullets} dot="#E0353F" />}
+              <Images images={problem.images} />
               {showEmpty && !problem.text && !problem.bullets.length && <NoInfo t={t} />}
             </div>
           )}
@@ -491,9 +492,10 @@ export function ApplySection({ id, a, t, num = '5' }) {
     </div>,
   )
   if (a.intro) parts.push(<p key="intro" style={css('margin:0; font-size:13.5px; line-height:1.55; color:#1E293B;')}><Fill text={a.intro} /></p>)
-  if (a.prep.length) parts.push(
+  if (a.prep.length || a.prepImages.length) parts.push(
     <div key="prep">
-      <PrepChecklist id={id} items={a.prep} t={t} />
+      {a.prep.length > 0 ? <PrepChecklist id={id} items={a.prep} t={t} /> : <div style={css(SUB)}>{t('Cần chuẩn bị')}</div>}
+      <Images images={a.prepImages} />
       {a.prepPrompt && <div style={{ marginTop: 12 }}><Prompt b={a.prepPrompt} /></div>}
     </div>,
   )
@@ -517,7 +519,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
       <Images images={a.images} />
     </div>,
   )
-  if (a.pitfalls.length || a.pitfallTable) parts.push(
+  if (a.pitfalls.length || a.pitfallTable || a.pitfallImages.length) parts.push(
     // Always open and in red: the mistakes are what readers most need to see before they start.
     <div key="errors" style={css('padding:14px 16px 16px; border-radius:14px; border:1px solid #F5C2C2; background:#FFF5F5;')}>
       <div style={css(SUB + 'display:flex; align-items:center; gap:8px; color:#C81E1E;')}>
@@ -526,11 +528,13 @@ export function ApplySection({ id, a, t, num = '5' }) {
       </div>
       {a.pitfallTable
         ? <Blocks blocks={a.pitfallTable} />
+        : !a.pitfalls.length ? null
         : a.pitfalls.some((p) => p.fix)
           ? a.pitfalls.some((p) => p.why)
             ? <PlainTable flat tone="danger" table={{ cols: [t('Bạn gặp'), t('Vì sao'), t('Nói gì với AI / làm gì')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—', p.fix || '—']) }} />
             : <PlainTable flat tone="danger" table={{ cols: [t('Bạn gặp'), t('Cách xử lý')], rows: a.pitfalls.map((p) => [p.meet, p.fix || '—']) }} />
           : <PlainTable flat tone="danger" table={{ cols: [t('Bạn gặp'), t('Vì sao')], rows: a.pitfalls.map((p) => [p.meet, p.why || '—']) }} />}
+      <Images images={a.pitfallImages} />
     </div>,
   )
   return (
