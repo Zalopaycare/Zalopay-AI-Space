@@ -3,7 +3,7 @@ import { requireAuth } from '../auth.js'
 import { db } from '../db.js'
 import { notifyInterest, notifyOnce } from '../notifications.js'
 import { domainName } from '../mentions.js'
-import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit, caseReview, markCaseReviewed } from '../showcase.js'
+import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit, showcaseEditOf, caseReview, markCaseReviewed } from '../showcase.js'
 import path from 'node:path'
 
 const router = express.Router()
@@ -136,16 +136,19 @@ router.post('/admin/cover/:id', requireAuth, (req, res) => {
   res.json({ cover: coverOf(req.params.id) })
 })
 
-// An admin's edit of a showcase case through the share form (laid over the case file; see showcase.js).
+// An edit of a showcase case through the share form (laid over the case file; see showcase.js), by one of
+// its owners (the team) or an admin. Only an admin changes who the owners are.
 const ctxt = (v, max = 8000) => (v == null ? undefined : String(v).replace(/\r\n/g, '\n').trim().slice(0, max))
-router.post('/admin/edit/:id', requireAuth, requireAdmin, (req, res) => {
-  if (!SHOWCASE_IDS.has(req.params.id)) return res.status(404).json({ error: 'not_found' })
+router.post('/admin/edit/:id', requireAuth, (req, res) => {
+  const c = showcaseCases.find((x) => x.id === req.params.id)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  if (!req.user.is_admin && !isBoothOwner(c, req.user.email)) return res.status(403).json({ error: 'not_owner' })
   const b = req.body || {}
   if (!ctxt(b.title)) return res.status(400).json({ error: 'missing_title' })
   const list = (v) => (Array.isArray(v) ? v.map((x) => ctxt(x, 120)).filter(Boolean).slice(0, 30) : undefined)
   const edit = {
     title: ctxt(b.title, 300), oneLine: ctxt(b.oneLine, 400), audience: ctxt(b.audience, 300), level: ['Dễ', 'Trung bình', 'Khó'].includes(b.level) ? b.level : undefined,
-    tools: list(b.tools), members: list(b.members),
+    tools: list(b.tools), members: req.user.is_admin ? list(b.members) : (showcaseEditOf(c.id) || {}).members,
     problem: ctxt(b.problem), solution: ctxt(b.solution), result: ctxt(b.result),
     prep: ctxt(b.prep), fitYes: ctxt(b.fitYes), fitNo: ctxt(b.fitNo), success: ctxt(b.success), pitfalls: ctxt(b.pitfalls),
     safety: ctxt(b.safety), limits: ctxt(b.limits),
@@ -153,7 +156,7 @@ router.post('/admin/edit/:id', requireAuth, requireAdmin, (req, res) => {
     by: req.user.id, at: new Date().toISOString(),
   }
   saveShowcaseEdit(req.params.id, edit)
-  // an admin who went through the content and saved it has reviewed it
+  // whoever went through the content and saved it has reviewed it
   markCaseReviewed(req.params.id, req.user.id)
   res.json({ ok: true })
 })

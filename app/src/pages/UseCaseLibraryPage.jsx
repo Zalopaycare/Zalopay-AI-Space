@@ -426,7 +426,7 @@ export default function UseCaseLibraryPage() {
     })
   }
 
-  // Admin "Chỉnh sửa" on a use case already on the site: the share form, filled with what the page shows now.
+  // "Chỉnh sửa" (its owners, or an admin) on a use case AI Space wrote: the share form, filled with what the page shows now.
   const openCaseEdit = (c) => {
     const m = (caseDetail[c.id] || {}).tpl
     if (!m) return
@@ -480,7 +480,9 @@ export default function UseCaseLibraryPage() {
   // "Need your review": a use case AI Space wrote from the team's docs whose owners haven't confirmed it yet.
   // Only they and the admins see it (they're the ones who can do something about it).
   const showcaseTpl = (c) => { const tp = (caseDetail[c.id] || {}).tpl; return !c.submitted && !c.pending && tp && tp.id === c.id ? tp : null }
-  const needsReview = (c) => { const tp = showcaseTpl(c); return !!user && !!tp && !tp.review && (!!user.isAdmin || !!tp.isOwner) }
+  // its owners (the team) and the admins may confirm it and edit it through the share form
+  const canEditShowcase = (c) => { const tp = showcaseTpl(c); return !!user && !!tp && (!!user.isAdmin || !!tp.isOwner) }
+  const needsReview = (c) => canEditShowcase(c) && !showcaseTpl(c).review
   const [confirming, setConfirming] = useState(false)
   const confirmReview = (id) => { setConfirming(true); api.confirmCaseReview(id).then(() => loadPublishedUseCases(true)).catch(() => {}).finally(() => setConfirming(false)) }
 
@@ -506,7 +508,7 @@ export default function UseCaseLibraryPage() {
       // the author, or (for a booth's write-up) its owners and admins: the server says so per post
       canEdit: !!user && (c.canEdit || (!!c.authorId && c.authorId === user.id)),
       // an admin edits a use case already on the site (not a submission) right from its card
-      canEditCase: !!user?.isAdmin && !c.submitted && !!(caseDetail[c.id] || {}).tpl,
+      canEditCase: canEditShowcase(c),
       statusLabel: statusMeta(c.status).label,
       statusColor: statusMeta(c.status).color,
       onOpen: () => { rememberReturn(c.id); navigate(`/use-cases/${c.id}`) },
@@ -725,22 +727,26 @@ export default function UseCaseLibraryPage() {
                   ? (file) => cropCover(file).then(({ data }) => api.adminSetCover(dsel.id, data)).then(() => loadPublishedUseCases(true))
                   : null}
               />
-            {/* a use case AI Space wrote from the team's docs: its owners confirm the content (admins may too, or fix it) */}
+            {/* who may change a use case, said on every one of them */}
+            <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; font-size:12.5px; line-height:1.5; color:#8fa0c4;')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+              {t('Chỉ có owner mới chỉnh sửa được Use Case của chính mình.')}
+            </div>
+            {/* a use case AI Space wrote from the team's docs: its owners confirm the content (admins may too), or fix it */}
             {needsReview(dsel) && (
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,176,32,.08); border:1px solid rgba(255,176,32,.4);')}>
                 <span style={css('flex:1; min-width:240px; font-size:12.5px; line-height:1.55; color:#f3dcb4;')}>
                   <span style={css(REVIEW_TAG + 'margin-right:8px;')}>{t('Need your review')}</span>
-                  {t('AI Space viết use case này từ tài liệu của team. Owner xem lại giúp: nội dung đúng thì bấm "Nội dung đã đúng"; cần sửa chỗ nào thì')} {user?.isAdmin ? t('bấm Chỉnh sửa.') : t('nhắn Admin qua Chat với Admin.')}
+                  {t('AI Space viết use case này từ tài liệu của team. Owner xem lại giúp: nội dung đúng thì bấm "Nội dung đã đúng"; cần sửa chỗ nào thì bấm Chỉnh sửa (lưu là trang cập nhật ngay).')}
                 </span>
-                {!user?.isAdmin && <button onClick={() => navigate('/chat')} style={css(BAR_BTN)}>{t('Nhắn Admin')}</button>}
-                {user?.isAdmin && <button onClick={() => openCaseEdit(dsel)} style={css(BAR_BTN)}>✎ {t('Chỉnh sửa')}</button>}
+                <button onClick={() => openCaseEdit(dsel)} style={css(BAR_BTN)}>✎ {t('Chỉnh sửa')}</button>
                 <button onClick={() => confirmReview(dsel.id)} disabled={confirming} style={css(BAR_BTN + 'border-color:#22C55E; background:rgba(34,197,94,.18); color:#bff5d2;' + (confirming ? 'opacity:.6;' : ''))}>✓ {t('Nội dung đã đúng')}</button>
               </div>
             )}
-            {user?.isAdmin && !needsReview(dsel) && showcaseTpl(dsel) && (
+            {canEditShowcase(dsel) && !needsReview(dsel) && (
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(130,170,255,.22);')}>
                 <span style={css('flex:1; min-width:220px; font-size:12.5px; line-height:1.55; color:#a9b8dc;')}>
-                  {t('Chỉ admin thấy: bấm Chỉnh sửa để sửa nội dung use case này (mở form đăng bài, điền sẵn nội dung hiện tại). Lưu là trang cập nhật ngay, không qua bước duyệt.')}
+                  {user?.isAdmin && !showcaseTpl(dsel).isOwner ? t('Chỉ admin thấy:') : t('Bạn là owner của use case này:')} {t('bấm Chỉnh sửa để sửa nội dung (mở form đăng bài, điền sẵn nội dung hiện tại). Lưu là trang cập nhật ngay, không qua bước duyệt.')}
                   {showcaseTpl(dsel).review?.by ? ' ' + t('Đã review bởi') + ' ' + showcaseTpl(dsel).review.by + '.' : ''}
                 </span>
                 <button onClick={() => openCaseEdit(dsel)} style={css(BAR_BTN)}>✎ {t('Chỉnh sửa')}</button>

@@ -68,6 +68,7 @@ export function markCaseReviewed(id, userId) {
   fs.writeFileSync(REVIEWED_FILE, JSON.stringify(reviewed))
 }
 
+export const showcaseEditOf = (id) => edits.get(id) || null
 export function saveShowcaseEdit(id, edit) {
   fs.mkdirSync(EDIT_DIR, { recursive: true })
   fs.writeFileSync(path.join(EDIT_DIR, `${id}.json`), JSON.stringify(edit))
