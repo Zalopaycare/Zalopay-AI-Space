@@ -382,7 +382,7 @@ function PrepChecklist({ id, items, t }) {
         {items.map((text, i) => (
           <label key={i} className={hoverClass('background:#F4F7FE !important;')} style={css(`display:flex; gap:11px; align-items:flex-start; padding:9px 12px; border-radius:12px; border:1px solid ${done.has(i) ? '#CFEEDE' : '#E6EBF3'}; background:${done.has(i) ? '#F2FBF6' : '#fff'}; cursor:pointer;`)}>
             <input type="checkbox" checked={done.has(i)} onChange={() => toggle(i)} style={css('flex:none; width:17px; height:17px; margin:2px 0 0; accent-color:#00A352; cursor:pointer;')} />
-            <span style={css(`font-size:13px; line-height:1.55; color:${done.has(i) ? '#51705F' : '#1E293B'}; ${done.has(i) ? 'text-decoration:line-through; text-decoration-color:#9CCBB0;' : ''}`)}>{text}</span>
+            <span style={css(`font-size:13px; line-height:1.55; color:${done.has(i) ? '#51705F' : '#1E293B'}; ${done.has(i) ? 'text-decoration:line-through; text-decoration-color:#9CCBB0;' : ''}`)}><Fill text={text} /></span>
           </label>
         ))}
       </div>

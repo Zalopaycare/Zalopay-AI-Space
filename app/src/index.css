@@ -267,3 +267,8 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-tour-card { animation: zp-tour-in .28s ease-out; }
 @keyframes zp-tour-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .zp-tour-corner, .zp-tour-scan, .zp-tour-card { animation: none; } }
+
+/* the share form's bold / italic text box (RichArea) */
+.zp-richarea:empty::before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
+.zp-richarea b, .zp-richarea strong { font-weight: 800; }
+.zp-richarea:focus { border-color: #9DB8F7 !important; }

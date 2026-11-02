@@ -22,6 +22,7 @@ import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUse
 import Layout from '../components/Layout.jsx'
 import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
+import RichArea from '../components/RichArea.jsx'
 import FilterPill from '../components/FilterPill.jsx'
 import { DETAIL_COL, DetailHero, Toc, FloatingBack } from '../components/UseCaseDetailParts.jsx'
 import { DetailSections, detailLayout } from '../components/UseCaseDetailView.jsx'
@@ -1226,7 +1227,7 @@ export default function UseCaseLibraryPage() {
                           <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css(FIELD_INPUT + (miss ? MISS_FIELD : ''))} />
                         )}
                         {f.isArea && (
-                          <textarea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))} />
+                          <RichArea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))} />
                         )}
                         {miss && <MissLine text={t('Chưa điền: mục này bắt buộc')} />}
                       </div>
@@ -1418,7 +1419,7 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
                 <input value={x.title} onChange={set(i, 'title')} aria-label={t('Tên bước') + ' ' + (i + 1)} placeholder={t('Tên bước, ví dụ: Cài bộ skill vào Codex')} style={css(FIELD_INPUT + 'margin-top:6px; font-size:14.5px; font-weight:700;' + (missTitle ? MISS_FIELD : ''))} />
                 {missTitle && <MissLine text={t('Chưa điền tên bước')} />}
                 {lbl('Làm gì', true, !!(x.text.trim() || x.prompt.trim()))}
-                <textarea value={x.text} onChange={set(i, 'text')} rows={3} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA + (missText ? MISS_FIELD : ''))} />
+                <RichArea value={x.text} onChange={set(i, 'text')} rows={3} ariaLabel={t('Làm gì') + ' · ' + t('Bước') + ' ' + (i + 1)} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA + (missText ? MISS_FIELD : ''))} />
                 {missText && <MissLine text={t('Chưa điền bước này làm gì')} />}
                 {(x.prompt || x.withPrompt) && (
                   <>
@@ -1495,7 +1496,7 @@ function CustomSections({ list, onChange, t, adminEdit }) {
             <button type="button" onClick={() => onChange(list.filter((_, j) => j !== i))} title={t('Xoá phần này')} aria-label={t('Xoá phần này')} className={hoverClass('background:#FFF1F1 !important; color:#D8232A !important;')} style={css('width:28px; height:28px; border:none; border-radius:8px; background:transparent; color:#64748b; font-size:14px; font-weight:800; cursor:pointer;')}>✕</button>
           </div>
           <input value={x.title} onChange={set(i, 'title')} maxLength={120} aria-label={t('Tên phần') + ' ' + (i + 1)} placeholder={t('Tên phần, ví dụ: Chi phí sử dụng')} style={css(FIELD_INPUT + 'margin-top:6px; font-size:14.5px; font-weight:700;')} />
-          <textarea value={x.text} onChange={set(i, 'text')} rows={4} aria-label={t('Nội dung phần') + ' ' + (i + 1)} placeholder={t('Nội dung phần này. Mỗi ý một dòng.')} style={css(FIELD_AREA)} />
+          <RichArea value={x.text} onChange={set(i, 'text')} rows={4} ariaLabel={t('Nội dung phần') + ' ' + (i + 1)} placeholder={t('Nội dung phần này. Mỗi ý một dòng.')} style={css(FIELD_AREA)} />
         </div>
       ))}
       {list.length < 8 && (

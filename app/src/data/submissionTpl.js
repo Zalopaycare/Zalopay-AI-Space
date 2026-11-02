@@ -1,9 +1,12 @@
 // Turns a share-form submission (the original columns + its `extra` JSON) into the 9-part template
 // shape that fromTpl() in useCaseTemplate.js renders — the same one the showcase cases use. The
 // share form's "Xem trước" goes through here too, so the preview is exactly the published page.
+import { stripInline } from '../lib/inlineFormat.js'
 
-const lines = (t) => String(t || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim()).filter(Boolean)
-const firstSentence = (t) => (String(t || '').trim().split(/(?<=[.!?])\s|\n/)[0] || '').trim()
+// A "* " bullet needs its space, so a line that starts in *italic* or **bold** keeps its marks.
+const lines = (t) => String(t || '').split(/\r?\n/).map((x) => x.replace(/^\s*(?:[-•]|\*(?=\s)|\d+[.)])\s*/, '').trim()).filter(Boolean)
+// (the TL;DR's first sentence goes without bold / italic: cutting at a full stop could split a mark)
+const firstSentence = (t) => (stripInline(String(t || '').trim()).split(/(?<=[.!?])\s|\n/)[0] || '').trim()
 const STATUS = { 'Ý tưởng': 'planning', Prototype: 'prototype', 'Đang dùng thật': 'inuse' }
 const fmt = (raw) => {
   const d = raw ? new Date(String(raw).replace(' ', 'T') + (/[zZ+]/.test(String(raw)) ? '' : 'Z')) : new Date()

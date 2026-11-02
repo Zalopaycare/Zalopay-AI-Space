@@ -6,6 +6,8 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { useTitle } from '../hooks/useTitle.js'
 import Layout from '../components/Layout.jsx'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
+// bold / italic marks from the share form aren't shown here: góp ý quote the words as read
+import { stripInline } from '../lib/inlineFormat.js'
 import { safeHref } from '../lib/safeHref.js'
 
 // Review page for a submitted use case, Google-Docs style: the post on the left, comments in a rail on
@@ -257,7 +259,7 @@ export default function ReviewPage() {
   )
   const textOf = (field, value, mono, extra = '') => (
     <div data-text={field} style={css(`margin-top:6px; white-space:pre-wrap; word-break:break-word; color:#0f172a; ${mono ? 'font:500 13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; background:#F6F8FC; border:1px solid #EAEFF7; border-radius:10px; padding:10px 12px;' : f(400, 14.5, 1.7)} ${extra}`)}>
-      {value ? withMarks(value, threadsFor(field), active, pickThread) : <span style={css(f(600, 13) + ';color:#B45300;')}>Chưa điền (bắt buộc)</span>}
+      {value ? withMarks(mono ? value : stripInline(value), threadsFor(field), active, pickThread) : <span style={css(f(600, 13) + ';color:#B45300;')}>Chưa điền (bắt buộc)</span>}
     </div>
   )
   const canEdit = data.isOwner && ['changes_requested', 'pending', 'approved'].includes(sub.reviewStatus)
@@ -278,7 +280,7 @@ export default function ReviewPage() {
             {x.title && <div data-text="steps" style={css(f(800, 14.5, 1.5) + ';color:#0f172a;')}>{withMarks(x.title, threadsFor('steps'), active, pickThread)}</div>}
             {x.text && textOf('steps', x.text, false, 'margin-top:2px;')}
             {x.prompt && textOf('steps', x.prompt, true)}
-            {x.note && <div data-text="steps" style={css('margin-top:6px; padding:7px 11px; border-radius:10px; background:#FFF1F1; border:1px solid #F6C9CB; white-space:pre-wrap; word-break:break-word;' + f(600, 13, 1.55) + ';color:#B4141B;')}>⚠ {withMarks(x.note, threadsFor('steps'), active, pickThread)}</div>}
+            {x.note && <div data-text="steps" style={css('margin-top:6px; padding:7px 11px; border-radius:10px; background:#FFF1F1; border:1px solid #F6C9CB; white-space:pre-wrap; word-break:break-word;' + f(600, 13, 1.55) + ';color:#B4141B;')}>⚠ {withMarks(stripInline(x.note), threadsFor('steps'), active, pickThread)}</div>}
           </div>
         </li>
       ))}

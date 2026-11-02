@@ -1,4 +1,5 @@
 import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
+import { stripInline } from '../lib/inlineFormat.js'
 import AnonTag from '../components/AnonTag.jsx'
 import { useAliasCheck } from '../components/AnonToggle.jsx'
 import { useEffect, useRef, useState } from 'react'
@@ -273,7 +274,7 @@ export default function ProfilePage() {
       statusColor: st.color,
       time: relativeTime(c.time),
       title: c.title,
-      desc: c.problem,
+      desc: stripInline(c.problem),
       hasReason: (c.reviewStatus === 'rejected' || c.reviewStatus === 'changes_requested') && !!c.adminNote,
       reasonPrefix: c.reviewStatus === 'changes_requested' ? t('Admin cần bổ sung') : t('Admin từ chối'),
       reasonBg: c.reviewStatus === 'changes_requested' ? '#FFF4E3' : '#FFECEC',
