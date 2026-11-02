@@ -4,6 +4,7 @@ import { copyWithToast } from '../lib/clipboard.js'
 import { css, hoverClass } from '../lib/style.js'
 import Fill, { plainText } from './Fill.jsx'
 import { CommentFiles } from './CommentAttachments.jsx'
+import { toneObj } from '../lib/theme.js'
 
 // Building blocks for step-by-step use case content: prompts with Copy, mock AI result windows,
 // tables, coloured notes, tool tabs and click-to-zoom images (used by the detail page's part 5).
@@ -43,7 +44,7 @@ const SubTitle = ({ children }) => <div style={css(`font:800 14px ${FONT}; color
 /** Marks the parts of a prompt the reader has to change: [ngoặc vuông] and <tên_bạn>. */
 export function Placeholders({ text }) {
   return String(text).split(/(\[[^\]\n]+\]|<[^>\n]+>)/).map((part, i) => (i % 2
-    ? <mark key={i} title="Sửa chỗ này cho đúng với bạn" style={{ background: '#FFF1BF', color: '#7A4B00', borderRadius: 4, padding: '0 2px' }}>{part}</mark>
+    ? <mark key={i} title="Sửa chỗ này cho đúng với bạn" style={toneObj({ background: '#FFF1BF', color: '#7A4B00', borderRadius: 4, padding: '0 2px' })}>{part}</mark>
     : part))
 }
 
@@ -113,7 +114,7 @@ function Table({ b }) {
           </thead>
           <tbody>
             {b.rows.map((row, ri) => (
-              <tr key={ri} style={{ background: ri % 2 ? '#FBFCFE' : '#fff' }}>
+              <tr key={ri} style={toneObj({ background: ri % 2 ? '#FBFCFE' : '#fff' })}>
                 {row.map((cell, ci) => (
                   <td key={ci} style={css(`padding:11px 14px; border-top:${ri ? '1px solid #F1F4FA' : 'none'}; font:${ci === 0 ? 600 : 400} 13.5px/1.55 ${FONT}; color:${ci === 0 ? '#0F172A' : '#3A4757'}; vertical-align:top;`)}>
                     {b.copyCol === ci && !String(cell).startsWith('—')

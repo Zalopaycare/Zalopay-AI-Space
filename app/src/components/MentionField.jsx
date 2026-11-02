@@ -1,4 +1,5 @@
 import { forwardRef, useLayoutEffect, useRef } from 'react'
+import { toneObj } from '../lib/theme.js'
 
 // Matches "@handle" and "@name@company.domain" mention tokens.
 export const MENTION_SPLIT = /(@[A-Za-z0-9._-]+(?:@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)?)/g
@@ -9,13 +10,13 @@ export const shortMention = (tok) => '@' + tok.slice(1).split('@')[0]
 // Web addresses in a post ("https://claude.ai", "www.example.com"), minus trailing punctuation.
 const URL_SPLIT = /((?:https?:\/\/|www\.)[^\s<>"]*[^\s<>".,;:!?)\]}'])/gi
 const linkify = (text, key) => String(text).split(URL_SPLIT).map((p, i) => (i % 2
-  ? <a key={key + '-' + i} href={/^www\./i.test(p) ? 'https://' + p : p} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#2c5fff', textDecoration: 'underline', textUnderlineOffset: 2, overflowWrap: 'anywhere' }}>{p}</a>
+  ? <a key={key + '-' + i} href={/^www\./i.test(p) ? 'https://' + p : p} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={toneObj({ color: '#2c5fff', textDecoration: 'underline', textUnderlineOffset: 2, overflowWrap: 'anywhere' })}>{p}</a>
   : p))
 
 /** Body text with @mentions shown as bold blue "@handle" (full address on hover) and links clickable. */
 export function renderMentions(text) {
   return String(text || '').split(MENTION_SPLIT).map((p, i) => (p.charAt(0) === '@' && p.length > 1
-    ? <span key={i} title={p.slice(1)} style={{ color: '#2c5fff', fontWeight: 700 }}>{shortMention(p)}</span>
+    ? <span key={i} title={p.slice(1)} style={toneObj({ color: '#2c5fff', fontWeight: 700 })}>{shortMention(p)}</span>
     : linkify(p, i)))
 }
 
@@ -60,10 +61,10 @@ const MentionField = forwardRef(function MentionField({ multiline = false, autoG
       <div
         ref={mirror}
         aria-hidden="true"
-        style={{ ...shared, position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: fieldStyle.color || '#0F172A', borderColor: 'transparent', resize: 'none', display: 'block', ...(multiline ? {} : { lineHeight: 'normal', display: 'flex', alignItems: 'center' }) }}
+        style={toneObj({ ...shared, position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: fieldStyle.color || '#0F172A', borderColor: 'transparent', resize: 'none', display: 'block', ...(multiline ? {} : { lineHeight: 'normal', display: 'flex', alignItems: 'center' }) })}
       >
         {parts.map((p, i) => (p.charAt(0) === '@' && p.length > 1
-          ? <span key={i} style={{ color: '#2c5fff', background: '#E4ECFF', borderRadius: 4, boxShadow: '0 0 0 1px #E4ECFF' }}>{p}</span>
+          ? <span key={i} style={toneObj({ color: '#2c5fff', background: '#E4ECFF', borderRadius: 4, boxShadow: '0 0 0 1px #E4ECFF' })}>{p}</span>
           : <span key={i}>{p}</span>))}
         {multiline ? '​' : null}
       </div>
@@ -74,7 +75,7 @@ const MentionField = forwardRef(function MentionField({ multiline = false, autoG
         onInput={sync}
         {...rest}
         className={'zp-mention-field' + (rest.className ? ' ' + rest.className : '')}
-        style={{ ...shared, position: 'relative', background: 'transparent', color: 'transparent', caretColor: fieldStyle.color || '#0F172A', ...(autoGrow ? { resize: 'none', overflow: 'hidden' } : {}) }}
+        style={toneObj({ ...shared, position: 'relative', background: 'transparent', color: 'transparent', caretColor: fieldStyle.color || '#0F172A', ...(autoGrow ? { resize: 'none', overflow: 'hidden' } : {}) })}
       />
     </div>
   )

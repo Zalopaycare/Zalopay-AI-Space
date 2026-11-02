@@ -2,6 +2,8 @@
 // and `style-hover="..."` pseudo-class strings almost verbatim into React,
 // instead of hand-converting every declaration into a JS object literal.
 
+import { tone, toneCss } from './theme.js'
+
 const styleCache = new Map()
 
 /** Parse a CSS declaration string ("color:#fff; font-size:12px;") into a React style object. */
@@ -9,13 +11,17 @@ export function css(str) {
   if (!str) return undefined
   const hit = styleCache.get(str)
   if (hit) return hit
-  const obj = {}
+  const decls = []
   for (const decl of str.split(';')) {
     const i = decl.indexOf(':')
     if (i < 0) continue
     const prop = decl.slice(0, i).trim()
     const val = decl.slice(i + 1).trim()
     if (!prop || !val) continue
+    decls.push([prop, val])
+  }
+  const obj = {}
+  for (const [prop, val] of tone(decls)) {
     const key = prop.startsWith('--') ? prop : prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
     obj[key] = val
   }
@@ -48,7 +54,7 @@ export function hoverClass(cssText) {
     hoverStyleEl.setAttribute('data-hover-styles', '')
     document.head.appendChild(hoverStyleEl)
   }
-  hoverStyleEl.appendChild(document.createTextNode(`.${cls}:hover{${cssText}}`))
+  hoverStyleEl.appendChild(document.createTextNode(`.${cls}:hover{${toneCss(cssText)}}`))
   return cls
 }
 
@@ -67,6 +73,6 @@ export function afterClass(cssText) {
     hoverStyleEl.setAttribute('data-hover-styles', '')
     document.head.appendChild(hoverStyleEl)
   }
-  hoverStyleEl.appendChild(document.createTextNode(`.${cls}::after{${cssText}}`))
+  hoverStyleEl.appendChild(document.createTextNode(`.${cls}::after{${toneCss(cssText)}}`))
   return cls
 }

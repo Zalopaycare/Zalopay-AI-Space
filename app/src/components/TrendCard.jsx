@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { css } from '../lib/style.js'
+import { toneObj } from '../lib/theme.js'
 
 // Google-Trends-style view of how often topics / AI tools come up in posts.
 //  · Interest (0–100): mentions per time bucket, scaled so the busiest bucket of any shown term = 100.
@@ -77,7 +78,7 @@ export default function TrendCard({ title, mentions, color = '#2c5fff' }) {
           </div>
           {list.slice(0, 6).map((r) => (
             <div key={r.label} title={`${r.total} lần trong kỳ này · ${r.prev} lần kỳ trước`} style={css('display:grid; grid-template-columns:minmax(0,1fr) 120px 64px; gap:12px; align-items:center; padding:7px 0; border-top:1px solid #F1F4F9;')}>
-              <span style={css(`font:600 13px ${FONT}; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;`)}>{r.label} <span style={{ color: '#94a3b8', fontWeight: 500 }}>· {r.total}</span></span>
+              <span style={css(`font:600 13px ${FONT}; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;`)}>{r.label} <span style={toneObj({ color: '#94a3b8', fontWeight: 500 })}>· {r.total}</span></span>
               <Spark values={r.buckets.map((v) => Math.round((v / peak) * 100))} color={color} />
               <span style={css(`text-align:right; font:800 13px ${FONT}; color:${mode === 'top' ? '#0f172a' : '#00893F'};`)}>
                 {mode === 'top' ? Math.round((r.total / topTotal) * 100) : r.growth === Infinity ? 'Tăng vọt' : '+' + Math.round(r.growth * 100) + '%'}

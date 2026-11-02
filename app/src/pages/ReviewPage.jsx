@@ -9,6 +9,7 @@ import { avatarPhotoCss } from '../components/Avatar.jsx'
 // bold / italic marks from the share form aren't shown here: góp ý quote the words as read
 import { stripInline } from '../lib/inlineFormat.js'
 import { safeHref } from '../lib/safeHref.js'
+import { toneObj } from '../lib/theme.js'
 
 // Review page for a submitted use case, Google-Docs style: the post on the left, comments in a rail on
 // the right lined up with the passage they're about. Admins select text (or use 💬 on a section) to
@@ -434,7 +435,7 @@ export default function ReviewPage() {
             <div onClick={(e) => e.stopPropagation()} style={css(`width:520px; max-width:100%; background:#fff; border-radius:20px; padding:26px 28px; box-sizing:border-box; border-top:5px solid ${cfg.color};`)}>
               <div style={css(f(800, 19) + ';color:#0f172a;')}>{cfg.title}</div>
               <div style={css('margin-top:6px;' + f(400, 13.5, 1.6) + ';color:#64748b;')}>{cfg.desc}</div>
-              <div style={css('margin-top:16px;' + f(800, 13) + ';color:#0f172a;')}>{cfg.label} {cfg.required ? <span style={{ color: '#E0353F' }}>*</span> : <span style={css(f(500, 12) + ';color:#94a3b8;')}>(không bắt buộc)</span>}</div>
+              <div style={css('margin-top:16px;' + f(800, 13) + ';color:#0f172a;')}>{cfg.label} {cfg.required ? <span style={toneObj({ color: '#E0353F' })}>*</span> : <span style={css(f(500, 12) + ';color:#94a3b8;')}>(không bắt buộc)</span>}</div>
               <textarea autoFocus value={note} onChange={(e) => setNote(e.target.value)} rows={4} style={css('width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; background:#fff; color-scheme:light; color:#0f172a; resize:vertical; outline:none; box-sizing:border-box; display:block;' + f(400, 14, 1.6))} />
               <div style={css('display:flex; justify-content:flex-end; gap:10px; margin-top:18px;')}>
                 <button onClick={() => setDecide(null)} style={css('height:42px; padding:0 18px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; cursor:pointer;' + f(700, 13.5))}>Huỷ</button>

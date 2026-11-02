@@ -272,3 +272,13 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-richarea:empty::before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
 .zp-richarea b, .zp-richarea strong { font-weight: 800; }
 .zp-richarea:focus { border-color: #9DB8F7 !important; }
+
+/* "Thẻ xám" trial (lib/theme.js): what the inline styles can't reach. */
+html.zp-gray body { color: #e4e6eb; }
+html.zp-gray input, html.zp-gray textarea, html.zp-gray select { color-scheme: dark; }
+html.zp-gray .zp-card:hover .zp-card-title { color: #7fa3ff !important; }
+html.zp-gray .zp-card-q:hover .zp-card-title { color: #e4e6eb !important; }
+html.zp-gray .zp-ps2 > .zp-ps2-sol { border-color: #3e4042; }
+html.zp-gray .zp-msform > div:not(.zp-msform-plain) { background: #242526; border-color: #3e4042; }
+html.zp-gray .zp-msform > div:not(.zp-msform-plain) > :first-child::before { color: #e4e6eb; }
+html.zp-gray .zp-richarea:focus { border-color: #4a6fbf !important; }

@@ -42,6 +42,7 @@ import {
   newestFirst, postedLabel, postedShort, pendingCases, pendingCard, boothDone, renameFlags,
 } from '../data/useCases.js'
 import PendingCases, { BoothInterest, BoothOwnerBar } from '../components/PendingCases.jsx'
+import { toneObj } from '../lib/theme.js'
 
 const DRAFT_KEY = 'zp-usecase-draft-v1'
 // AI Exhibition categories → the share form's (a booth's write-up starts in the closest one)
@@ -1105,7 +1106,7 @@ export default function UseCaseLibraryPage() {
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#B45300" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
                   </div>
                   <div style={css('margin-top:16px; font-size:19px; font-weight:800; color:#0F172A;')}>{t('Đã gửi để Admin duyệt')}</div>
-                  <div style={css('margin-top:8px; font-size:13px; line-height:1.6; color:#64748b;')}>Use case ở trạng thái <strong style={{ color: '#B45300' }}>Chờ duyệt</strong>. Bạn sẽ nhận thông báo khi được duyệt hoặc bị từ chối kèm lý do. Trong lúc chờ, bài chưa xuất hiện trong Library.</div>
+                  <div style={css('margin-top:8px; font-size:13px; line-height:1.6; color:#64748b;')}>Use case ở trạng thái <strong style={toneObj({ color: '#B45300' })}>Chờ duyệt</strong>. Bạn sẽ nhận thông báo khi được duyệt hoặc bị từ chối kèm lý do. Trong lúc chờ, bài chưa xuất hiện trong Library.</div>
                   <div style={css('display:flex; justify-content:center; gap:12px; margin-top:22px;')}>
                     <a href="/profile#usecase" onClick={(e) => { e.preventDefault(); navigate('/profile#usecase') }} style={css('display:inline-flex; align-items:center; height:38px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-size:12.5px; font-weight:700; text-decoration:none;')}>{t('Xem trong Use case của tôi')}</a>
                     <button onClick={closeShare} style={css('height:38px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;')}>{t('Về Library')}</button>
@@ -1471,7 +1472,7 @@ function AttachRows({ files, onChange, t }) {
     <div style={css('display:flex; flex-direction:column; gap:8px; margin-top:10px;')}>
       {files.map((f, k) => (f.image ? (
         <div key={k} style={css('display:flex; align-items:center; gap:10px; padding:6px 6px 6px 6px; border:1px solid #E1E8F5; border-radius:12px; background:#F7F9FD;')}>
-          <img src={f.url || f.data} alt="" style={{ flex: 'none', width: 72, height: 50, objectFit: 'cover', borderRadius: 8, border: '1px solid #E1E8F5', background: '#fff' }} />
+          <img src={f.url || f.data} alt="" style={toneObj({ flex: 'none', width: 72, height: 50, objectFit: 'cover', borderRadius: 8, border: '1px solid #E1E8F5', background: '#fff' })} />
           <input value={f.caption || ''} onChange={(e) => set(k, { caption: e.target.value })} maxLength={300} aria-label={t('Chú thích hình') + ' ' + f.name}
             placeholder={t('Chú thích hình (không bắt buộc), ví dụ: Bài AI viết: human score 6%, AI score 94%')}
             style={css(FIELD_INPUT + 'margin-top:0; flex:1; min-width:0; padding:7px 10px; font-size:12.5px;')} />
@@ -1627,8 +1628,8 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
 
 // Next to a field's name: "✓ Đã điền" in green once it has something; until then "Bắt buộc" (red) or "Không bắt buộc".
 function ReqTag({ done, required, label, t, style }) {
-  if (done) return <span style={{ ...css('font-size:11px; font-weight:800; color:#00893F; white-space:nowrap;'), ...style }}>✓ {t('Đã điền')}</span>
-  return <span style={{ ...css(`font-size:11px; font-weight:700; color:${required ? '#E0353F' : '#94a3b8'};`), ...style }}>{t(label || (required ? 'Bắt buộc' : 'Không bắt buộc'))}</span>
+  if (done) return <span style={toneObj({ ...css('font-size:11px; font-weight:800; color:#00893F; white-space:nowrap;'), ...style })}>✓ {t('Đã điền')}</span>
+  return <span style={toneObj({ ...css(`font-size:11px; font-weight:700; color:${required ? '#E0353F' : '#94a3b8'};`), ...style })}>{t(label || (required ? 'Bắt buộc' : 'Không bắt buộc'))}</span>
 }
 
 // "Phần khác": parts of the author's own after the template's (e.g. Chi phí, Kế hoạch tiếp theo), each a

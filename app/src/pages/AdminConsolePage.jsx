@@ -15,6 +15,7 @@ import { downloadCsv } from '../lib/csv.js'
 import Avatar, { avatarPhotoCss } from '../components/Avatar.jsx'
 import { AdminInbox } from '../components/AdminChat.jsx'
 import { useChatUnread } from '../lib/chat.js'
+import { toneObj } from '../lib/theme.js'
 
 // Admin console: review use case submissions and look at the community's real numbers.
 // Everything here comes from the API — no sample data.
@@ -728,7 +729,7 @@ export default function AdminConsolePage() {
                         <div title={s.title} className={hoverClass('color:#2c5fff;')} style={css(font(700, 13, 1.4) + ';color:#0f172a;' + clamp2)}>{s.title}</div>
                         {(() => { const meta = [s.team, [].concat(s.category)[0]].filter(Boolean).join(' · '); return meta && <div title={meta} style={css('margin-top:2px;' + font(400, 11.5) + ';color:#94a3b8;' + ellip)}>{meta}</div> })()}
                         {twin && <div title={`Người gửi đã có bài cùng tên (${(UC_STATUS[twin.reviewStatus] || UC_STATUS.pending).label.toLowerCase()}), có thể là gửi trùng.`} style={css('margin-top:4px;' + pill('#FFF4E3', '#9A5B00'))}>⚠ Trùng tên với bài khác của người này</div>}
-                        {REVIEWED_BY[s.reviewStatus] && s.reviewedBy && <div style={css('margin-top:3px;' + font(600, 11.5) + ';color:#475569;' + ellip)}>{REVIEWED_BY[s.reviewStatus]} <b style={{ color: '#0f172a' }}>{s.reviewedBy}</b>{s.reviewedAt ? ' · ' + relativeTime(s.reviewedAt) : ''}</div>}
+                        {REVIEWED_BY[s.reviewStatus] && s.reviewedBy && <div style={css('margin-top:3px;' + font(600, 11.5) + ';color:#475569;' + ellip)}>{REVIEWED_BY[s.reviewStatus]} <b style={toneObj({ color: '#0f172a' })}>{s.reviewedBy}</b>{s.reviewedAt ? ' · ' + relativeTime(s.reviewedAt) : ''}</div>}
                         {s.reviewStatus === 'rejected' && s.adminNote && <div title={s.adminNote} style={css('margin-top:5px; padding:5px 9px; border-radius:8px; background:#FFECEC;' + font(600, 11.5, 1.45) + ';color:#B4232A;')}><div style={css(clamp2)}>Lý do từ chối: {s.adminNote}</div></div>}
                         {s.reviewStatus === 'changes_requested' && s.adminNote && <div title={s.adminNote} style={css('margin-top:5px; padding:5px 9px; border-radius:8px; background:#FFF4E3;' + font(600, 11.5, 1.45) + ';color:#7A4700;')}><div style={css(clamp2)}>Đã yêu cầu bổ sung (chờ người gửi sửa): {s.adminNote}</div></div>}
                       </div>
@@ -941,7 +942,7 @@ export default function AdminConsolePage() {
                     <div style={css('flex:1 1 320px; min-width:0;')}>
                       <div style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{r.name || r.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {r.email}</span></div>
                       <div style={css('margin-top:3px;' + font(400, 12.5, 1.5) + ';color:#64748b;')}>
-                        Công ty trên Microsoft: <b style={{ color: '#3A4757' }}>{r.org?.companyName || '(không ghi)'}</b>{r.org?.department ? ` · ${r.org.department}` : ''}{r.org?.jobTitle ? ` · ${r.org.jobTitle}` : ''} · gửi {relativeTime(r.time)}
+                        Công ty trên Microsoft: <b style={toneObj({ color: '#3A4757' })}>{r.org?.companyName || '(không ghi)'}</b>{r.org?.department ? ` · ${r.org.department}` : ''}{r.org?.jobTitle ? ` · ${r.org.jobTitle}` : ''} · gửi {relativeTime(r.time)}
                       </div>
                       {r.note && <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD;' + font(400, 13, 1.55) + ';color:#334155; white-space:pre-wrap;')}>“{r.note}”</div>}
                     </div>
@@ -1104,7 +1105,7 @@ export default function AdminConsolePage() {
               <Field label="Nội dung" value={q.body} />
               {(q.images || []).length > 0 && (
                 <div style={css('display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;')}>
-                  {q.images.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" style={{ width: 96, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid #E6EBF3' }} /></a>)}
+                  {q.images.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" style={toneObj({ width: 96, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid #E6EBF3' })} /></a>)}
                 </div>
               )}
               <div style={css('margin-top:20px;' + font(800, 11.5) + ';letter-spacing:.04em;color:#94a3b8; text-transform:uppercase;')}>Câu trả lời ({q.answers.length})</div>
@@ -1120,7 +1121,7 @@ export default function AdminConsolePage() {
                     {(a.comments || []).length > 0 && (
                       <div style={css('margin-top:8px; padding-left:12px; border-left:2px solid #E6EBF3; display:flex; flex-direction:column; gap:6px;')}>
                         {a.comments.map((c) => (
-                          <div key={c.id} style={css(font(400, 12.5, 1.55) + ';color:#475569; word-break:break-word;')}><b style={{ color: '#0f172a' }}>{who(c)}</b> <span style={{ color: '#94a3b8' }}>· {relativeTime(c.time)}</span><br />{c.body}</div>
+                          <div key={c.id} style={css(font(400, 12.5, 1.55) + ';color:#475569; word-break:break-word;')}><b style={toneObj({ color: '#0f172a' })}>{who(c)}</b> <span style={toneObj({ color: '#94a3b8' })}>· {relativeTime(c.time)}</span><br />{c.body}</div>
                         ))}
                       </div>
                     )}

@@ -32,7 +32,6 @@ export default function Layout({ active, children }) {
               Về đầu trang
             </button>
             <img src={logo} alt="Zalopay AI Space" style={{ height: 18, width: 'auto', display: 'block' }} />
-            <span style={{ fontSize: 13, color: '#8b98b8' }}>© Employer Branding, Internal Communication and Employee Engagement Team</span>
           </div>
         </footer>
       </div>
