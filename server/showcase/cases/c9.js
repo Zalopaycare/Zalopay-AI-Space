@@ -5,6 +5,8 @@ export default {
   postedAt: '2026-09-30',
   // Tên lấy theo booth 4 trên Zalopay AI Exhibition 2026.
   title: 'Hỗ trợ CICD',
+  // the name doesn't say what the use case does yet: "Cần đổi tên" for its owners until it's renamed
+  renameNeeded: true,
   toolName: 'Taxi Agent',
   // no one-line summary: the title alone says which tool and what it does
   desc: '',

@@ -112,6 +112,9 @@ export const builtinCases = allCases.slice()
 export const pendingCases = []
 // booth id → id of the approved use case that replaced it (the booth's link redirects there)
 export const boothDone = {}
+// Use cases whose name doesn't say what they do ("Cần đổi tên"), from /api/showcase.
+export const renameFlags = new Set()
+export function setRenameFlags(ids) { renameFlags.clear(); for (const id of ids || []) renameFlags.add(id) }
 export function registerPending(list, done) {
   pendingCases.splice(0, pendingCases.length, ...(Array.isArray(list) ? list : []))
   for (const k of Object.keys(boothDone)) delete boothDone[k]

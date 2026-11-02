@@ -3,6 +3,8 @@ export default {
   postedAt: '2026-09-23',
   // Tên lấy theo booth 3 trên Zalopay AI Exhibition 2026.
   title: 'us-hive — Tổ đội Agent Engineering, chung TEAM, trọn TIM',
+  // the name doesn't say what the use case does yet: "Cần đổi tên" for its owners until it's renamed
+  renameNeeded: true,
   toolName: 'us-hive',
   // no one-line summary: the title alone says which tool and what it does
   desc: '',

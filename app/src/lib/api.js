@@ -85,6 +85,7 @@ export const api = {
   useCaseMeta: (id) => request(`/use-cases/${id}/meta`),
   reactUseCase: (id) => request(`/use-cases/${id}/react`, { method: 'POST' }),
   showcase: () => request('/showcase'),
+  setRenameFlag: (id, on) => request(`/use-cases/${encodeURIComponent(id)}/rename-flag`, { method: 'POST', body: JSON.stringify({ on }) }),
   confirmCaseReview: (id) => request(`/showcase/${encodeURIComponent(id)}/reviewed`, { method: 'POST' }),
   interestPending: (id) => request(`/showcase/pending/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
   // Admin Console "Booth Exhibition": every booth's write-up status, and inviting owners to write it up

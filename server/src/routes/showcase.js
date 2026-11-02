@@ -5,6 +5,7 @@ import { notifyInterest, notifyOnce } from '../notifications.js'
 import { domainName } from '../mentions.js'
 import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit, showcaseEditOf, caseReview, markCaseReviewed } from '../showcase.js'
 import path from 'node:path'
+import { renameFlagIds, setRenameFlag } from '../renameFlags.js'
 
 const router = express.Router()
 
@@ -49,7 +50,8 @@ router.get('/', requireAuth, (req, res) => {
   // isOwner: the signed-in person is in the case's team (account@vng.com.vn), so they may add its cover
   // review: who confirmed the content is right (null = still "Need your review")
   const reviewOf = (id) => { const r = caseReview(id); return r ? { by: userName(r.by), at: r.at } : null }
-  res.json({ cases: visibleShowcase().map((c) => ({ ...c, isOwner: isBoothOwner(c, req.user.email), review: reviewOf(c.id) })), pending: pendingFor(req.user), boothDone: doneBooths() })
+  // renameFlags: use cases (built-in or posted) whose name should be changed to say what they do
+  res.json({ cases: visibleShowcase().map((c) => ({ ...c, isOwner: isBoothOwner(c, req.user.email), review: reviewOf(c.id) })), pending: pendingFor(req.user), boothDone: doneBooths(), renameFlags: renameFlagIds() })
 })
 
 // An owner of the case (or an admin) confirms its content is right: the "Need your review" tag goes away.
@@ -155,6 +157,9 @@ router.post('/admin/edit/:id', requireAuth, (req, res) => {
     steps: Array.isArray(b.steps) ? b.steps.slice(0, 15).map((s) => ({ title: ctxt(s && s.title, 160) || '', text: ctxt(s && s.text) || '', prompt: ctxt(s && s.prompt) || '', note: ctxt(s && s.note, 800) || '' })).filter((s) => s.title || s.text || s.prompt) : undefined,
     by: req.user.id, at: new Date().toISOString(),
   }
+  // a new name clears "Cần đổi tên"
+  const before = visibleShowcase().find((x) => x.id === c.id)
+  if (before && edit.title !== before.title) setRenameFlag(c.id, false, req.user.id)
   saveShowcaseEdit(req.params.id, edit)
   // whoever went through the content and saved it has reviewed it
   markCaseReviewed(req.params.id, req.user.id)

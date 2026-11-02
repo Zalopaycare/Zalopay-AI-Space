@@ -39,7 +39,7 @@ import { avatarPhotoCss } from '../components/Avatar.jsx'
 import {
   allCases, prdMeta, caseDetail, teamsData, authorInfoFor,
   avatarColor, avatarPhoto, statusMeta, kindOf, statusOf, levelMeta, levelChip,
-  newestFirst, postedLabel, postedShort, pendingCases, pendingCard, boothDone,
+  newestFirst, postedLabel, postedShort, pendingCases, pendingCard, boothDone, renameFlags,
 } from '../data/useCases.js'
 import PendingCases, { BoothInterest, BoothOwnerBar } from '../components/PendingCases.jsx'
 
@@ -81,6 +81,8 @@ const FIELD_AREA = FIELD_INPUT + ' line-height:1.6; resize:vertical;'
 // A required field left empty, once "Xem trước & gửi" has pointed it out: red border, and a red line under it.
 // the amber "Need your review" tag, and the buttons on the bars under a use case's header
 const REVIEW_TAG = 'display:inline-flex; align-items:center; height:20px; padding:0 9px; border-radius:999px; background:#FFF1D6; border:1px solid #F3C97A; color:#9A5B00; font-size:11px; font-weight:800; white-space:nowrap;'
+// "Cần đổi tên": red-orange, so it isn't mistaken for the review tag
+const RENAME_TAG = 'display:inline-flex; align-items:center; height:20px; padding:0 9px; border-radius:999px; background:#FFE9E3; border:1px solid #F7B3A1; color:#B4321B; font-size:11px; font-weight:800; white-space:nowrap;'
 const BAR_BTN = 'display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 15px; border:1px solid rgba(130,170,255,.45); border-radius:999px; background:rgba(60,110,255,.18); color:#dbe8ff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;'
 const MISS_FIELD = 'border-color:#E0353F; background:#FFF8F8; box-shadow:0 0 0 3px rgba(224,53,63,.12);'
 function MissLine({ text }) {
@@ -497,6 +499,13 @@ export default function UseCaseLibraryPage() {
   // its owners (the team) and the admins may confirm it and edit it through the share form
   const canEditShowcase = (c) => { const tp = showcaseTpl(c); return !!user && !!tp && (!!user.isAdmin || !!tp.isOwner) }
   const needsReview = (c) => canEditShowcase(c) && !showcaseTpl(c).review
+  // "Cần đổi tên": its owners (and the admins) see it until the name says what the use case does
+  const canFixTitle = (c) => (showcaseTpl(c) ? canEditShowcase(c) : !!user && !c.pending && (!!user.isAdmin || !!c.canEdit || (!!c.authorId && c.authorId === user.id)))
+  const needsRename = (c) => renameFlags.has(c.id) && canFixTitle(c)
+  // the one who can change the name right away: an owner, or an admin on a built-in case (a post is edited by its author)
+  const canRenameNow = (c) => (showcaseTpl(c) ? canEditShowcase(c) : !!user && (!!c.canEdit || (!!c.authorId && c.authorId === user.id)))
+  const renameNow = (c) => (showcaseTpl(c) ? openCaseEdit(c) : navigate('/use-cases?edit=' + encodeURIComponent(c.id)))
+  const toggleRename = (id, on) => api.setRenameFlag(id, on).then(() => loadPublishedUseCases(true)).catch(() => {})
   const [confirming, setConfirming] = useState(false)
   const confirmReview = (id) => { setConfirming(true); api.confirmCaseReview(id).then(() => loadPublishedUseCases(true)).catch(() => {}).finally(() => setConfirming(false)) }
 
@@ -747,7 +756,21 @@ export default function UseCaseLibraryPage() {
             <div style={css('display:flex; align-items:center; gap:8px; margin-top:14px; font-size:12.5px; line-height:1.5; color:#8fa0c4;')}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
               {t('Chỉ có owner mới chỉnh sửa được Use Case của chính mình.')}
+              {/* an admin asks the owners for a name that says what the use case does */}
+              {user?.isAdmin && !dsel.pending && !renameFlags.has(dsel.id) && (
+                <button onClick={() => toggleRename(dsel.id, true)} style={css('margin-left:auto; border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:700; color:#ffb199;')}>{t('Yêu cầu owner đổi tên')}</button>
+              )}
             </div>
+            {needsRename(dsel) && (
+              <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,120,90,.08); border:1px solid rgba(255,140,110,.45);')}>
+                <span style={css('flex:1; min-width:240px; font-size:12.5px; line-height:1.55; color:#ffd9cf;')}>
+                  <span style={css(RENAME_TAG + 'margin-right:8px;')}>{t('Cần đổi tên')}</span>
+                  {t('Cần chỉnh lại tên Use Case để người đọc đọc vào là biết use case về gì. Gợi ý: Tên công cụ – làm được gì, cho ai.')}
+                </span>
+                {user?.isAdmin && <button onClick={() => toggleRename(dsel.id, false)} style={css(BAR_BTN + 'background:transparent;')}>{t('Bỏ yêu cầu')}</button>}
+                {canRenameNow(dsel) && <button onClick={() => renameNow(dsel)} style={css(BAR_BTN + 'border-color:#FF8C6E; background:rgba(255,120,90,.2); color:#ffe1d9;')}>✎ {t('Đổi tên')}</button>}
+              </div>
+            )}
             {/* a use case AI Space wrote from the team's docs: its owners confirm the content (admins may too), or fix it */}
             {needsReview(dsel) && (
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,176,32,.08); border:1px solid rgba(255,176,32,.4);')}>
@@ -985,7 +1008,12 @@ export default function UseCaseLibraryPage() {
                       <div style={css('display:flex; gap:13px;')}>
                         <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
                         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; padding-right:34px;')}>
-                          {needsReview(c) && <span title={t('AI Space viết use case này từ tài liệu của team: owner xem lại và xác nhận nội dung')} style={css(REVIEW_TAG + 'align-self:flex-start; margin-bottom:5px;')}>{t('Need your review')}</span>}
+                          {(needsReview(c) || needsRename(c)) && (
+                            <span style={css('display:flex; gap:5px; flex-wrap:wrap; margin-bottom:5px;')}>
+                              {needsReview(c) && <span title={t('AI Space viết use case này từ tài liệu của team: owner xem lại và xác nhận nội dung')} style={css(REVIEW_TAG)}>{t('Need your review')}</span>}
+                              {needsRename(c) && <span title={t('Tên chưa nói được use case làm gì: owner đổi lại tên')} style={css(RENAME_TAG)}>{t('Cần đổi tên')}</span>}
+                            </span>
+                          )}
                           <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.title}</h3>
                           {/* the people behind it right under the name, like the AI Exhibition tiles */}
                           <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}>

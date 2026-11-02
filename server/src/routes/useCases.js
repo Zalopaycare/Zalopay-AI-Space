@@ -11,6 +11,7 @@ import { notifyMentions, appUrl, domainName, handleOf, initialsOf } from '../men
 import { notify, notifyUpvotes, notifyParticipants } from '../notifications.js'
 import { PENDING_BY_ID, pendingCases, isBoothOwner, boothAccounts, showcaseCases } from '../showcase.js'
 import { summarize, reactionType, nextReaction } from '../reactions.js'
+import { setRenameFlag } from '../renameFlags.js'
 
 const router = express.Router()
 // Only http(s) links are stored (a "javascript:…" link would run code when clicked).
@@ -391,6 +392,25 @@ router.post('/submissions', requireAuth, (req, res) => {
 })
 
 // Author edits a submission the admin sent back ("Yêu cầu chỉnh sửa") and resubmits it for review.
+// "Cần đổi tên" on a use case (built-in or posted): an admin turns it on or off; turning it on tells the owners.
+router.post('/:id/rename-flag', requireAuth, (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'admin_only' })
+  const id = req.params.id
+  const caseRow = showcaseCases.find((c) => c.id === id)
+  const sub = caseRow ? null : db.prepare('SELECT id, title, author_id, extra FROM use_case_submissions WHERE id = ?').get(id)
+  if (!caseRow && !sub) return res.status(404).json({ error: 'not_found' })
+  const on = !!(req.body && req.body.on)
+  setRenameFlag(id, on, req.user.id)
+  if (on) {
+    const title = caseRow ? caseRow.title : sub.title
+    const booth = sub ? PENDING_BY_ID.get((parseExtra(sub.extra) || {}).booth) : null
+    const author = sub ? db.prepare('SELECT email FROM users WHERE id = ?').get(sub.author_id) : null
+    const emails = new Set([...(caseRow ? boothAccounts(caseRow) : booth ? boothAccounts(booth) : []).map((a) => `${a}@vng.com.vn`), ...(author ? [author.email] : [])])
+    for (const email of emails) notify(email, { kind: 'changes', text: `Admin đề nghị đổi tên use case "${title}" để người đọc nhìn tên là biết use case làm gì.`, href: `/use-cases/${id}`, actor: req.user.name })
+  }
+  res.json({ ok: true, on })
+})
+
 router.patch('/submissions/:id', requireAuth, (req, res) => {
   const row = db.prepare('SELECT * FROM use_case_submissions WHERE id = ?').get(req.params.id)
   if (!row) return res.status(404).json({ error: 'not_found' })
@@ -409,6 +429,8 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
       String(f.limits || '').trim(), String(f.contact || '').trim(), safeLink(f.link), f.kind || '', f.status || '', f.level || '',
       JSON.stringify(tagList(f.category)), JSON.stringify(tagList(f.topics)), JSON.stringify(tagList(f.tools)), nextStatus, row.id)
   saveCover(row.id, cover)
+  // a new name clears "Cần đổi tên"
+  if (f.title.trim() !== row.title) setRenameFlag(row.id, false, req.user.id)
   // Older clients don't send `extra`; leave what's stored untouched then.
   if (f.extra !== undefined) { db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), row.id); saveFormFiles(row.id, f.extra) }
   if (f.anonymous !== undefined) { const an = anonFields(f); db.prepare('UPDATE use_case_submissions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, row.id) }
