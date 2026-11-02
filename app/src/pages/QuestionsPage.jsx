@@ -33,7 +33,8 @@ const TOOLS = [...AI_TOOLS, TOOL_OTHER]
 const OTHER = 'Khác'
 // Old drafts used 'Other' for the free-text AI tool.
 const normTool = normalizeTool
-const ASK_TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Coding & Technical', 'Báo cáo', 'Tự động hoá', 'Khác']
+// What a thread is about: picked (one) before posting, so posts stay on AI; shown on the card and used by the feed filter.
+export const THREAD_TOPICS = ['Hỏi đáp về AI', 'Mẹo & prompt', 'Công cụ AI', 'Ý tưởng ứng dụng AI', 'Tin tức & xu hướng', 'Bảo mật & dữ liệu', 'Khác']
 export const QUESTION_DRAFT_KEY = 'zp-question-draft-v1'
 // The wordmark's intro motion plays once per visit (not again on every way back to the feed).
 let introPlayed = false
@@ -70,6 +71,7 @@ export default function QuestionsPage() {
   const [view, setView] = useState('feed') // 'feed' | 'ask'
   const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('q') || '')
   const [sort, setSort] = useState(() => new URLSearchParams(window.location.search).get('sort') || 'latest')
+  const [topic, setTopic] = useState(() => new URLSearchParams(window.location.search).get('topic') || '')
   const [openDrop, setOpenDrop] = useState(null)
   useEffect(() => {
     if (!openDrop) return
@@ -310,13 +312,14 @@ export default function QuestionsPage() {
   const postQuestion = () => {
     const tt = askTitle.trim(), bb = (askBoxRef.current ? askBoxRef.current.expand(askBody) : askBody).trim()
     if (!bb) { setAskError('Cần có nội dung trước khi đăng.'); return }
+    if (!editQId && !askTopicsSel.length) { setAskError('Chọn chủ đề cho thread trước khi đăng.'); return }
     requireLogin(() => {
       const payload = {
         title: tt, body: bb,
         anonymous: askAnon,
         files: askFiles.map((f) => ({ name: f.name, data: f.dataUrl })),
         category: DEFAULT_CATEGORY,
-        topics: askTopicsSel.map((x) => (x === OTHER ? askTopicOtherText.trim() || OTHER : x)),
+        topics: askTopicsSel.slice(0, 1),
         tools: askToolsSel.map((x) => (x === OTHER ? askToolOtherText.trim() || OTHER : x)),
         images: askImages.map((img) => img.dataUrl),
       }
@@ -353,10 +356,9 @@ export default function QuestionsPage() {
       const inList = list.filter((x) => known.includes(x)), other = list.filter((x) => !known.includes(x))
       return [other.length ? [...inList, OTHER] : inList, other.join(', ')]
     }
-    const [tps, tpo] = split(q.topics || [], ASK_TOPICS)
     const [tls, tlo] = split((q.tools || []).map(normTool), TOOLS)
     setAskTitle(q.hasTitle ? q.title : ''); setAskBody(q.body || '')
-    setAskTopicsSel(tps); setAskTopicOtherText(tpo); setAskToolsSel(tls); setAskToolOtherText(tlo)
+    setAskTopicsSel((q.topics || []).filter((x) => THREAD_TOPICS.includes(x)).slice(0, 1)); setAskTopicOtherText(''); setAskToolsSel(tls); setAskToolOtherText(tlo)
     setAskFiles([]); setAskImages([]); setAskError(''); setAskDraftSaved(false)
     setAskKeep({ images: (q.images || []).filter((u) => String(u).startsWith('/api/')), files: q.files || [] })
     setAskAnon(!!q.anonymous)
@@ -377,7 +379,7 @@ export default function QuestionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, location.hash])
   // Search, status tab and sort live in the URL (?q=&tab=&sort=) — shareable, restored by Back.
-  useUrlFilters({ q: [query, setQuery, ''], sort: [sort, setSort, 'latest'] }, !detailId)
+  useUrlFilters({ q: [query, setQuery, ''], sort: [sort, setSort, 'latest'], topic: [topic, setTopic, ''] }, !detailId)
   // Closing the composer / a question popup drops its #ask / #q= hash (only on an open → closed change).
   const wasOpen = useRef({ ask: false, q: false })
   const anyExpanded = Object.values(expanded).some(Boolean)
@@ -396,6 +398,7 @@ export default function QuestionsPage() {
     if (quick === 'mine' && !(user && q.authorId === user.id)) return false
     if (quick === 'saved' && !q.saved) return false
     if (quick === 'unanswered' && q.answers.length) return false
+    if (topic && !(q.topics || []).includes(topic)) return false
     if (!qs) return true
     return fold([q.title, q.body, q.author, q.fullName, [].concat(q.category).join(' '), q.topics.join(' '), q.tools.join(' ')].join(' ')).indexOf(qs) >= 0
   }
@@ -515,6 +518,7 @@ export default function QuestionsPage() {
                           <span style={css('font:700 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{q.author}</span><AnonTag p={q} />
                           {q.team ? <span style={css('min-width:0; font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{q.team}</span> : null}
                           <span style={css('font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;')}>{q.team ? '· ' : ''}{q.time}{q.edited ? ' · đã sửa' : ''}</span>
+                          {(q.topics || [])[0] && <button type="button" onClick={(e) => { e.stopPropagation(); if (!inModal) setTopic(q.topics[0]); else navigate('/?topic=' + encodeURIComponent(q.topics[0])) }} title={t('Xem các thread cùng chủ đề')} style={css('flex:none; display:inline-flex; align-items:center; height:20px; padding:0 8px; border:1px solid #D6E1FF; border-radius:999px; background:#EEF3FF; color:#2c5fff; font:700 11px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; white-space:nowrap; cursor:pointer;')}>{q.topics[0]}</button>}
                           <span style={{ flex: 1 }}></span>
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
@@ -794,11 +798,18 @@ export default function QuestionsPage() {
 
           {/* the same bar as the Use Case Library: post prompt on top, search and sort under it */}
           <PageActionBar tour="compose" prompt="Bạn có gì muốn hỏi hay chia sẻ về AI?" cta="Đăng thread" onCompose={() => requireLogin(() => setView('ask'))} query={query} onQuery={setQuery} placeholder="Tìm bài viết, tác giả..." filters={
+            <>
+            <FilterPill
+              label={topic || t('Chủ đề')}
+              name="qtopic" openDrop={openDrop} setOpenDrop={setOpenDrop} width={220} align="right"
+              options={[['', t('Tất cả chủ đề')], ...THREAD_TOPICS.map((x) => [x, x])].map(([k, l]) => ({ label: l + (k ? ` · ${questions.filter((q) => (q.topics || []).includes(k)).length}` : ''), active: topic === k, onClick: () => { setTopic(k); setOpenDrop(null) } }))}
+            />
             <FilterPill
               label={t(sort === 'top' ? 'Nổi bật' : 'Mới nhất')}
               name="qsort" openDrop={openDrop} setOpenDrop={setOpenDrop} width={180} align="right"
               options={[['latest', 'Mới nhất'], ['top', 'Nổi bật']].map(([k, l]) => ({ label: t(l), active: sort === k, onClick: () => { setSort(k); setOpenDrop(null) } }))}
             />
+            </>
           } />
           {/* room at the bottom for the last card's ⋯ menu (the page clips anything below it) */}
           <div style={css('padding:16px var(--zp-gutter) 110px;')}>
@@ -917,6 +928,16 @@ export default function QuestionsPage() {
                         </div>
 
 
+                  </div>
+                  {/* what it's about: one topic, required for a new thread */}
+                  <div style={css('margin-top:10px;')}>
+                    <div style={css('font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#3A4757;')}>{t('Chủ đề')} {!editQId && <span style={css('font-weight:600; color:#E0353F;')}>*</span>}</div>
+                    <div style={css('display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;')}>
+                      {THREAD_TOPICS.map((x) => {
+                        const on = askTopicsSel[0] === x
+                        return <button key={x} type="button" aria-pressed={on} onClick={() => { setAskTopicsSel(on ? [] : [x]); setAskError('') }} style={css(`height:28px; padding:0 11px; border-radius:999px; border:1px solid ${on ? '#2c5fff' : '#DDE3EC'}; background:${on ? '#EAF1FF' : '#fff'}; color:${on ? '#2c5fff' : '#3A4757'}; font:700 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;`)}>{x}</button>
+                      })}
+                    </div>
                   </div>
                   <AnonToggle on={askAnon} onChange={setAskAnon} />
                   {askError && <div style={css('margin-top:10px; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{askError}</div>}

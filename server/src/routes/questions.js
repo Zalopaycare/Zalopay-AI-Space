@@ -113,6 +113,8 @@ router.post('/', requireAuth, (req, res) => {
   if (!String(body || '').trim() || !category.length) {
     return res.status(400).json({ error: 'missing_fields' })
   }
+  // a new thread says what it's about (one topic), so the feed stays on AI
+  if (!tagList(topics).length) return res.status(400).json({ error: 'missing_topic', message: 'Chọn chủ đề cho thread trước khi đăng.' })
   const decoded = (Array.isArray(images) ? images : []).slice(0, MAX_IMAGES).map(decodeImage)
   if (decoded.some((d) => !d)) return res.status(400).json({ error: 'bad_image' })
   const decodedFiles = (Array.isArray(files) ? files : []).slice(0, MAX_FILES).map(decodeFile)
