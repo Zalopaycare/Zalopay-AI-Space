@@ -1,6 +1,10 @@
 // One list of AI tools for every form, filter and tag, so names match everywhere.
 export const OTHER = 'Khác'
-export const AI_TOOLS = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Cursor', 'Codex', 'Perplexity', 'Kling', 'Magnify']
+// What the forms offer (then "Khác" with its own name).
+export const AI_TOOLS = ['Claude Code', 'Codex', 'Cursor', 'ChatGPT', 'Agent tự phát triển']
+// Every tool name posts already carry, for their usual casing and for grouping in the Library filter.
+const KNOWN_TOOLS = [...AI_TOOLS, 'Claude', 'Gemini', 'Copilot', 'Perplexity', 'Kling', 'Magnify']
+const TOOL_FAMILIES = ['Claude', 'ChatGPT', 'Gemini', 'Copilot', 'Cursor', 'Codex', 'Perplexity', 'Kling', 'Magnify']
 
 const ALIASES = { gpt: 'ChatGPT', chatgpt: 'ChatGPT', openai: 'ChatGPT', 'chat gpt': 'ChatGPT', other: OTHER, 'github copilot': 'Copilot', 'microsoft copilot': 'Copilot' }
 
@@ -9,7 +13,7 @@ export function normalizeTool(name) {
   const raw = repairLabel(name)
   const key = raw.toLowerCase()
   if (ALIASES[key]) return ALIASES[key]
-  return AI_TOOLS.find((t) => t.toLowerCase() === key) || raw
+  return KNOWN_TOOLS.find((t) => t.toLowerCase() === key) || raw
 }
 
 export const normalizeTools = (list) => Array.from(new Set((list || []).map(normalizeTool).filter(Boolean)))
@@ -17,7 +21,7 @@ export const normalizeTools = (list) => Array.from(new Set((list || []).map(norm
 /** Short tool name for filters: a product line under one name ("Claude Code" → "Claude"); others as they are. */
 export function toolGroup(name) {
   const n = normalizeTool(name)
-  return AI_TOOLS.find((t) => n.toLowerCase() === t.toLowerCase() || n.toLowerCase().startsWith(t.toLowerCase() + ' ')) || n
+  return TOOL_FAMILIES.find((t) => n.toLowerCase() === t.toLowerCase() || n.toLowerCase().startsWith(t.toLowerCase() + ' ')) || n
 }
 
 // The share form's categories. Built-in cases and AI Exhibition booths carry their own labels
@@ -41,7 +45,7 @@ export function categoryOf(raw) {
 const KNOWN_LABELS = [
   'Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Tự động hoá',
   'Coding & Technical', 'Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis',
-  'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other', OTHER, ...AI_TOOLS,
+  'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other', OTHER, ...KNOWN_TOOLS,
 ]
 const escapeRe = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
