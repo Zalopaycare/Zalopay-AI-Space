@@ -162,15 +162,6 @@ export default function Sidebar({ active }) {
           {menuOpen && menuPos && createPortal(
             // Portalled to <body>: the sidebar clips its overflow, so a popup inside it would be cut off when collapsed.
             <div ref={popRef} style={css(`position:fixed; left:${menuPos.left}px; bottom:${menuPos.bottom}px; width:${menuPos.width}px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:2100;`)}>
-              <SoftLink
-                to="/profile"
-                onClick={() => setMenuOpen(false)}
-                className={hoverClass('background:#EEF3FF !important;')}
-                style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap;')}
-              >
-                <svg style={{ flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
-                {t('Hồ sơ của tôi')}
-              </SoftLink>
               <button onClick={() => { setMenuOpen(false); openTour() }} className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:9px; width:100%; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; text-align:left; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap;')}>
                 <svg style={{ flex: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 17h.01"></path></svg>
                 {t('Hướng dẫn sử dụng')}
