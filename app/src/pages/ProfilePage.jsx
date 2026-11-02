@@ -122,7 +122,6 @@ function UseCaseCard({ c }) {
         <CoverImage c={allCases.find((x) => x.id === c.id) || c} />
         <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;')}>
           <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;`)}>{c.title}</h3>
-          <p style={css('margin:4px 0 0; font-size:13px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.desc}</p>
         </div>
       </div>
       <div style={css('display:flex; align-items:center; gap:8px; min-width:0; margin-top:10px;')}>

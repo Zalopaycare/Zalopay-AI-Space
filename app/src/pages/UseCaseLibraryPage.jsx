@@ -69,7 +69,7 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả 1 câu, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Category (chọn Team thì thêm Thành viên cùng làm); Công cụ AI không bắt buộc' },
+  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Category (chọn Team thì thêm Thành viên cùng làm); Công cụ AI không bắt buộc' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
@@ -517,7 +517,6 @@ export default function UseCaseLibraryPage() {
       levelLabel: levelMeta(cd.level).label,
       levelChipLight: levelChip(cd.level, false),
       levelChipDark: levelChip(cd.level, true),
-      overview: c.desc,
       canDelete: !!user && !!c.authorId && (c.authorId === user.id || !!user.isAdmin),
       // the author, or (for a booth's write-up) its owners and admins: the server says so per post
       canEdit: !!user && (c.canEdit || (!!c.authorId && c.authorId === user.id)),
@@ -604,10 +603,8 @@ export default function UseCaseLibraryPage() {
   // them. The example is taken from use cases already on the site, so authors see what "good" looks like.
   // ('apply2' fields sit in Tự áp dụng after the steps.)
   const fieldDefs = [
-    ['title', 'Tên use case', 'Required', 'Đọc tên là biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).', 'Tên công cụ – làm được gì, cho ai', 'input', 0, 'intro',
+    ['title', 'Tên use case', 'Required', 'Tên là thứ duy nhất người đọc thấy trên thẻ (không có đoạn mô tả riêng), nên đọc tên phải biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).', 'Tên công cụ – làm được gì, cho ai', 'input', 0, 'intro',
       'GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay\nAutomation Testing Tool – Hỗ trợ QC viết UI automation test bằng prompt\nPO Tool Kit: bộ AI skill giúp PO đi từ ý tưởng tới ticket, prototype và báo cáo'],
-    ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai đưa gì vào, nhận lại gì.', 'Ai làm gì với công cụ, nhận được gì', 'input', 0, 'intro',
-      'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.'],
     ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps',
       '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence (kể cả sơ đồ/ảnh), tìm đúng version đang deploy và source trên GitLab, rồi tự dò endpoint/host và gõ tay từng lệnh curl để test. Rất nhiều thao tác thủ công, lặp đi lặp lại, và thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester (đồng thời giảm việc qua lại với Dev/PO).\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint (nhất là API mới trong bản release), test nhầm version, hoặc thiếu ngữ cảnh khiến test không đầy đủ.'],
     ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps',
@@ -664,7 +661,7 @@ export default function UseCaseLibraryPage() {
   const missingByStep = Object.fromEntries(Object.entries(reqByStep).map(([k, list]) => [k, list.filter((x) => !x.done).map((x) => x.label)]))
   // Sendable only with every required item filled: the same list the form marks (missingByStep), plus
   // what the server insists on.
-  const valid = Object.values(missingByStep).every((l) => !l.length) && !!(shareForm.oneLine.trim() && shareForm.title.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && (!catOtherOn || shareCatOther.trim()) && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
+  const valid = Object.values(missingByStep).every((l) => !l.length) && !!(shareForm.title.trim() && shareForm.problem.trim() && shareForm.solution.trim() && shareForm.prep.trim() && stepsReady && shareCategory.length && (!catOtherOn || shareCatOther.trim()) && shareLevel && (!teamPost || shareMemberList.length) && shareCover && !shareCover.cleared)
   const missCover = showMissing && !(shareCover && !shareCover.cleared)
   const missMembers = showMissing && teamPost && !shareMemberList.length
   const missCatOther = showMissing && catOtherOn && !shareCatOther.trim()
@@ -685,7 +682,7 @@ export default function UseCaseLibraryPage() {
       prep: shareForm.prep, prompt: stepsAsText(shareStepList), result: shareForm.result, limits: shareForm.limits, contact: shareForm.contact, link: shareForm.link,
       status: shareStatus, level: shareLevel, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.name || '', team: shareAnon && !teamPost ? '' : shareForm.team, extra: shareExtra(),
     }
-    const c = { id: 'preview', title: previewTitle, desc: shareForm.oneLine, coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon && !teamPost, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategoryList[0] || 'Khác', tools: previewTools }
+    const c = { id: 'preview', title: previewTitle, desc: '', coverUrl: shareCover && !shareCover.cleared ? shareCover.url : null, author: shareAnon && !teamPost ? (shareAlias.trim() || 'Anonymous') : user?.domain || user?.name || 'Bạn', anonymous: shareAnon && !teamPost, alias: shareAlias.trim() || 'Anonymous', authorId: user?.id, realAuthor: shareAnon ? (user?.domain || user?.name) : null, team: shareForm.team, category: shareCategoryList[0] || 'Khác', tools: previewTools }
     const tp = buildTemplate(c, { tpl: submissionTpl(sub) }, { name: user?.name || '', role: shareForm.team })
     return { c, tp, layout: detailLayout(tp, t) }
   }
@@ -997,7 +994,6 @@ export default function UseCaseLibraryPage() {
                           {postedShort(c) && <div style={css('margin-top:2px; font-size:12px; line-height:1.45; color:#94a3b8;')}>{postedShort(c)}</div>}
                           {/* its Category (one of the share form's), as the filter files it */}
                           <span style={css('align-self:flex-start; display:inline-flex; align-items:center; height:20px; margin-top:6px; padding:0 9px; border-radius:999px; background:#EEF3FF; border:1px solid #D6E1FF; color:#2c5fff; font-size:11px; font-weight:700; white-space:nowrap;')}>{categoryLabel(c.category)}</span>
-                          {c.overview && <p style={css('margin:4px 0 0; font-size:14px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>}
                         </div>
                       </div>
                       <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px; padding-top:6px; border-top:1px solid #EEF1F7;')}>

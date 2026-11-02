@@ -33,7 +33,6 @@ function partsOf(s) {
   const block = (key, label, value, opts = {}) => ({ key, label, value: String(value || ''), ...opts })
   return [
     { step: 0, title: 'Overview', blocks: [
-      block('oneLine', 'Mô tả 1 câu', ex.oneLine, { required: true }),
       block('audience', 'Ai dùng được', s.audience),
       block('fitYes', 'Phù hợp với bạn nếu', ex.fitYes),
       block('members', 'Thành viên cùng làm', (ex.members || []).join(', ')),
