@@ -4,8 +4,8 @@ export default {
   // Tên lấy theo booth 1 trên Zalopay AI Exhibition 2026.
   title: 'secreq — Trợ lý AI tiếp nhận & chuẩn bị thông tin yêu cầu pentest',
   toolName: 'secreq-bot',
-  // no one-line summary: the title alone says which tool and what it does
-  desc: '',
+  // the share form's "Mô tả 1 câu" example is this line (from the team doc's Result)
+  desc: 'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.',
   type: 'tool',
   status: 'building',
   statusNote: 'Đã xong bản AI Week, đã bổ sung bản v2',
@@ -37,10 +37,11 @@ export default {
     ['Dùng khi', 'Bạn nhận một yêu cầu pentest (ticket SECREQ).'],
   ],
 
-  // Bài toán + Giải pháp: nguyên văn booth 1 của Zalopay AI Exhibition 2026 (thay cho bản viết lại từ tài liệu).
+  // Bài toán + Giải pháp: booth 1 của Zalopay AI Exhibition 2026, sửa cho khớp tài liệu của team: đọc ảnh / sơ đồ
+  // còn ở mục "Làm tiếp" (chưa làm được), và thời gian chuẩn bị là 0,5–2 ngày → ~4–5 phút như bảng số liệu.
   exhibition: {
-    problem: 'Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence (kể cả sơ đồ/ảnh), tìm đúng version đang deploy và source trên GitLab, rồi tự dò endpoint/host và gõ tay từng lệnh curl để test. Rất nhiều thao tác thủ công, lặp đi lặp lại, và thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester (đồng thời giảm việc qua lại với Dev/PO).\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint (nhất là API mới trong bản release), test nhầm version, hoặc thiếu ngữ cảnh khiến test không đầy đủ.',
-    solution: 'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence liên quan + kéo đúng source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test. Dùng qua giao diện web.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API ngay từ source code (đúng bản đã deploy) — pentester copy-dán test được ngay, khỏi phải tự mò.\n- Đọc được cả sơ đồ/ảnh trong tài liệu, tự tìm "cách vào flow" (link, deeplink, . . .), và đánh dấu API nào là mới trong bản release này để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin, tự che thông tin nhạy cảm, và gom hết endpoint / host / môi trường / câu hỏi cho dev vào một chỗ.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest. Trạng thái: MVP/pilot, đã go-live nội bộ, có dashboard theo dõi lượng sử dụng. Rút ngắn thời gian chuẩn bị pentest từ vài tiếng xuống còn vài phút, giảm sót endpoint và đảm bảo test đúng version đang chạy.',
+    problem: '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence (kể cả sơ đồ/ảnh), tìm đúng version đang deploy và source trên GitLab, rồi tự dò endpoint/host và gõ tay từng lệnh curl để test. Rất nhiều thao tác thủ công, lặp đi lặp lại, và thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester (đồng thời giảm việc qua lại với Dev/PO).\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint (nhất là API mới trong bản release), test nhầm version, hoặc thiếu ngữ cảnh khiến test không đầy đủ.',
+    solution: 'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence liên quan + kéo đúng source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test. Dùng qua giao diện web.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API ngay từ source code (đúng bản đã deploy) — pentester copy-dán test được ngay, khỏi phải tự mò.\n- Tự tìm "cách vào flow" (link, deeplink, . . .) và đánh dấu API nào là mới trong bản release này để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin, tự che thông tin nhạy cảm, và gom hết endpoint / host / môi trường / câu hỏi cho dev vào một chỗ.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest. Trạng thái: MVP/pilot, đã go-live nội bộ, có dashboard theo dõi lượng sử dụng. Rút ngắn thời gian chuẩn bị pentest từ 0,5–2 ngày xuống còn khoảng 4–5 phút, giảm sót endpoint và đảm bảo test đúng version đang chạy.',
   },
   problem: {
     text: 'Khi có tính năng mới cần kiểm thử xâm nhập (pentest), dev tạo ticket cho team AppSec. Nhưng thông tin để bắt đầu test hầu như không nằm trong ticket.',
@@ -86,7 +87,8 @@ export default {
       'Con người vẫn kiểm soát: AI chỉ chuẩn bị thông tin, không tự nhắn dev, không tự quyết.',
     ],
     tables: [],
-    note: 'Số liệu trên ticket thật TikTok Hub (PSEC).',
+    // the source of the numbers is already under the table (beforeAfter.note)
+    note: '',
     images: [],
   },
 
@@ -104,15 +106,14 @@ export default {
     prep: [
       'Quyền vào mạng nội bộ Tailscale để mở web của công cụ.',
       'Mã ticket SECREQ (ví dụ SECREQ-28), hoặc link Jira, hoặc nội dung ticket để dán vào.',
-      'Link web của công cụ: [cần bổ sung]',
-      'Xin quyền dùng ở đâu: [cần bổ sung]',
+      'Link web và quyền dùng công cụ: nhắn Owner (Nghĩa. Trần Gia) để xin; web chạy trong mạng nội bộ Tailscale.',
     ],
     // Each step once, with its details and screenshots right under it.
     stepSections: [
       {
         title: 'Mở web của công cụ',
         blocks: [
-          { type: 'text', text: 'Mở web của công cụ [cần bổ sung link].' },
+          { type: 'text', text: 'Mở web của công cụ (link xin từ Owner, mở được khi đã vào Tailscale).' },
         ],
       },
       {
@@ -174,7 +175,11 @@ export default {
   },
 
   safety: {
+    // AppSec kiểm soát ở 2 đầu (tài liệu của team): chọn ticket đầu vào, và xác nhận + quyết định trước khi test
     rules: [
+      'Tự chọn ticket đưa vào công cụ.',
+      'Đọc và xác nhận thông tin trước khi dùng: kiểm tra link nguồn của từng dòng.',
+      'Tự gửi câu hỏi còn thiếu cho dev và tự quyết định khi nào bắt đầu pentest.',
       'Dữ liệu đi qua AI: nội dung ticket, trang Confluence, file đính kèm, source code của tính năng.',
     ],
     limits: [

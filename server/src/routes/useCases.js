@@ -275,6 +275,15 @@ function cleanExtra(e, user) {
       .map((x) => ({ title: txt(x && x.title, 120), text: txt(x && x.text), prompt: txt(x && x.prompt, 8000), note: txt(x && x.note, 600) }))
       .filter((x) => x.title || x.text || x.prompt),
     success: txt(e.success), safety: txt(e.safety),
+    // "Ghi chú về cách truy cập" (shown first in Tự áp dụng)
+    access: txt(e.access, 1000),
+    // Số liệu as a Trước / Sau table: up to 8 rows of [chỉ số, trước, sau], and where the numbers come from
+    metrics: (() => {
+      const rows = (Array.isArray(e.metrics && e.metrics.rows) ? e.metrics.rows : []).slice(0, 8)
+        .map((r) => [0, 1, 2].map((k) => txt(Array.isArray(r) ? r[k] : '', 200))).filter((r) => r.some(Boolean))
+      const note = txt(e.metrics && e.metrics.note, 200)
+      return rows.length || note ? { rows, note } : null
+    })(),
     // "Phần khác": parts of the author's own after the template's ones (title + text)
     customSections: (Array.isArray(e.customSections) ? e.customSections : []).slice(0, 8)
       .map((x) => ({ title: txt(x && x.title, 120), text: txt(x && x.text, 6000) })).filter((x) => x.title && x.text),

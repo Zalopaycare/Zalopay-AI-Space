@@ -51,7 +51,15 @@ const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Resear
 const TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Khác']
 const TOOLS = [...AI_TOOLS, OTHER]
 const SORT_OPTS = [{ label: 'Mới nhất', val: 'new' }, { label: 'Được yêu thích nhất', val: 'helpful' }]
-const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '', fitYes: '', fitNo: '', pitfalls: '', tech: '', success: '', safety: '' }
+// Số liệu & hình ảnh as a table: three empty rows to start with
+// a Category as the form names it ("Other" reads Khác)
+const categoryLabel = (raw) => { const k = categoryOf(raw); return k === 'Other' ? 'Khác' : k }
+const EMPTY_METRICS = { rows: [['', '', ''], ['', '', ''], ['', '', '']], note: '' }
+const metricsOf = (m) => {
+  const rows = (m && Array.isArray(m.rows) ? m.rows : []).map((r) => [0, 1, 2].map((k) => String((r || [])[k] || '')))
+  return { rows: rows.length ? rows : EMPTY_METRICS.rows, note: String((m && m.note) || '') }
+}
+const EMPTY_SHARE_FORM = { title: '', oneLine: '', audience: '', problem: '', solution: '', prep: '', prompt: '', result: '', limits: '', contact: '', link: '', team: '', fitYes: '', fitNo: '', pitfalls: '', tech: '', success: '', safety: '', access: '' }
 // One step of Tự áp dụng: its name, what to do, an optional prompt / command, an optional red warning.
 const EMPTY_STEP = { title: '', text: '', prompt: '', note: '', files: [] }
 // The steps as plain text, for the old Prompt column (review page, older readers).
@@ -61,7 +69,7 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả, Phù hợp với bạn nếu, Độ khó, Công cụ AI' },
+  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, mô tả 1 câu, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Category (chọn Team thì thêm Thành viên cùng làm); Công cụ AI không bắt buộc' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
@@ -162,6 +170,7 @@ export default function UseCaseLibraryPage() {
   // "Other" category: the author's own category name, saved in its place
   const [shareCatOther, setShareCatOther] = useState('')
   const [shareCustom, setShareCustom] = useState([]) // "Phần khác": [{ title, text }]
+  const [shareMetrics, setShareMetrics] = useState(EMPTY_METRICS) // Số liệu: { rows: [[chỉ số, trước, sau]], note }
   const [shareFigures, setShareFigures] = useState({}) // field → pictures under it: [{ ref | data, name, url, caption }]
   // after "Xem trước & gửi" finds gaps: required fields left empty turn red, and the form scrolls to the first one
   const [showMissing, setShowMissing] = useState(false)
@@ -229,7 +238,7 @@ export default function UseCaseLibraryPage() {
       const s = (d.submissions || []).find((x) => x.id === editId)
       if (!s) return
       const ex = s.extra || {}
-      setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' , success: ex.success || '', safety: ex.safety || '' })
+      setShareForm({ title: s.title || '', oneLine: ex.oneLine || '', audience: s.audience || '', problem: s.problem || '', solution: s.solution || '', prep: s.prep || '', prompt: s.prompt || '', result: s.result || '', limits: s.limits || '', contact: s.contact || '', link: s.link || '', team: s.team || '', fitYes: ex.fitYes || '', fitNo: ex.fitNo || '', pitfalls: ex.pitfalls || '', tech: ex.tech || '' , success: ex.success || '', safety: ex.safety || '', access: ex.access || '' })
       // older posts had one Prompt box: it becomes step 1
       setShareSteps(ex.steps && ex.steps.length ? ex.steps.map((x) => ({ ...EMPTY_STEP, ...x })) : s.prompt ? [{ ...EMPTY_STEP, title: 'Prompt / quy trình', prompt: s.prompt }] : [EMPTY_STEP])
       setShareType(ex.type || ''); setShareHighlights(padHighlights(ex.highlights)); setShareStep(startStep)
@@ -239,6 +248,7 @@ export default function UseCaseLibraryPage() {
       { const cats = [].concat(s.category || []), own = cats.filter((x) => !CATS.includes(x)); setShareCategory([...cats.filter((x) => CATS.includes(x)), ...(own.length ? ['Other'] : [])]); setShareCatOther(own.join(', ')) }
       setShareCustom((ex.customSections || []).map((x) => ({ title: x.title || '', text: x.text || '' })))
       setShareFigures(ex.figures || {})
+      setShareMetrics(metricsOf(ex.metrics))
       const known = (list, all) => list.filter((x) => all.includes(x))
       const extra = (list, all) => list.filter((x) => !all.includes(x))
       const tps = s.topics || [], tls = s.tools || []
@@ -343,7 +353,7 @@ export default function UseCaseLibraryPage() {
   const draftJsonRef = useRef(null)
   const draftTimerRef = useRef(null)
   // a draft keeps files already uploaded, not new ones (their data would fill the browser's storage)
-  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps: shareSteps.map((x) => ({ ...x, files: (x.files || []).filter((f) => f.ref != null) })), shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList , shareFigures: Object.fromEntries(Object.entries(shareFigures).map(([k, l]) => [k, l.filter((f) => f.ref != null)])) })
+  const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps: shareSteps.map((x) => ({ ...x, files: (x.files || []).filter((f) => f.ref != null) })), shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList , shareFigures: Object.fromEntries(Object.entries(shareFigures).map(([k, l]) => [k, l.filter((f) => f.ref != null)])), shareMetrics })
 
   // A draft left from last time isn't poured into the form on its own: opening the form asks first
   // ("Bạn có 1 use case đang nháp": go on with it, or start a new one).
@@ -363,6 +373,7 @@ export default function UseCaseLibraryPage() {
       setShareCatOther(d.shareCatOther || '')
       setShareCustom(Array.isArray(d.shareCustom) ? d.shareCustom : [])
       setShareFigures(d.shareFigures && typeof d.shareFigures === 'object' ? d.shareFigures : {})
+      setShareMetrics(metricsOf(d.shareMetrics))
       setShareTopicSel(d.shareTopicSel || [])
       setShareTopicOtherText(d.shareTopicOtherText || '')
       setShareToolSel(d.shareToolSel || [])
@@ -398,7 +409,7 @@ export default function UseCaseLibraryPage() {
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareFigures, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
+  }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareFigures, shareMetrics, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
@@ -474,7 +485,7 @@ export default function UseCaseLibraryPage() {
   }
 
   const resetShareForm = () => {
-    setShareForm(EMPTY_SHARE_FORM); setShareFigures({}); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareSteps([EMPTY_STEP]); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
+    setShareForm(EMPTY_SHARE_FORM); setShareFigures({}); setShareMetrics(EMPTY_METRICS); setShareType(''); setShareAnon(false); setShareAlias(''); setSharePostAs('personal'); setShareMembers(''); setShareBooth(''); setShareSteps([EMPTY_STEP]); setShareHighlights(EMPTY_HIGHLIGHTS); setShareStep(0); setShareKind(''); setShareStatus(''); setShareLevel('')
     setShareCategory([]); setShareCatOther(''); setShareCustom([]); setShareTopicSel([]); setShareTopicOtherText('')
     setShareToolSel([]); setShareToolOtherText(''); setShareFileList([]); setShareError(''); setShareStage('form'); setShowMissing(false)
     setShareCover(null); setCoverError(''); setCoverNote(''); setDocxInfo(null); setDocxError('')
@@ -598,12 +609,13 @@ export default function UseCaseLibraryPage() {
     ['oneLine', 'Mô tả 1 câu', 'Required', 'Hiện ngay dưới tên bài và trên thẻ ở Use Case Library: ai đưa gì vào, nhận lại gì.', 'Ai làm gì với công cụ, nhận được gì', 'input', 0, 'intro',
       'AppSec đưa 1 mã ticket, nhận 1 trang tóm tắt đủ thông tin để bắt đầu test, dòng nào cũng có link nguồn.'],
     ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps',
-      '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence, tìm đúng version đang deploy, rồi gõ tay từng lệnh curl để test. Thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester.\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint, test nhầm version.'],
+      '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence (kể cả sơ đồ/ảnh), tìm đúng version đang deploy và source trên GitLab, rồi tự dò endpoint/host và gõ tay từng lệnh curl để test. Rất nhiều thao tác thủ công, lặp đi lặp lại, và thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester (đồng thời giảm việc qua lại với Dev/PO).\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint (nhất là API mới trong bản release), test nhầm version, hoặc thiếu ngữ cảnh khiến test không đầy đủ.'],
     ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps',
-      'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence + source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API, pentester copy-dán test được ngay.\n- Đánh dấu API nào là mới trong bản release để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin và che thông tin nhạy cảm.\n\n**Kết quả:** Đang được team AppSec dùng thật (MVP/pilot, đã go-live nội bộ). Rút ngắn thời gian chuẩn bị pentest từ vài tiếng xuống còn vài phút.'],
-    ['result', 'Số liệu & hình ảnh', 'Optional', 'Số đo trước / sau nếu có. Mỗi dòng một ý. Chưa đo thì để trống.', '', 'area', 3, 'ps',
-      'Chuẩn bị pentest: từ 0,5–2 ngày xuống khoảng 5 phút\n17/25 ticket gần nhất chỉ đưa link, trung bình 2–3 link'],
+      'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence liên quan + kéo đúng source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test. Dùng qua giao diện web.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API ngay từ source code (đúng bản đã deploy) — pentester copy-dán test được ngay, khỏi phải tự mò.\n- Tự tìm "cách vào flow" (link, deeplink, . . .) và đánh dấu API nào là mới trong bản release này để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin, tự che thông tin nhạy cảm, và gom hết endpoint / host / môi trường / câu hỏi cho dev vào một chỗ.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest. Trạng thái: MVP/pilot, đã go-live nội bộ, có dashboard theo dõi lượng sử dụng. Rút ngắn thời gian chuẩn bị pentest từ 0,5–2 ngày xuống còn khoảng 4–5 phút, giảm sót endpoint và đảm bảo test đúng version đang chạy.'],
+    ['result', 'Số liệu & hình ảnh', 'Optional', 'Số đo trước / sau: điền vào bảng ngay dưới (mỗi hàng một chỉ số). Ô chữ này cho các ý khác, mỗi dòng một ý. Chưa đo thì để trống.', '', 'area', 3, 'ps',
+      'AppSec đọc 1 trang thay vì mở 5 trang Confluence + file đính kèm.\nBiết ngay thiếu thông tin gì để hỏi dev, thay vì phát hiện giữa lúc test.'],
     ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file cài để người khác tự xem.', 'https://...', 'input', 0, 'apply', 'https://gitlab.zalopay.vn/…/secreq-bot'],
+    ['access', 'Ghi chú về cách truy cập', 'Optional', 'Ai đang dùng được, cần quyền / mạng gì, xin ở đâu. Hiện ngay đầu phần Tự áp dụng.', '', 'area', 2, 'apply', 'Công cụ hiện dùng trong team AppSec. Bạn chỉ cần mã ticket SECREQ; công cụ tự tìm ticket triển khai (CICD) đi kèm trong nội dung ticket.'],
     ['fitYes', 'Phù hợp với bạn nếu', 'Required', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'intro', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
     ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', '', 'area', 3, 'apply', 'Tài khoản O365 để đăng nhập MCP Platform.\nQuyền owner/co-owner của tài nguyên trên Gear.\nMột AI có hỗ trợ kết nối MCP (ví dụ Codex).'],
     ['success', 'Kết quả bạn sẽ thấy', 'Optional', 'Làm xong các bước thì người đọc thấy gì, để họ biết mình đã làm đúng. Mỗi dòng một ý.', '', 'area', 2, 'apply2', 'AI trả về trang tóm tắt có lệnh curl cho từng API, dòng nào cũng có link nguồn.\nTrong bảng MCP keys, khoá của bạn có trạng thái "Active".'],
@@ -631,7 +643,9 @@ export default function UseCaseLibraryPage() {
     fitYes: shareForm.fitYes.trim(), fitNo: shareForm.fitNo.trim(), pitfalls: shareForm.pitfalls.trim(), tech: shareForm.tech.trim(),
     ...(teamPost ? { postAs: 'team', showAs: 'members', members: shareMemberList } : {}),
     ...(shareBooth ? { booth: shareBooth } : {}),
-    steps: shareStepList, success: shareForm.success.trim(), safety: shareForm.safety.trim(),
+    steps: shareStepList, success: shareForm.success.trim(), safety: shareForm.safety.trim(), access: shareForm.access.trim(),
+    // Số liệu as a Trước / Sau table: the rows with something in them, and where the numbers come from
+    metrics: { rows: shareMetrics.rows.map((r) => r.map((x) => x.trim())).filter((r) => r.some(Boolean)), note: shareMetrics.note.trim() },
     customSections: shareCustom.map((x) => ({ title: x.title.trim(), text: x.text.trim() })).filter((x) => x.title && x.text),
     // pictures under a section: kept ones by { ref } (the preview also uses their url), new ones with their data
     figures: Object.fromEntries(Object.entries(shareFigures).filter(([, l]) => l.length)),
@@ -981,6 +995,8 @@ export default function UseCaseLibraryPage() {
                             <span style={css('font-weight:700; color:#0F172A;')}>Owner:</span> {c.byline || c.author}<AnonTag p={c} />
                           </div>
                           {postedShort(c) && <div style={css('margin-top:2px; font-size:12px; line-height:1.45; color:#94a3b8;')}>{postedShort(c)}</div>}
+                          {/* its Category (one of the share form's), as the filter files it */}
+                          <span style={css('align-self:flex-start; display:inline-flex; align-items:center; height:20px; margin-top:6px; padding:0 9px; border-radius:999px; background:#EEF3FF; border:1px solid #D6E1FF; color:#2c5fff; font-size:11px; font-weight:700; white-space:nowrap;')}>{categoryLabel(c.category)}</span>
                           {c.overview && <p style={css('margin:4px 0 0; font-size:14px; line-height:1.5; color:#3A4757; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;')}>{c.overview}</p>}
                         </div>
                       </div>
@@ -1268,6 +1284,7 @@ export default function UseCaseLibraryPage() {
                         )}
                         {miss && <MissLine text={t('Chưa điền: mục này bắt buộc')} />}
                         {/* pictures with a caption under this section (shown under it on the page); not on an admin edit of a built-in case */}
+                        {f.key === 'result' && <MetricsEditor value={shareMetrics} onChange={setShareMetrics} t={t} />}
                         {f.isArea && FIGURE_FIELDS.includes(f.key) && !editingCase && (
                           <FigurePicker files={shareFigures[f.key] || []} onChange={(l) => setShareFigures((m) => ({ ...m, [f.key]: l }))} t={t} />
                         )}
@@ -1396,6 +1413,30 @@ export default function UseCaseLibraryPage() {
 const FIGURE_FIELDS = ['problem', 'solution', 'result', 'prep', 'success', 'pitfalls', 'safety', 'limits']
 const MAX_FIGURES = 3
 const IMAGE_TYPE = /^image\/(png|jpeg|gif|webp)$/
+
+/** Số liệu as a table, Chỉ số / Trước / Sau (shown as that table on the page), and where the numbers come from. */
+function MetricsEditor({ value, onChange, t }) {
+  const setCell = (i, k, v) => onChange({ ...value, rows: value.rows.map((r, j) => (j === i ? r.map((x, m) => (m === k ? v : x)) : r)) })
+  const cell = FIELD_INPUT + 'margin-top:0; padding:7px 10px; font-size:12.5px; min-width:0;'
+  const ph = [['Thời gian chuẩn bị 1 lần pentest', '0,5–2 ngày đọc tài liệu thủ công', '~4–5 phút chạy công cụ + đọc 1 trang'], ['Số trang phải đọc', '5 trang Confluence + 27 file đính kèm', '1 trang tóm tắt']]
+  return (
+    <div style={css('margin-top:10px; padding:10px 12px 12px; border:1px solid #E1E8F5; border-radius:12px; background:#F7F9FD;')}>
+      <div style={css('display:grid; grid-template-columns:1.1fr 1fr 1fr 24px; gap:6px; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#64748b;')}>
+        <span>{t('Chỉ số')}</span><span>{t('Trước')}</span><span>{t('Sau')}</span><span></span>
+      </div>
+      {value.rows.map((r, i) => (
+        <div key={i} style={css('display:grid; grid-template-columns:1.1fr 1fr 1fr 24px; gap:6px; margin-top:6px; align-items:center;')}>
+          {r.map((x, k) => <input key={k} value={x} onChange={(e) => setCell(i, k, e.target.value)} aria-label={[t('Chỉ số'), t('Trước'), t('Sau')][k] + ' ' + (i + 1)} placeholder={(ph[i] || [])[k] || ''} style={css(cell)} />)}
+          <button type="button" onClick={() => onChange({ ...value, rows: value.rows.length > 1 ? value.rows.filter((_, j) => j !== i) : [['', '', '']] })} aria-label={t('Bỏ hàng') + ' ' + (i + 1)} title={t('Bỏ hàng')} style={css('border:none; background:none; cursor:pointer; color:#94a3b8; font-size:16px; padding:0;')}>×</button>
+        </div>
+      ))}
+      <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;')}>
+        {value.rows.length < 8 && <button type="button" onClick={() => onChange({ ...value, rows: [...value.rows, ['', '', '']] })} style={css('height:26px; padding:0 10px; border:1px dashed #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;')}>+ {t('Thêm hàng')}</button>}
+        <input value={value.note} onChange={(e) => onChange({ ...value, note: e.target.value })} maxLength={200} aria-label={t('Nguồn số đo')} placeholder={t('Nguồn số đo, ví dụ: Đo trên 1 ticket thật: TikTok Hub (PSEC).')} style={css(cell + 'flex:1; min-width:220px;')} />
+      </div>
+    </div>
+  )
+}
 
 /** Attached pictures / files as rows: a picture with its caption box, any other file as a chip. */
 function AttachRows({ files, onChange, t }) {

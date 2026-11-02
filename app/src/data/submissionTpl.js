@@ -47,6 +47,7 @@ export function submissionTpl(s) {
   const hl = (e.highlights || []).filter((h) => h && (h.value || h.label))
   const resultLines = lines(s.result)
   const fig = (k) => figuresOf((e.figures || {})[k])
+  const metricRows = ((e.metrics || {}).rows || []).filter((r) => Array.isArray(r) && r.some((x) => String(x || '').trim()))
   return {
     // written and rated by the author: nothing on it is AI Space's own guess
     byAuthor: true,
@@ -64,8 +65,11 @@ export function submissionTpl(s) {
     ],
     problem: { text: s.problem || '', images: fig('problem') },
     solution: { steps: lines(s.solution), images: fig('solution') },
-    result: { highlights: hl, bullets: resultLines, images: fig('result') },
+    // the Trước / Sau table from the form (rows with something in them), and the source of the numbers under it
+    result: { highlights: hl, bullets: resultLines, images: fig('result'), beforeAfter: metricRows.length ? { cols: ['Chỉ số', 'Trước', 'Sau'], rows: metricRows, note: (e.metrics || {}).note || '' } : null },
     apply: {
+      // "Ghi chú về cách truy cập": first thing in Tự áp dụng
+      intro: e.access || '',
       fit: { yes: lines(e.fitYes), no: lines(e.fitNo) },
       prep: lines(s.prep),
       // Steps from the form show as the step-by-step journey; older posts only had one Prompt box.

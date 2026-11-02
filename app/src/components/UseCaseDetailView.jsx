@@ -51,7 +51,7 @@ export function DetailSections({ id, tp, t, layout }) {
       {has.safety && (() => {
         const human = tp.safety.rules.filter((x) => !isDataLine(x)), ai = tp.safety.limits.filter((x) => !isDataLine(x))
         const dataLines = [...tp.safety.rules, ...tp.safety.limits].filter(isDataLine).map(dataOf)
-        const humanOn = human.length > 0 || tp.safety.tables.length > 0 || (tp.safety.images || []).length > 0, aiOn = ai.length > 0 || (tp.safety.limitImages || []).length > 0
+        const humanOn = human.length > 0 || tp.safety.tables.length > 0 || (tp.safety.images || []).length > 0 || dataLines.length > 0, aiOn = ai.length > 0 || (tp.safety.limitImages || []).length > 0
         return (
         <Section id="uc-safety" num={num.safety} title={t('Trách nhiệm & giới hạn')}>
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>
@@ -64,16 +64,16 @@ export function DetailSections({ id, tp, t, layout }) {
                   {human.length > 0 && <BulletList items={human} dot="#6F0CE2" />}
                   {tp.safety.tables.map((tb, i) => <div key={i} style={{ marginTop: human.length ? 14 : 0 }}><PlainTable flat table={tb} /></div>)}
                   <Images images={tp.safety.images} />
+                  {/* what goes through the AI is the people's call (the form asks for it under Trách nhiệm): its own box here */}
+                  {dataLines.length > 0 && (
+                    <div style={css(`margin-top:${human.length || tp.safety.tables.length ? 14 : 0}px; padding:11px 14px; border-radius:12px; background:#F5F8FF; border:1px solid #DCE5FA; font-size:13px; line-height:1.6; color:#3A4757;`)}>
+                      {dataLines.map((d, i) => <div key={i}><b style={css('color:#2c5fff;')}>{t('Dữ liệu đi qua AI')}:</b> <Fill text={d} /></div>)}
+                    </div>
+                  )}
                 </div>
               )}
               {aiOn && <div className={humanOn ? 'zp-ps2-sol' : undefined} style={{ minWidth: 0 }}><div style={css(SUBHEAD)}>{t('Giới hạn của AI')}</div><BulletList items={ai} dot="#E39100" /><Images images={tp.safety.limitImages} /></div>}
             </div>
-            {/* "Dữ liệu đi qua AI" is a fact, not a responsibility or a limit: its own line under both */}
-            {dataLines.length > 0 && (
-              <div style={css('padding:11px 14px; border-radius:12px; background:#F5F8FF; border:1px solid #DCE5FA; font-size:13px; line-height:1.6; color:#3A4757;')}>
-                {dataLines.map((d, i) => <div key={i}><b style={css('color:#2c5fff;')}>{t('Dữ liệu đi qua AI')}:</b> <Fill text={d} /></div>)}
-              </div>
-            )}
           </div>
         </Section>
         )

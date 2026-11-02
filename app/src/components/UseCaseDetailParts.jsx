@@ -6,6 +6,7 @@ import { css, hoverClass } from '../lib/style.js'
 import AnonTag from './AnonTag.jsx'
 import { Blocks, CopyButton, Figure, Placeholders, Prompt, PromptTargetContext } from './UseCaseGuide.jsx'
 import Fill from './Fill.jsx'
+import { categoryOf } from '../lib/taxonomy.js'
 import RichText from './RichText.jsx'
 
 // Building blocks of the use case detail page, laid out as the template:
@@ -77,6 +78,12 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
           </span>
           <span style={css(`font-size:12.5px; font-weight:800; color:${diff[0]};`)}>{t(h.difficulty)}</span>
         </div>
+      </div>
+    ),
+    c.category && (
+      <div key="cat">
+        {label(t('Category'))}
+        <span style={css('display:inline-flex; align-items:center; height:24px; padding:0 9px; border-radius:999px; background:rgba(68,128,255,.18); border:1px solid rgba(130,170,255,.4); color:#dbe8ff; font-size:12px; font-weight:700;')}>{categoryOf(c.category) === 'Other' ? t('Khác') : categoryOf(c.category)}</span>
       </div>
     ),
     tools.length > 0 && (
