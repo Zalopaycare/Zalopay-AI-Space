@@ -13,11 +13,11 @@ import { openTour } from './WelcomeTour.jsx'
 
 const itemBase = 'display:flex; align-items:center; gap:12px; height:40px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14px; cursor:pointer; text-align:left; font-family:inherit; width:100%; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 const subItemBase = 'display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:13.5px; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
-// Blue glass pill: soft glow on hover, stronger when it's the current page.
+// Light as Threads: no box around the menu, a soft tint on hover, a little more for the current page.
 // !important: the item's own inline style would otherwise win over :hover.
-const HOVER = 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)) !important; border-color:rgba(130,175,255,.55) !important; color:#dbe8ff !important; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10) !important;'
+const HOVER = 'background:rgba(150,180,255,.08) !important; color:#e8eefc !important;'
 const itemState = (active) => (active
-  ? 'background:linear-gradient(90deg,rgba(60,110,255,.30),rgba(60,110,255,.12)); border:1px solid rgba(130,175,255,.55); color:#dbe8ff; font-weight:700; box-shadow:0 0 18px rgba(44,95,255,.28), inset 0 0 12px rgba(120,165,255,.10);'
+  ? 'background:rgba(150,180,255,.13); border:1px solid transparent; color:#fff; font-weight:700;'
   : 'background:transparent; border:1px solid transparent; color:#b4c3e8; font-weight:500;')
 
 // `tour`: the welcome tour's mark for this link (WelcomeTour.jsx points at it)
@@ -95,7 +95,7 @@ export default function Sidebar({ active }) {
       aria-label={t('Menu chính')}
       aria-hidden={narrow && !drawerOpen ? true : undefined}
       inert={narrow && !drawerOpen ? true : undefined}
-      style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:58px; bottom:0; width:${narrow ? 260 : collapsed ? 68 : 224}px; z-index:2000; ${narrow ? `transform:translateX(${drawerOpen ? 0 : -105}%); transition:transform .22s ease; box-shadow:${drawerOpen ? '12px 0 40px rgba(0,0,0,.5)' : 'none'};` : ''} display:flex; flex-direction:column; padding:${collapsed ? '16px 9px 16px' : '16px 12px 16px'}; background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.30), transparent 70%), radial-gradient(90% 35% at 100% 100%, rgba(60,110,255,.16), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.72) 0%, rgba(9,16,46,.80) 50%, rgba(5,9,26,.88) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16); box-shadow:1px 0 24px rgba(20,50,160,.18); color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
+      style={css(`view-transition-name:zp-sidebar; position:fixed; left:0; top:58px; bottom:0; width:${narrow ? 260 : collapsed ? 68 : 224}px; z-index:2000; ${narrow ? `transform:translateX(${drawerOpen ? 0 : -105}%); transition:transform .22s ease; box-shadow:${drawerOpen ? '12px 0 40px rgba(0,0,0,.5)' : 'none'};` : ''} display:flex; flex-direction:column; padding:${collapsed ? '16px 9px 16px' : '16px 12px 16px'}; ${narrow ? "background:radial-gradient(120% 45% at 0% 0%, rgba(70,120,255,.30), transparent 70%), radial-gradient(90% 35% at 100% 100%, rgba(60,110,255,.16), transparent 70%), linear-gradient(180deg, rgba(16,32,92,.72) 0%, rgba(9,16,46,.80) 50%, rgba(5,9,26,.88) 100%); backdrop-filter:blur(18px) saturate(140%); -webkit-backdrop-filter:blur(18px) saturate(140%); border-right:1px solid rgba(130,170,255,.16); box-shadow:1px 0 24px rgba(20,50,160,.18);" : 'background:transparent;'} color:#e8eefc; font-family:inherit; overflow-y:auto; overflow-x:hidden; transition:width .16s ease;`)}>
       {/* AI Space and Use Case Library are in the top bar; on a phone, where that bar has no tabs, they're here */}
       {mobile && (
         <nav style={css('display:flex; flex-direction:column; gap:2px; margin-bottom:22px;')}>
@@ -184,8 +184,8 @@ export default function Sidebar({ active }) {
           <button
             onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setMenuPos({ left: r.left, bottom: window.innerHeight - r.top + 8, width: collapsed ? 220 : r.width }); setMenuOpen((o) => !o) }}
             title={collapsed ? user.name : undefined}
-            className={hoverClass('background:rgba(255,255,255,.1);')}
-            style={css(`display:flex; align-items:center; gap:10px; width:100%; padding:5px ${collapsed ? '5px' : '10px 5px 5px'}; border-radius:14px; background:rgba(80,130,255,.10); border:1px solid rgba(130,170,255,.22); cursor:pointer; font-family:inherit; ${collapsed ? 'justify-content:center;' : ''}`)}
+            className={hoverClass('background:rgba(150,180,255,.08) !important;')}
+            style={css(`display:flex; align-items:center; gap:10px; width:100%; padding:5px ${collapsed ? '5px' : '10px 5px 5px'}; border-radius:14px; background:transparent; border:1px solid transparent; cursor:pointer; font-family:inherit; ${collapsed ? 'justify-content:center;' : ''}`)}
           >
             <Avatar user={user} size={30} fontSize={11.5} />
             {!collapsed && <span style={css('flex:1; min-width:0; text-align:left; font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>}
