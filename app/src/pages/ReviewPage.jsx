@@ -363,7 +363,7 @@ export default function ReviewPage() {
               </div>
               {inline('title')}
               <div style={css('margin-top:8px;' + f(400, 13.5) + ';color:#64748b;')}>
-                {sub.author}{sub.realAuthor && sub.anonymous ? ` (${sub.realAuthor})` : ''}{sub.team ? ' · ' + sub.team : ''} · gửi {relativeTime(sub.time)}{sub.edited ? ' · đã chỉnh sửa' : ''}
+                {sub.author}{sub.realAuthor && sub.anonymous ? ` (${sub.realAuthor})` : ''}{sub.team ? ' · ' + sub.team : ''} · gửi {relativeTime(sub.time)}
               </div>
               <div style={css('display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;')}>
                 {[...[].concat(sub.category || []), ...(sub.topics || []), sub.level].filter(Boolean).map((x) => <span key={'c' + x} style={css('padding:4px 10px; border-radius:999px; background:#EAF0FF; color:#2c5fff;' + f(700, 12))}>{x}</span>)}

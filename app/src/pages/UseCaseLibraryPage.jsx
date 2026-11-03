@@ -516,8 +516,9 @@ export default function UseCaseLibraryPage() {
   // "Need your review": a use case AI Space wrote from the team's docs whose owners haven't confirmed it yet.
   // Only they and the admins see it (they're the ones who can do something about it).
   const showcaseTpl = (c) => { const tp = (caseDetail[c.id] || {}).tpl; return !c.submitted && !c.pending && tp && tp.id === c.id ? tp : null }
-  // its owners (the team) and the admins may confirm it and edit it through the share form
-  const canEditShowcase = (c) => { const tp = showcaseTpl(c); return !!user && !!tp && (!!user.isAdmin || !!tp.isOwner) }
+  // its owners (the team) may confirm it and edit it through the share form; admins only where the server
+  // lets them see it as its owners do (isOwner, ADMIN_AS_OWNER in server/src/routes/showcase.js)
+  const canEditShowcase = (c) => { const tp = showcaseTpl(c); return !!user && !!tp && !!tp.isOwner }
   const needsReview = (c) => canEditShowcase(c) && !showcaseTpl(c).review
   // "Cần đổi tên": its owners (and the admins) see it until the name says what the use case does
   const canFixTitle = (c) => (showcaseTpl(c) ? canEditShowcase(c) : !!user && !c.pending && (!!user.isAdmin || !!c.canEdit || (!!c.authorId && c.authorId === user.id)))
@@ -764,9 +765,8 @@ export default function UseCaseLibraryPage() {
                 c={dsel}
                 h={{ ...tp.hero, posted: postedLabel(dsel) }}
                 onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))}
-                // admins add the missing cover of a showcase case or a booth right here
-                // admins on any case or booth; owners on their own (the server checks too)
-                onUploadCover={user && (dsel.pending ? dsel.pending.owner : (caseDetail[dsel.id]?.tpl && !dsel.submitted && (user.isAdmin || caseDetail[dsel.id].tpl.isOwner)))
+                // the owners add the missing cover of their case or booth right here (the server checks too)
+                onUploadCover={user && (dsel.pending ? dsel.pending.owner : (caseDetail[dsel.id]?.tpl && !dsel.submitted && caseDetail[dsel.id].tpl.isOwner))
                   ? (file) => cropCover(file).then(({ data }) => api.adminSetCover(dsel.id, data)).then(() => loadPublishedUseCases(true))
                   : null}
               />
@@ -803,7 +803,7 @@ export default function UseCaseLibraryPage() {
             {canEditShowcase(dsel) && !needsReview(dsel) && (
               <div style={css('display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:12px 16px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(130,170,255,.22);')}>
                 <span style={css('flex:1; min-width:220px; font-size:12.5px; line-height:1.55; color:#a9b8dc;')}>
-                  {user?.isAdmin && !showcaseTpl(dsel).isOwner ? t('Chỉ admin thấy:') : t('Bạn là owner của use case này:')} {t('bấm Chỉnh sửa để sửa nội dung (mở form đăng bài, điền sẵn nội dung hiện tại). Lưu là trang cập nhật ngay, không qua bước duyệt.')}
+                  {t('Bạn là owner của use case này:')} {t('bấm Chỉnh sửa để sửa nội dung (mở form đăng bài, điền sẵn nội dung hiện tại). Lưu là trang cập nhật ngay, không qua bước duyệt.')}
                   {showcaseTpl(dsel).review?.by ? ' ' + t('Đã review bởi') + ' ' + showcaseTpl(dsel).review.by + '.' : ''}
                 </span>
                 <button onClick={() => openCaseEdit(dsel)} style={css(BAR_BTN)}>✎ {t('Chỉnh sửa')}</button>
@@ -869,7 +869,7 @@ export default function UseCaseLibraryPage() {
                         <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(c.avatarUrl)}`)}>{c.initials}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={css('display:flex; align-items:center; gap:8px;')}>
-                            <div style={css('flex:1; min-width:0; font-size:13px; font-weight:600; color:#0F172A;')}>{c.author} <AnonTag p={c} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}{c.edited ? ' · đã sửa' : ''}</span></div>
+                            <div style={css('flex:1; min-width:0; font-size:13px; font-weight:600; color:#0F172A;')}>{c.author} <AnonTag p={c} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(c.time)}</span></div>
                             <CommentMenu isOwner={!!user && c.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(c.id)} onDelete={() => (user && c.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, c.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(c.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, c.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', c.id)} />
                           </div>
                           {editingCmt === c.id
@@ -893,7 +893,7 @@ export default function UseCaseLibraryPage() {
                           <span style={css(`width:30px; height:30px; border-radius:50%; flex:none; background:#EAF1FF; color:#2c5fff; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:800;${avatarPhotoCss(r.avatarUrl)}`)}>{r.initials}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={css('display:flex; align-items:center; gap:8px;')}>
-                              <div style={css('flex:1; min-width:0; font-size:13px; font-weight:600; color:#0F172A;')}>{r.author} <AnonTag p={r} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}{r.edited ? ' · đã sửa' : ''}</span></div>
+                              <div style={css('flex:1; min-width:0; font-size:13px; font-weight:600; color:#0F172A;')}>{r.author} <AnonTag p={r} /> <span style={css('font-weight:500; color:#94a3b8;')}>· {relativeTime(r.time)}</span></div>
                               <CommentMenu isOwner={!!user && r.authorId === user.id} isAdmin={!!user?.isAdmin} onEdit={() => setEditingCmt(r.id)} onDelete={() => (user && r.authorId === user.id ? ucModals.askDelete(() => api.deleteUseCaseComment(dsel.id, r.id).then(() => refreshMeta(dsel.id)).catch(() => {})) : askRemovalReason({ what: 'bình luận', title: String(r.body || '').slice(0, 80) }).then((why) => why && api.deleteUseCaseComment(dsel.id, r.id, why).then(() => refreshMeta(dsel.id)).catch(() => {})))} onReport={() => ucModals.askReport('uc_comment', r.id)} />
                             </div>
                             {editingCmt === r.id

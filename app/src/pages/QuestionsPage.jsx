@@ -518,7 +518,7 @@ export default function QuestionsPage() {
                             <svg style={{ flex: 'none', marginLeft: -2 }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
                             <button type="button" onClick={(e) => { e.stopPropagation(); if (!inModal) setTopic(q.topics[0]); else navigate('/?topic=' + encodeURIComponent(q.topics[0])) }} title={t('Xem các post cùng chủ đề')} className={hoverClass('text-decoration:underline;')} style={css('flex:none; max-width:220px; overflow:hidden; text-overflow:ellipsis; border:none; background:transparent; padding:0; margin-left:-2px; font:700 14.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap; cursor:pointer; text-underline-offset:3px;')}>{q.topics[0]}</button>
                           </>}
-                          <span style={css('font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;')}>· {q.time}{q.edited ? ' · đã sửa' : ''}</span>
+                          <span style={css('font:400 13.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;')}>· {q.time}</span>
                           <span style={{ flex: 1 }}></span>
                       <div style={{ position: 'relative', flex: 'none' }}>
                         <button
@@ -615,7 +615,7 @@ export default function QuestionsPage() {
                                 <div className="zp-cmt">
                                   <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                     <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{a.author}</span><AnonTag p={a} />
-                                    <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {a.time}{a.edited ? ' · đã sửa' : ''}</span>
+                                    <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {a.time}</span>
                                     <span style={{ flex: 1 }}></span>
                                     <CommentMenu isOwner={isMine(a)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'answer', id: a.id })} onDelete={() => askDeleteAnswer(q.id, a.id, isMine(a), a.body)} onReport={() => cmodals.askReport('answer', a.id)} />
                                   </div>
@@ -644,7 +644,7 @@ export default function QuestionsPage() {
                                             <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                               <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                                 <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{c.author}</span><AnonTag p={c} />
-                                                <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {c.time}{c.edited ? ' · đã sửa' : ''}</span>
+                                                <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {c.time}</span>
                                                 <span style={{ flex: 1 }}></span>
                                                 <CommentMenu isOwner={isMine(c)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: c.id })} onDelete={() => askDeleteComment(q.id, a.id, c.id, isMine(c), c.body)} onReport={() => cmodals.askReport('comment', c.id)} />
                                               </div>
@@ -670,7 +670,7 @@ export default function QuestionsPage() {
                                               <div className="zp-cmt" style={css('flex:1; min-width:0;')}>
                                                 <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
                                                   <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{r.author}</span><AnonTag p={r} />
-                                                  <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {r.time}{r.edited ? ' · đã sửa' : ''}</span>
+                                                  <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {r.time}</span>
                                                   <span style={{ flex: 1 }}></span>
                                                   <CommentMenu isOwner={isMine(r)} isAdmin={!!user?.isAdmin} onEdit={() => setEditing({ kind: 'comment', id: r.id })} onDelete={() => askDeleteComment(q.id, a.id, r.id, isMine(r), r.body)} onReport={() => cmodals.askReport('comment', r.id)} />
                                                 </div>

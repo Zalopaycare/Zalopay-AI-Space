@@ -9,7 +9,7 @@ import RichText from './RichText.jsx'
 // list: name, members, a "Thông tin đang được cập nhật" tag and a
 // "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
 // A tile opens a popup with the booth's Bài toán and Giải pháp as the exhibition wrote them. Its owners
-// (and admins) get "Bổ sung thông tin" instead of "Quan tâm", straight to the share form.
+// get "Bổ sung thông tin" instead of "Quan tâm", straight to the share form.
 // The booth also has a page of its own (/use-cases/ex6), where notifications and invites link to.
 
 const NOINFO_TAG = 'display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:999px; background:#FFF4E3; border:1px solid #F3DCB4; color:#9A5B00; font-size:11px; font-weight:700; white-space:nowrap;'
@@ -26,7 +26,7 @@ function ownerHref(p) {
   return sub.status === 'changes_requested' ? `/review/${encodeURIComponent(sub.id)}` : `/use-cases?edit=${encodeURIComponent(sub.id)}`
 }
 
-// What a booth's owners (and admins, who see it as they do) get on the tile instead of "Quan tâm".
+// What a booth's owners get on the tile instead of "Quan tâm".
 const OWNER_TILE = { pending: 'Đang chờ duyệt', changes_requested: 'Cần chỉnh sửa' }
 function OwnerButton({ p, t }) {
   const navigate = useNavigate()
@@ -71,7 +71,7 @@ export function BoothOwnerBar({ p, t }) {
   return (
     <div style={css(`display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px; padding:14px 16px; border-radius:14px; background:${st ? st[2] : '#EEF3FF'}; border:1px solid ${st ? st[3] : '#CFDDFB'};`)}>
       <div style={css('flex:1; min-width:220px;')}>
-        <div style={css(`font-size:13.5px; font-weight:800; color:${st ? st[1] : '#1E3A7A'};`)}>{p.adminView ? t('Bạn đang xem với quyền Admin (như Owner)') : t('Bạn là Owner của use case này')}</div>
+        <div style={css(`font-size:13.5px; font-weight:800; color:${st ? st[1] : '#1E3A7A'};`)}>{t('Bạn là Owner của use case này')}</div>
         <div style={css('margin-top:2px; font-size:12.5px; line-height:1.5; color:#3A4757;')}>
           {st ? t(st[0]) : t('Bài toán, Giải pháp và thành viên đã có sẵn từ AI Exhibition. Bổ sung các phần còn trống (ảnh bìa, các bước, số liệu…) rồi gửi Admin duyệt.')}
         </div>

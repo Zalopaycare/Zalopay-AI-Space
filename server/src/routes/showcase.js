@@ -27,19 +27,23 @@ const latestSubmission = (boothId) => db.prepare(`SELECT id, review_status, auth
 const doneBooths = () => Object.fromEntries(db.prepare(`SELECT json_extract(extra, '$.booth') booth, id FROM use_case_submissions
   WHERE review_status = 'approved' AND json_extract(extra, '$.booth') IS NOT NULL ORDER BY COALESCE(published_at, created_at)`).all().map((r) => [r.booth, r.id]))
 
+// Admins see these built-in cases the way their owners do (Need your review, Chỉnh sửa, Cần đổi tên…), to
+// check that view; everywhere else, booths included, they see what everyone sees.
+const ADMIN_AS_OWNER = new Set(['c9'])
+const ownsCase = (c, user) => isBoothOwner(c, user.email) || (!!user.is_admin && ADMIN_AS_OWNER.has(c.id))
+
 const pendingFor = (user) => {
   const done = doneBooths()
   return pendingCases.filter((p) => !done[p.id]).map((p) => {
     const owner = isBoothOwner(p, user.email)
-    const sub = owner || user.is_admin ? latestSubmission(p.id) : null
+    const sub = owner ? latestSubmission(p.id) : null
     return {
       id: p.id, booth: p.booth, title: p.title, team: p.team, label: p.label, category: p.category, members: p.members || [], problem: p.problem || '', solution: p.solution || '',
       cover: coverOf(p.id),
       interest: interestCount(p.id),
       mine: !!db.prepare('SELECT 1 FROM use_case_interest WHERE use_case_id = ? AND user_id = ?').get(p.id, user.id),
       // the signed-in person is one of the booth's owners: they get "Cập nhật use case này".
-      // Admins see the page the way the owners do (adminView says that's why).
-      owner: owner || !!user.is_admin, adminView: !owner && !!user.is_admin,
+      owner,
       submission: sub ? { id: sub.id, status: sub.review_status, mine: sub.author_id === user.id } : null,
     }
   })
@@ -51,7 +55,7 @@ router.get('/', requireAuth, (req, res) => {
   // review: who confirmed the content is right (null = still "Need your review")
   const reviewOf = (id) => { const r = caseReview(id); return r ? { by: userName(r.by), at: r.at } : null }
   // renameFlags: use cases (built-in or posted) whose name should be changed to say what they do
-  res.json({ cases: visibleShowcase().map((c) => ({ ...c, isOwner: isBoothOwner(c, req.user.email), review: reviewOf(c.id) })), pending: pendingFor(req.user), boothDone: doneBooths(), renameFlags: renameFlagIds() })
+  res.json({ cases: visibleShowcase().map((c) => ({ ...c, isOwner: ownsCase(c, req.user), review: reviewOf(c.id) })), pending: pendingFor(req.user), boothDone: doneBooths(), renameFlags: renameFlagIds() })
 })
 
 // An owner of the case (or an admin) confirms its content is right: the "Need your review" tag goes away.
