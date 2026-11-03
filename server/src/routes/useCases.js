@@ -145,7 +145,7 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   const replyToId = req.body?.replyToId ? String(req.body.replyToId) : parentId
   const targets = [
     [commentAuthor(replyToId), `${who} đã reply comment của bạn trong ${where}`],
-    [commentAuthor(parentId), `${who} đã reply trong một thread bạn tham gia ở ${where}`],
+    [commentAuthor(parentId), `${who} đã reply trong một chuỗi bình luận bạn tham gia ở ${where}`],
     ...owners.map((o) => [o, `${who} đã comment vào ${where} của bạn`]),
   ]
   const told = new Set([req.user.email.toLowerCase()])

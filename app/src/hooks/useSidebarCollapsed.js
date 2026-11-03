@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 const KEY = 'zp-sidebar-collapsed'
 const EVENT = 'zp-sidebar-collapsed-change'
@@ -56,7 +57,7 @@ function useWidth() {
  * and fixed elements must sit from the left edge (0 in drawer mode).
  */
 export function useSidebarLayout() {
-  const [collapsed, setCollapsed] = useSidebarCollapsed()
+  const [, setCollapsed] = useSidebarCollapsed()
   const width = useWidth()
   const narrow = width < DRAWER_BREAKPOINT
   const [drawerOpen, setDrawerState] = useState(drawerOpenNow)
@@ -66,6 +67,15 @@ export function useSidebarLayout() {
     return () => window.removeEventListener(DRAWER_EVENT, on)
   }, [])
   const setDrawerOpen = (v) => { drawerOpenNow = v; setDrawerState(v); window.dispatchEvent(new CustomEvent(DRAWER_EVENT, { detail: v })) }
-  const offset = narrow ? 0 : collapsed ? 68 : 224
-  return { collapsed, setCollapsed, narrow, mobile: width < 700, drawerOpen: narrow && drawerOpen, setDrawerOpen, offset }
+  const { pathname } = useLocation()
+  // Like Threads: on a laptop the sidebar stays open (no collapsing) and the page is centred on the
+  // screen, not on the space right of the sidebar. rail = the sidebar's width; offset = where the page
+  // starts. When the screen is too narrow for the centred content to clear the sidebar, the page
+  // starts after it instead (so nothing hides under it). The use case page (1120px column), review,
+  // chat and admin pages are wider than the 760px feed and need a wider screen to centre.
+  const rail = narrow ? 0 : 224
+  const contentW = /^\/(use-cases\/|review|chat|admin)/.test(pathname) ? 1120 : 760
+  const centred = !narrow && (width - contentW) / 2 >= rail + 16
+  const offset = narrow || centred ? 0 : rail
+  return { collapsed: false, setCollapsed, narrow, mobile: width < 700, drawerOpen: narrow && drawerOpen, setDrawerOpen, offset, rail }
 }

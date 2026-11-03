@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
-import { css } from '../lib/style.js'
+import { css, hoverClass } from '../lib/style.js'
 import RichText from './RichText.jsx'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
@@ -134,7 +134,8 @@ export default function PendingCases({ items, t, requireLogin }) {
               tabIndex={0}
               onClick={() => setShown(p)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShown(p) } }}
-              style={css('display:flex; align-items:flex-start; gap:12px; padding:12px 12px 12px 14px; border-radius:16px; background:#F8FAFE; border:1.5px solid #E3E8F7; cursor:pointer;')}
+              className={hoverClass('border-color:rgba(80,140,255,.8) !important; box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34) !important;')}
+              style={css('display:flex; align-items:flex-start; gap:12px; padding:12px 12px 12px 14px; border-radius:16px; background:#F8FAFE; border:1px solid transparent; cursor:pointer; transition:border-color .16s ease, box-shadow .16s ease;')}
             >
               <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; align-self:stretch;')}>
                 <div style={css('font-size:13.5px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;')}>{p.title}</div>

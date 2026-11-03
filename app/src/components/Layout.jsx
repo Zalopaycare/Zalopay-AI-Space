@@ -24,14 +24,16 @@ export default function Layout({ active, children }) {
         <main key={pathname} className={'zp-main ' + (typeof document !== 'undefined' && document.documentElement.classList.contains('zp-vt') ? '' : 'zp-page-in')} style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'clip' }}>
           {children}
         </main>
+        {/* a way back to the top of a long page, just under the last post (above the footer line) */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', padding: '4px var(--zp-gutter) 22px', background: '#04060d' }}>
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="zp-to-top" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 18px', border: 'none', borderRadius: 999, background: 'linear-gradient(180deg,#4480ff 0%,#2c5fff 100%)', color: '#fff', font: '700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif', cursor: 'pointer', boxShadow: '0 0 0 1px rgba(130,175,255,.35), 0 8px 24px rgba(44,95,255,.45)' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg>
+            Về đầu trang
+          </button>
+        </div>
         <footer style={{ position: 'relative', zIndex: 1, borderTop: '1px solid rgba(255,255,255,.08)', padding: '18px var(--zp-gutter) 20px', background: '#04060d' }}>
-          {/* centred, with a way back to the top of a long page */}
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, textAlign: 'center' }}>
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="zp-to-top" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 14px', marginBottom: 8, border: '1px solid rgba(150,180,255,.22)', borderRadius: 999, background: 'rgba(255,255,255,.04)', color: '#b4c3e8', font: '700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif', cursor: 'pointer' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg>
-              Về đầu trang
-            </button>
-            <img src={logo} alt="Zalopay AI Space" style={{ height: 18, width: 'auto', display: 'block' }} />
+          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
+            <img src={logo} alt="Zalopay AI Space" style={{ height: 24, width: 'auto', display: 'block' }} />
           </div>
         </footer>
       </div>

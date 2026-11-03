@@ -7,6 +7,7 @@ import { useUrlFilters } from '../hooks/useUrlFilters.js'
 import { useTitle } from '../hooks/useTitle.js'
 import RichText from '../components/RichText.jsx'
 import CoverImage from '../components/CoverImage.jsx'
+import { listUcDrafts, saveUcDraft, removeUcDraft, newDraftId, ucDraftTitle, ucDraftWhen } from '../lib/ucDrafts.js'
 import { AI_TOOLS, OTHER, categoryOf, toolGroup, CATEGORIES } from '../lib/taxonomy.js'
 import { renderMentions } from '../components/MentionField.jsx'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -44,11 +45,11 @@ import {
 import PendingCases, { BoothInterest, BoothOwnerBar } from '../components/PendingCases.jsx'
 import { toneObj } from '../lib/theme.js'
 
-const DRAFT_KEY = 'zp-usecase-draft-v1'
 // AI Exhibition categories → the share form's (a booth's write-up starts in the closest one)
 const BOOTH_CATS = { 'Software Development': 'Coding & Technical', 'Test Automation': 'Coding & Technical', 'Chatbot & Knowledge Search': 'Research & Knowledge',
   'Config & Operations Automation': 'Automation & Workflow', 'Data Analytics & Monitoring': 'Data & Analysis', 'Docs, Content & Design': 'Content & Communication' }
-const CATS = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
+// the share form's Chủ đề list is the filter's (lib/taxonomy.js), so the two always match
+const CATS = CATEGORIES
 const TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Khác']
 const TOOLS = [...AI_TOOLS, OTHER]
 const SORT_OPTS = [{ label: 'Mới nhất', val: 'new' }, { label: 'Được yêu thích nhất', val: 'helpful' }]
@@ -70,7 +71,7 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Category (chọn Team thì thêm Thành viên cùng làm); Công cụ AI không bắt buộc' },
+  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Chủ đề (chọn Team thì thêm Thành viên cùng làm); Công cụ AI không bắt buộc' },
   { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
   { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
@@ -267,9 +268,13 @@ export default function UseCaseLibraryPage() {
   // open the share modal via ?share=1 (used by other pages' "Share a Use Case" CTAs) — also when
   // the link is clicked while already on this page, since the page doesn't remount.
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('share') != null) {
+    const qs = new URLSearchParams(location.search)
+    if (qs.get('share') != null) {
       setShareOpen(true)
       setShareStage((st) => (st === 'submitted' ? 'form' : st))
+      const d = qs.get('draft') && listUcDrafts().find((x) => x.id === qs.get('draft'))
+      if (d) continueDraft(d)
+      else if (!qs.get('booth')) offerDrafts()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search])
@@ -293,7 +298,7 @@ export default function UseCaseLibraryPage() {
     if (editing) { setEditing(null); resetShareForm() }
     if (editingCase) { setEditingCase(null); resetShareForm() }
     const qs = new URLSearchParams(location.search)
-    if (qs.has('share') || qs.has('edit') || qs.has('booth')) { qs.delete('share'); qs.delete('edit'); qs.delete('booth'); navigate({ pathname: location.pathname, search: qs.toString() ? '?' + qs : '' }, { replace: true }) }
+    if (qs.has('share') || qs.has('edit') || qs.has('booth') || qs.has('draft')) { qs.delete('share'); qs.delete('edit'); qs.delete('booth'); qs.delete('draft'); navigate({ pathname: location.pathname, search: qs.toString() ? '?' + qs : '' }, { replace: true }) }
   }
   const shareDialog = useDialog(shareOpen, () => closeShare(), 'Chia sẻ Use Case')
   const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
@@ -358,9 +363,10 @@ export default function UseCaseLibraryPage() {
   // a draft keeps files already uploaded, not new ones (their data would fill the browser's storage)
   const draftPayload = () => ({ shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps: shareSteps.map((x) => ({ ...x, files: (x.files || []).filter((f) => f.ref != null) })), shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList , shareFigures: Object.fromEntries(Object.entries(shareFigures).map(([k, l]) => [k, l.filter((f) => f.ref != null)])), shareMetrics })
 
-  // A draft left from last time isn't poured into the form on its own: opening the form asks first
-  // ("Bạn có 1 use case đang nháp": go on with it, or start a new one).
-  const [pendingDraft, setPendingDraft] = useState(null)
+  // Drafts left from before aren't poured into the form on their own: opening the form lists them
+  // (go on with one, or start a new one; the others stay). draftIdRef = the draft being written now.
+  const [pendingDrafts, setPendingDrafts] = useState([])
+  const draftIdRef = useRef(null)
   const applyDraft = (d) => {
     try {
       setShareForm({ ...EMPTY_SHARE_FORM, ...(d.shareForm || {}) })
@@ -388,11 +394,8 @@ export default function UseCaseLibraryPage() {
   }
   useEffect(() => {
     if (restoredRef.current) return
+    // the drafts are offered when the form opens (offerDrafts), or one opens straight from Hồ sơ (?draft=)
     restoredRef.current = true
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY)
-      if (raw) setPendingDraft(JSON.parse(raw) || null)
-    } catch { /* ignore */ }
   }, [])
 
   useEffect(() => {
@@ -404,19 +407,35 @@ export default function UseCaseLibraryPage() {
     draftTimerRef.current = setTimeout(() => {
       const empty = !Object.values(payload.shareForm).some((v) => (v || '').trim()) && !payload.shareCategory.length && !payload.shareTopicSel.length && !payload.shareToolSel.length && !payload.shareFileList.length
       if (empty) return
-      const savedAt = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
       draftJsonRef.current = json
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...payload, savedAt })) } catch { /* ignore */ }
-      setDraftSavedAt(savedAt)
+      if (!draftIdRef.current) draftIdRef.current = newDraftId()
+      const saved = saveUcDraft(draftIdRef.current, payload)
+      setDraftSavedAt(saved.savedAt)
       setHasDraft(true)
     }, 500)
     return () => clearTimeout(draftTimerRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareForm, shareType, shareHighlights, shareAnon, shareAlias, sharePostAs, shareMembers, shareBooth, shareSteps, shareFigures, shareMetrics, shareKind, shareStatus, shareLevel, shareCategory, shareCatOther, shareCustom, shareTopicSel, shareTopicOtherText, shareToolSel, shareToolOtherText, shareFileList])
 
+  const continueDraft = (d) => { applyDraft(d); draftIdRef.current = d.id; setPendingDrafts([]) }
+  // a new use case: the form empties, every draft stays where it is
+  const startNewDraft = () => {
+    clearTimeout(draftTimerRef.current)
+    resetShareForm(); setShareStep(0)
+    draftIdRef.current = null; draftJsonRef.current = null
+    setHasDraft(false); setDraftSavedAt(''); setPendingDrafts([])
+  }
+  const deleteDraft = (d) => {
+    removeUcDraft(d.id)
+    if (draftIdRef.current === d.id) { draftIdRef.current = null; draftJsonRef.current = null; setHasDraft(false) }
+    setPendingDrafts(listUcDrafts())
+  }
+  // opening the form again lists the drafts again (not while editing something already sent)
+  const offerDrafts = () => { if (!editing && !editingCase) setPendingDrafts(listUcDrafts()) }
   const clearDraft = () => {
     clearTimeout(draftTimerRef.current)
-    try { localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
+    removeUcDraft(draftIdRef.current)
+    draftIdRef.current = null
     draftJsonRef.current = null
     setHasDraft(false)
     setDraftSavedAt('')
@@ -556,7 +575,6 @@ export default function UseCaseLibraryPage() {
   // Filters list the form's own categories and the AI tools actually used, each with how many use cases have it
   // (built-in labels and booth categories are filed under the form's categories; "Claude Code" counts as Claude).
   const catCount = useMemo(() => { const n = {}; for (const c of [...allCases, ...pendingCases]) { const k = categoryOf(c.category); n[k] = (n[k] || 0) + 1 } return n }, [pubV])
-  const catList = CATEGORIES.filter((c) => catCount[c])
   const toolCount = useMemo(() => { const n = {}; for (const c of allCases) for (const tl of new Set((c.tools || []).map(toolGroup))) n[tl] = (n[tl] || 0) + 1; return n }, [pubV])
   const toolList = Object.keys(toolCount).sort((a, b) => toolCount[b] - toolCount[a] || a.localeCompare(b))
 
@@ -593,14 +611,15 @@ export default function UseCaseLibraryPage() {
   const libCards = libCases.map(mapCard)
   const activeFilterCount = [libCat, libTopic, libTool, libGroup, libKind].filter(Boolean).length
 
-  const catOptions = [{ label: 'Tất cả category', val: null }, ...catList.map((c) => ({ label: `${c === 'Other' ? 'Khác' : c} (${catCount[c]})`, val: c }))]
+  // every Chủ đề the share form offers, in its order (an empty one shows 0), so the two lists match
+  const catOptions = [{ label: 'Tất cả chủ đề', val: null }, ...CATEGORIES.map((c) => ({ label: `${c === 'Other' ? 'Khác' : c} (${catCount[c] || 0})`, val: c }))]
     .map((o) => ({ label: t(o.label), active: (libCat || null) === (o.val || null), onClick: () => { setLibCat(o.val); closeDrop() } }))
   const toolOptions = [{ label: 'Tất cả công cụ AI', val: null }, ...toolList.map((tl) => ({ label: `${tl} (${toolCount[tl]})`, val: tl }))]
     .map((o) => ({ label: t(o.label), active: (libTool || null) === (o.val || null), onClick: () => { setLibTool(o.val); closeDrop() } }))
   const sortOptions = SORT_OPTS.map((o) => ({ label: t(o.label), active: libSort === o.val, onClick: () => { setLibSort(o.val); closeDrop() } }))
   const libFilters = (
     <>
-      <FilterPill label={libCat || t('Category')} active={!!libCat} onClear={() => setLibCat(null)} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
+      <FilterPill label={libCat ? categoryLabel(libCat) : t('Chủ đề')} active={!!libCat} onClear={() => setLibCat(null)} name="cat" openDrop={openDrop} setOpenDrop={setOpenDrop} options={catOptions} width={240} />
       <FilterPill label={libTool || t('Công cụ AI')} active={!!libTool} onClear={() => setLibTool(null)} name="tool" openDrop={openDrop} setOpenDrop={setOpenDrop} options={toolOptions} width={200} />
       <FilterPill label={t((SORT_OPTS.find((o) => o.val === libSort) || SORT_OPTS[0]).label)} name="sort" openDrop={openDrop} setOpenDrop={setOpenDrop} options={sortOptions} width={200} align="right" />
     </>
@@ -619,8 +638,6 @@ export default function UseCaseLibraryPage() {
       '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence (kể cả sơ đồ/ảnh), tìm đúng version đang deploy và source trên GitLab, rồi tự dò endpoint/host và gõ tay từng lệnh curl để test. Rất nhiều thao tác thủ công, lặp đi lặp lại, và thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester (đồng thời giảm việc qua lại với Dev/PO).\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint (nhất là API mới trong bản release), test nhầm version, hoặc thiếu ngữ cảnh khiến test không đầy đủ.'],
     ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps',
       'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence liên quan + kéo đúng source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test. Dùng qua giao diện web.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API ngay từ source code (đúng bản đã deploy) — pentester copy-dán test được ngay, khỏi phải tự mò.\n- Tự tìm "cách vào flow" (link, deeplink, . . .) và đánh dấu API nào là mới trong bản release này để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin, tự che thông tin nhạy cảm, và gom hết endpoint / host / môi trường / câu hỏi cho dev vào một chỗ.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest. Trạng thái: MVP/pilot, đã go-live nội bộ, có dashboard theo dõi lượng sử dụng. Rút ngắn thời gian chuẩn bị pentest từ 0,5–2 ngày xuống còn khoảng 4–5 phút, giảm sót endpoint và đảm bảo test đúng version đang chạy.'],
-    ['result', 'Số liệu & hình ảnh', 'Optional', 'Số đo trước / sau: điền vào bảng ngay dưới (mỗi hàng một chỉ số). Ô chữ này cho các ý khác, mỗi dòng một ý. Chưa đo thì để trống.', '', 'area', 3, 'ps',
-      'AppSec đọc 1 trang thay vì mở 5 trang Confluence + file đính kèm.\nBiết ngay thiếu thông tin gì để hỏi dev, thay vì phát hiện giữa lúc test.'],
     ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file cài để người khác tự xem.', 'https://...', 'input', 0, 'apply', 'https://gitlab.zalopay.vn/…/secreq-bot'],
     ['access', 'Ghi chú về cách truy cập', 'Optional', 'Ai đang dùng được, cần quyền / mạng gì, xin ở đâu. Hiện ngay đầu phần Tự áp dụng.', '', 'area', 2, 'apply', 'Công cụ hiện dùng trong team AppSec. Bạn chỉ cần mã ticket SECREQ; công cụ tự tìm ticket triển khai (CICD) đi kèm trong nội dung ticket.'],
     ['fitYes', 'Phù hợp với bạn nếu', 'Required', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'intro', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
@@ -663,8 +680,8 @@ export default function UseCaseLibraryPage() {
     ...shareFields.filter((f) => f.step === st.key && f.req === 'Required').map((f) => ({ label: f.label, done: !!f.value.trim() })),
     ...(st.key === 'apply' ? [{ label: 'Các bước (mỗi bước cần tên và nội dung)', done: stepsReady }] : []),
     ...(st.key === 'intro' ? [
-      { label: 'Ảnh bìa', done: !!(shareCover && !shareCover.cleared) }, { label: 'Độ khó', done: !!shareLevel }, { label: 'Category', done: !!shareCategory.length },
-      ...(catOtherOn ? [{ label: 'Tên category khác', done: !!shareCatOther.trim() }] : []),
+      { label: 'Ảnh bìa', done: !!(shareCover && !shareCover.cleared) }, { label: 'Độ khó', done: !!shareLevel }, { label: 'Chủ đề', done: !!shareCategory.length },
+      ...(catOtherOn ? [{ label: 'Tên chủ đề khác', done: !!shareCatOther.trim() }] : []),
       ...(teamPost ? [{ label: 'Thành viên cùng làm', done: !!shareMemberList.length }] : []),
     ] : []),
   ]]))
@@ -945,10 +962,10 @@ export default function UseCaseLibraryPage() {
             <h1 style={css('margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:50px; line-height:1.06; font-weight:800; letter-spacing:-1px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Use Case Library')}</h1>
             <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Tổng hợp các cách và tips Zalopay Starter áp dụng AI vào công việc.')}</p>
           </div>
-          <PageActionBar ref={searchInputRef} prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)) }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, dữ liệu..." filters={libFilters} />
+          <PageActionBar ref={searchInputRef} prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)); offerDrafts() }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, dữ liệu..." filters={libFilters} />
         </section>
 
-        <section style={css('position:relative; z-index:5; background:transparent; padding:26px var(--zp-gutter) 52px;')}>
+        <section style={css('position:relative; z-index:5; background:transparent; padding:26px var(--zp-gutter) 28px;')}>
           <div style={css('max-width:760px; margin:0 auto;')}>
 
               {activeFilterCount > 0 && (
@@ -976,7 +993,7 @@ export default function UseCaseLibraryPage() {
                       data-card-id={c.id}
                       onClick={c.onOpen}
                       className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
-                      style={css((openMenuId === c.id ? 'z-index:5; ' : '') + 'position:relative; display:flex; flex-direction:column; border:1px solid rgba(60,120,255,.45); border-radius:18px; background:#ffffff; cursor:pointer; padding:12px 14px; box-shadow:0 0 0 1px rgba(60,120,255,.10), 0 0 16px rgba(60,120,255,.22), 0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
+                      style={css((openMenuId === c.id ? 'z-index:5; ' : '') + 'position:relative; display:flex; flex-direction:column; border:1px solid transparent; border-radius:18px; background:#ffffff; cursor:pointer; padding:12px 14px; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
                       {/* no "Use case" label (every card here is one): the ⋯ menu sits in the corner */}
                       <div style={css('position:absolute; top:10px; right:10px; z-index:2;')}>
@@ -1140,23 +1157,33 @@ export default function UseCaseLibraryPage() {
                 )
               })()}
 
-              {shareStage === 'form' && pendingDraft && !editing && !editingCase && (
-                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:26px 24px; box-shadow:0 10px 24px rgba(30,50,90,.06); text-align:center;')}>
-                  <div style={css('width:52px; height:52px; margin:0 auto; border-radius:16px; background:#EEF3FF; color:#2c5fff; display:flex; align-items:center; justify-content:center;')}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M9 15h6"></path></svg>
+              {shareStage === 'form' && pendingDrafts.length > 0 && !editing && !editingCase && (
+                <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:20px; padding:26px 24px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
+                  <div style={css('text-align:center;')}>
+                    <div style={css('width:52px; height:52px; margin:0 auto; border-radius:16px; background:#EEF3FF; color:#2c5fff; display:flex; align-items:center; justify-content:center;')}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M9 15h6"></path></svg>
+                    </div>
+                    <div style={css('margin-top:14px; font-size:18px; font-weight:800; color:#0F172A;')}>{t('Bạn có')} {pendingDrafts.length} {t('use case đang nháp')}</div>
+                    <div style={css('margin-top:6px; font-size:13px; line-height:1.6; color:#64748b;')}>{t('Điền tiếp một bản nháp, hoặc bắt đầu use case mới. Các bản nháp khác vẫn được giữ lại.')}</div>
                   </div>
-                  <div style={css('margin-top:14px; font-size:18px; font-weight:800; color:#0F172A;')}>{t('Bạn có 1 use case đang nháp')}</div>
-                  <div style={css('margin-top:6px; font-size:13px; line-height:1.6; color:#64748b;')}>
-                    “{(pendingDraft.shareForm || {}).title?.trim() || t('Chưa đặt tên')}”{pendingDraft.savedAt ? ' · ' + t('lưu lúc') + ' ' + pendingDraft.savedAt : ''}
+                  <div style={css('display:flex; flex-direction:column; gap:8px; margin-top:18px;')}>
+                    {pendingDrafts.map((d) => (
+                      <div key={d.id} style={css('display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid #E6EBF3; border-radius:14px; background:#F7F9FD;')}>
+                        <div style={css('flex:1; min-width:0;')}>
+                          <div style={css('font-size:14px; font-weight:800; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{ucDraftTitle(d) || t('Chưa đặt tên')}</div>
+                          <div style={css('margin-top:2px; font-size:12px; color:#94a3b8;')}>{ucDraftWhen(d)}</div>
+                        </div>
+                        <button onClick={() => deleteDraft(d)} title={t('Xoá bản nháp này')} aria-label={t('Xoá bản nháp này')} className={hoverClass('color:#D8232A !important; border-color:#F5C9CB !important;')} style={css('flex:none; height:34px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#64748b; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;')}>{t('Xoá')}</button>
+                        <button onClick={() => continueDraft(d)} style={css('flex:none; height:34px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>{t('Tiếp tục điền')}</button>
+                      </div>
+                    ))}
                   </div>
-                  <div style={css('display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:20px;')}>
-                    <button onClick={() => { clearDraft(); setPendingDraft(null) }} style={css('height:40px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;')}>{t('Bắt đầu mới')}</button>
-                    <button onClick={() => { applyDraft(pendingDraft); setPendingDraft(null) }} style={css('height:40px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 12px 26px rgba(44,95,255,.4);')}>{t('Tiếp tục điền')}</button>
+                  <div style={css('display:flex; justify-content:center; margin-top:18px;')}>
+                    <button onClick={startNewDraft} style={css('height:40px; padding:0 20px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer;')}>+ {t('Bắt đầu use case mới')}</button>
                   </div>
-                  <div style={css('margin-top:12px; font-size:11.5px; color:#94a3b8;')}>{t('Bắt đầu mới sẽ xoá bản nháp cũ.')}</div>
                 </div>
               )}
-              {shareStage === 'form' && !(pendingDraft && !editing && !editingCase) && (
+              {shareStage === 'form' && !(pendingDrafts.length > 0 && !editing && !editingCase) && (
                 <div>
                   {(editing?.note || editReviewNotes.length > 0) && (
                     <div style={css('display:flex; gap:12px; margin-bottom:16px; padding:14px 18px; border-radius:16px; background:#FFF7E8; border:1px solid #F3DCB4;')}>
@@ -1309,7 +1336,6 @@ export default function UseCaseLibraryPage() {
                         )}
                         {miss && <MissLine text={t('Chưa điền: mục này bắt buộc')} />}
                         {/* pictures with a caption under this section (shown under it on the page); not on an admin edit of a built-in case */}
-                        {f.key === 'result' && <MetricsEditor value={shareMetrics} onChange={setShareMetrics} t={t} />}
                         {f.isArea && FIGURE_FIELDS.includes(f.key) && !editingCase && (
                           <FigurePicker files={shareFigures[f.key] || []} onChange={(l) => setShareFigures((m) => ({ ...m, [f.key]: l }))} t={t} />
                         )}
@@ -1350,7 +1376,7 @@ export default function UseCaseLibraryPage() {
                         <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" done={!!shareLevel} t={t} options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
                         <div>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>Category</label>
+                          <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Chủ đề')}</label>
                           <ReqTag done={!!shareCategory.length && (!catOtherOn || !!shareCatOther.trim())} required label="Bắt buộc · chọn được nhiều" t={t} />
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
@@ -1358,11 +1384,11 @@ export default function UseCaseLibraryPage() {
                             <button key={c.label} onClick={() => { if (c.label === 'Khác') markOtherPick(); c.onPick() }} style={css(`height:32px; padding:0 13px; border:1px solid ${c.border}; border-radius:999px; background:${c.bg}; color:${c.color}; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;`)}>{c.label}</button>
                           ))}
                           {catOtherOn && (
-                            <input ref={focusIfJustPicked} value={shareCatOther} onChange={(e) => setShareCatOther(e.target.value)} aria-label={t('Tên category khác')} placeholder={t('Nhập category khác, ví dụ: Legal & Compliance')} style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;' + (missCatOther ? MISS_FIELD : ''))} />
+                            <input ref={focusIfJustPicked} value={shareCatOther} onChange={(e) => setShareCatOther(e.target.value)} aria-label={t('Tên chủ đề khác')} placeholder={t('Nhập chủ đề khác, ví dụ: Legal & Compliance')} style={css('flex:1 1 220px; min-width:180px; height:32px; box-sizing:border-box; padding:0 14px; border:1px solid #B9CCF8; border-radius:999px; background:#fff; color-scheme:light; font-family:inherit; font-size:12.5px; color:#0F172A; outline:none;' + (missCatOther ? MISS_FIELD : ''))} />
                           )}
                         </div>
-                        {showMissing && !shareCategory.length && <MissLine text={t('Chưa chọn category')} />}
-                        {missCatOther && <MissLine text={t('Chưa điền tên category khác')} />}
+                        {showMissing && !shareCategory.length && <MissLine text={t('Chưa chọn chủ đề')} />}
+                        {missCatOther && <MissLine text={t('Chưa điền tên chủ đề khác')} />}
                         </div>
 
                         <div>
@@ -1385,7 +1411,7 @@ export default function UseCaseLibraryPage() {
                   </div>
 
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
-                    <button onClick={() => { setHasDraft(true); try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draftPayload(), savedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) })) } catch { /* ignore */ } closeShare() }} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu nháp & đóng')}</button>
+                    <button onClick={() => { setHasDraft(true); if (!draftIdRef.current) draftIdRef.current = newDraftId(); saveUcDraft(draftIdRef.current, draftPayload()); closeShare() }} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu nháp & đóng')}</button>
                     <div style={css('margin-left:auto; display:flex; gap:12px; flex:none;')}>
                       {shareStep > 0 && <button onClick={() => setShareStep(shareStep - 1)} style={css('height:40px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>‹ {t('Bước trước')}</button>}
                       {/* an admin editing a published case can save from any step */}
@@ -1434,34 +1460,10 @@ export default function UseCaseLibraryPage() {
 
 /** Tự áp dụng, step by step, the way the published page shows it (a horizontal journey, one step at a
  *  time): each step has a name, what to do, an optional prompt / command and an optional red warning. */
-// The sections that take pictures with a caption (Bài toán, Giải pháp, Số liệu…), up to 3 each, 10 MB each.
-const FIGURE_FIELDS = ['problem', 'solution', 'result', 'prep', 'success', 'pitfalls', 'safety', 'limits']
+// The sections that take pictures with a caption (Bài toán, Giải pháp…), up to 3 each, 10 MB each.
+const FIGURE_FIELDS = ['problem', 'solution', 'prep', 'success', 'pitfalls', 'safety', 'limits']
 const MAX_FIGURES = 3
 const IMAGE_TYPE = /^image\/(png|jpeg|gif|webp)$/
-
-/** Số liệu as a table, Chỉ số / Trước / Sau (shown as that table on the page), and where the numbers come from. */
-function MetricsEditor({ value, onChange, t }) {
-  const setCell = (i, k, v) => onChange({ ...value, rows: value.rows.map((r, j) => (j === i ? r.map((x, m) => (m === k ? v : x)) : r)) })
-  const cell = FIELD_INPUT + 'margin-top:0; padding:7px 10px; font-size:12.5px; min-width:0;'
-  const ph = [['Thời gian chuẩn bị 1 lần pentest', '0,5–2 ngày đọc tài liệu thủ công', '~4–5 phút chạy công cụ + đọc 1 trang'], ['Số trang phải đọc', '5 trang Confluence + 27 file đính kèm', '1 trang tóm tắt']]
-  return (
-    <div style={css('margin-top:10px; padding:10px 12px 12px; border:1px solid #E1E8F5; border-radius:12px; background:#F7F9FD;')}>
-      <div style={css('display:grid; grid-template-columns:1.1fr 1fr 1fr 24px; gap:6px; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#64748b;')}>
-        <span>{t('Chỉ số')}</span><span>{t('Trước')}</span><span>{t('Sau')}</span><span></span>
-      </div>
-      {value.rows.map((r, i) => (
-        <div key={i} style={css('display:grid; grid-template-columns:1.1fr 1fr 1fr 24px; gap:6px; margin-top:6px; align-items:center;')}>
-          {r.map((x, k) => <input key={k} value={x} onChange={(e) => setCell(i, k, e.target.value)} aria-label={[t('Chỉ số'), t('Trước'), t('Sau')][k] + ' ' + (i + 1)} placeholder={(ph[i] || [])[k] || ''} style={css(cell)} />)}
-          <button type="button" onClick={() => onChange({ ...value, rows: value.rows.length > 1 ? value.rows.filter((_, j) => j !== i) : [['', '', '']] })} aria-label={t('Bỏ hàng') + ' ' + (i + 1)} title={t('Bỏ hàng')} style={css('border:none; background:none; cursor:pointer; color:#94a3b8; font-size:16px; padding:0;')}>×</button>
-        </div>
-      ))}
-      <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;')}>
-        {value.rows.length < 8 && <button type="button" onClick={() => onChange({ ...value, rows: [...value.rows, ['', '', '']] })} style={css('height:26px; padding:0 10px; border:1px dashed #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer;')}>+ {t('Thêm hàng')}</button>}
-        <input value={value.note} onChange={(e) => onChange({ ...value, note: e.target.value })} maxLength={200} aria-label={t('Nguồn số đo')} placeholder={t('Nguồn số đo, ví dụ: Đo trên 1 ticket thật: TikTok Hub (PSEC).')} style={css(cell + 'flex:1; min-width:220px;')} />
-      </div>
-    </div>
-  )
-}
 
 /** Attached pictures / files as rows: a picture with its caption box, any other file as a chip. */
 function AttachRows({ files, onChange, t }) {

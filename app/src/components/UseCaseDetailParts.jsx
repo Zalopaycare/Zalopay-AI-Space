@@ -82,7 +82,7 @@ export function DetailHero({ c, h, onBack, onUploadCover, tldr = [], fit, t }) {
     ),
     c.category && (
       <div key="cat">
-        {label(t('Category'))}
+        {label(t('Chủ đề'))}
         <span style={css('display:inline-flex; align-items:center; height:24px; padding:0 9px; border-radius:999px; background:rgba(68,128,255,.18); border:1px solid rgba(130,170,255,.4); color:#dbe8ff; font-size:12px; font-weight:700;')}>{categoryOf(c.category) === 'Other' ? t('Khác') : categoryOf(c.category)}</span>
       </div>
     ),
@@ -608,7 +608,8 @@ export function Toc({ items, t, alignTo }) {
  *  left of the content column (a pill when there is room, a round button when the strip is narrow),
  *  vertically centred, so it never covers the cards; on phones it floats bottom-left. */
 export function FloatingBack({ onBack, t }) {
-  const { offset } = useSidebarLayout()
+  // measured from the sidebar's edge (rail), which can sit over the page's left margin
+  const { rail: offset } = useSidebarLayout()
   const [show, setShow] = useState(false)
   const [gutter, setGutter] = useState(0)
   useEffect(() => {

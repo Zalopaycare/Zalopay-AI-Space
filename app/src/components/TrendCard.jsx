@@ -88,7 +88,7 @@ export default function TrendCard({ title, mentions, color = '#2c5fff' }) {
         </div>
       )}
       <div style={css(`margin-top:10px; font:500 11.5px/1.5 ${FONT}; color:#94a3b8;`)}>
-        Điểm 0–100 như Google Trends: 100 là mục được nhắc nhiều nhất. Đếm trong thread và use case (kể cả use case mẫu).
+        Điểm 0–100 như Google Trends: 100 là mục được nhắc nhiều nhất. Đếm trong post và use case (kể cả use case mẫu).
       </div>
     </div>
   )

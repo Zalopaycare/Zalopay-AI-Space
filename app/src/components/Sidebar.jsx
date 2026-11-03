@@ -109,9 +109,9 @@ export default function Sidebar({ active }) {
       )}
 
       <div style={css('display:flex; flex-direction:column; gap:2px;')}>
-        <NavLink to="/#ask" tour="post" collapsed={collapsed} title={t('Đăng thread')} icon={
+        <NavLink to="/#ask" tour="post" collapsed={collapsed} title={t('Đăng post')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M7 8h10"></path><path d="M7 12h6"></path></svg>
-        }>{t('Đăng thread')}</NavLink>
+        }>{t('Đăng post')}</NavLink>
         <NavLink to="/use-cases?share=1" tour="share" collapsed={collapsed} title={t('Chia sẻ use case')} icon={
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
         }>{t('Chia sẻ use case')}</NavLink>

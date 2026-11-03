@@ -42,7 +42,6 @@ function partsOf(s) {
     { step: 1, title: 'Bài toán & giải pháp', blocks: [
       block('problem', 'Bài toán', s.problem, { required: true }),
       block('solution', 'Giải pháp', s.solution, { required: true }),
-      block('result', 'Số liệu & hình ảnh', s.result),
       block('highlights', 'Con số nổi bật', hl),
     ] },
     { step: 2, title: 'Tự áp dụng', blocks: [

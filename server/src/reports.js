@@ -56,12 +56,12 @@ reportRoutes.post('/', requireAuth, (req, res) => {
   db.prepare('INSERT INTO reports (target_type, target_id, path, excerpt, target_author_id, reporter_id, reason) VALUES (?,?,?,?,?,?,?)')
     .run(type, id, t.path(row), excerpt, row.author_id, req.user.id, reason)
   const who = domainName(req.user.email, req.user.name)
-  const what = type === 'thread' ? 'một thread' : 'một comment'
+  const what = type === 'thread' ? 'một post' : 'một comment'
   for (const to of adminEmails()) {
     notify(to, { kind: 'report', text: `${who} báo cáo ${what}: "${excerpt.slice(0, 80)}${excerpt.length > 80 ? '…' : ''}"`, href: '/admin#reports', actor: req.user.name })
     sendMail({
       to,
-      subject: `Có ${type === 'thread' ? 'thread' : 'comment'} bị báo cáo trên Zalopay AI Space`,
+      subject: `Có ${type === 'thread' ? 'post' : 'comment'} bị báo cáo trên Zalopay AI Space`,
       text: `${req.user.name} (${req.user.email}) đã báo cáo ${what}:\n\n"${excerpt}"${reason ? `\n\nLý do: ${reason}` : ''}\n\nXử lý tại: ${appUrl(req)}/admin#reports`,
     }).catch((e) => console.error('[reports] admin notify failed:', e.message))
   }

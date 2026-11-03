@@ -52,7 +52,7 @@ router.delete('/admins/:email', (req, res) => {
 // Everything that ties an account to the site's content or history. "Xoá tài khoản" only goes ahead when
 // all of these are 0, so a delete never leaves a post, reply, reaction or admin decision without its person.
 const USER_REFS = [
-  ['questions', 'author_id', 'thread'], ['question_answers', 'author_id', 'trả lời'], ['answer_comments', 'author_id', 'reply'],
+  ['questions', 'author_id', 'post'], ['question_answers', 'author_id', 'trả lời'], ['answer_comments', 'author_id', 'reply'],
   ['use_case_submissions', 'author_id', 'use case đã gửi'], ['use_case_comments', 'author_id', 'bình luận use case'],
   ['review_comments', 'author_id', 'góp ý duyệt bài'], ['admin_chat_messages', 'user_id', 'tin nhắn Chat với Admin'], ['admin_chat_messages', 'sender_id', 'tin nhắn Chat với Admin'],
   ['question_reactions', 'user_id', 'lượt thích'], ['answer_reactions', 'user_id', 'lượt thích'], ['use_case_reactions', 'user_id', 'lượt thích'], ['comment_reactions', 'user_id', 'lượt thích'],

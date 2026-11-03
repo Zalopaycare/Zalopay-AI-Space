@@ -56,7 +56,7 @@ const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').rep
 // Each section has its own URL, so it can be linked to and Back / Forward work. /admin is Tổng quan;
 // /admin/inbox/<user id> opens that conversation.
 const SLUGS = { dashboard: '', usecases: 'usecases', questions: 'threads', reports: 'reports', users: 'members', inbox: 'inbox', booths: 'booths', access: 'access', admins: 'admins' }
-const SECTION_TITLES = { usecases: 'Duyệt use case', questions: 'Thread', reports: 'Báo cáo', users: 'Thành viên', inbox: 'Hộp thư', booths: 'Booth Exhibition', access: 'Yêu cầu truy cập', admins: 'Quản trị viên' }
+const SECTION_TITLES = { usecases: 'Duyệt use case', questions: 'Post', reports: 'Báo cáo', users: 'Thành viên', inbox: 'Hộp thư', booths: 'Booth Exhibition', access: 'Yêu cầu truy cập', admins: 'Quản trị viên' }
 const SECTION_OF = Object.fromEntries(Object.entries(SLUGS).map(([k, v]) => [v, k]))
 const sectionPath = (k, sub) => '/admin' + (SLUGS[k] ? '/' + SLUGS[k] : '') + (SLUGS[k] && sub ? '/' + sub : '')
 // Thành viên › "Cần dọn": the same mailbox twice (quotes, +tag, case) shares this key
@@ -292,7 +292,7 @@ export default function AdminConsolePage() {
   const ucSplit = `Chờ duyệt ${ucCount('pending')} · Chờ sửa ${ucCount('changes_requested')} · Đã đăng ${ucCount('approved')} · Từ chối ${ucCount('rejected')}`
   const subKpi = fromServer(K.submissions) || daily(submissions, 'time')
   const stats = [
-    { label: 'Thread', ...(fromServer(K.questions) || daily(questions, 'time')), go: () => setSection('questions') },
+    { label: 'Post', ...(fromServer(K.questions) || daily(questions, 'time')), go: () => setSection('questions') },
     { label: 'Use case gửi duyệt', ...subKpi, total: submissions.length, pct: pctOf(subKpi.today, submissions.length - subKpi.today), go: () => { setSection('usecases'); setUcStatus('pending') },
       split: ucSplit + (showcaseLive ? ` · chưa tính ${showcaseLive} use case mẫu` : ''), splitTitle: `Tổng = 4 tab đầu ở Duyệt use case. ${showcaseLive} use case mẫu (showcase, AI Space viết sẵn) không qua duyệt nên nằm riêng ở tab Use case mẫu.` },
     { label: 'Thành viên', ...(fromServer(K.users) || daily(users, 'joined')), go: () => setSection('users') },
@@ -318,9 +318,9 @@ export default function AdminConsolePage() {
   // Waiting for the asker to pick an answer for more than 3 days, counted from the first answer.
   const oldestPending = pending.reduce((m, s) => Math.max(m, ageDays(s.time)), 0)
   const todos = [
-    { n: openReports.length, color: '#D8232A', title: 'comment / thread bị báo cáo', hint: 'Xem và xoá nội dung vi phạm hoặc bỏ qua.', cta: 'Xử lý báo cáo', go: () => { setSection('reports'); setRepStatus('open') } },
+    { n: openReports.length, color: '#D8232A', title: 'comment / post bị báo cáo', hint: 'Xem và xoá nội dung vi phạm hoặc bỏ qua.', cta: 'Xử lý báo cáo', go: () => { setSection('reports'); setRepStatus('open') } },
     { n: pending.length, color: '#B45300', title: 'use case chờ duyệt', hint: pending.length ? (oldestPending ? `Bài chờ lâu nhất: ${oldestPending} ngày.` : 'Có bài mới gửi hôm nay.') : '', cta: 'Duyệt ngay', go: () => { setSection('usecases'); setUcStatus('pending') } },
-    { n: staleUnanswered.length, color: '#2c5fff', title: 'thread quá 2 ngày chưa ai trả lời', hint: 'Nhắc chuyên gia hoặc tag người phù hợp vào trả lời.', cta: 'Xem thread', go: () => { setSection('questions'); setQStatus('unanswered') } },
+    { n: staleUnanswered.length, color: '#2c5fff', title: 'post quá 2 ngày chưa ai trả lời', hint: 'Nhắc chuyên gia hoặc tag người phù hợp vào trả lời.', cta: 'Xem post', go: () => { setSection('questions'); setQStatus('unanswered') } },
     { n: notif.unread, color: '#6F0CE2', title: 'thông báo chưa đọc', hint: 'Mention, báo cáo và use case mới gửi đến bạn.', cta: 'Mở thông báo', go: () => setNotifOpen(true) },
   ].filter((x) => x.n > 0)
 
@@ -383,8 +383,8 @@ export default function AdminConsolePage() {
     })
   }
   const removeQuestion = (q, after) => {
-    if (q.authorId !== user.id) askRemovalReason({ what: 'thread', title: q.title }).then((r) => r && api.deleteQuestion(q.id, r).then(after).catch(() => {}))
-    else setConfirm({ text: `Xoá thread "${q.title}" cùng toàn bộ trả lời?`, run: () => api.deleteQuestion(q.id).then(after).catch(() => {}) })
+    if (q.authorId !== user.id) askRemovalReason({ what: 'post', title: q.title }).then((r) => r && api.deleteQuestion(q.id, r).then(after).catch(() => {}))
+    else setConfirm({ text: `Xoá post "${q.title}" cùng toàn bộ trả lời?`, run: () => api.deleteQuestion(q.id).then(after).catch(() => {}) })
   }
 
   // ---- questions ----
@@ -421,10 +421,10 @@ export default function AdminConsolePage() {
   const lbRows = (adminStats?.leaderboard?.[lbPeriod] || []).map((u) => ({ ...u, total: u.answers + u.comments + u.likes + u.questions + u.useCases })).sort((a, b) => b.total - a.total)
   const periodName = lbPeriod === 'last30' ? '30-ngay' : 'tat-ca'
   const csvDate = new Date().toISOString().slice(0, 10)
-  const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Thread', 'Use case được duyệt', 'Tổng'],
+  const exportLeaderboard = () => downloadCsv(`top-nguoi-dong-gop_${periodName}_${csvDate}.csv`, ['Hạng', 'Thành viên', 'Tên', 'Phòng ban', 'Trả lời', 'Comment', 'Like nhận', 'Post', 'Use case được duyệt', 'Tổng'],
     lbRows.map((u, i) => [i + 1, u.domain, cleanName(u.name), u.team, u.answers, u.comments, u.likes, u.questions, u.useCases, u.total]))
   // (Microsoft's organisation fields, AD distinguished name included, stay out of the export)
-  const exportUsers = () => downloadCsv(`thanh-vien_${csvDate}.csv`, ['Tên', 'Tên hiển thị', 'Email', 'Phòng ban', 'Vai trò', 'Tham gia', 'Hoạt động gần nhất', 'Thread', 'Trả lời', 'Use case'],
+  const exportUsers = () => downloadCsv(`thanh-vien_${csvDate}.csv`, ['Tên', 'Tên hiển thị', 'Email', 'Phòng ban', 'Vai trò', 'Tham gia', 'Hoạt động gần nhất', 'Post', 'Trả lời', 'Use case'],
     userRows.map((u) => [cleanName(u.name), u.domain, u.email, u.team, u.isAdmin ? 'Admin' : 'Thành viên', fmtDate(u.joined), fmtDay(u.lastActive), u.questions, u.answers, u.useCases]))
   const csvBtn = (onClick) => <button onClick={onClick} title="Tải bảng này dưới dạng CSV (mở bằng Excel)" style={css(btn('plain') + 'display:inline-flex; align-items:center; gap:6px; height:36px;')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>Xuất CSV</button>
 
@@ -439,7 +439,7 @@ export default function AdminConsolePage() {
   const menu = [
     ['dashboard', 'Tổng quan', '#2c5fff', 0],
     ['usecases', 'Duyệt use case', '#00A352', pending.length, 'use case đang chờ duyệt'],
-    ['questions', 'Thread', '#FF8D00', unanswered.length, 'thread chưa có ai trả lời'],
+    ['questions', 'Post', '#FF8D00', unanswered.length, 'post chưa có ai trả lời'],
     ['reports', 'Báo cáo', '#D8232A', reports.filter((r) => r.status === 'open').length, 'báo cáo đang chờ xử lý'],
     ['users', 'Thành viên', '#00B7FF', 0],
     ['inbox', 'Hộp thư', '#6F0CE2', chatInbox, 'cuộc trò chuyện đang chờ Admin trả lời'],
@@ -465,7 +465,7 @@ export default function AdminConsolePage() {
   const LB_COLS = '28px minmax(0,1fr) 64px 70px 70px 58px 66px 60px'
   const tableBox = (minWidth, children, extra = '') => <div style={css('overflow-x:auto;' + card + extra)}><div style={{ minWidth }}>{children}</div></div>
   const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
-  const REP_KIND = { thread: 'thread', uc_comment: 'comment ở use case', answer: 'comment ở thread', comment: 'reply ở thread' }
+  const REP_KIND = { thread: 'post', uc_comment: 'comment ở use case', answer: 'comment ở post', comment: 'reply ở post' }
   const repRows = reports.filter((r) => repStatus === 'all' || (repStatus === 'open' ? r.status === 'open' : r.status !== 'open'))
   const resolveReport = (r, action) => api.resolveReport(r.id, action).then(() => { reloadReports(); if (action === 'delete') reloadQuestions() }).catch(() => {})
 
@@ -631,13 +631,13 @@ export default function AdminConsolePage() {
                 <div style={css('display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;')}>
                   <div>
                     <h2 style={css('margin:0;' + font(800, 17) + ';color:#0f172a;')}>Top người đóng góp <span style={css(font(600, 13) + ';color:#64748b;')}>· {lbPeriod === 'last30' ? '30 ngày qua' : 'tất cả thời gian'}</span></h2>
-                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Xếp theo cột Tổng = trả lời + comment + like nhận + thread + use case được duyệt.</p>
+                    <p style={css('margin:6px 0 0;' + font(400, 12.5) + ';color:#94a3b8;')}>Xếp theo cột Tổng = trả lời + comment + like nhận + post + use case được duyệt.</p>
                   </div>
                   <div style={css('display:flex; align-items:center; gap:10px;')}>{csvBtn(exportLeaderboard)}<Tabs light value={lbPeriod} onChange={setLbPeriod} tabs={[['last30', '30 ngày qua'], ['all', 'Tất cả']]} /></div>
                 </div>
                 <div style={css('margin-top:16px; border:1px solid #EEF1F7; border-radius:14px; overflow-x:auto;')}>
                   <div style={{ minWidth: 640 }}>
-                  <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>THREAD</span><span title="Use case được duyệt">USE CASE</span><span style={{ color: '#2c5fff' }}>TỔNG</span></div>
+                  <div style={headRow(LB_COLS)}><span>#</span><span>THÀNH VIÊN</span><span>TRẢ LỜI</span><span>COMMENT</span><span>LIKE NHẬN</span><span>POST</span><span title="Use case được duyệt">USE CASE</span><span style={{ color: '#2c5fff' }}>TỔNG</span></div>
                   {lbRows.map((u, i) => (
                     <div key={u.id} style={bodyRow(LB_COLS)}>
                       <span style={css(font(900, 14) + `;color:${i < 3 ? ['#E0A100', '#8A99AD', '#B8733A'][i] : '#94a3b8'};`)}>{i + 1}</span>
@@ -776,13 +776,13 @@ export default function AdminConsolePage() {
 
           {section === 'questions' && (
             <div>
-              <Heading title="Thread" sub="Thread được đăng trực tiếp. Admin có thể xem và xoá bài không phù hợp." />
+              <Heading title="Post" sub="Post được đăng trực tiếp. Admin có thể xem và xoá bài không phù hợp." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;')}>
                 <Search value={qQuery} onChange={setQQuery} placeholder="Tìm theo nội dung hoặc tác giả..." />
                 <Tabs value={qStatus} onChange={setQStatus} tabs={[['all', 'Tất cả', questions.length], ['unanswered', 'Chưa có trả lời', unanswered.length], ['answered', 'Đã có trả lời', questions.filter((q) => q.answers.length).length]]} />
               </div>
               <div style={css('margin-top:16px; overflow:hidden;' + card)}>
-                <div style={headRow(Q_COLS)}><span>THREAD</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>THÍCH</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
+                <div style={headRow(Q_COLS)}><span>POST</span><span>TÁC GIẢ</span><span>TRẢ LỜI</span><span>THÍCH</span><span>TRẠNG THÁI</span><span style={{ textAlign: 'right' }}>THAO TÁC</span></div>
                 {qRows.map((q) => (
                   <div key={q.id} style={bodyRow(Q_COLS)}>
                     <div style={{ minWidth: 0 }}>
@@ -799,14 +799,14 @@ export default function AdminConsolePage() {
                     </div>
                   </div>
                 ))}
-                {qRows.length === 0 && empty('Không có thread nào khớp bộ lọc.')}
+                {qRows.length === 0 && empty('Không có post nào khớp bộ lọc.')}
               </div>
             </div>
           )}
 
           {section === 'reports' && (
             <div>
-              <Heading title="Báo cáo" sub="Comment và thread bị người dùng báo cáo. Xoá nội dung nếu vi phạm, hoặc bỏ qua nếu không có vấn đề." />
+              <Heading title="Báo cáo" sub="Comment và post bị người dùng báo cáo. Xoá nội dung nếu vi phạm, hoặc bỏ qua nếu không có vấn đề." />
               <div style={css('display:flex; align-items:center; gap:12px; margin-top:18px;')}>
                 <Tabs value={repStatus} onChange={setRepStatus} tabs={[['open', 'Chờ xử lý', reports.filter((r) => r.status === 'open').length], ['done', 'Đã xử lý', reports.filter((r) => r.status !== 'open').length], ['all', 'Tất cả', reports.length]]} />
               </div>
@@ -825,7 +825,7 @@ export default function AdminConsolePage() {
                       <div><span style={css(pill(st[1], st[2]))}>{st[0]}</span></div>
                       <div style={css('display:flex; justify-content:flex-end; gap:5px; flex-wrap:wrap;')}>
                         {r.exists && <a href={r.path} target="_blank" rel="noreferrer" style={css(btn('plain') + 'display:inline-flex; align-items:center; text-decoration:none;')}>Xem</a>}
-                        {r.status === 'open' && r.exists && <button onClick={() => setConfirm({ text: r.type === 'thread' ? 'Xoá thread bị báo cáo (cùng toàn bộ trả lời)?' : 'Xoá comment bị báo cáo (và các reply bên dưới)?', run: () => resolveReport(r, 'delete') })} style={css(btn('reject'))}>Xoá nội dung</button>}
+                        {r.status === 'open' && r.exists && <button onClick={() => setConfirm({ text: r.type === 'thread' ? 'Xoá post bị báo cáo (cùng toàn bộ trả lời)?' : 'Xoá comment bị báo cáo (và các reply bên dưới)?', run: () => resolveReport(r, 'delete') })} style={css(btn('reject'))}>Xoá nội dung</button>}
                         {r.status === 'open' && <button onClick={() => resolveReport(r, 'dismiss')} style={css(btn('plain'))}>Bỏ qua</button>}
                       </div>
                     </div>
@@ -1012,7 +1012,7 @@ export default function AdminConsolePage() {
                 <button onClick={checkDirectory} style={css(btn('plain'))}>Kiểm tra lại</button>
               </div>
               {tableBox(780, (<>
-                <div style={headRow(U_COLS)}><span>THÀNH VIÊN</span><span>VAI TRÒ</span><span>THAM GIA</span><span>HOẠT ĐỘNG GẦN NHẤT</span><span>THREAD</span><span>TRẢ LỜI</span><span>USE CASE</span><span></span></div>
+                <div style={headRow(U_COLS)}><span>THÀNH VIÊN</span><span>VAI TRÒ</span><span>THAM GIA</span><span>HOẠT ĐỘNG GẦN NHẤT</span><span>POST</span><span>TRẢ LỜI</span><span>USE CASE</span><span></span></div>
                 {userRows.map((u, i) => (
                   <div key={u.id} style={bodyRow(U_COLS)}>
                     <div style={css('display:flex; align-items:center; gap:10px; min-width:0;')}>
@@ -1129,8 +1129,8 @@ export default function AdminConsolePage() {
                 ))}
               </div>
               <div style={css('display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:26px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
-                <a href={`/questions/${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(font(700, 13) + ';color:#2c5fff; text-decoration:none;')}>Mở thread ↗</a>
-                <button onClick={() => removeQuestion(q, () => { reloadQuestions(); setQDetailId(null) })} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá thread</button>
+                <a href={`/questions/${encodeURIComponent(q.id)}`} target="_blank" rel="noreferrer" style={css(font(700, 13) + ';color:#2c5fff; text-decoration:none;')}>Mở post ↗</a>
+                <button onClick={() => removeQuestion(q, () => { reloadQuestions(); setQDetailId(null) })} style={css('height:42px; padding:0 20px; border:1px solid #F5C9CB; border-radius:999px; background:#FFECEC; color:#D8232A;' + font(700, 13.5) + ';cursor:pointer;')}>Xoá post</button>
               </div>
             </div>
           </div>

@@ -23,6 +23,7 @@ import TagRow from '../components/TagRow.jsx'
 import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
 import { QUESTION_DRAFT_KEY } from './QuestionsPage.jsx'
+import { listUcDrafts, ucDraftTitle, ucDraftWhen } from '../lib/ucDrafts.js'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 
@@ -82,19 +83,21 @@ function QuestionCard({ q }) {
   return (
     <div
       onClick={q.onOpen}
-      className={'zp-card zp-card-q ' + hoverClass('transform:translateY(-3px); border-color:rgba(168,85,247,.75); box-shadow:0 0 0 1px rgba(168,85,247,.18), 0 0 22px rgba(168,85,247,.34), 0 22px 48px rgba(0,0,0,.36);')}
-      style={css('position:relative; background:#ffffff; border:1px solid rgba(168,85,247,.45); border-radius:20px; cursor:pointer; box-shadow:0 0 0 1px rgba(168,85,247,.10), 0 0 16px rgba(168,85,247,.22), 0 14px 36px rgba(0,0,0,.28); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
+      className={'zp-card zp-card-q ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
+      style={css('position:relative; background:#ffffff; border:1px solid transparent; border-radius:20px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
     >
-      <div style={css('display:flex; align-items:center; gap:7px; padding:12px 16px 0; flex-wrap:wrap;')}>
-        <span style={css(`margin-left:auto; display:inline-flex; align-items:center; height:23px; padding:0 10px; border-radius:999px; background:${q.statusBg}; color:${q.statusColor}; font:700 11.5px ${FONT};`)}>{q.statusLabel}</span>
-        {q.menu && <QuestionMenu m={q.menu} />}
-      </div>
-      <div style={css('display:flex; align-items:center; gap:10px; padding:8px 16px 0;')}>
+      <div style={css('display:flex; align-items:center; gap:10px; padding:14px 16px 0;')}>
         <span style={css(`flex:none; width:28px; height:28px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px ${FONT};${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</span>
         <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:8px;')}>
           <span style={css(`font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.author}</span><AnonTag p={q} />
+          {/* its topic after the name, as on AI Space: name › topic */}
+          {(q.topics || [])[0] && <>
+            <svg style={{ flex: 'none', margin: '0 -4px' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+            <span style={css(`min-width:0; font:600 12.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{q.topics[0]}</span>
+          </>}
           <span style={css(`font:400 12.5px var(--zp-font-text); color:#94a3b8; white-space:nowrap;`)}>· {q.time}</span>
         </div>
+        {q.menu && <QuestionMenu m={q.menu} />}
       </div>
       <div style={css('padding:6px 16px 0;')}>
         {q.hasTitle !== false && <h3 className="zp-card-title" style={css(`margin:0; font:800 15px/1.38 ${FONT}; color:#0F172A; text-wrap:pretty;`)}>{q.title}</h3>}
@@ -102,7 +105,7 @@ function QuestionCard({ q }) {
       </div>
       <div style={css('display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin:10px 16px 0; padding:9px 0 11px; border-top:1px solid #EEF1F7;')}>
         <CardActions compact helpful={q.helpful} helped={q.helped} onHelpful={q.onHelpful} replies={q.answers} onReply={q.onOpen} saved={q.menu.saved} saves={q.saves} onSave={q.menu.onSave} />
-        <TagRow topics={q.topics} tools={q.tools} />
+        <TagRow tools={q.tools} />
       </div>
     </div>
   )
@@ -115,7 +118,7 @@ function UseCaseCard({ c }) {
     <div
       onClick={c.onOpen}
       className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
-      style={css('position:relative; border:1px solid rgba(60,120,255,.45); border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 0 0 1px rgba(60,120,255,.10), 0 0 16px rgba(60,120,255,.22), 0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
+      style={css('position:relative; border:1px solid transparent; border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
     >
       {c.menu && <div style={css('position:absolute; top:12px; right:12px; z-index:2;')}><QuestionMenu m={c.menu} kind="use case" /></div>}
       <div style={css('display:flex; gap:13px; padding-right:34px;')}>
@@ -162,7 +165,7 @@ export default function ProfilePage() {
   }, [])
   const notif = useNotifications(!!user)
   const section = /#(overview|activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'overview'
-  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Thread của tôi', saved: 'Đã lưu' }[section])
+  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Post của tôi', saved: 'Đã lưu' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -198,7 +201,7 @@ export default function ProfilePage() {
   const loadFailed = Object.keys(loadErr).length > 0
   const loadErrorBox = loadFailed ? (
     <div role="alert" style={css(`display:flex; align-items:center; gap:12px; margin:0 0 12px; padding:10px 14px; border-radius:12px; background:#FFF4E3; border:1px solid #F5D29A; font:600 13px ${FONT}; color:#7A4700;`)}>
-      <span style={css('flex:1;')}>{t('Không tải được')} {[loadErr.usecases && t('use case của bạn'), loadErr.questions && t('thread'), loadErr.saved && t('mục đã lưu')].filter(Boolean).join(', ')}.</span>
+      <span style={css('flex:1;')}>{t('Không tải được')} {[loadErr.usecases && t('use case của bạn'), loadErr.questions && t('post'), loadErr.saved && t('mục đã lưu')].filter(Boolean).join(', ')}.</span>
       <button onClick={() => setReloadKey((k) => k + 1)} style={css(`flex:none; height:30px; padding:0 14px; border:none; border-radius:999px; background:#2c5fff; color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Thử lại')}</button>
     </div>
   ) : null
@@ -227,9 +230,6 @@ export default function ProfilePage() {
     hasTitle: q.hasTitle,
     body: q.body,
     saves: q.saves || 0,
-    statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
-    statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0',
-    statusColor: q.answers.length ? '#00893F' : '#B45300',
     topics: q.topics || [], tools: q.tools || [],
     accepted: q.answers.some((a) => a.accepted),
     helpful: q.answers.reduce((n, a) => n + (a.helpful || 0), 0) + (q.qHelpful || 0),
@@ -322,15 +322,13 @@ export default function ProfilePage() {
       },
     }))
 
-  // The share form's autosaved draft (kept in this browser): shown on top of "Use case của tôi".
-  let ucDraft = null
-  try { ucDraft = JSON.parse(localStorage.getItem('zp-usecase-draft-v1') || 'null') } catch { /* ignore */ }
-  const ucDraftTitle = ucDraft && ucDraft.shareForm ? String(ucDraft.shareForm.title || '').trim() : ''
-  const hasUcDraft = !!(ucDraft && ucDraft.shareForm && Object.values(ucDraft.shareForm).some((v) => String(v || '').trim()))
+  // The share form's autosaved drafts (kept in this browser, several at once): shown on top of "Use case của tôi".
+  const ucDrafts = listUcDrafts().filter((d) => d.shareForm && Object.values(d.shareForm).some((v) => String(v || '').trim()))
   let qDraft = null
   try { qDraft = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null') } catch { /* ignore */ }
-  const draftItem = qDraft && (qDraft.title || qDraft.body) ? [{
-    tagLabel: t('Thread'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
+  const qDraftOn = !!(qDraft && (qDraft.title || qDraft.body))
+  const draftItem = qDraftOn ? [{
+    tagLabel: t('Post'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
     title: qDraft.title || t('(Chưa có tiêu đề)'), meta: t('Bản nháp') + ' · ' + relativeTime(qDraft.savedAt),
     statusLabel: t('Đang nháp'), statusBg: '#EDF0FA', statusColor: '#3A4757',
     cta: t('Tiếp tục'), primary: true,
@@ -338,10 +336,8 @@ export default function ProfilePage() {
   }] : []
   const recentItems = [].concat(draftItem)
     .concat(myQuestions.map((q) => ({
-      tagLabel: t('Thread'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
+      tagLabel: t('Post'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
       title: q.title, meta: threadTime(q.time), ts: q.time,
-      statusLabel: q.answers.length ? t('Đã có câu trả lời') : t('Đang đợi câu trả lời'),
-      statusBg: q.answers.length ? '#E7F9F0' : '#FFF1E0', statusColor: q.answers.length ? '#00893F' : '#B45300',
       cta: t('Xem chi tiết'), primary: false,
       onOpen: () => navigate(`/questions/${encodeURIComponent(q.id)}`),
     })))
@@ -361,7 +357,7 @@ export default function ProfilePage() {
     .sort((x, y) => (x.ts === undefined ? -1 : y.ts === undefined ? 1 : String(y.ts).localeCompare(String(x.ts))))
     .slice(0, 4)
 
-  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Thread của tôi') : section === 'saved' ? t('Đã lưu') : ''
+  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Post của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
   return (
     <Layout active="profile">
@@ -386,14 +382,15 @@ export default function ProfilePage() {
               <div className="zp-profile-stats">
                 {[
                   ['usecase', 'Use case của bạn', myUseCases.length, `${myUseCases.filter((c) => c.reviewStatus === 'approved').length} ${t('đã đăng')}`],
-                  ['question', 'Thread của bạn', myQuestions.length, `${myQuestions.filter((q) => q.answers.length).length} ${t('đã có câu trả lời')}`],
-                  ['saved', 'Đã lưu', savedUseCaseIds.length + savedQuestions.length, `${savedUseCaseIds.length} use case · ${savedQuestions.length} ${t('thread')}`],
+                  ['question', 'Post của bạn', myQuestions.length, `${myQuestions.filter((q) => q.answers.length).length} ${t('đã có câu trả lời')}`],
+                  // Đã lưu has its own link in the menu; this card counts what's still being written
+                  ['drafts', 'Đang nháp', ucDrafts.length + (qDraftOn ? 1 : 0), `${ucDrafts.length} use case · ${qDraftOn ? 1 : 0} ${t('post')}`],
                 ].map(([key, label, n, sub]) => (
                   <div key={key} style={css('display:flex; flex-direction:column; padding:16px 18px; border-radius:18px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 10px 24px rgba(30,50,90,.08);')}>
                     <div style={css(`font:700 13px ${FONT}; color:#64748b;`)}>{t(label)}</div>
                     <div style={css(`margin-top:4px; font:800 34px/1.1 ${FONT}; color:#0F172A;`)}>{loaded ? n : '…'}</div>
                     <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{loaded ? sub : ''}</div>
-                    <button onClick={() => (key === 'saved' ? navigate('/profile#saved') : document.getElementById(key === 'usecase' ? 'my-usecases' : 'my-questions')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className={hoverClass('gap:9px !important;')} style={css(`margin-top:12px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .15s;`)}>
+                    <button onClick={() => (key === 'drafts' ? (ucDrafts.length ? document.getElementById('my-usecases')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : navigate('/#ask')) : document.getElementById(key === 'usecase' ? 'my-usecases' : 'my-questions')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className={hoverClass('gap:9px !important;')} style={css(`margin-top:12px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .15s;`)}>
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
@@ -438,7 +435,7 @@ export default function ProfilePage() {
             <div style={css('max-width:760px; margin:22px auto 0;')}>
               <h3 style={css(`margin:0 0 10px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Hoạt động gần đây')}</h3>
               {loaded && recentItems.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đăng thread hoặc chia sẻ use case đầu tiên của bạn.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đăng post hoặc chia sẻ use case đầu tiên của bạn.')}</div>
               )}
               <div style={css('display:flex; flex-direction:column; gap:8px; padding-bottom:32px;')}>
                 {recentItems.map((r, i) => (
@@ -448,7 +445,7 @@ export default function ProfilePage() {
                       <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.title}</div>
                       <div style={css(`margin-top:3px; font:400 13px var(--zp-font-text); color:#94a3b8;`)}>{r.meta}</div>
                     </div>
-                    <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${r.statusBg}; color:${r.statusColor}; font:700 11.5px ${FONT};`)}>{r.statusLabel}</span>
+                    {r.statusLabel && <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${r.statusBg}; color:${r.statusColor}; font:700 11.5px ${FONT};`)}>{r.statusLabel}</span>}
                     <button onClick={(e) => { e.stopPropagation(); r.onOpen() }} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; border-radius:999px; font:700 12.5px ${FONT}; cursor:pointer; white-space:nowrap; ${r.primary ? 'border:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff;' : 'border:1px solid #DDE3EC; background:#fff; color:#2c5fff;'}`)}>
                       {r.cta}
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
@@ -468,16 +465,16 @@ export default function ProfilePage() {
               {section === 'overview' && <h2 id="my-usecases" style={css(`scroll-margin-top:80px; margin:0 0 12px; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Use case của tôi')}</h2>}
               <StatusTabs tabs={ucTabs} active={activeUcTab.key} onPick={setUcTab} />
               <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
-                {hasUcDraft && (
-                  <div onClick={() => navigate('/use-cases?share=1')} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
+                {ucDrafts.map((d) => (
+                  <div key={d.id} id={'uc-draft-' + d.id} onClick={() => navigate('/use-cases?share=1&draft=' + encodeURIComponent(d.id))} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
                     <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
                     <div style={css('flex:1; min-width:0;')}>
-                      <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{ucDraftTitle || t('(Chưa có tên use case)')}</div>
-                      <div style={css(`margin-top:3px; font:400 12.5px var(--zp-font-text); color:#94a3b8;`)}>{t('Use case đang điền dở, chưa gửi duyệt')}{ucDraft.savedAt ? ' · ' + t('lưu lúc') + ' ' + ucDraft.savedAt : ''}</div>
+                      <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{ucDraftTitle(d) || t('(Chưa có tên use case)')}</div>
+                      <div style={css(`margin-top:3px; font:400 12.5px var(--zp-font-text); color:#94a3b8;`)}>{t('Use case đang điền dở, chưa gửi duyệt')}{ucDraftWhen(d) ? ' · ' + t(ucDraftWhen(d)) : ''}</div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); navigate('/use-cases?share=1') }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
+                    <button onClick={(e) => { e.stopPropagation(); navigate('/use-cases?share=1&draft=' + encodeURIComponent(d.id)) }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
                   </div>
-                )}
+                ))}
                 {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
                 {activeUcTab.items.length === 0 && (
                   <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>
@@ -497,7 +494,7 @@ export default function ProfilePage() {
         {(section === 'question' || section === 'overview') && (
           <section style={css(`position:relative; padding:${section === 'overview' ? '22px var(--zp-gutter) 40px' : '18px var(--zp-gutter) 40px'};`)}>
             <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
-              {section === 'overview' && <h2 id="my-questions" style={css(`scroll-margin-top:80px; margin:0; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Thread của tôi')}</h2>}
+              {section === 'overview' && <h2 id="my-questions" style={css(`scroll-margin-top:80px; margin:0; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Post của tôi')}</h2>}
               {draftItem.map((r) => (
                 <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
                   <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
@@ -510,7 +507,7 @@ export default function ProfilePage() {
               ))}
               {myQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
               {loaded && myQuestionCards.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có thread nào.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có post nào.')}</div>
               )}
             </div>
           </section>
@@ -528,9 +525,9 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <h3 style={subHeading}>{t('Thread đã lưu')}</h3>
+              <h3 style={subHeading}>{t('Post đã lưu')}</h3>
               {savedQuestionCards.length === 0 ? (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu thread nào.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu post nào.')}</div>
               ) : (
                 <div style={css('display:flex; flex-direction:column; gap:12px;')}>
                   {savedQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
@@ -575,7 +572,7 @@ function StatusTabs({ tabs, active, onPick }) {
 }
 
 /** ⋯ menu on a thread / use case card: copy link and (own posts) edit / delete with a confirm step; saving is on the card's action row. */
-function QuestionMenu({ m, kind = 'thread' }) {
+function QuestionMenu({ m, kind = 'post' }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [confirm, setConfirm] = useState(false)

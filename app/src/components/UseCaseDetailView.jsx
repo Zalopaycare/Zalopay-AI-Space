@@ -27,7 +27,7 @@ export function detailLayout(tp, t, showEmpty = false) {
     // the author's own parts ("Phần khác" in the form), each a numbered part of its own
     ...(tp.custom || []).map((x, i) => ['custom' + i, 'uc-more-' + i, x.title]),
     ['demo', 'uc-demo', 'Demo'],
-  ].filter(([k]) => has[k] || k.startsWith('custom') || (k === 'ps' && has.result) || (showEmpty && ['ps', 'apply'].includes(k)))
+  ].filter(([k]) => has[k] || k.startsWith('custom') || (showEmpty && ['ps', 'apply'].includes(k)))
   const num = {}
   parts.forEach(([k], i) => { num[k] = String(i + 1) })
   const toc = parts.map(([k, id, label]) => ({ id, label: num[k] + '. ' + t(label), hot: k === 'apply' }))
@@ -45,7 +45,8 @@ export function DetailSections({ id, tp, t, layout }) {
   const { has, num, showEmpty } = layout
   return (
     <>
-      {(has.ps || has.result || showEmpty) && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} result={has.result ? tp.result : null} showEmpty={showEmpty} num={num.ps} />}
+      {/* no Số liệu & hình ảnh block any more: the form doesn't ask for it */}
+      {(has.ps || showEmpty) && <ProblemSolution t={t} problem={tp.problem} solution={tp.solution} result={null} showEmpty={showEmpty} num={num.ps} />}
       {has.apply && <ApplySection id={id} a={tp.apply} t={t} num={num.apply} />}
       {!has.apply && showEmpty && <Section id="uc-apply" num={num.apply} title={t(tp.apply.title)}><NoInfo t={t} /></Section>}
       {has.safety && (() => {

@@ -19,9 +19,9 @@ export const openTour = () => window.dispatchEvent(new Event(OPEN_EVENT))
 // `at`: the element to light up (a data-tour mark or a selector); none = the card alone, centred.
 const STEPS = [
   { title: 'Chào mừng đến Zalopay AI Space', text: 'Nơi các Zalopay Starter chia sẻ, hỏi đáp và học nhau cách dùng AI trong công việc. Đi một vòng chưa tới một phút nhé.' },
-  { at: '[data-tour="nav-home"]', title: 'AI Space', text: 'Trang chủ: mọi người đăng thread hỏi đáp, chia sẻ mẹo hay và kết quả làm với AI.' },
-  { at: '[data-tour="compose"]', title: 'Đăng thread', text: 'Bấm vào đây để hỏi hay chia sẻ. Gõ @ để gọi tên đồng nghiệp (họ nhận email); ngại thì bật đăng ẩn danh.' },
-  { at: '[data-qid]', title: 'Một thread', text: 'Bấm vào để đọc và bình luận. ♡ để thích, 💬 để trả lời, 🔖 để lưu đọc lại sau.' },
+  { at: '[data-tour="nav-home"]', title: 'AI Space', text: 'Trang chủ: mọi người đăng post hỏi đáp, chia sẻ mẹo hay và kết quả làm với AI.' },
+  { at: '[data-tour="compose"]', title: 'Đăng post', text: 'Bấm vào đây để hỏi hay chia sẻ. Gõ @ để gọi tên đồng nghiệp (họ nhận email); ngại thì bật đăng ẩn danh.' },
+  { at: '[data-qid]', title: 'Một post', text: 'Bấm vào để đọc và bình luận. ♡ để thích, 💬 để trả lời, 🔖 để lưu đọc lại sau.' },
   { at: '[data-tour="nav-usecases"]', title: 'Use Case Library', text: 'Các cách dùng AI đã chạy thật: bài toán, giải pháp và từng bước để bạn tự làm lại. Lọc theo Category và Công cụ AI.' },
   { at: '[data-tour="share"]', title: 'Chia sẻ use case', text: 'Điền form từng bước (kèm hình minh họa hoặc file), hoặc tải template Word về điền. Admin xem và góp ý trước khi đăng.' },
   { at: '[data-tour="mine"]', title: 'Của tôi', text: 'Thông báo khi có người trả lời, bình luận hay tag bạn; Đã lưu là bài bạn đánh dấu; Hồ sơ gom bài của bạn.' },

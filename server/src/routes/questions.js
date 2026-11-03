@@ -84,7 +84,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   const block = removalCheck(req, q.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
   deleteQuestionTx(req.params.id)
-  afterRemoval(req, { authorId: q.author_id, what: 'thread', title: qTitle(q), content: q.body })
+  afterRemoval(req, { authorId: q.author_id, what: 'post', title: qTitle(q), content: q.body })
   res.json({ ok: true })
 })
 
@@ -113,8 +113,6 @@ router.post('/', requireAuth, (req, res) => {
   if (!String(body || '').trim() || !category.length) {
     return res.status(400).json({ error: 'missing_fields' })
   }
-  // a new thread says what it's about (one topic), so the feed stays on AI
-  if (!tagList(topics).length) return res.status(400).json({ error: 'missing_topic', message: 'Chọn chủ đề cho thread trước khi đăng.' })
   const decoded = (Array.isArray(images) ? images : []).slice(0, MAX_IMAGES).map(decodeImage)
   if (decoded.some((d) => !d)) return res.status(400).json({ error: 'bad_image' })
   const decodedFiles = (Array.isArray(files) ? files : []).slice(0, MAX_FILES).map(decodeFile)
@@ -128,7 +126,7 @@ router.post('/', requireAuth, (req, res) => {
     decodedFiles.forEach((f, i) => db.prepare('INSERT INTO question_files (question_id, idx, name, mime, size, data) VALUES (?,?,?,?,?,?)').run(id, i, f.name, f.mime, f.data.length, f.data))
   })()
   const label = qTitle({ title: String(title || '').trim(), body: body.trim() })
-  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `thread "${label}"`, path: `/questions/${id}`, as: anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : null })
+  notifyMentions(req, { text: [String(title || '').trim(), body.trim()].filter(Boolean).join('\n'), where: `post "${label}"`, path: `/questions/${id}`, as: anon.anonymous ? anonName({ ...anon, author_id: req.user.id }) : null })
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
 
@@ -225,11 +223,11 @@ router.post('/:id/answers', requireAuth, (req, res) => {
 
   const qAuthor = db.prepare('SELECT * FROM users WHERE id = ?').get(q.author_id)
   if (qAuthor && qAuthor.id !== req.user.id) {
-    notify(qAuthor.email, { kind: 'answer', text: `${who} đã trả lời thread của bạn: "${qTitle(q)}"`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
-    sendMail({ to: qAuthor.email, subject: 'Có trả lời mới trong thread của bạn', text: `${anon.anonymous ? who : req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions/${id}` }).catch(() => {})
+    notify(qAuthor.email, { kind: 'answer', text: `${who} đã trả lời post của bạn: "${qTitle(q)}"`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
+    sendMail({ to: qAuthor.email, subject: 'Có trả lời mới trong post của bạn', text: `${anon.anonymous ? who : req.user.name} đã trả lời: "${qTitle(q)}"\n\n${body}\n\nXem tại: ${appUrl(req)}/questions/${id}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `thread "${qTitle(q)}"`, path: `/questions/${id}`, skip: [qAuthor?.email], as: anon.anonymous ? who : null })
-  notifyParticipants(participantsOf(id), [req.user.email, qAuthor?.email], { ref: 'joined:q:' + id, text: `${who} cũng đã trả lời trong "${qTitle(q)}", thread bạn tham gia`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
+  notifyMentions(req, { text: body, where: `post "${qTitle(q)}"`, path: `/questions/${id}`, skip: [qAuthor?.email], as: anon.anonymous ? who : null })
+  notifyParticipants(participantsOf(id), [req.user.email, qAuthor?.email], { ref: 'joined:q:' + id, text: `${who} cũng đã trả lời trong "${qTitle(q)}", post bạn tham gia`, href: `/questions/${id}`, actor: anon.anonymous ? who : req.user.name })
 
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
@@ -289,9 +287,9 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const commentAuthor = (cId) => { const c = cId ? db.prepare('SELECT author_id FROM answer_comments WHERE id = ?').get(cId) : null; return c ? userById(c.author_id) : null }
   const targets = [
     [commentAuthor(replyToId), `${who} đã reply comment của bạn trong "${label}"`],
-    [commentAuthor(parentId), `${who} đã reply trong một thread bạn tham gia ở "${label}"`],
-    [userById(answer.author_id), parentId ? `${who} đã reply trong thread comment của bạn ở "${label}"` : `${who} đã reply comment của bạn trong "${label}"`],
-    [userById(q.author_id), `${who} đã bình luận trong thread của bạn: "${label}"`],
+    [commentAuthor(parentId), `${who} đã reply trong một chuỗi bình luận bạn tham gia ở "${label}"`],
+    [userById(answer.author_id), parentId ? `${who} đã reply trong chuỗi bình luận của bạn ở "${label}"` : `${who} đã reply comment của bạn trong "${label}"`],
+    [userById(q.author_id), `${who} đã bình luận trong post của bạn: "${label}"`],
   ]
   const told = new Set([req.user.email.toLowerCase()])
   for (const [u, text] of targets) {
@@ -300,8 +298,8 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
     notify(u.email, { kind: 'comment', text, href, actor: anon.anonymous ? who : req.user.name })
     sendMail({ to: u.email, subject: text, text: `${anon.anonymous ? who : req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
-  notifyMentions(req, { text: body, where: `thread "${label}"`, path: href, skip: [...told], as: anon.anonymous ? who : null })
-  notifyParticipants(participantsOf(id), told, { ref: 'joined:q:' + id, text: `${who} cũng đã bình luận trong "${label}", thread bạn tham gia`, href, actor: anon.anonymous ? who : req.user.name })
+  notifyMentions(req, { text: body, where: `post "${label}"`, path: href, skip: [...told], as: anon.anonymous ? who : null })
+  notifyParticipants(participantsOf(id), told, { ref: 'joined:q:' + id, text: `${who} cũng đã bình luận trong "${label}", post bạn tham gia`, href, actor: anon.anonymous ? who : req.user.name })
 
   res.status(201).json({ question: loadQuestion(id, req.user) })
 })
