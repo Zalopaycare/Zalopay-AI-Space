@@ -608,8 +608,7 @@ export function Toc({ items, t, alignTo }) {
  *  left of the content column (a pill when there is room, a round button when the strip is narrow),
  *  vertically centred, so it never covers the cards; on phones it floats bottom-left. */
 export function FloatingBack({ onBack, t }) {
-  // measured from the sidebar's edge (rail), which can sit over the page's left margin
-  const { rail: offset } = useSidebarLayout()
+  const { offset } = useSidebarLayout()
   const [show, setShow] = useState(false)
   const [gutter, setGutter] = useState(0)
   useEffect(() => {
