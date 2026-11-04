@@ -257,7 +257,9 @@ html.zp-vt .zp-page-in { animation: none; }
 .zp-msform { counter-reset: zp-q; }
 .zp-msform > div:not(.zp-msform-plain) { background: #fff; border: 1px solid #E3E8F0; border-radius: 12px; padding: 16px 18px !important; margin: 0 0 12px !important; counter-increment: zp-q; }
 .zp-msform > div:not(.zp-msform-plain) > :first-child::before { content: counter(zp-q) "."; margin-right: 2px; font-size: 13px; font-weight: 800; color: #0F172A; }
-.zp-msform > div:not(.zp-msform-plain):focus-within { border-color: #9DB7F5; box-shadow: inset 4px 0 0 #2c5fff; }
+.zp-msform > div:not(.zp-msform-plain) { transition: border-color .15s ease, box-shadow .15s ease; }
+/* the question being filled in: its whole border lights up blue (no bar on the left) */
+.zp-msform > div:not(.zp-msform-plain):focus-within { border-color: #2c5fff; box-shadow: 0 0 0 3px rgba(44,95,255,.14), 0 6px 18px rgba(44,95,255,.12); }
 
 /* Welcome tour (WelcomeTour.jsx): the frame's brackets breathe and a scan line sweeps the lit-up feature. */
 @keyframes zp-tour-corner { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
@@ -269,7 +271,7 @@ html.zp-vt .zp-page-in { animation: none; }
 @media (prefers-reduced-motion: reduce) { .zp-tour-corner, .zp-tour-scan, .zp-tour-card { animation: none; } }
 
 /* the share form's bold / italic text box (RichArea) */
-.zp-richarea:empty::before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
+.zp-richarea:empty::before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; white-space: pre-line; }
 .zp-richarea b, .zp-richarea strong { font-weight: 800; }
 .zp-richarea:focus { border-color: #9DB8F7 !important; }
 

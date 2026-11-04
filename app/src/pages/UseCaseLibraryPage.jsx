@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import { fold } from '../lib/fold.js'
 import { parseUseCaseDocx, TEMPLATE_URL } from '../lib/docxImport.js'
@@ -83,22 +83,21 @@ const WORD_IMPORT = false
 /** On top of the share form: how a use case goes up (in place of "Điền bằng Word" for now). */
 function ApprovalFlow({ t }) {
   const steps = [
-    ['Điền & gửi duyệt', 'Điền các bước bên dưới rồi bấm Gửi duyệt. Viết theo cách của bạn, không cần giống hệt bài mẫu.'],
-    ['Admin duyệt', 'Admin đọc bài. Cần chỉnh chỗ nào thì Admin góp ý ngay trên bài, bạn nhận thông báo để sửa rồi gửi lại.'],
-    ['Lên Use Case Library', 'Duyệt xong, bài hiện trên Use Case Library cho mọi người xem.'],
+    'Điền và gửi Use Case', 'Admin kiểm duyệt', 'Chỉnh sửa và bổ sung (nếu có)', 'Publish',
   ]
   return (
     <div style={css('margin-bottom:16px; padding:14px 16px; border-radius:18px; background:linear-gradient(180deg,#F3F7FF,#EEF3FF); border:1px solid #D5E2FC;')}>
       <div style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Quy trình duyệt')}</div>
-      <div style={css('display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-top:10px;')}>
-        {steps.map(([title, text], i) => (
-          <div key={title} style={css('display:flex; gap:9px; align-items:flex-start;')}>
-            <span style={css('flex:none; width:22px; height:22px; border-radius:50%; background:#2c5fff; color:#fff; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{i + 1}</span>
-            <div style={css('min-width:0;')}>
-              <div style={css('font-size:12.5px; font-weight:800; color:#1E3A7A;')}>{t(title)}</div>
-              <div style={css('margin-top:2px; font-size:12px; line-height:1.5; color:#475569;')}>{t(text)}</div>
+      {/* one line, like a progress bar: numbered dots joined by dashed lines (scrolls sideways when too narrow) */}
+      <div style={css('display:flex; align-items:center; margin-top:12px; overflow-x:auto;')}>
+        {steps.map((title, i) => (
+          <Fragment key={title}>
+            {i > 0 && <span aria-hidden="true" style={css('flex:1 1 24px; min-width:24px; margin:0 12px; border-top:2px dashed #9DB5F5;')}></span>}
+            <div style={css('flex:none; display:flex; align-items:center; gap:8px;')}>
+              <span style={css('flex:none; width:22px; height:22px; border-radius:50%; background:#2c5fff; color:#fff; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{i + 1}</span>
+              <span style={css('font-size:12.5px; font-weight:800; color:#1E3A7A; white-space:nowrap;')}>{t(title)}</span>
             </div>
-          </div>
+          </Fragment>
         ))}
       </div>
     </div>
@@ -657,10 +656,10 @@ export default function UseCaseLibraryPage() {
   // ---- share form derivations ----
   const setField = (k) => (e) => setShareForm((f) => ({ ...f, [k]: e.target.value }))
   // [key, label, required, hint, placeholder, input|area, rows, step] — in the order the page shows them.
-  // A short example sits at the end of the hint. ('apply2' fields sit in Tự áp dụng after the steps;
+  // The hint (a short example at its end) sits right under the label, above the box. ('apply2' fields sit in Tự áp dụng after the steps;
   // 'ps' ones, Bài toán & Giải pháp, in Overview after the chips.)
   const fieldDefs = [
-    ['title', 'Tên use case', 'Required', 'Tên là thứ duy nhất người đọc thấy trên thẻ (không có đoạn mô tả riêng), nên đọc tên phải biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).\nVí dụ: GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay', 'Tên công cụ – làm được gì, cho ai', 'input', 0, 'intro'],
+    ['title', 'Tên use case', 'Required', 'Tên là thứ duy nhất người đọc thấy trên thẻ (không có đoạn mô tả riêng), nên đọc tên phải biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).', 'Ví dụ: GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay', 'input', 0, 'intro'],
     ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps'],
     ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps'],
     ['fitYes', 'Phù hợp với bạn nếu', 'Required', 'Mỗi dòng một trường hợp nên dùng. Ví dụ: Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.', '', 'area', 3, 'intro'],
@@ -1123,7 +1122,8 @@ export default function UseCaseLibraryPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
             </button>
             <h1 style={css('margin:0; padding-right:56px; font-size:26px; font-weight:800; line-height:1.25; letter-spacing:-.01em; color:#fff;')}>{shareHeading}</h1>
-            <p style={css('margin:9px 0 0; padding-right:56px; font-size:13px; line-height:1.6; color:rgba(206,219,245,.72);')}>{shareSubhead}</p>
+            {/* no line under the heading on the form itself */}
+            {(shareStage !== 'form' || editingCase) && <p style={css('margin:9px 0 0; padding-right:56px; font-size:13px; line-height:1.6; color:rgba(206,219,245,.72);')}>{shareSubhead}</p>}
             <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
               <span style={css('display:inline-flex; align-items:center; gap:8px; height:30px; padding:0 13px; border-radius:999px; background:rgba(22,214,140,.14); border:1px solid rgba(22,214,140,.34); font-size:11.5px; font-weight:700; color:#6fe3aa;')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
@@ -1263,7 +1263,6 @@ export default function UseCaseLibraryPage() {
                   </div>
                   {/* MS Forms look: a light page with each question on its own numbered white card (index.css .zp-msform) */}
                   <div className="zp-msform" style={css('background:#F3F6FB; border:1px solid #E6EBF3; border-radius:20px; padding:20px 22px; box-shadow:0 10px 24px rgba(30,50,90,.06);')}>
-                    <div className="zp-msform-plain" style={css('margin:0 0 20px; font-size:11.5px; font-weight:700; color:#64748b;')}>{t('Bước')} {shareStep + 1}/{SHARE_STEPS.length} · {t('Điền cho')} {t(SHARE_STEPS[shareStep].part)}</div>
                     {(() => {
                       // how far this step's required items are: green when all are in
                       const req = reqByStep[SHARE_STEPS[shareStep].key], done = req.filter((x) => x.done).length
@@ -1320,7 +1319,7 @@ export default function UseCaseLibraryPage() {
                             <div style={css('margin-top:12px;')}>
                               <label htmlFor="sf-members" style={css('font-size:12.5px; font-weight:800; color:#2c5fff;')}>{t('Thành viên cùng làm')}</label>
                               <ReqTag done={!!shareMemberList.length} required t={t} style={{ marginLeft: 8 }} />
-                              <input id="sf-members" value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy. Ví dụ: ThyNDM, AnhTVH, MinhLN9')} style={css(FIELD_INPUT + (missMembers ? MISS_FIELD : ''))} />
+                              <input id="sf-members" value={shareMembers} onChange={(e) => setShareMembers(e.target.value)} placeholder={t('Tên các thành viên, cách nhau bằng dấu phẩy')} style={css(FIELD_INPUT + (missMembers ? MISS_FIELD : ''))} />
                               {missMembers && <MissLine text={t('Chưa điền tên thành viên')} />}
                               <div style={css('margin-top:5px; font-size:11.5px; color:#94a3b8;')}>{shareMemberList.length ? t('Hiện trên bài') + ': ' + shareMemberList.join(', ') : t('Bài sẽ hiện tên toàn bộ thành viên thay cho tên bạn.')}</div>
                             </div>
@@ -1338,6 +1337,7 @@ export default function UseCaseLibraryPage() {
                           <label htmlFor={'sf-' + f.key} style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{f.label}</label>
                           <ReqTag done={!!String(f.value || '').trim()} required={f.req === 'Required'} t={t} />
                         </div>
+                        {/* above the box, not as its placeholder: it stays in view while the person writes */}
                         <div style={css('margin-top:5px; font-size:12px; line-height:1.55; color:#94a3b8; white-space:pre-line;')}>{f.hint}</div>
                         {f.example && (
                           <div style={css('margin-top:6px; padding:8px 11px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.55; color:#475569; white-space:pre-wrap;')}>
@@ -1353,7 +1353,7 @@ export default function UseCaseLibraryPage() {
                           <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css(FIELD_INPUT + (miss ? MISS_FIELD : ''))} />
                         )}
                         {f.isArea && (
-                          <RichArea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))} />
+                          <RichArea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} ariaLabel={f.label} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))} />
                         )}
                         {miss && <MissLine text={t('Chưa điền: mục này bắt buộc')} />}
                         {/* pictures with a caption under this section (shown under it on the page); not on an admin edit of a built-in case */}
@@ -1415,7 +1415,6 @@ export default function UseCaseLibraryPage() {
                           <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Kết quả nổi bật')}</span>
                           <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc · tối đa 3')}</span>
                         </div>
-                        <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{t('Con số đáng nhớ nhất, hiện đầu phần Kết quả. Chỉ ghi số đã đo được.')}</div>
                         {shareHighlights.map((h, i) => (
                           <div key={i} style={css('display:flex; gap:8px; margin-top:10px;')}>
                             <input aria-label={t('Con số') + ' ' + (i + 1)} value={h.value} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)))} placeholder={['2 ngày → 5 phút', '−80%', '12 team'][i]} style={css('flex:0 0 34%; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;')} />
@@ -1580,7 +1579,6 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
         <span style={{ flex: 1 }}></span>
         <button type="button" onClick={() => setExample((v) => !v)} style={css('border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#2c5fff;')}>{example ? t('Ẩn ví dụ') : t('Xem ví dụ một bước')}</button>
       </div>
-      <div style={css('margin-top:4px; font-size:12px; color:#94a3b8;')}>{t('Mỗi bước là một việc người đọc làm, theo thứ tự. Trên trang bài, các bước hiện thành hàng 1 → 2 → 3.')}</div>
       {example && (
         <div style={css('margin-top:8px; padding:9px 12px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.6; color:#475569; white-space:pre-wrap;')}>
           <b>{t('Tên bước')}:</b> Tạo 1 khoá cho nhiều tài nguyên{'\n'}<b>{t('Làm gì')}:</b> Vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên cần dùng, bấm "Create key".{'\n'}<b>{t('Prompt / lệnh mẫu')}:</b> codex mcp add mcp-platform --url "…/mcp" --bearer-token-env-var MCP_PLATFORM_KEY{'\n'}<b>{t('Lưu ý (hiện màu đỏ)')}:</b> Khoá chỉ hiện một lần: chép ngay, không gửi cho người khác.
@@ -1662,10 +1660,6 @@ function CustomSections({ list, onChange, t, adminEdit }) {
   const set = (i, k) => (e) => onChange(list.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
   return (
     <div style={css('margin-bottom:16px;')}>
-      <div style={css('font-size:12.5px; line-height:1.6; color:#64748b;')}>
-        {t('Muốn kể thêm điều gì chưa có chỗ trong các bước trước? Thêm một phần riêng: đặt tên phần và viết nội dung. Mỗi phần hiện thành một mục có số trên trang bài, sau phần Trách nhiệm & giới hạn.')}
-        <div style={css('margin-top:4px;')}><b style={css('color:#475569;')}>{t('Ví dụ')}:</b> {t('Chi phí sử dụng, Kế hoạch tiếp theo, Câu hỏi thường gặp, Kinh nghiệm rút ra.')}</div>
-      </div>
       {adminEdit && <div style={css('margin-top:10px; font-size:12px; font-weight:600; color:#B45300;')}>{t('Phần khác chỉ lưu được cho bài đăng qua form, chưa áp dụng khi Admin sửa use case có sẵn.')}</div>}
       {list.map((x, i) => (
         <div key={i} style={css('margin-top:14px; padding:12px 14px 14px; border:1px solid #E1E8F5; border-radius:14px; background:#fff;')}>
