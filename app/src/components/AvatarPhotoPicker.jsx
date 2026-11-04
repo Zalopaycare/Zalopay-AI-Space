@@ -75,17 +75,24 @@ export default function AvatarPhotoPicker({ size = 40, bare = false }) {
   }
 
   if (!user) return null
-  // Profile page: the photo with the upload button (camera icon) right under it.
+  // Profile page: the photo (an ✕ on its corner takes it off) with the upload button (camera icon) right under it.
   if (bare) return (
     <div style={css('display:flex; flex-direction:column; align-items:center; gap:8px; flex:none;')}>
-      <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} title={t('Đổi ảnh đại diện')} aria-label={t('Đổi ảnh đại diện')} style={css('padding:0; border:none; background:none; border-radius:50%; cursor:pointer;')}>
-        <Avatar user={user} size={size} fontSize={Math.round(size * 0.35)} />
-      </button>
+      {/* the photo, with an ✕ on its corner to take it off */}
+      <span style={css('position:relative; display:inline-flex;')}>
+        <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} title={t('Đổi ảnh đại diện')} aria-label={t('Đổi ảnh đại diện')} style={css('padding:0; border:none; background:none; border-radius:50%; cursor:pointer;')}>
+          <Avatar user={user} size={size} fontSize={Math.round(size * 0.35)} />
+        </button>
+        {user.avatarUrl && (
+          <button type="button" disabled={busy} onClick={onRemove} title={t('Bỏ ảnh')} aria-label={t('Bỏ ảnh')} className={hoverClass('background:#F1F4FA !important; color:#D8232A !important;')} style={css('position:absolute; top:-2px; right:-2px; width:24px; height:24px; padding:0; border:1px solid #DDE3EC; border-radius:50%; background:#fff; color:#475569; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(15,23,42,.18);')}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </button>
+        )}
+      </span>
       <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className={hoverClass('background:#EEF3FF !important;')} style={css(`display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; cursor:pointer; font:700 12.5px "Be Vietnam Pro",sans-serif; color:#2c5fff; white-space:nowrap; ${busy ? 'opacity:.6; cursor:default;' : ''}`)}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7.5 6.5H5A2 2 0 0 0 3 8.5v9A2 2 0 0 0 5 19.5h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2.5z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
         {busy ? t('Đang lưu...') : user.avatarUrl ? t('Đổi ảnh') : t('Tải ảnh lên')}
       </button>
-      {user.avatarUrl && <button type="button" disabled={busy} onClick={onRemove} style={css('padding:0; border:none; background:none; cursor:pointer; font:600 12px "Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Bỏ ảnh')}</button>}
       <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile} style={{ display: 'none' }} />
       {error && <div role="alert" style={css('max-width:180px; text-align:center; font:600 12px "Be Vietnam Pro",sans-serif; color:#D8232A;')}>{error}</div>}
     </div>

@@ -334,28 +334,6 @@ export default function ProfilePage() {
     cta: t('Tiếp tục'), primary: true,
     onOpen: () => navigate('/#ask'),
   }] : []
-  const recentItems = [].concat(draftItem)
-    .concat(myQuestions.map((q) => ({
-      tagLabel: t('Post'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
-      title: q.title, meta: threadTime(q.time), ts: q.time,
-      cta: t('Xem chi tiết'), primary: false,
-      onOpen: () => navigate(`/questions/${encodeURIComponent(q.id)}`),
-    })))
-    .concat(myUseCases.map((c) => {
-      const st = UC_STATUS[c.reviewStatus] || UC_STATUS.pending
-      return {
-        tagLabel: t('Use case'), tagBg: '#E7F9F0', tagColor: '#00893F',
-        title: c.title, meta: relativeTime(c.reviewedAt || c.time), ts: c.reviewedAt || c.time,
-        statusLabel: t(st.label), statusBg: st.bg, statusColor: st.color,
-        // Pending actions on the viewer's side get a "continue" CTA; everything else just opens it.
-        cta: ucCta(c),
-        primary: ['draft', 'rejected', 'changes_requested'].includes(c.reviewStatus),
-        onOpen: () => navigate(ucHref(c)),
-      }
-    }))
-    // Newest first (the draft, if any, stays on top); SQLite times sort correctly as strings.
-    .sort((x, y) => (x.ts === undefined ? -1 : y.ts === undefined ? 1 : String(y.ts).localeCompare(String(x.ts))))
-    .slice(0, 4)
 
   const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Post của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
@@ -430,28 +408,6 @@ export default function ProfilePage() {
                     {showAllNotif ? t('Thu gọn') : t('Xem thêm') + ` (${notif.items.length - 6})`}
                   </button>
                 )}
-              </div>
-            </div>
-            <div style={css('max-width:760px; margin:22px auto 0;')}>
-              <h3 style={css(`margin:0 0 10px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Hoạt động gần đây')}</h3>
-              {loaded && recentItems.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có hoạt động nào. Đăng post hoặc chia sẻ use case đầu tiên của bạn.')}</div>
-              )}
-              <div style={css('display:flex; flex-direction:column; gap:8px; padding-bottom:32px;')}>
-                {recentItems.map((r, i) => (
-                  <div key={i} onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF; box-shadow:0 14px 30px rgba(30,50,90,.14);')} style={css('cursor:pointer; transition:transform .16s, box-shadow .16s, border-color .16s; background:#fff; border:1px solid #E6EBF3; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px; box-shadow:0 8px 22px rgba(30,50,90,.06);')}>
-                    <span style={css(`flex:none; display:inline-flex; align-items:center; height:26px; padding:0 12px; border-radius:999px; background:${r.tagBg}; color:${r.tagColor}; font:700 12px ${FONT};`)}>{r.tagLabel}</span>
-                    <div style={css('flex:1; min-width:0;')}>
-                      <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.title}</div>
-                      <div style={css(`margin-top:3px; font:400 13px var(--zp-font-text); color:#94a3b8;`)}>{r.meta}</div>
-                    </div>
-                    {r.statusLabel && <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:${r.statusBg}; color:${r.statusColor}; font:700 11.5px ${FONT};`)}>{r.statusLabel}</span>}
-                    <button onClick={(e) => { e.stopPropagation(); r.onOpen() }} style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; border-radius:999px; font:700 12.5px ${FONT}; cursor:pointer; white-space:nowrap; ${r.primary ? 'border:none; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff;' : 'border:1px solid #DDE3EC; background:#fff; color:#2c5fff;'}`)}>
-                      {r.cta}
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-                    </button>
-                  </div>
-                ))}
               </div>
             </div>
           </section>
@@ -643,16 +599,6 @@ function ProfileCard({ user, setUser }) {
           <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{user.email}</div>
         </div>
       </div>
-      {/* Name and department come from the Microsoft account and can't be edited, so nobody can pose as someone else. */}
-      <div className="zp-profile-fields" style={{ marginTop: 20 }}>
-        {[[t('Họ và tên'), user.name], [t('Phòng ban / Team'), user.team]].map(([label, value]) => (
-          <div key={label}>
-            <div style={css(`font:800 13px ${FONT}; color:#0F172A;`)}>{label}</div>
-            <div style={css(`margin-top:7px; min-height:40px; display:flex; align-items:center; padding:0 12px; border:1px solid #EEF1F7; border-radius:11px; background:#F8FAFE; font:500 14px ${FONT}; color:${value ? '#0F172A' : '#94a3b8'};`)}>{value || t('Chưa có')}</div>
-          </div>
-        ))}
-      </div>
-      <div style={css(`margin-top:6px; font:500 12px ${FONT}; color:#94a3b8;`)}>{t('Họ tên và phòng ban lấy tự động từ tài khoản Microsoft công ty khi bạn đăng nhập, không chỉnh sửa được.')}</div>
       <div style={{ marginTop: 14 }}>
         {field(t('Tên hiển thị khi ẩn danh'), t('Mọi bài và bình luận ẩn danh của bạn đều hiện tên này (đổi tên thì bài cũ cũng đổi theo). Để trống thì hiện "Anonymous" kèm một số riêng của bạn (ví dụ Anonymous 4821).'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
       </div>

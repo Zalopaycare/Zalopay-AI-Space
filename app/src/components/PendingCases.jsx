@@ -6,13 +6,12 @@ import { css, hoverClass } from '../lib/style.js'
 import RichText from './RichText.jsx'
 
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
-// list: name, members, a "Thông tin đang được cập nhật" tag and a
+// list: name, members and a
 // "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
 // A tile opens a popup with the booth's Bài toán and Giải pháp as the exhibition wrote them. Its owners
 // get "Bổ sung thông tin" instead of "Quan tâm", straight to the share form.
 // The booth also has a page of its own (/use-cases/ex6), where notifications and invites link to.
 
-const NOINFO_TAG = 'display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:999px; background:#FFF4E3; border:1px solid #F3DCB4; color:#9A5B00; font-size:11px; font-weight:700; white-space:nowrap;'
 
 function Star({ on }) {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"></path></svg>
@@ -124,7 +123,7 @@ export default function PendingCases({ items, t, requireLogin }) {
         <h2 style={css('margin:0; font-size:18px; font-weight:800; letter-spacing:-.2px; color:#fff;')}>{t('Use case từ AI Exhibition 2026')}</h2>
         <span style={css('font-size:12.5px; color:#8fa6d8;')}>{items.length}</span>
       </div>
-      <p style={css('margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Thông tin chi tiết đang được cập nhật. Bấm "Quan tâm" để nhắc người làm đăng Use Case lên AI Space.')}</p>
+      <p style={css('margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Use case mang về từ AI Exhibition. Bấm "Quan tâm" để team nhận thông báo và đăng bài chi tiết lên AI Space.')}</p>
       <div className="zp-pending-grid">
         {items.map((p) => {
           return (
@@ -144,11 +143,8 @@ export default function PendingCases({ items, t, requireLogin }) {
                     <span style={css('font-weight:600; color:#3A4757;')}>Owner:</span> {p.members.join(', ')}
                   </div>
                 )}
-                {/* "Thông tin đang được cập nhật" on the left, "Quan tâm" pinned to the bottom-right corner */}
-                <div style={css('display:flex; align-items:flex-end; gap:8px; margin-top:auto; padding-top:8px;')}>
-                  <div style={css('flex:1; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap;')}>
-                    <span style={css(NOINFO_TAG)}>{t('Thông tin đang được cập nhật')}</span>
-                  </div>
+                {/* "Quan tâm" pinned to the bottom-right corner */}
+                <div style={css('display:flex; align-items:flex-end; justify-content:flex-end; gap:8px; margin-top:auto; padding-top:8px;')}>
                   {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
                 </div>
               </div>
@@ -179,10 +175,7 @@ function BoothPopup({ p, t, busy, onToggle, onClose }) {
       <div role="dialog" aria-modal="true" aria-label={p.title} onClick={(e) => e.stopPropagation()} style={css('position:relative; width:880px; max-width:100%; background:#fff; border-radius:20px; padding:24px 26px 22px; box-sizing:border-box; box-shadow:0 30px 70px rgba(0,0,0,.4);')}>
         <button onClick={onClose} aria-label={t('Đóng')} style={css('position:absolute; top:14px; right:14px; width:34px; height:34px; border:none; border-radius:50%; background:#F1F4FA; color:#3A4757; font-size:16px; font-weight:800; cursor:pointer;')}>✕</button>
         <div style={css('padding-right:40px;')}>
-          <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
-            <span style={css(NOINFO_TAG)}>{t('Thông tin đang được cập nhật')}</span>
-          </div>
-          <h2 style={css('margin:8px 0 0; font-size:22px; font-weight:800; line-height:1.3; letter-spacing:-.3px; color:#0F172A; text-wrap:pretty;')}>{p.title}</h2>
+          <h2 style={css('margin:0; font-size:22px; font-weight:800; line-height:1.3; letter-spacing:-.3px; color:#0F172A; text-wrap:pretty;')}>{p.title}</h2>
           {p.members?.length > 0 && <div style={css('margin-top:6px; font-size:12.5px; line-height:1.5; color:#5B6B82;')}><span style={css('font-weight:700; color:#3A4757;')}>Owner:</span> {p.members.join(', ')}</div>}
         </div>
         <div className="zp-ps2" style={css('margin-top:18px; padding-top:18px; border-top:1px solid #EEF1F7;')}>
@@ -196,7 +189,7 @@ function BoothPopup({ p, t, busy, onToggle, onClose }) {
           </div>
         </div>
         <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid #EEF1F7;')}>
-          <span style={css('flex:1; min-width:0; font-size:12px; line-height:1.5; color:#64748b;')}>{p.owner ? t('Bạn là Owner: bổ sung các bước, ảnh bìa, số liệu… để use case có trang đầy đủ.') : t('Use case này chưa có bài chi tiết trên AI Space. Bấm "Quan tâm" để nhắc team đăng lên.')}</span>
+          <span style={css('flex:1; min-width:0; font-size:12px; line-height:1.5; color:#64748b;')}>{p.owner ? t('Bạn là Owner: bổ sung các bước, ảnh bìa… để use case có trang đầy đủ.') : t('Use case này chưa có bài chi tiết trên AI Space. Bấm "Quan tâm" để nhắc team đăng lên.')}</span>
           {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy} onToggle={onToggle} t={t} />}
         </div>
       </div>

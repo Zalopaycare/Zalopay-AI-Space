@@ -71,12 +71,40 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // Share form = the 9 parts of the detail page, in order. `need` = required keys on that step.
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
-  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Chủ đề (chọn Team thì thêm Thành viên cùng làm); Công cụ AI không bắt buộc' },
-  { key: 'ps', label: 'Bài toán & giải pháp', part: 'Phần Bài toán & giải pháp (Kết quả nằm trong Giải pháp)' },
+  // Bài toán & Giải pháp are filled here too (their fields keep step 'ps', shown after the chips)
+  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Chủ đề (chọn Team thì thêm Thành viên cùng làm), Bài toán & giải pháp; Công cụ AI không bắt buộc' },
   { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
-  { key: 'safety', label: 'Trách nhiệm & giới hạn', part: 'Phần Trách nhiệm & giới hạn (không bắt buộc)' },
+  { key: 'safety', label: 'Trách nhiệm', part: 'Phần Trách nhiệm (không bắt buộc)' },
   { key: 'more', label: 'Phần khác', part: 'Phần khác (không bắt buộc): thêm phần riêng của bạn' },
 ]
+// "Điền bằng Word" (template download / upload a filled one) is put away for now; flip to bring it back.
+const WORD_IMPORT = false
+
+/** On top of the share form: how a use case goes up (in place of "Điền bằng Word" for now). */
+function ApprovalFlow({ t }) {
+  const steps = [
+    ['Điền & gửi duyệt', 'Điền các bước bên dưới rồi bấm Gửi duyệt. Viết theo cách của bạn, không cần giống hệt bài mẫu.'],
+    ['Admin duyệt', 'Admin đọc bài. Cần chỉnh chỗ nào thì Admin góp ý ngay trên bài, bạn nhận thông báo để sửa rồi gửi lại.'],
+    ['Lên Use Case Library', 'Duyệt xong, bài hiện trên Use Case Library cho mọi người xem.'],
+  ]
+  return (
+    <div style={css('margin-bottom:16px; padding:14px 16px; border-radius:18px; background:linear-gradient(180deg,#F3F7FF,#EEF3FF); border:1px solid #D5E2FC;')}>
+      <div style={css('font-size:13px; font-weight:800; color:#0F172A;')}>{t('Quy trình duyệt')}</div>
+      <div style={css('display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-top:10px;')}>
+        {steps.map(([title, text], i) => (
+          <div key={title} style={css('display:flex; gap:9px; align-items:flex-start;')}>
+            <span style={css('flex:none; width:22px; height:22px; border-radius:50%; background:#2c5fff; color:#fff; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center;')}>{i + 1}</span>
+            <div style={css('min-width:0;')}>
+              <div style={css('font-size:12.5px; font-weight:800; color:#1E3A7A;')}>{t(title)}</div>
+              <div style={css('margin-top:2px; font-size:12px; line-height:1.5; color:#475569;')}>{t(text)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // Inputs in the share form (kept small so a step fits without much scrolling).
 const FIELD_INPUT = 'width:100%; margin-top:8px; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13.5px; color:#0f172a; background:#fff; outline:none; box-sizing:border-box;'
 const FIELD_AREA = FIELD_INPUT + ' line-height:1.6; resize:vertical;'
@@ -628,25 +656,17 @@ export default function UseCaseLibraryPage() {
 
   // ---- share form derivations ----
   const setField = (k) => (e) => setShareForm((f) => ({ ...f, [k]: e.target.value }))
-  // [key, label, required, hint, placeholder, input|area, rows, step]
-  // [key, label, required, hint, placeholder, input|area, rows, step, example] — in the order the page shows
-  // them. The example is taken from use cases already on the site, so authors see what "good" looks like.
-  // ('apply2' fields sit in Tự áp dụng after the steps.)
+  // [key, label, required, hint, placeholder, input|area, rows, step] — in the order the page shows them.
+  // A short example sits at the end of the hint. ('apply2' fields sit in Tự áp dụng after the steps;
+  // 'ps' ones, Bài toán & Giải pháp, in Overview after the chips.)
   const fieldDefs = [
-    ['title', 'Tên use case', 'Required', 'Tên là thứ duy nhất người đọc thấy trên thẻ (không có đoạn mô tả riêng), nên đọc tên phải biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).', 'Tên công cụ – làm được gì, cho ai', 'input', 0, 'intro',
-      'GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay\nAutomation Testing Tool – Hỗ trợ QC viết UI automation test bằng prompt\nPO Tool Kit: bộ AI skill giúp PO đi từ ý tưởng tới ticket, prototype và báo cáo'],
-    ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps',
-      '**Vấn đề là gì:** Trước mỗi lần pentest, kỹ sư bảo mật phải tự tay gom ngữ cảnh từ ticket yêu cầu: đọc ticket Jira, lần theo tài liệu Confluence (kể cả sơ đồ/ảnh), tìm đúng version đang deploy và source trên GitLab, rồi tự dò endpoint/host và gõ tay từng lệnh curl để test. Rất nhiều thao tác thủ công, lặp đi lặp lại, và thường phải chờ/hỏi dev khi thiếu thông tin.\n\n**Ai đang gặp:** Kỹ sư AppSec / pentester (đồng thời giảm việc qua lại với Dev/PO).\n\n**Tác động:** Mỗi lần chuẩn bị tốn nhiều thời gian đọc – tổng hợp – dựng request thủ công; dễ sót endpoint (nhất là API mới trong bản release), test nhầm version, hoặc thiếu ngữ cảnh khiến test không đầy đủ.'],
-    ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps',
-      'secreq là một tool nội bộ dùng AI (chạy trên Claude), phục vụ team AppSec. Chỉ cần nhập mã ticket Jira, tool tự đọc ticket + tài liệu Confluence liên quan + kéo đúng source đã deploy trên GitLab, rồi xuất ra một trang tóm tắt chuẩn bị test. Dùng qua giao diện web.\n\n**AI làm được gì:**\n- Tự dựng sẵn bộ curl command chạy được cho từng API ngay từ source code (đúng bản đã deploy) — pentester copy-dán test được ngay, khỏi phải tự mò.\n- Tự tìm "cách vào flow" (link, deeplink, . . .) và đánh dấu API nào là mới trong bản release này để ưu tiên test.\n- Tự trích dẫn nguồn cho từng thông tin, tự che thông tin nhạy cảm, và gom hết endpoint / host / môi trường / câu hỏi cho dev vào một chỗ.\n\n**Kết quả:** Đang được team AppSec dùng thật trên các ticket pentest. Trạng thái: MVP/pilot, đã go-live nội bộ, có dashboard theo dõi lượng sử dụng. Rút ngắn thời gian chuẩn bị pentest từ 0,5–2 ngày xuống còn khoảng 4–5 phút, giảm sót endpoint và đảm bảo test đúng version đang chạy.'],
-    ['link', 'Link tài liệu / repo', 'Optional', 'Link tới tài liệu, repo hoặc file cài để người khác tự xem.', 'https://...', 'input', 0, 'apply', 'https://gitlab.zalopay.vn/…/secreq-bot'],
-    ['access', 'Ghi chú về cách truy cập', 'Optional', 'Ai đang dùng được, cần quyền / mạng gì, xin ở đâu. Hiện ngay đầu phần Tự áp dụng.', '', 'area', 2, 'apply', 'Công cụ hiện dùng trong team AppSec. Bạn chỉ cần mã ticket SECREQ; công cụ tự tìm ticket triển khai (CICD) đi kèm trong nội dung ticket.'],
-    ['fitYes', 'Phù hợp với bạn nếu', 'Required', 'Mỗi dòng một trường hợp nên dùng.', '', 'area', 3, 'intro', 'Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.\nBạn muốn có bản bấm thử để khảo sát người dùng.'],
-    ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước. Mỗi dòng một mục.', '', 'area', 3, 'apply', 'Tài khoản O365 để đăng nhập MCP Platform.\nQuyền owner/co-owner của tài nguyên trên Gear.\nMột AI có hỗ trợ kết nối MCP (ví dụ Codex).'],
-    ['success', 'Kết quả bạn sẽ thấy', 'Optional', 'Làm xong các bước thì người đọc thấy gì, để họ biết mình đã làm đúng. Mỗi dòng một ý.', '', 'area', 2, 'apply2', 'AI trả về trang tóm tắt có lệnh curl cho từng API, dòng nào cũng có link nguồn.\nTrong bảng MCP keys, khoá của bạn có trạng thái "Active".'],
-    ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý.', '', 'area', 3, 'apply2', 'Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.\nMất khoá sau khi đóng màn hình → tạo khoá mới trong mục "MCP keys".'],
-    ['safety', 'Trách nhiệm của con người', 'Optional', 'Việc con người phải tự làm, tự quyết hoặc không được làm khi dùng AI ở use case này. Mỗi dòng một ý, ví dụ:\n• Chỗ phải tự xem lại, xác nhận trước khi lưu / gửi\n• Dữ liệu không được đưa vào AI\n• (Nếu có) 1 dòng "Dữ liệu đi qua AI: …", dòng này hiện riêng bên dưới', '', 'area', 4, 'safety', 'Bạn xem kết quả rồi mới lưu.\nKhông dán mật khẩu, token vào khung chat với AI. File .env không gửi cho ai.\nDữ liệu đi qua AI: nội dung ticket, trang Confluence.'],
-    ['limits', 'Giới hạn của AI', 'Optional', 'AI không được làm gì, và những việc AI ở use case này hiện chưa làm được. Mỗi dòng một ý.', '', 'area', 4, 'safety', 'AI chỉ đọc Jira, không sửa ticket.\nAI không tự commit, push nếu bạn chưa yêu cầu.\nChưa đọc được ảnh, sơ đồ trong tài liệu và Figma.'],
+    ['title', 'Tên use case', 'Required', 'Tên là thứ duy nhất người đọc thấy trên thẻ (không có đoạn mô tả riêng), nên đọc tên phải biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).\nVí dụ: GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay', 'Tên công cụ – làm được gì, cho ai', 'input', 0, 'intro'],
+    ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps'],
+    ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps'],
+    ['fitYes', 'Phù hợp với bạn nếu', 'Required', 'Mỗi dòng một trường hợp nên dùng. Ví dụ: Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.', '', 'area', 3, 'intro'],
+    ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước; ghi luôn link tài liệu / repo và cách truy cập (ai dùng được, cần quyền / mạng gì, xin ở đâu). Mỗi dòng một mục. Ví dụ: Tài khoản O365 để đăng nhập MCP Platform.', '', 'area', 4, 'apply'],
+    ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý. Ví dụ: Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.', '', 'area', 3, 'apply2'],
+    ['safety', 'Trách nhiệm của con người', 'Optional', 'Việc con người phải tự làm, tự quyết hoặc không được làm khi dùng AI ở use case này. Mỗi dòng một ý, ví dụ:\n• Chỗ phải tự xem lại, xác nhận trước khi lưu / gửi\n• Dữ liệu không được đưa vào AI\n• (Nếu có) 1 dòng "Dữ liệu đi qua AI: …", dòng này hiện riêng bên dưới', '', 'area', 4, 'safety'],
   ]
   const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step, example]) => ({
     key: k, label, req, hint, placeholder, rows, step, example,
@@ -678,7 +698,7 @@ export default function UseCaseLibraryPage() {
   // Every required item of each step and whether it's filled: drives the green "Đã điền" ticks, the
   // "x/y" progress line and the stepper's counts. missingByStep = the labels still empty.
   const reqByStep = Object.fromEntries(SHARE_STEPS.map((st) => [st.key, [
-    ...shareFields.filter((f) => f.step === st.key && f.req === 'Required').map((f) => ({ label: f.label, done: !!f.value.trim() })),
+    ...shareFields.filter((f) => (f.step === st.key || (st.key === 'intro' && f.step === 'ps')) && f.req === 'Required').map((f) => ({ label: f.label, done: !!f.value.trim() })),
     ...(st.key === 'apply' ? [{ label: 'Các bước (mỗi bước cần tên và nội dung)', done: stepsReady }] : []),
     ...(st.key === 'intro' ? [
       { label: 'Ảnh bìa', done: !!(shareCover && !shareCover.cleared) }, { label: 'Độ khó', done: !!shareLevel }, { label: 'Chủ đề', done: !!shareCategory.length },
@@ -1196,6 +1216,9 @@ export default function UseCaseLibraryPage() {
                     </div>
                   )}
                   {!editing && !editingCase && (
+                    <ApprovalFlow t={t} />
+                  )}
+                  {WORD_IMPORT && !editing && !editingCase && (
                     <div style={css('margin-bottom:16px; padding:16px 18px; border-radius:18px; background:linear-gradient(180deg,#F3F7FF,#EEF3FF); border:1px solid #D5E2FC;')}>
                       <div style={css('display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;')}>
                         <span style={css('flex:none; width:38px; height:34px; border-radius:11px; background:#2B579A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13.5px; font-weight:900;')}>W</span>
@@ -1266,7 +1289,6 @@ export default function UseCaseLibraryPage() {
                             <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Ảnh bìa')}</span>
                             <ReqTag done={!!(shareCover && !shareCover.cleared)} required t={t} />
                           </div>
-                          <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Kích thước 1920 × 1080 px (16:9). Ảnh khác kích thước sẽ tự được cắt phần giữa và đưa về đúng 1920 × 1080.')}</div>
                           <div style={css('display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;')}>
                             {/* 16:9 preview, the exact frame the cover is saved in */}
                             <span style={css(`flex:none; width:192px; height:108px; border-radius:12px; overflow:hidden; background:${missCover ? '#FFF6F6' : '#F4F7FE'}; border:1px dashed ${missCover ? '#E0353F' : '#C9D5EC'};`+' display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:11.5px; font-weight:600;')}>
@@ -1286,8 +1308,7 @@ export default function UseCaseLibraryPage() {
                           {!coverError && coverNote && <div style={css('margin-top:8px; font-size:12px; color:#9A5B00;')}>{coverNote}</div>}
                         </div>
                         <div>
-                          <div style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Người đăng')}</div>
-                          <div style={css('margin-top:3px; font-size:12px; color:#64748b;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
+                          <div style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
                           <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                             {[['personal', 'Cá nhân'], ['team', 'Team']].map(([v, label]) => {
                               const ch = chip(sharePostAs === v)
@@ -1350,28 +1371,7 @@ export default function UseCaseLibraryPage() {
                             </div>
                           )}
                           {shareFields.filter((f) => f.step === key).map(field)}
-                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} showMissing={showMissing} ready={stepsReady} allowFiles={!editingCase} />}
-                          {key === 'more' && <CustomSections list={shareCustom} onChange={setShareCustom} t={t} adminEdit={!!editingCase} />}
-                          {key === 'apply' && shareFields.filter((f) => f.step === 'apply2').map(field)}
-                        </>
-                      )
-                    })()}
-                    {SHARE_STEPS[shareStep].key === 'ps' && (
-                      <div style={css('margin-bottom:8px;')}>
-                        <div style={css('display:flex; align-items:center; gap:8px;')}>
-                          <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Kết quả nổi bật')}</span>
-                          <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc · tối đa 3')}</span>
-                        </div>
-                        <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{t('Con số đáng nhớ nhất, hiện đầu phần Kết quả. Chỉ ghi số đã đo được.')}</div>
-                        {shareHighlights.map((h, i) => (
-                          <div key={i} style={css('display:flex; gap:8px; margin-top:10px;')}>
-                            <input aria-label={t('Con số') + ' ' + (i + 1)} value={h.value} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)))} placeholder={['2 ngày → 5 phút', '−80%', '12 team'][i]} style={css('flex:0 0 34%; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;')} />
-                            <input aria-label={t('Ý nghĩa') + ' ' + (i + 1)} value={h.label} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)))} placeholder={['thời gian làm báo cáo tuần', 'lỗi nhập liệu', 'đang dùng hằng tuần'][i]} style={css('flex:1; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; color:#0f172a; outline:none; box-sizing:border-box;')} />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {SHARE_STEPS[shareStep].key === 'intro' && (
+                          {key === 'intro' && (
                       <>
                         <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" done={!!shareLevel} t={t} options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
                         <div>
@@ -1408,6 +1408,28 @@ export default function UseCaseLibraryPage() {
 
                       </>
                     )}
+                          {key === 'intro' && shareFields.filter((f) => f.step === 'ps').map(field)}
+                          {key === 'intro' && (
+                      <div style={css('margin-bottom:8px;')}>
+                        <div style={css('display:flex; align-items:center; gap:8px;')}>
+                          <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Kết quả nổi bật')}</span>
+                          <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc · tối đa 3')}</span>
+                        </div>
+                        <div style={css('margin-top:5px; font-size:12px; color:#94a3b8;')}>{t('Con số đáng nhớ nhất, hiện đầu phần Kết quả. Chỉ ghi số đã đo được.')}</div>
+                        {shareHighlights.map((h, i) => (
+                          <div key={i} style={css('display:flex; gap:8px; margin-top:10px;')}>
+                            <input aria-label={t('Con số') + ' ' + (i + 1)} value={h.value} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)))} placeholder={['2 ngày → 5 phút', '−80%', '12 team'][i]} style={css('flex:0 0 34%; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;')} />
+                            <input aria-label={t('Ý nghĩa') + ' ' + (i + 1)} value={h.label} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)))} placeholder={['thời gian làm báo cáo tuần', 'lỗi nhập liệu', 'đang dùng hằng tuần'][i]} style={css('flex:1; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; color:#0f172a; outline:none; box-sizing:border-box;')} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                          {key === 'apply' && <StepsEditor steps={shareSteps} onChange={setShareSteps} t={t} showMissing={showMissing} ready={stepsReady} allowFiles={!editingCase} />}
+                          {key === 'more' && <CustomSections list={shareCustom} onChange={setShareCustom} t={t} adminEdit={!!editingCase} />}
+                          {key === 'apply' && shareFields.filter((f) => f.step === 'apply2').map(field)}
+                        </>
+                      )
+                    })()}
                   </div>
 
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>

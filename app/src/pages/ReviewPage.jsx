@@ -39,12 +39,13 @@ function partsOf(s) {
       block('members', 'Thành viên cùng làm', (ex.members || []).join(', ')),
       block('team', 'Team', s.team),
     ] },
-    { step: 1, title: 'Bài toán & giải pháp', blocks: [
+    // filled on the form's Overview step too
+    { step: 0, title: 'Bài toán & giải pháp', blocks: [
       block('problem', 'Bài toán', s.problem, { required: true }),
       block('solution', 'Giải pháp', s.solution, { required: true }),
       block('highlights', 'Con số nổi bật', hl),
     ] },
-    { step: 2, title: 'Tự áp dụng', blocks: [
+    { step: 1, title: 'Tự áp dụng', blocks: [
       block('link', 'Link tài liệu / repo', s.link),
       block('prep', 'Cần chuẩn bị gì', s.prep, { required: true }),
       (ex.steps || []).length ? { key: 'steps', label: 'Các bước', steps: ex.steps, value: ex.steps.map((x) => [x.title, x.text, x.prompt, x.note].join('\n')).join('\n') } : block('prompt', 'Prompt / quy trình', s.prompt, { mono: true }),
@@ -53,12 +54,12 @@ function partsOf(s) {
       block('tech', 'Chi tiết kỹ thuật', ex.tech, { mono: true }),
       block('contact', 'Người liên hệ', s.contact),
     ] },
-    { step: 3, title: 'Trách nhiệm & giới hạn', blocks: [
+    { step: 2, title: 'Trách nhiệm & giới hạn', blocks: [
       block('safety', 'Trách nhiệm của con người', ex.safety),
       block('limits', 'Giới hạn của AI', s.limits),
     ] },
     // the author's own extra parts, one text block (comments pin to it as "custom")
-    { step: 4, title: 'Phần khác', blocks: [
+    { step: 3, title: 'Phần khác', blocks: [
       block('custom', 'Các phần thêm', (ex.customSections || []).map((x) => `${x.title}\n${x.text}`).join('\n\n')),
     ] },
   ]
@@ -375,12 +376,12 @@ export default function ReviewPage() {
               </div>
               {inline('general')}
 
-              {parts.map((pt) => {
+              {parts.map((pt, pi) => {
                 const shown = pt.blocks.filter((b) => b.value.trim() || b.required || threadsFor(b.key).length)
                 return (
-                  <section key={pt.step} style={css('margin-top:26px;')}>
+                  <section key={pt.title} style={css('margin-top:26px;')}>
                     <div style={css('display:flex; align-items:center; gap:10px; padding:9px 12px 9px 14px; border-radius:12px; background:linear-gradient(90deg,#1D3A8F,#2c5fff);')}>
-                      <h2 style={css('flex:1; min-width:0; margin:0;' + f(800, 16) + ';color:#fff;')}>{pt.step + 1}. {pt.title}</h2>
+                      <h2 style={css('flex:1; min-width:0; margin:0;' + f(800, 16) + ';color:#fff;')}>{pi + 1}. {pt.title}</h2>
                       {editBtn(pt.step)}
                     </div>
                     {!shown.length && <div style={css('margin-top:10px; padding:0 4px;' + f(500, 13) + ';color:#94a3b8;')}>Không điền phần này (không bắt buộc).</div>}
