@@ -9,7 +9,7 @@ import { useTitle } from '../hooks/useTitle.js'
 import CoverImage from '../components/CoverImage.jsx'
 import { renderMentions } from '../components/MentionField.jsx'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { css, hoverClass } from '../lib/style.js'
+import { css, hoverClass, CARD_HOVER } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime, threadTime } from '../lib/api.js'
@@ -83,7 +83,7 @@ function QuestionCard({ q }) {
   return (
     <div
       onClick={q.onOpen}
-      className={'zp-card zp-card-q ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
+      className={'zp-card zp-card-q ' + hoverClass(CARD_HOVER)}
       style={css('position:relative; background:#ffffff; border:1px solid transparent; border-radius:20px; cursor:pointer; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;')}
     >
       <div style={css('display:flex; align-items:center; gap:10px; padding:14px 16px 0;')}>
@@ -117,7 +117,7 @@ function UseCaseCard({ c }) {
   return (
     <div
       onClick={c.onOpen}
-      className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
+      className={'zp-card ' + hoverClass(CARD_HOVER)}
       style={css('position:relative; border:1px solid transparent; border-radius:18px; background:#ffffff; cursor:pointer; padding:14px 16px; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
     >
       {c.menu && <div style={css('position:absolute; top:12px; right:12px; z-index:2;')}><QuestionMenu m={c.menu} kind="use case" /></div>}

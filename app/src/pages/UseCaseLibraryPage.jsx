@@ -14,7 +14,7 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useDialog } from '../hooks/useDialog.js'
 import { markOtherPick, focusIfJustPicked } from '../lib/focusOther.js'
-import { css, hoverClass } from '../lib/style.js'
+import { css, hoverClass, CARD_HOVER } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import CommentMenu, { InlineEdit, useCommentModals, LikeButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
@@ -1011,7 +1011,7 @@ export default function UseCaseLibraryPage() {
                       key={c.id}
                       data-card-id={c.id}
                       onClick={c.onOpen}
-                      className={'zp-card ' + hoverClass('transform:translateY(-3px); border-color:rgba(80,140,255,.8); box-shadow:0 0 0 1px rgba(60,120,255,.18), 0 0 22px rgba(60,120,255,.34), 0 18px 40px rgba(0,0,0,.3);')}
+                      className={'zp-card ' + hoverClass(CARD_HOVER)}
                       style={css((openMenuId === c.id ? 'z-index:5; ' : '') + 'position:relative; display:flex; flex-direction:column; border:1px solid transparent; border-radius:18px; background:#ffffff; cursor:pointer; padding:12px 14px; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}
                     >
                       {/* no "Use case" label (every card here is one): the ⋯ menu sits in the corner */}

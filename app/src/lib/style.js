@@ -43,6 +43,10 @@ const hoverMap = new Map()
 let hoverCounter = 0
 
 /** Register a `:hover { ...cssText }` rule once and return the className to apply. */
+// Hovering a card (a post on AI Space, a use case, a booth): it lifts and a strong blue glow spreads
+// around it. !important: the cards set their own border and shadow inline.
+export const CARD_HOVER = 'transform:translateY(-3px) !important; border-color:rgba(100,155,255,.95) !important; box-shadow:0 0 0 1px rgba(80,140,255,.5), 0 0 30px 4px rgba(50,115,255,.55), 0 0 70px 14px rgba(44,95,255,.3), 0 18px 40px rgba(0,0,0,.3) !important;'
+
 export function hoverClass(cssText) {
   if (!cssText) return ''
   let cls = hoverMap.get(cssText)
