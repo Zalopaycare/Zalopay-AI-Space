@@ -17,7 +17,7 @@ import Layout from '../components/Layout.jsx'
 import { allCases, prdMeta, avatarColor, avatarPhoto } from '../data/useCases.js'
 import { avatarPhotoCss } from '../components/Avatar.jsx'
 import { usePublishedUseCases } from '../lib/publishedUseCases.js'
-import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
+import SpaceBackdrop, { BLEED } from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
@@ -361,7 +361,7 @@ export default function ProfilePage() {
 
   return (
     <Layout active="profile">
-      <div style={css('position:relative; width:100%; margin:0 auto; background:#04060d; color:#e8eefc;')}>
+      <div style={css('position:relative; background:#04060d; color:#e8eefc;' + BLEED)}>
         <SpaceBackdrop arcTop={section ? 200 : 230} bg="#04060d" />
 
         {/* Profile header — only on the main view, hidden once a specific section is selected. */}

@@ -15,7 +15,7 @@ import { useI18n } from '../i18n/I18nContext.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { api, relativeTime, threadTime } from '../lib/api.js'
 import Layout from '../components/Layout.jsx'
-import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
+import SpaceBackdrop, { BLEED } from '../components/SpaceBackdrop.jsx'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import Avatar, { avatarPhotoCss } from '../components/Avatar.jsx'
 import MentionInput from '../components/MentionInput.jsx'
@@ -759,7 +759,7 @@ export default function QuestionsPage() {
 
   return (
     <Layout active="question">
-    <div style={css('position:relative; width:100%; margin:0 auto; color:#e8eefc; overflow:clip;')}>
+    <div style={css('position:relative; color:#e8eefc; overflow:clip;' + BLEED)}>
       <SpaceBackdrop arcTop={190} className={playIntro && !detailId ? 'zp-backdrop-intro' : undefined} />
       <div style={css('position:absolute; top:900px; left:22%; width:1000px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(44,95,255,.16),rgba(44,95,255,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>
       <div style={css('position:absolute; top:2100px; left:-14%; width:900px; height:1100px; border-radius:50%; background:radial-gradient(circle,rgba(0,207,106,.1),rgba(0,207,106,0) 68%); filter:blur(80px); pointer-events:none; z-index:0;')}></div>

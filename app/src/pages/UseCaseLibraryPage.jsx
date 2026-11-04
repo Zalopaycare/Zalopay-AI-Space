@@ -21,7 +21,7 @@ import CommentMenu, { InlineEdit, useCommentModals, LikeButton, ReplyButton, Rep
 import { api, relativeTime } from '../lib/api.js'
 import { usePublishedUseCases, loadPublishedUseCases } from '../lib/publishedUseCases.js'
 import Layout from '../components/Layout.jsx'
-import SpaceBackdrop from '../components/SpaceBackdrop.jsx'
+import SpaceBackdrop, { BLEED } from '../components/SpaceBackdrop.jsx'
 import CardActions from '../components/CardActions.jsx'
 import RichArea from '../components/RichArea.jsx'
 import FilterPill from '../components/FilterPill.jsx'
@@ -752,7 +752,7 @@ export default function UseCaseLibraryPage() {
         <FloatingBack t={t} onBack={() => (hasReturn() ? navigate(-1) : navigate('/use-cases'))} />
         {/* Hero and body share one grid, so the TOC sits right beside the overview box and then
             stays in view (sticky) down the whole page. overflow-x:clip keeps sticky working. */}
-        <div style={css('position:relative; background:#07070c; color:#fff; overflow-x:clip;')}>
+        <div style={css('position:relative; background:#07070c; color:#fff; overflow-x:clip;' + BLEED)}>
           <SpaceBackdrop arcTop={300} />
           <div style={css('position:relative; z-index:3; padding:18px var(--zp-gutter) 60px;')}>
           <div className="zp-detail-wrap" style={css(DETAIL_COL)}>
@@ -954,8 +954,8 @@ export default function UseCaseLibraryPage() {
   // ================= LIBRARY VIEW =================
   function renderLibrary() {
     return (
-      <div style={css('background:#07070c; color:#fff;')}>
-        <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;')}>
+      <div style={css('background:#07070c; color:#fff;' + BLEED)}>
+        <section style={css('position:relative; overflow:hidden; padding-bottom:260px; margin-bottom:-260px;' + BLEED)}>
           <SpaceBackdrop arcTop={190} />
           {/* 54px down: level with the AI Space wordmark, which has its UFO strip above it */}
           <div style={css('position:relative; z-index:4; padding:54px var(--zp-gutter) 0;')}>
