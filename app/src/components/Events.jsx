@@ -126,7 +126,6 @@ export default function EventsPanel({ layout = 'rail' }) {
       {layout === 'rail' ? (
         <aside data-tour="events" aria-label="Sự kiện sắp tới" style={css('background:rgba(255,255,255,.8); backdrop-filter:blur(6px) saturate(140%); -webkit-backdrop-filter:blur(6px) saturate(140%); border:1px solid rgba(255,255,255,.35); border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:18px 16px 6px;')}>
           <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>Sự kiện sắp tới</div>
-          <div style={css('margin-top:3px; font:400 12.5px/1.5 var(--zp-font-text); color:#64748b;')}>Đồng nghiệp tổ chức offline, bấm Quan tâm nếu bạn muốn đến</div>
           <button onClick={create} className={hoverClass('filter:brightness(1.06);')} style={css(`margin-top:12px; width:100%; height:38px; border:none; border-radius:10px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; box-shadow:0 8px 18px rgba(44,95,255,.3);`)}>+ Tạo sự kiện</button>
           {events && !list.length && (
             <div style={css('margin:14px 0 12px; font:400 13px/1.6 var(--zp-font-text); color:#64748b;')}>
@@ -144,7 +143,6 @@ export default function EventsPanel({ layout = 'rail' }) {
           <div style={css('display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:9px;')}>
             <div style={css('min-width:0;')}>
               <div style={css(`font:800 15px ${FONT}; color:#fff;`)}>Sự kiện sắp tới</div>
-              <div style={css('font:400 12px/1.4 var(--zp-font-text); color:#a9b8dc;')}>Đồng nghiệp tổ chức offline</div>
             </div>
             <button onClick={create} style={css(`flex:none; height:32px; padding:0 13px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; cursor:pointer; font:700 12.5px ${FONT}; white-space:nowrap;`)}>+ Tạo sự kiện</button>
           </div>
@@ -281,12 +279,7 @@ function EventForm({ initial, onClose, onSaved }) {
           <span />
         </div>
         <div style={css('padding:18px 22px 4px;')}>
-          {!editing && (
-            <div style={css('padding:11px 14px; border-radius:12px; background:#F5F8FF; border:1px solid #DCE5FA; font:400 13px/1.6 var(--zp-font-text); color:#3A4757;')}>
-              Sự kiện là thứ diễn ra <b>offline</b>: workshop, gặp mặt, xem chung, ăn mừng… có ngày giờ và địa điểm, mọi người bấm Quan tâm nếu muốn đến. Muốn hỏi hay bàn luận online thì dùng <b>Đăng post</b>.
-            </div>
-          )}
-          <div style={css('margin-top:16px;')}>
+          <div>
             {label('Ảnh bìa')}
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) pick(f) }} />
             {preview ? (
