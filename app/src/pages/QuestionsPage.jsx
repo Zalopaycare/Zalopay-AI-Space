@@ -77,6 +77,8 @@ export default function QuestionsPage() {
   const contentWidth = useWidth() - offset
   const wideEvents = contentWidth >= 900
   const railGutter = contentWidth < 1164 ? { '--zp-gutter': '24px' } : null
+  // a post on its own page: "Quay lại" sits left of the card when the margin has room for it (~110px)
+  const backBeside = contentWidth >= 760 + 2 * 130
   const navigate = useNavigate()
   const location = useLocation()
   // Drop a deep-link hash once its modal closes, so clicking the same link again reopens it.
@@ -775,12 +777,24 @@ export default function QuestionsPage() {
 
         {detailId ? (
           <div style={css('padding:22px var(--zp-gutter) 60px;')}>
-            <div style={css('max-width:760px; margin:0 auto;')}>
-              {/* like the use case pages: a plain link above the card, never over it */}
+            <div style={css('position:relative; max-width:760px; margin:0 auto;')}>
+              {/* a plain link like the use case pages', in the margin to the left of the card (it follows the
+                  scroll there, never over the post); without room for that, above the card */}
+              {backBeside ? (
+                <div style={css('position:absolute; top:0; bottom:0; right:calc(100% + 22px);')}>
+                  <div style={css('position:sticky; top:84px;')}>
+                  <button onClick={() => (window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/'))} title={t('Quay lại AI Space')} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0; padding:4px 0; white-space:nowrap; border:none; background:none; color:#c9d6f5; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:color .15s;')}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                    {t('Quay lại')}
+                  </button>
+                  </div>
+                </div>
+              ) : (
               <button onClick={() => (window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/'))} title={t('Quay lại AI Space')} className={hoverClass('color:#fff !important;')} style={css('display:inline-flex; align-items:center; gap:7px; margin:0 0 18px; padding:4px 0; border:none; background:none; color:#c9d6f5; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:color .15s;')}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
                 {t('Quay lại')}
               </button>
+              )}
               {detailQ ? (
                 <div style={css('background:#fff; border-radius:22px; overflow:visible; box-shadow:0 24px 60px rgba(3,12,40,.35);')}>{renderQCard(detailQ, true)}</div>
               ) : (
