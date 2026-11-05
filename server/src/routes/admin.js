@@ -10,7 +10,7 @@ import { sendMail } from '../mailer.js'
 import { appUrl } from '../mentions.js'
 import { vnDay } from '../auth.js'
 import { onlineNow, lastSeen } from '../presence.js'
-import { maintenanceOn } from '../maintenance.js'
+import { maintenanceOn, passesMaintenance } from '../maintenance.js'
 import { visibleShowcase, hideShowcase } from '../showcase.js'
 import { reviewCommenters } from './useCases.js'
 
@@ -297,6 +297,8 @@ router.delete('/access/grants/:email', (req, res) => {
   res.json(accessList())
 })
 
+// The day MAINTENANCE=on was first set (Vietnam time); the "Trước khi bắt đầu ghi" list starts there.
+const MAINTENANCE_FROM_DAY = '2026-10-30'
 // Who opened the site while it was under maintenance (maintenance.js): one row per person, plus visitors
 // who weren't signed in, counted per day (Vietnam time).
 router.get('/maintenance-hits', (req, res) => {
@@ -307,7 +309,15 @@ router.get('/maintenance-hits', (req, res) => {
       paths: String(r.paths || '').split(',').filter(Boolean).slice(0, 8) }))
   const anon = db.prepare(`SELECT date(created_at, '+7 hours') day, COUNT(*) n FROM maintenance_hits WHERE kind = 'anon' GROUP BY day ORDER BY day DESC LIMIT 30`).all()
   const since = db.prepare('SELECT MIN(created_at) t FROM maintenance_hits').get().t
-  res.json({ on: maintenanceOn(), since, people, anon })
+  // Before that list existed only the days people used the site were kept (user_days): anyone else than the
+  // admins and MAINTENANCE_ALLOW who came on a day since maintenance began was turned away that day.
+  const untilDay = since ? vnDay(new Date(since.replace(' ', 'T') + 'Z').getTime()) : vnDay()
+  const envAdmins = new Set(envAdminEmails())
+  const before = db.prepare(`SELECT u.id, u.email, u.name, u.is_admin, u.created_at, GROUP_CONCAT(d.day) days FROM user_days d JOIN users u ON u.id = d.user_id
+      WHERE d.day >= ? AND d.day <= ? GROUP BY u.id ORDER BY MAX(d.day) DESC, u.name`).all(MAINTENANCE_FROM_DAY, untilDay)
+    .filter((u) => !envAdmins.has(u.email.toLowerCase()) && !passesMaintenance(u))
+    .map((u) => ({ email: u.email, name: u.name, domain: domainName(u.email, u.name), joined: u.created_at, days: String(u.days || '').split(',').sort().reverse() }))
+  res.json({ on: maintenanceOn(), since, people, anon, before: { from: MAINTENANCE_FROM_DAY, until: untilDay, people: before } })
 })
 
 router.use('/reports', adminReportRoutes)

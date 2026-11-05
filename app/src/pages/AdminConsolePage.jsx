@@ -975,7 +975,7 @@ export default function AdminConsolePage() {
           )}
 
           {section === 'maint' && (() => {
-            const people = maint?.people || [], anon = maint?.anon || []
+            const people = maint?.people || [], anon = maint?.anon || [], before = maint?.before?.people || []
             const anonTotal = anon.reduce((n, d) => n + d.n, 0)
             const signedIn = people.filter((p) => p.kind === 'page'), refused = people.filter((p) => p.kind === 'refused')
             const where = (path) => {
@@ -1015,6 +1015,21 @@ export default function AdminConsolePage() {
                           )}
                         </div>
                         <span style={css(p.kind === 'refused' ? pill('#FFECEC', '#D8232A') : pill('#EEF3FF', '#2c5fff'))}>{p.kind === 'refused' ? 'Không phải nhân viên Zalopay' : 'Đã đăng nhập'}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Trước khi bắt đầu ghi ({before.length})</div>
+                  <div style={css('margin-top:4px;' + font(400, 12.5, 1.55) + ';color:#94a3b8;')}>Người đã đăng nhập và mở web trong những ngày bảo trì, từ {fmtDay(maint.before?.from)} đến {fmtDay(maint.before?.until)}. Phần này chỉ biết ngày, không biết giờ và trang định xem; người chưa đăng nhập thì không biết.</div>
+                  <div style={css('margin-top:10px; overflow:hidden;' + card)}>
+                    {!before.length ? empty('Không có ai.') : before.map((p) => (
+                      <div key={p.email} style={css('display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; padding:13px 20px; border-bottom:1px solid #F3F5FA;')}>
+                        <div style={css('flex:1 1 320px; min-width:0;')}>
+                          <div style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{p.domain || p.name || p.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {p.email}</span></div>
+                          <div style={css('margin-top:7px; display:flex; gap:6px; flex-wrap:wrap;')}>
+                            {p.days.map((d) => <span key={d} style={css(pill('#FFF4E5', '#B45300'))}>{fmtDay(d).slice(0, 5)}</span>)}
+                          </div>
+                        </div>
+                        {p.joined >= maint.before.from && <span title={`Tham gia ${fmtDate(p.joined)}`} style={css(pill('#E7F9F0', '#00893F'))}>Đăng nhập lần đầu lúc bảo trì</span>}
                       </div>
                     ))}
                   </div>
