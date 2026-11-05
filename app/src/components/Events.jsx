@@ -306,7 +306,7 @@ function EventForm({ initial, onClose, onSaved }) {
               </div>
             ) : (
               <button onClick={() => fileRef.current?.click()} className={hoverClass('background:#EEF3FF !important; border-color:#9DB5F5 !important;')} style={css(`margin-top:6px; width:100%; aspect-ratio:16/6; border:1.5px dashed #C9D6F2; border-radius:12px; background:#F7F9FE; color:#2c5fff; cursor:pointer; font:700 13.5px ${FONT};`)}>
-                + Thêm ảnh bìa <span style={css('display:block; margin-top:4px; font:400 12px var(--zp-font-text); color:#64748b;')}>Không bắt buộc · ảnh ngang 16:9</span>
+                + Thêm ảnh bìa <span style={css('display:block; margin-top:4px; font:400 12px var(--zp-font-text); color:#64748b;')}>Không bắt buộc · 1920 × 1080</span>
               </button>
             )}
             {coverNote && <div style={css('margin-top:6px; font:400 12px/1.5 var(--zp-font-text); color:#64748b;')}>{coverNote}</div>}
