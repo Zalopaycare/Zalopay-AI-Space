@@ -66,7 +66,7 @@ function InterestButton({ ev, onToggle, grow = false, height = 36, onDark = fals
   return (
     <button onClick={(e) => { e.stopPropagation(); onToggle(ev) }} aria-pressed={on}
       className={hoverClass(hover)}
-      style={css(`${grow ? 'flex:1 1 auto;' : 'flex:none;'} min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:${height}px; padding:0 14px; border:none; border-radius:10px; cursor:pointer; white-space:nowrap; font:700 13.5px ${FONT}; ${look}`)}>
+      style={css(`${grow ? 'flex:1 1 auto;' : 'flex:none;'} min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:${height}px; padding:0 14px; border:none; border-radius:10px; cursor:pointer; white-space:nowrap; font:700 ${height < 34 ? 12.5 : 13.5}px ${FONT}; ${look}`)}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
       {on ? 'Đã quan tâm' : 'Quan tâm'}
     </button>
@@ -86,21 +86,23 @@ const countLabel = (n) => (n ? `${n} người quan tâm` : 'Chưa ai quan tâm')
 /** One event as a card: cover, date line, title, place, count, buttons. */
 function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false }) {
   const ink = onDark ? { title: '#FFFFFF', place: '#C9D6F5', count: '#8EA0C8', when: '#FF7A7F' } : { title: '#0F172A', place: '#475569', count: '#64748b', when: '#D8232A' }
+  // the rail (onDark) is the compact one: narrower column, smaller type and buttons
+  const bh = onDark ? 30 : 36
   return (
     <div role="button" tabIndex={0} onClick={() => onOpen(ev.id)} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(ev.id) }}
       style={css(`cursor:pointer; ${compact ? 'flex:none; width:250px; padding:10px; border-radius:16px; background:#fff; box-shadow:0 10px 24px rgba(3,12,40,.28); box-sizing:border-box;' : ''}`)}>
-      <Cover ev={ev} radius={compact ? 10 : 14} />
-      <div style={css('margin-top:10px;')}>
-        <div style={css(`font:700 12.5px ${FONT}; color:${ink.when};`)}>{whenLabel(ev)}</div>
-        <div style={css(`margin-top:3px; font:800 15px/1.3 ${FONT}; color:${ink.title}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;`)}>{ev.title}</div>
-        <div style={css(`margin-top:3px; font:500 13px/1.4 var(--zp-font-text); color:${ink.place}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;`)} title={ev.location}>{ev.location}</div>
-        <div style={css(`margin-top:3px; font:400 12.5px var(--zp-font-text); color:${ink.count};`)}>{countLabel(ev.interestCount)}</div>
+      <Cover ev={ev} radius={compact || onDark ? 10 : 14} />
+      <div style={css(`margin-top:${onDark ? 8 : 10}px;`)}>
+        <div style={css(`font:700 ${onDark ? 11.5 : 12.5}px ${FONT}; color:${ink.when};`)}>{whenLabel(ev)}</div>
+        <div style={css(`margin-top:2px; font:800 ${onDark ? 13.5 : 15}px/1.3 ${FONT}; color:${ink.title}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;`)}>{ev.title}</div>
+        <div style={css(`margin-top:2px; font:500 ${onDark ? 12 : 13}px/1.4 var(--zp-font-text); color:${ink.place}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;`)} title={ev.location}>{ev.location}</div>
+        <div style={css(`margin-top:2px; font:400 ${onDark ? 11.5 : 12.5}px var(--zp-font-text); color:${ink.count};`)}>{countLabel(ev.interestCount)}</div>
       </div>
-      <div style={css('margin-top:10px; display:flex; gap:8px;')}>
+      <div style={css(`margin-top:${onDark ? 8 : 10}px; display:flex; gap:${onDark ? 6 : 8}px;`)}>
         {ev.isMine
-          ? <span style={css(`flex:1; display:inline-flex; align-items:center; justify-content:center; height:36px; border-radius:10px; ${onDark ? 'background:rgba(255,255,255,.05); color:#A9B8DC;' : 'background:#F6F8FC; color:#64748b;'} font:700 12.5px ${FONT};`)}>Bạn tổ chức</span>
-          : <InterestButton ev={ev} onToggle={onToggle} grow onDark={onDark} />}
-        <ShareButton ev={ev} onDark={onDark} />
+          ? <span style={css(`flex:1; display:inline-flex; align-items:center; justify-content:center; height:${bh}px; border-radius:${onDark ? 8 : 10}px; ${onDark ? 'background:rgba(255,255,255,.05); color:#A9B8DC;' : 'background:#F6F8FC; color:#64748b;'} font:700 12px ${FONT};`)}>Bạn tổ chức</span>
+          : <InterestButton ev={ev} onToggle={onToggle} grow onDark={onDark} height={bh} />}
+        <ShareButton ev={ev} onDark={onDark} height={bh} />
       </div>
     </div>
   )
@@ -134,15 +136,15 @@ export default function EventsPanel({ layout = 'rail' }) {
       {layout === 'rail' ? (
         // no box of its own, like the menu on the left: the events sit straight on the page
         <aside data-tour="events" aria-label="Sự kiện sắp tới" style={css('padding:4px 6px 6px 2px;')}>
-          <div style={css(`font:800 17px ${FONT}; color:#FFFFFF;`)}>Sự kiện sắp tới</div>
-          <button onClick={create} className={hoverClass('filter:brightness(1.06);')} style={css(`margin-top:12px; width:100%; height:38px; border:none; border-radius:10px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; box-shadow:0 8px 18px rgba(44,95,255,.3);`)}>+ Tạo sự kiện</button>
+          <div style={css(`font:800 15px ${FONT}; color:#FFFFFF;`)}>Sự kiện sắp tới</div>
+          <button onClick={create} className={hoverClass('filter:brightness(1.06);')} style={css(`margin-top:10px; width:100%; height:34px; border:none; border-radius:10px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; box-shadow:0 8px 18px rgba(44,95,255,.3);`)}>+ Tạo sự kiện</button>
           {events && !list.length && (
             <div style={css('margin:14px 0 12px; font:400 13px/1.6 var(--zp-font-text); color:#A9B8DC;')}>
               Chưa có sự kiện nào sắp tới. Workshop, gặp mặt, xem chung, ăn mừng… bạn muốn rủ mọi người điều gì thì tạo một sự kiện nhé.
             </div>
           )}
           {list.map((ev) => (
-            <div key={ev.id} style={css('padding:16px 0 14px; border-bottom:1px solid rgba(255,255,255,.08);')}>
+            <div key={ev.id} style={css('padding:12px 0 12px; border-bottom:1px solid rgba(255,255,255,.08);')}>
               <EventCard ev={ev} onOpen={setOpenId} onToggle={toggle} onDark />
             </div>
           ))}
