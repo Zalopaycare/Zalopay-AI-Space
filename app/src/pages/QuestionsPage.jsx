@@ -25,6 +25,8 @@ import PageActionBar from '../components/PageActionBar.jsx'
 import { hasImageSlot, readImageSlot } from '../components/ImageSlot.jsx'
 import ImageThumbs from '../components/ImageThumbs.jsx'
 import HeroWordmark from '../components/HeroWordmark.jsx'
+import EventsPanel, { openEventForm } from '../components/Events.jsx'
+import { useSidebarLayout, useWidth } from '../hooks/useSidebarCollapsed.js'
 import CommentMenu, { InlineEdit, useCommentModals, LikeButton, ReplyButton, RepliesToggle } from '../components/CommentMenu.jsx'
 import MentionField, { MENTION_SPLIT, shortMention, expandMentions, renderMentions } from '../components/MentionField.jsx'
 
@@ -69,6 +71,9 @@ export default function QuestionsPage() {
   const [playIntro] = useState(() => !introPlayed)
   useEffect(() => { introPlayed = true }, [])
   const { user, requireLogin } = useAuth()
+  // room for the events rail: the feed (760 + gutters) + 24 + 300 + the right gutter
+  const { offset } = useSidebarLayout()
+  const wideEvents = useWidth() - offset >= 1204
   const navigate = useNavigate()
   const location = useLocation()
   // Drop a deep-link hash once its modal closes, so clicking the same link again reopens it.
@@ -785,7 +790,9 @@ export default function QuestionsPage() {
             </div>
           </div>
         ) : (
-        <div>
+        // wide enough: the "Sắp diễn ra" rail beside the feed; otherwise a strip of sessions above it
+        <div style={wideEvents ? css('display:grid; grid-template-columns:minmax(0,840px) 300px; gap:24px; justify-content:center; padding-right:var(--zp-gutter);') : undefined}>
+        <div style={{ minWidth: 0 }}>
           {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
           {/* same box as the Use Case Library title (the UFO's 32px strip, then 53px of wordmark, the line under it alike), so switching tabs doesn't jump;
               the wordmark keeps 10px below itself, hence no margin above the line and 10px under the section */}
@@ -813,6 +820,7 @@ export default function QuestionsPage() {
           <div style={css('padding:16px var(--zp-gutter) 28px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               {/* one card per thread, one under another; a click opens the thread with its comments */}
+              {!wideEvents && <EventsPanel layout="strip" />}
               <div style={css('display:flex; flex-direction:column; gap:14px;')}>
                 {feed.map((q) => renderQCard(q, false))}
 
@@ -826,6 +834,12 @@ export default function QuestionsPage() {
               </div>
             </div>
           </div>
+        </div>
+        {wideEvents && (
+          <div style={css('padding-top:22px;')}>
+            <div style={css('position:sticky; top:80px; max-height:calc(100vh - 100px); overflow-y:auto; border-radius:20px;')}><EventsPanel layout="rail" /></div>
+          </div>
+        )}
         </div>
         )}
 
@@ -854,6 +868,12 @@ export default function QuestionsPage() {
                 <div style={css('font:800 16px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{editQId ? t('Sửa post') : t('Post mới')}</div>
                 {!editQId ? <button onClick={saveAskDraft} title={t('Lưu nháp')} style={css('justify-self:end; border:none; background:none; padding:0; cursor:pointer; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Lưu nháp')}</button> : <span />}
               </div>
+              {!editQId && (
+                <button onClick={() => { setView('feed'); openEventForm() }} className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:8px; width:100%; padding:9px 20px; border:none; border-bottom:1px solid #EEF1F7; background:#F7F9FE; cursor:pointer; text-align:left; font:500 12.5px var(--zp-font-text); color:#475569;')}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+                  {t('Muốn hẹn mọi người gặp offline?')} <b style={css('color:#2c5fff;')}>{t('Tạo buổi chia sẻ →')}</b>
+                </button>
+              )}
               <div style={css('display:flex; gap:12px; padding:18px 20px 6px;')}>
                 {/* switched to anonymous, the header shows how the post will look to others */}
                 {askAnon

@@ -15,6 +15,7 @@ import adminRoutes from './routes/admin.js'
 import { reportRoutes } from './reports.js'
 import showcaseRoutes from './routes/showcase.js'
 import chatRoutes from './routes/chat.js'
+import eventRoutes, { sendEventReminders } from './routes/events.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STATIC_DIR = process.env.STATIC_DIR || path.join(__dirname, '..', 'public')
@@ -54,6 +55,7 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/showcase', showcaseRoutes)
 app.use('/api/chat', chatRoutes)
+app.use('/api/events', eventRoutes)
 
 app.use(express.static(STATIC_DIR))
 app.get('*', (req, res, next) => {
@@ -69,3 +71,8 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server listening on :${PORT} (static: ${STATIC_DIR})`)
 })
+
+// "Buổi chia sẻ": the day-before reminder emails (routes/events.js)
+const remind = () => { try { sendEventReminders(String(process.env.APP_URL || '').replace(/\/+$/, '')) } catch (e) { console.error('[events] reminders failed:', e.message) } }
+setInterval(remind, 10 * 60_000)
+setTimeout(remind, 30_000)

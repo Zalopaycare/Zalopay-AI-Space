@@ -40,7 +40,7 @@ export const DRAWER_BREAKPOINT = 1024
 const DRAWER_EVENT = 'zp-sidebar-drawer-change'
 let drawerOpenNow = false
 
-function useWidth() {
+export function useWidth() {
   const [w, setW] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth))
   useEffect(() => {
     const on = () => setW(window.innerWidth)
