@@ -7,7 +7,8 @@
 // The light look ("Khung trắng", the default) is softened a little: pure white cards on the dark page
 // glare, so light fills and borders are taken a small step down to a near-neutral off-white (white →
 // about #F3F5F8), the lighter panels and lines inside a card moving with it. Text stays as it is.
-// Dark mode is what people see first; the choice is kept per browser, and turning it on or off reloads the page.
+// The white cards are what people see first; the last choice is kept per browser (next visits open the same way),
+// and turning it on or off reloads the page.
 
 const KEY = 'zp-theme'
 
@@ -15,9 +16,9 @@ function readTheme() {
   try {
     const q = new URLSearchParams(window.location.search).get('theme')
     if (q === 'gray' || q === 'default') localStorage.setItem(KEY, q)
-    // dark unless this browser picked the white cards
-    return localStorage.getItem(KEY) !== 'default'
-  } catch { return true }
+    // white cards unless this browser last picked dark mode
+    return localStorage.getItem(KEY) === 'gray'
+  } catch { return false }
 }
 
 export const GRAY = typeof window !== 'undefined' && readTheme()
