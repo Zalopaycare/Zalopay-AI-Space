@@ -312,6 +312,13 @@ router.delete('/access/grants/:email', (req, res) => {
   db.prepare('UPDATE users SET staff_ok = 0 WHERE email = ?').run(email)
   res.json(accessList())
 })
+// Let someone in during maintenance without them asking first (company email only).
+router.post('/access/maintenance-grants', (req, res) => {
+  const email = normalizeEmail(req.body?.email)
+  if (!isCompanyEmail(email)) return res.status(400).json({ error: 'invalid_email', message: 'Nhập email công ty, ví dụ ten@vng.com.vn.' })
+  db.prepare('INSERT OR IGNORE INTO maintenance_grants (email, granted_by) VALUES (?, ?)').run(email, req.user.id)
+  res.json(accessList())
+})
 // Take back "vào khi bảo trì": the person sees the maintenance page again (until the site is published).
 router.delete('/access/maintenance-grants/:email', (req, res) => {
   db.prepare('DELETE FROM maintenance_grants WHERE email = ?').run(String(req.params.email || '').toLowerCase())

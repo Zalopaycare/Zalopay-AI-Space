@@ -165,6 +165,19 @@ export default function AdminConsolePage() {
     return () => { document.removeEventListener('mousedown', close); window.removeEventListener('scroll', off, true) }
   }, [rowMenu])
   const [accessTab, setAccessTab] = useState('pending')
+  // "Được vào khi bảo trì": let people in by email, several at once (comma or space between them)
+  const [newMaint, setNewMaint] = useState('')
+  const [maintMsg, setMaintMsg] = useState('')
+  const addMaint = async () => {
+    const emails = [...new Set(newMaint.split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))]
+    if (!emails.length) return
+    const done = [], failed = []
+    for (const email of emails) {
+      try { setAccess(await api.addMaintenanceGrant(email)); done.push(email) } catch { failed.push(email) }
+    }
+    setNewMaint(failed.join(', '))
+    setMaintMsg([done.length ? `Đã cho ${done.join(', ')} vào khi bảo trì.` : '', failed.length ? `Chưa thêm được ${failed.join(', ')}: cần email công ty, ví dụ ten@vng.com.vn.` : ''].filter(Boolean).join(' '))
+  }
   const reloadAccess = () => api.adminAccess().then(setAccess).catch(() => {})
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
@@ -986,10 +999,16 @@ export default function AdminConsolePage() {
                 ))}
               </div>
               <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Được vào khi bảo trì ({mGrants.length})</div>
+              <div style={css('margin-top:4px;' + font(400, 12.5, 1.55) + ';color:#94a3b8;')}>Những người này đăng nhập xong là vào web luôn, không cần gửi yêu cầu.</div>
+              <div style={css('margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;')}>
+                <input value={newMaint} onChange={(e) => setNewMaint(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addMaint() }} placeholder="ten@vng.com.vn, ten2@vng.com.vn" aria-label="Email người được vào khi bảo trì" style={css('flex:1 1 280px; height:44px; padding:0 16px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color-scheme:light;' + font(500, 14) + ';color:#0F172A; outline:none; box-sizing:border-box;')} />
+                <button onClick={addMaint} disabled={!newMaint.trim()} style={css(`height:44px; padding:0 22px; border:none; border-radius:12px; background:${newMaint.trim() ? 'linear-gradient(180deg,#4480ff 0%,#2c5fff 100%)' : '#E3E8F2'}; color:${newMaint.trim() ? '#fff' : '#94a3b8'};` + font(800, 14) + `;cursor:${newMaint.trim() ? 'pointer' : 'default'};`)}>Thêm</button>
+              </div>
+              {maintMsg && <div style={css('margin-top:10px;' + font(600, 13) + ';color:#cbd5e1;')}>{maintMsg}</div>}
               <div style={css('margin-top:10px; overflow:hidden;' + card)}>
                 {!mGrants.length ? empty('Chưa cho ai vào khi bảo trì.') : mGrants.map((g) => (
                   <div key={g.email} style={css('display:flex; align-items:center; gap:14px; padding:12px 20px; border-bottom:1px solid #F3F5FA;')}>
-                    <div style={css('flex:1; min-width:0;' + font(600, 13.5) + ';color:#0f172a;')}>{g.email} {!g.env && <span style={css(font(400, 12) + ';color:#94a3b8;')}>· {g.granter ? `${g.granter} duyệt` : 'đã duyệt'} {relativeTime(g.time)}</span>}</div>
+                    <div style={css('flex:1; min-width:0;' + font(600, 13.5) + ';color:#0f172a;')}>{g.email} {!g.env && <span style={css(font(400, 12) + ';color:#94a3b8;')}>· {g.granter ? `bởi ${g.granter}` : 'đã thêm'} · {relativeTime(g.time)}</span>}</div>
                     {g.env
                       ? <span title="Có trong MAINTENANCE_ALLOW trên Coolify" style={css('height:24px; padding:0 10px; border-radius:999px; background:#EEF3FF; color:#2c5fff; display:inline-flex; align-items:center;' + font(700, 11.5))}>Cấu hình Coolify</span>
                       : <button onClick={() => window.confirm(`Thu hồi quyền vào khi bảo trì của ${g.email}? Người này sẽ thấy lại trang "Web đang được sửa chữa".`) && api.revokeMaintenanceGrant(g.email).then(setAccess)} style={css(btn('plain'))}>Thu hồi</button>}

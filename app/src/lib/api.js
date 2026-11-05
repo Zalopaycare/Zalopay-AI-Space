@@ -41,6 +41,7 @@ export const api = {
   maintenanceRequestInfo: () => request('/auth/maintenance-request'),
   sendMaintenanceRequest: (note) => request('/auth/maintenance-request', { method: 'POST', body: JSON.stringify({ note }) }),
   setMaintenance: (on) => request('/admin/maintenance', { method: 'POST', body: JSON.stringify({ on }) }),
+  addMaintenanceGrant: (email) => request('/admin/access/maintenance-grants', { method: 'POST', body: JSON.stringify({ email }) }),
   revokeMaintenanceGrant: (email) => request(`/admin/access/maintenance-grants/${encodeURIComponent(email)}`, { method: 'DELETE' }),
   // Quản trị viên: list, add by company email, take the role back
   adminAdmins: () => request('/admin/admins'),
