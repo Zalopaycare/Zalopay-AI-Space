@@ -127,14 +127,14 @@ export function useCommentModals(api) {
 }
 
 // ---- the row under a reply / comment, as on Threads: ♡ · 💬 ----
-const ACT_BTN = `display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 8px; border:none; border-radius:999px; background:transparent; cursor:pointer; font:600 13px ${FONT}; color:#475569;`
+const ACT_BTN = `display:inline-flex; align-items:center; gap:5px; height:26px; padding:0 7px; border:none; border-radius:999px; background:transparent; cursor:pointer; font:600 12.5px ${FONT}; color:#475569;`
 
 /** ♡ + count; a click likes, again takes it back. `r` = { total, mine } from the server. */
 export function LikeButton({ r = {}, onLike }) {
   const liked = !!r.mine
   return (
     <button onClick={(e) => { e.stopPropagation(); onLike() }} aria-pressed={liked} aria-label={liked ? 'Bỏ thích' : 'Thích'} title={liked ? 'Bỏ thích' : 'Thích'} className={hoverClass('background:#F1F4FA !important;')} style={css(ACT_BTN + (liked ? 'color:#E0245E;' : ''))}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill={liked ? '#E0245E' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? '#E0245E' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
       {r.total > 0 && r.total}
     </button>
   )
@@ -144,7 +144,7 @@ export function LikeButton({ r = {}, onLike }) {
 export function ReplyButton({ count = 0, onClick, active = false }) {
   return (
     <button onClick={(e) => { e.stopPropagation(); onClick && onClick(e) }} aria-label="Trả lời" title="Trả lời" className={hoverClass('background:#F1F4FA !important;')} style={css(ACT_BTN + (active ? 'color:#2c5fff;' : ''))}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
       {count > 0 && count}
     </button>
   )

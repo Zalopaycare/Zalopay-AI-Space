@@ -596,8 +596,8 @@ export default function QuestionsPage() {
                     </div>
 
                     {inModal && (
-                      <div style={css('margin-top:8px; padding:14px 22px 16px; background:#fff; border-top:1px solid #EEF1F7;')}>
-                        <div style={css('display:flex; gap:10px; padding-bottom:16px; margin-bottom:4px; border-bottom:1px solid #E6EBF3;')}>
+                      <div style={css('margin-top:4px; padding:12px 22px 8px; background:#fff; border-top:1px solid #EEF1F7;')}>
+                        <div style={css('display:flex; gap:10px; padding-bottom:10px; margin-bottom:2px; border-bottom:1px solid #E6EBF3;')}>
                           <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                           <div style={{ flex: 1, position: 'relative' }}>
                             <MentionField multiline autoGrow id={'ans-in-' + q.id} value={q.replyDraft} onChange={q.onReplyChange} onBlur={() => setReplyMention(null)} onKeyDown={withEsc(q.replyMentionOpen, () => setReplyMention(null), enterSends(q.onPostReply, () => { if (q.replyMentionOpen && q.replyMentions[0]) { q.replyMentions[0].onPick(); return true } return false }))} rows={1} placeholder={t('Trả lời') + ' ' + q.author + '…'} style={css('width:100%; border:1px solid #E6EBF3; border-radius:18px; padding:10px 16px; font-size:14.5px; line-height:1.55; color:#0F172A; background:#F7F8FA; outline:none; display:block; box-sizing:border-box;')} />
@@ -622,20 +622,20 @@ export default function QuestionsPage() {
                               <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={36} />
                               <button onClick={q.onPostReply} style={css(` height:36px; padding:0 18px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi')}</button>
                             </div>
-                            <div style={css('margin-top:4px; font:500 11.5px var(--zp-font-text); color:#a3afc2;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</div>
+                            <div style={css('margin-top:2px; font:500 11px var(--zp-font-text); color:#a3afc2;')}>{t('Người được mention sẽ nhận email thông báo qua Outlook.')}</div>
                           </div>
                         </div>
 
                         <div style={css('display:flex; flex-direction:column;')}>
                           {q.answers.map((a, ai) => (
-                            <div key={a.id} style={css(`display:flex; gap:10px; padding:16px 0; ${ai ? 'border-top:1px solid #EEF1F7;' : ''}`)}>
+                            <div key={a.id} style={css(`display:flex; gap:10px; padding:10px 0 6px; ${ai ? 'border-top:1px solid #EEF1F7;' : ''}`)}>
                               <div style={css('flex:none; display:flex; flex-direction:column; align-items:center;')}>
                                 <div style={css(`flex:none; width:32px; height:32px; border-radius:50%; background:${a.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(a.avatarUrl)}`)}>{a.initials}</div>
                                 {a.comments.length > 0 && <div aria-hidden="true" style={css('flex:1; width:2px; margin-top:6px; border-radius:2px; background:#E3E8F1;')}></div>}
                               </div>
                               <div style={css('flex:1; min-width:0;')}>
                                 <div className="zp-cmt">
-                                  <div style={css('display:flex; align-items:center; gap:6px; min-height:22px;')}>
+                                  <div style={css('display:flex; align-items:center; gap:6px; min-height:20px;')}>
                                     <span style={css('font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{a.author}</span><AnonTag p={a} />
                                     <span style={css('font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>· {a.time}</span>
                                     <span style={{ flex: 1 }}></span>
@@ -646,13 +646,13 @@ export default function QuestionsPage() {
                                     : <div style={css('margin-top:1px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; text-wrap:pretty;')}>{a.bodyEl}</div>}
                                   <CommentFiles files={a.files} />
                                 </div>
-                                <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -8px; flex-wrap:wrap;')}>
+                                <div style={css('display:flex; align-items:center; gap:2px; margin:0 0 0 -7px; flex-wrap:wrap;')}>
                                   <LikeButton r={a.reactions} onLike={a.onLike} />
                                   <ReplyButton count={a.comments.length} onClick={a.onReply} />
                                 </div>
 
                                 {a.showComments && (
-                                  <div style={css('display:flex; flex-direction:column; gap:10px; margin-top:10px;')}>
+                                  <div style={css('display:flex; flex-direction:column; gap:8px; margin-top:6px;')}>
                                     {!inModal && a.comments.filter((c) => !c.parentId).length > 1 && (
                                       <RepliesToggle people={a.comments.filter((c) => !c.parentId)} count={a.comments.filter((c) => !c.parentId).length} open={expandedCommentThreads.has('a:' + a.id)} onClick={() => toggleCommentThread('a:' + a.id)} style={{ alignSelf: 'flex-start' }} />
                                     )}
