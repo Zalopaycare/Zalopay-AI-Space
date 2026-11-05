@@ -38,8 +38,10 @@ export const api = {
   accessRequestInfo: () => request('/auth/access-request'),
   sendAccessRequest: (note) => request('/auth/access-request', { method: 'POST', body: JSON.stringify({ note }) }),
   adminAccess: () => request('/admin/access'),
-  adminMaintenanceHits: () => request('/admin/maintenance-hits'),
-  maintenanceHit: (path) => request('/auth/maintenance-hit', { method: 'POST', body: JSON.stringify({ path }) }),
+  maintenanceRequestInfo: () => request('/auth/maintenance-request'),
+  sendMaintenanceRequest: (note) => request('/auth/maintenance-request', { method: 'POST', body: JSON.stringify({ note }) }),
+  setMaintenance: (on) => request('/admin/maintenance', { method: 'POST', body: JSON.stringify({ on }) }),
+  revokeMaintenanceGrant: (email) => request(`/admin/access/maintenance-grants/${encodeURIComponent(email)}`, { method: 'DELETE' }),
   // Quản trị viên: list, add by company email, take the role back
   adminAdmins: () => request('/admin/admins'),
   addAdmin: (email) => request('/admin/admins', { method: 'POST', body: JSON.stringify({ email }) }),

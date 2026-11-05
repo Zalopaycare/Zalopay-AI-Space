@@ -47,7 +47,6 @@ const foldTitle = (t) => String(t || '').toLowerCase().replace(/\s+/g, ' ').trim
 const MIN_PCT_BASE = 20
 const pctOf = (part, base) => (base >= MIN_PCT_BASE ? Math.round((part / base) * 1000) / 10 : null)
 const cleanName = (n) => String(n || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^([^\s.]+)\.\s+/, '$1 ').trim()
-const fmtWhen = (t) => { const d = toDate(t); if (isNaN(d)) return '—'; const p = (n) => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}` } // "05/11 09:57"
 const fmtDay = (d) => (d ? d.split('-').reverse().join('/') : '—') // "2026-09-30" -> "30/09/2026"
 // "/use-cases/c7" -> "Đang xem use case: Chuẩn bị pentest…" for the online list.
 const PAGE_NAMES = { '/': 'AI Space', '/use-cases': 'Use Case Library', '/questions': 'AI Space', '/profile': 'Trang cá nhân', '/admin': 'Trang Admin', '/chat': 'Chat với Admin' }
@@ -56,8 +55,8 @@ const clamp2 = 'display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:ve
 const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
 // Each section has its own URL, so it can be linked to and Back / Forward work. /admin is Tổng quan;
 // /admin/inbox/<user id> opens that conversation.
-const SLUGS = { dashboard: '', usecases: 'usecases', questions: 'threads', reports: 'reports', users: 'members', inbox: 'inbox', booths: 'booths', access: 'access', maint: 'maintenance', admins: 'admins' }
-const SECTION_TITLES = { usecases: 'Duyệt use case', questions: 'Post', reports: 'Báo cáo', users: 'Thành viên', inbox: 'Hộp thư', booths: 'Booth Exhibition', access: 'Yêu cầu truy cập', maint: 'Bị chặn khi bảo trì', admins: 'Quản trị viên' }
+const SLUGS = { dashboard: '', usecases: 'usecases', questions: 'threads', reports: 'reports', users: 'members', inbox: 'inbox', booths: 'booths', access: 'access', admins: 'admins' }
+const SECTION_TITLES = { usecases: 'Duyệt use case', questions: 'Post', reports: 'Báo cáo', users: 'Thành viên', inbox: 'Hộp thư', booths: 'Booth Exhibition', access: 'Yêu cầu truy cập', admins: 'Quản trị viên' }
 const SECTION_OF = Object.fromEntries(Object.entries(SLUGS).map(([k, v]) => [v, k]))
 const sectionPath = (k, sub) => '/admin' + (SLUGS[k] ? '/' + SLUGS[k] : '') + (SLUGS[k] && sub ? '/' + sub : '')
 // Thành viên › "Cần dọn": the same mailbox twice (quotes, +tag, case) shares this key
@@ -167,9 +166,6 @@ export default function AdminConsolePage() {
   }, [rowMenu])
   const [accessTab, setAccessTab] = useState('pending')
   const reloadAccess = () => api.adminAccess().then(setAccess).catch(() => {})
-  // "Bị chặn khi bảo trì": who opened the site while it was closed
-  const [maint, setMaint] = useState(null)
-  useEffect(() => { if (isAdmin && section === 'maint') api.adminMaintenanceHits().then(setMaint).catch(() => setMaint((m) => m || { people: [], anon: [] })) }, [isAdmin, section])
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [adminStats, setAdminStats] = useState(null)
@@ -449,7 +445,6 @@ export default function AdminConsolePage() {
     ['inbox', 'Hộp thư', '#6F0CE2', chatInbox, 'cuộc trò chuyện đang chờ Admin trả lời'],
     ['booths', 'Booth Exhibition', '#FF8D00', 0],
     ['access', 'Yêu cầu truy cập', '#D8232A', access.requests.filter((r) => r.status === 'pending').length, 'yêu cầu truy cập đang chờ duyệt'],
-    ['maint', 'Bị chặn khi bảo trì', '#B45300', 0],
     ['admins', 'Quản trị viên', '#6F0CE2', 0],
   ]
 
@@ -935,9 +930,34 @@ export default function AdminConsolePage() {
             </div>
           )}
 
-          {section === 'access' && (
+          {section === 'access' && (() => {
+            const mt = access.maintenance
+            const kindPill = (k) => k === 'maintenance'
+              ? <span style={css(pill('#FFF4E5', '#B45300'))}>Xin vào lúc bảo trì</span>
+              : <span style={css(pill('#FFECEC', '#D8232A'))}>Không phải nhân viên Zalopay</span>
+            const publish = () => window.confirm('Publish AI Space? Mọi nhân viên Zalopay (tài khoản Microsoft thuộc Zion / Zalopay) sẽ vào được như bình thường.') && api.setMaintenance(false).then(setAccess)
+            const close = () => window.confirm('Bật bảo trì lại? Chỉ admin và những người được duyệt vào được; người khác thấy trang "Web đang được sửa chữa".') && api.setMaintenance(true).then(setAccess)
+            const approveMsg = (r) => r.kind === 'maintenance' ? `Cho ${r.email} vào AI Space trong lúc bảo trì?` : `Cấp quyền vào AI Space cho ${r.email}? Chỉ duyệt khi đã kiểm tra đúng là nhân viên Zalopay.`
+            const rejectMsg = (r) => r.kind === 'maintenance' ? `Từ chối yêu cầu của ${r.email}? Người này nhận email báo chưa được vào lúc này.` : `Từ chối yêu cầu của ${r.email}? Người này nhận email báo chưa được cấp quyền.`
+            const mGrants = [...(mt?.allowEnv || []).map((email) => ({ email, env: true })), ...(mt?.grants || []).filter((g) => !(mt?.allowEnv || []).includes(g.email))]
+            return (
             <div>
-              <Heading title="Yêu cầu truy cập" sub="AI Space chỉ cho nhân viên Zalopay đăng nhập (công ty trên tài khoản Microsoft là Zion / Zalopay). Người bị chặn nhầm gửi yêu cầu ở đây; kiểm tra đúng là nhân viên Zalopay rồi mới duyệt." />
+              <Heading title="Yêu cầu truy cập" sub="Hai loại yêu cầu: người bị chặn khi đăng nhập vì tài khoản Microsoft không ghi công ty Zion / Zalopay (kiểm tra đúng là nhân viên Zalopay rồi mới duyệt), và người mở web trong lúc bảo trì xin được vào." />
+              {mt && (
+                <div style={css('margin-top:18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:18px 20px;' + card)}>
+                  <span style={css(`flex:none; width:10px; height:10px; border-radius:50%; background:${mt.on ? '#FF8D00' : '#00A352'}; box-shadow:0 0 0 4px ${mt.on ? 'rgba(255,141,0,.16)' : 'rgba(0,163,82,.16)'};`)} />
+                  <div style={css('flex:1 1 300px; min-width:0;')}>
+                    <div style={css(font(800, 15, 1.4) + ';color:#0f172a;')}>{mt.on ? 'Web đang bảo trì' : 'Web đang mở cho mọi nhân viên Zalopay'}</div>
+                    <div style={css('margin-top:3px;' + font(400, 12.5, 1.55) + ';color:#64748b;')}>
+                      {mt.on ? 'Chỉ admin và những người được duyệt vào được. Người khác thấy trang "Web đang được sửa chữa" và có thể gửi yêu cầu truy cập.' : 'Ai có tài khoản Microsoft thuộc Zion / Zalopay đều vào được; người khác cần gửi yêu cầu.'}
+                      {mt.change && <> · {mt.on ? 'Bật bảo trì' : 'Publish'}{mt.change.by ? ` bởi ${mt.change.by}` : ''} {relativeTime(mt.change.time)}</>}
+                    </div>
+                  </div>
+                  {mt.on
+                    ? <button onClick={publish} className={hoverClass('filter:brightness(1.08);')} style={css('height:40px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; cursor:pointer; white-space:nowrap; box-shadow:0 8px 20px rgba(44,95,255,.35);' + font(700, 13.5))}>Publish web</button>
+                    : <button onClick={close} style={css(btn('plain') + 'height:38px; padding:0 18px;')}>Bật bảo trì lại</button>}
+                </div>
+              )}
               <div style={css('margin-top:18px;')}>
                 <Tabs value={accessTab} onChange={setAccessTab} tabs={[['pending', 'Chờ duyệt'], ['approved', 'Đã duyệt'], ['rejected', 'Đã từ chối'], ['all', 'Tất cả']].map(([k, l]) => [k, l, access.requests.filter((r) => k === 'all' || r.status === k).length])} />
               </div>
@@ -945,7 +965,10 @@ export default function AdminConsolePage() {
                 {!access.requests.some((r) => accessTab === 'all' || r.status === accessTab) ? empty(accessTab === 'pending' ? 'Không có yêu cầu nào đang chờ duyệt.' : 'Chưa có yêu cầu nào.') : access.requests.filter((r) => accessTab === 'all' || r.status === accessTab).map((r) => (
                   <div key={r.id} style={css('display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; padding:14px 20px; border-bottom:1px solid #F3F5FA;')}>
                     <div style={css('flex:1 1 320px; min-width:0;')}>
-                      <div style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{r.name || r.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {r.email}</span></div>
+                      <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap;')}>
+                        <span style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{r.name || r.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {r.email}</span></span>
+                        {kindPill(r.kind)}
+                      </div>
                       <div style={css('margin-top:3px;' + font(400, 12.5, 1.5) + ';color:#64748b;')}>
                         Công ty trên Microsoft: <b style={toneObj({ color: '#3A4757' })}>{r.org?.companyName || '(không ghi)'}</b>{r.org?.department ? ` · ${r.org.department}` : ''}{r.org?.jobTitle ? ` · ${r.org.jobTitle}` : ''} · gửi {relativeTime(r.time)}
                       </div>
@@ -953,8 +976,8 @@ export default function AdminConsolePage() {
                     </div>
                     {r.status === 'pending' ? (
                       <div style={css('display:flex; gap:8px; flex:none;')}>
-                        <button onClick={() => window.confirm(`Cấp quyền vào AI Space cho ${r.email}? Chỉ duyệt khi đã kiểm tra đúng là nhân viên Zalopay.`) && api.decideAccess(r.id, 'approve').then(setAccess)} style={css(btn('approve') + 'height:34px; padding:0 14px;')}>Duyệt</button>
-                        <button onClick={() => window.confirm(`Từ chối yêu cầu của ${r.email}? Người này nhận email báo chưa được cấp quyền.`) && api.decideAccess(r.id, 'reject').then(setAccess)} style={css(btn('reject') + 'height:34px; padding:0 14px;')}>Từ chối</button>
+                        <button onClick={() => window.confirm(approveMsg(r)) && api.decideAccess(r.id, 'approve').then(setAccess)} style={css(btn('approve') + 'height:34px; padding:0 14px;')}>Duyệt</button>
+                        <button onClick={() => window.confirm(rejectMsg(r)) && api.decideAccess(r.id, 'reject').then(setAccess)} style={css(btn('reject') + 'height:34px; padding:0 14px;')}>Từ chối</button>
                       </div>
                     ) : (
                       <span style={css(r.status === 'approved' ? pill('#E7F9F0', '#00893F') : pill('#FFECEC', '#D8232A'))}>{r.status === 'approved' ? 'Đã duyệt' : 'Đã từ chối'}{r.decider ? ` · ${r.decider}` : ''}</span>
@@ -962,7 +985,19 @@ export default function AdminConsolePage() {
                   </div>
                 ))}
               </div>
+              <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Được vào khi bảo trì ({mGrants.length})</div>
+              <div style={css('margin-top:10px; overflow:hidden;' + card)}>
+                {!mGrants.length ? empty('Chưa cho ai vào khi bảo trì.') : mGrants.map((g) => (
+                  <div key={g.email} style={css('display:flex; align-items:center; gap:14px; padding:12px 20px; border-bottom:1px solid #F3F5FA;')}>
+                    <div style={css('flex:1; min-width:0;' + font(600, 13.5) + ';color:#0f172a;')}>{g.email} {!g.env && <span style={css(font(400, 12) + ';color:#94a3b8;')}>· {g.granter ? `${g.granter} duyệt` : 'đã duyệt'} {relativeTime(g.time)}</span>}</div>
+                    {g.env
+                      ? <span title="Có trong MAINTENANCE_ALLOW trên Coolify" style={css('height:24px; padding:0 10px; border-radius:999px; background:#EEF3FF; color:#2c5fff; display:inline-flex; align-items:center;' + font(700, 11.5))}>Cấu hình Coolify</span>
+                      : <button onClick={() => window.confirm(`Thu hồi quyền vào khi bảo trì của ${g.email}? Người này sẽ thấy lại trang "Web đang được sửa chữa".`) && api.revokeMaintenanceGrant(g.email).then(setAccess)} style={css(btn('plain'))}>Thu hồi</button>}
+                  </div>
+                ))}
+              </div>
               <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Đã cấp quyền riêng ({access.grants.length})</div>
+              <div style={css('margin-top:4px;' + font(400, 12.5, 1.55) + ';color:#94a3b8;')}>Người không thuộc Zion / Zalopay trên Microsoft nhưng được cho đăng nhập.</div>
               <div style={css('margin-top:10px; overflow:hidden;' + card)}>
                 {!access.grants.length ? empty('Chưa cấp quyền riêng cho ai.') : access.grants.map((g) => (
                   <div key={g.email} style={css('display:flex; align-items:center; gap:14px; padding:12px 20px; border-bottom:1px solid #F3F5FA;')}>
@@ -972,77 +1007,6 @@ export default function AdminConsolePage() {
                 ))}
               </div>
             </div>
-          )}
-
-          {section === 'maint' && (() => {
-            const people = maint?.people || [], anon = maint?.anon || [], before = maint?.before?.people || []
-            const anonTotal = anon.reduce((n, d) => n + d.n, 0)
-            const signedIn = people.filter((p) => p.kind === 'page'), refused = people.filter((p) => p.kind === 'refused')
-            const where = (path) => {
-              const p = String(path || '').split('#')[0] || '/'
-              const m = /^\/use-cases\/([^/?#]+)/.exec(p)
-              if (m) { const c = published.find((x) => x.id === decodeURIComponent(m[1])); return 'Use case' + (c ? ': ' + c.title : ' ' + decodeURIComponent(m[1])) }
-              return PAGE_NAMES[p] || (p.startsWith('/questions/') ? 'Một post ở AI Space' : p.startsWith('/review/') ? 'Trang duyệt use case' : p)
-            }
-            const stat = (n, label, color) => (
-              <div style={css('flex:1 1 180px; padding:16px 18px;' + card)}>
-                <div style={css(font(800, 26, 1.1) + `;color:${color};`)}>{n}</div>
-                <div style={css('margin-top:4px;' + font(600, 12.5) + ';color:#64748b;')}>{label}</div>
-              </div>
-            )
-            return (
-              <div>
-                <Heading title="Bị chặn khi bảo trì" sub={(maint?.on ? 'Web đang bảo trì. ' : 'Web hiện không bảo trì; đây là các lượt bị chặn ở những lần bảo trì trước. ') + 'Ai mở web và thấy trang "Web đang được sửa chữa", lúc nào, định xem trang nào. Cùng một người mở cùng một trang trong 10 phút chỉ tính 1 lượt.' + (maint?.since ? ` Bắt đầu ghi từ ${fmtWhen(maint.since)}.` : '')} />
-                {!maint ? <div style={css('margin-top:18px; overflow:hidden;' + card)}>{empty('Đang tải…')}</div> : (<>
-                  <div style={css('margin-top:18px; display:flex; gap:12px; flex-wrap:wrap;')}>
-                    {stat(signedIn.length, 'người đã đăng nhập', '#2c5fff')}
-                    {stat(anonTotal, 'lượt mở web chưa đăng nhập', '#B45300')}
-                    {stat(refused.length, 'người bị chặn vì không phải nhân viên Zalopay', '#D8232A')}
-                  </div>
-                  <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Theo từng người ({people.length})</div>
-                  <div style={css('margin-top:10px; overflow:hidden;' + card)}>
-                    {!people.length ? empty('Chưa có ai bị chặn.') : people.map((p) => (
-                      <div key={p.kind + p.email} style={css('display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; padding:13px 20px; border-bottom:1px solid #F3F5FA;')}>
-                        <div style={css('flex:1 1 320px; min-width:0;')}>
-                          <div style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{p.domain || p.name || p.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {p.email}</span></div>
-                          <div style={css('margin-top:3px;' + font(400, 12.5, 1.5) + ';color:#64748b;')}>
-                            {p.hits} lượt · lần đầu {fmtWhen(p.first)}{p.hits > 1 ? ` · gần nhất ${fmtWhen(p.last)}` : ''}
-                          </div>
-                          {p.kind === 'page' && p.paths.length > 0 && (
-                            <div style={css('margin-top:7px; display:flex; gap:6px; flex-wrap:wrap;')}>
-                              {p.paths.map((x) => <span key={x} title={x} style={css(pill('#F1F5FD', '#3A4757') + 'max-width:320px; overflow:hidden; text-overflow:ellipsis;')}>{where(x)}</span>)}
-                            </div>
-                          )}
-                        </div>
-                        <span style={css(p.kind === 'refused' ? pill('#FFECEC', '#D8232A') : pill('#EEF3FF', '#2c5fff'))}>{p.kind === 'refused' ? 'Không phải nhân viên Zalopay' : 'Đã đăng nhập'}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Trước khi bắt đầu ghi ({before.length})</div>
-                  <div style={css('margin-top:4px;' + font(400, 12.5, 1.55) + ';color:#94a3b8;')}>Người đã đăng nhập và mở web trong những ngày bảo trì, từ {fmtDay(maint.before?.from)} đến {fmtDay(maint.before?.until)}. Phần này chỉ biết ngày, không biết giờ và trang định xem; người chưa đăng nhập thì không biết.</div>
-                  <div style={css('margin-top:10px; overflow:hidden;' + card)}>
-                    {!before.length ? empty('Không có ai.') : before.map((p) => (
-                      <div key={p.email} style={css('display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; padding:13px 20px; border-bottom:1px solid #F3F5FA;')}>
-                        <div style={css('flex:1 1 320px; min-width:0;')}>
-                          <div style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{p.domain || p.name || p.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {p.email}</span></div>
-                          <div style={css('margin-top:7px; display:flex; gap:6px; flex-wrap:wrap;')}>
-                            {p.days.map((d) => <span key={d} style={css(pill('#FFF4E5', '#B45300'))}>{fmtDay(d).slice(0, 5)}</span>)}
-                          </div>
-                        </div>
-                        {p.joined >= maint.before.from && <span title={`Tham gia ${fmtDate(p.joined)}`} style={css(pill('#E7F9F0', '#00893F'))}>Đăng nhập lần đầu lúc bảo trì</span>}
-                      </div>
-                    ))}
-                  </div>
-                  <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Chưa đăng nhập, theo ngày</div>
-                  <div style={css('margin-top:10px; overflow:hidden;' + card)}>
-                    {!anon.length ? empty('Chưa có lượt nào.') : anon.map((d) => (
-                      <div key={d.day} style={css('display:flex; align-items:center; justify-content:space-between; padding:11px 20px; border-bottom:1px solid #F3F5FA;' + font(600, 13.5) + ';color:#0f172a;')}>
-                        <span>{fmtDay(d.day)}</span><span style={css(font(700, 13.5) + ';color:#B45300;')}>{d.n} lượt</span>
-                      </div>
-                    ))}
-                  </div>
-                </>)}
-              </div>
             )
           })()}
 

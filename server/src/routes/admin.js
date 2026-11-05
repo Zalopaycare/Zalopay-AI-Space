@@ -10,7 +10,7 @@ import { sendMail } from '../mailer.js'
 import { appUrl } from '../mentions.js'
 import { vnDay } from '../auth.js'
 import { onlineNow, lastSeen } from '../presence.js'
-import { maintenanceOn, passesMaintenance } from '../maintenance.js'
+import { maintenanceOn, setMaintenance, maintenanceChange } from '../maintenance.js'
 import { visibleShowcase, hideShowcase } from '../showcase.js'
 import { reviewCommenters } from './useCases.js'
 
@@ -263,12 +263,21 @@ router.delete('/showcase/:id', (req, res) => {
 
 router.get('/directory-status', async (req, res) => res.json(await directoryStatus(req.user.id)))
 
-// ---- Access requests from people turned away at sign-in (staffCheck.js), and the access granted ----
+// ---- Access requests, and the access granted. Two kinds: someone turned away at sign-in because Microsoft
+// doesn't list them under Zalopay (staffCheck.js, 'staff'), and someone signed in while the site is under
+// maintenance (maintenance.js, 'maintenance'). Plus the admins' Publish / Bật bảo trì switch. ----
+const maintenanceAllowEnv = () => String(process.env.MAINTENANCE_ALLOW || '').replace(/['"]/g, '').split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean)
 const accessList = () => ({
   requests: db.prepare(`SELECT r.*, u.name decider FROM access_requests r LEFT JOIN users u ON u.id = r.decided_by
     ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END, r.id DESC LIMIT 200`).all()
-    .map((r) => ({ id: r.id, email: r.email, name: r.name, org: orgInfo(r.org_info), note: r.note, status: r.status, time: r.created_at, decidedAt: r.decided_at, decider: r.decider || '' })),
+    .map((r) => ({ id: r.id, kind: r.kind || 'staff', email: r.email, name: r.name, org: orgInfo(r.org_info), note: r.note, status: r.status, time: r.created_at, decidedAt: r.decided_at, decider: r.decider || '' })),
   grants: db.prepare('SELECT g.email, g.created_at time, u.name granter FROM staff_grants g LEFT JOIN users u ON u.id = g.granted_by ORDER BY g.created_at DESC').all(),
+  maintenance: {
+    on: maintenanceOn(),
+    change: maintenanceChange(),
+    grants: db.prepare('SELECT g.email, g.created_at time, u.name granter FROM maintenance_grants g LEFT JOIN users u ON u.id = g.granted_by ORDER BY g.created_at DESC').all(),
+    allowEnv: maintenanceAllowEnv(),
+  },
 })
 router.get('/access', (req, res) => res.json(accessList()))
 router.post('/access/:id/:decision', (req, res) => {
@@ -276,17 +285,24 @@ router.post('/access/:id/:decision', (req, res) => {
   if (!r) return res.status(404).json({ error: 'not_found' })
   const approve = req.params.decision === 'approve'
   if (!approve && req.params.decision !== 'reject') return res.status(400).json({ error: 'bad_decision' })
+  const kind = r.kind || 'staff'
+  // someone let in while the site is closed can use it right away, whichever way they asked
+  const letInNow = approve && maintenanceOn()
   db.transaction(() => {
-    // every open request from that person is settled at once
-    db.prepare("UPDATE access_requests SET status = ?, decided_at = datetime('now'), decided_by = ? WHERE email = ? AND status = 'pending'").run(approve ? 'approved' : 'rejected', req.user.id, r.email)
-    if (approve) db.prepare('INSERT OR IGNORE INTO staff_grants (email, granted_by) VALUES (?, ?)').run(r.email, req.user.id)
+    // every open request of that kind from that person is settled at once
+    db.prepare("UPDATE access_requests SET status = ?, decided_at = datetime('now'), decided_by = ? WHERE email = ? AND kind = ? AND status = 'pending'").run(approve ? 'approved' : 'rejected', req.user.id, r.email, kind)
+    if (approve && kind === 'staff') db.prepare('INSERT OR IGNORE INTO staff_grants (email, granted_by) VALUES (?, ?)').run(r.email, req.user.id)
+    if (letInNow) db.prepare('INSERT OR IGNORE INTO maintenance_grants (email, granted_by) VALUES (?, ?)').run(r.email, req.user.id)
   })()
   db.prepare("UPDATE notifications SET read = 1 WHERE kind = 'access' AND text LIKE ?").run(`%${r.name || r.email}%`)
-  sendMail({
-    to: r.email,
-    subject: approve ? 'Bạn đã được cấp quyền vào Zalopay AI Space' : 'Yêu cầu truy cập Zalopay AI Space chưa được duyệt',
-    text: approve ? `Admin đã cấp quyền cho bạn. Đăng nhập lại bằng tài khoản Microsoft tại: ${appUrl(req)}` : 'Admin chưa xác nhận được bạn là nhân viên Zalopay nên chưa cấp quyền. Nếu có nhầm lẫn, vui lòng liên hệ Admin AI Space.',
-  }).catch(() => {})
+  const mail = kind === 'maintenance'
+    ? (approve
+      ? { subject: 'Bạn đã được vào Zalopay AI Space', text: `Admin đã cho bạn vào AI Space trong lúc web đang bảo trì. Mở lại trang tại: ${appUrl(req)}` }
+      : { subject: 'Yêu cầu vào Zalopay AI Space chưa được duyệt', text: 'AI Space đang bảo trì và Admin chưa mở cho bạn vào lúc này. Bạn sẽ vào được khi web mở lại cho mọi người.' })
+    : (approve
+      ? { subject: 'Bạn đã được cấp quyền vào Zalopay AI Space', text: `Admin đã cấp quyền cho bạn${letInNow ? ', kể cả trong lúc web đang bảo trì' : ''}. Đăng nhập lại bằng tài khoản Microsoft tại: ${appUrl(req)}` }
+      : { subject: 'Yêu cầu truy cập Zalopay AI Space chưa được duyệt', text: 'Admin chưa xác nhận được bạn là nhân viên Zalopay nên chưa cấp quyền. Nếu có nhầm lẫn, vui lòng liên hệ Admin AI Space.' })
+  sendMail({ to: r.email, ...mail }).catch(() => {})
   res.json(accessList())
 })
 // Take back access an admin gave: the person's session ends unless Microsoft lists them under Zalopay.
@@ -296,28 +312,21 @@ router.delete('/access/grants/:email', (req, res) => {
   db.prepare('UPDATE users SET staff_ok = 0 WHERE email = ?').run(email)
   res.json(accessList())
 })
-
-// The day MAINTENANCE=on was first set (Vietnam time); the "Trước khi bắt đầu ghi" list starts there.
-const MAINTENANCE_FROM_DAY = '2026-10-30'
-// Who opened the site while it was under maintenance (maintenance.js): one row per person, plus visitors
-// who weren't signed in, counted per day (Vietnam time).
-router.get('/maintenance-hits', (req, res) => {
-  const people = db.prepare(`SELECT COALESCE('u' || user_id, 'e' || email) who, MAX(email) email, MAX(name) name, kind, COUNT(*) n,
-      MIN(created_at) first, MAX(created_at) last, GROUP_CONCAT(DISTINCT path) paths
-    FROM maintenance_hits WHERE kind != 'anon' GROUP BY who, kind ORDER BY last DESC LIMIT 300`).all()
-    .map((r) => ({ email: r.email, name: r.name, domain: domainName(r.email, r.name), kind: r.kind, hits: r.n, first: r.first, last: r.last,
-      paths: String(r.paths || '').split(',').filter(Boolean).slice(0, 8) }))
-  const anon = db.prepare(`SELECT date(created_at, '+7 hours') day, COUNT(*) n FROM maintenance_hits WHERE kind = 'anon' GROUP BY day ORDER BY day DESC LIMIT 30`).all()
-  const since = db.prepare('SELECT MIN(created_at) t FROM maintenance_hits').get().t
-  // Before that list existed only the days people used the site were kept (user_days): anyone else than the
-  // admins and MAINTENANCE_ALLOW who came on a day since maintenance began was turned away that day.
-  const untilDay = since ? vnDay(new Date(since.replace(' ', 'T') + 'Z').getTime()) : vnDay()
-  const envAdmins = new Set(envAdminEmails())
-  const before = db.prepare(`SELECT u.id, u.email, u.name, u.is_admin, u.created_at, GROUP_CONCAT(d.day) days FROM user_days d JOIN users u ON u.id = d.user_id
-      WHERE d.day >= ? AND d.day <= ? GROUP BY u.id ORDER BY MAX(d.day) DESC, u.name`).all(MAINTENANCE_FROM_DAY, untilDay)
-    .filter((u) => !envAdmins.has(u.email.toLowerCase()) && !passesMaintenance(u))
-    .map((u) => ({ email: u.email, name: u.name, domain: domainName(u.email, u.name), joined: u.created_at, days: String(u.days || '').split(',').sort().reverse() }))
-  res.json({ on: maintenanceOn(), since, people, anon, before: { from: MAINTENANCE_FROM_DAY, until: untilDay, people: before } })
+// Take back "vào khi bảo trì": the person sees the maintenance page again (until the site is published).
+router.delete('/access/maintenance-grants/:email', (req, res) => {
+  db.prepare('DELETE FROM maintenance_grants WHERE email = ?').run(String(req.params.email || '').toLowerCase())
+  res.json(accessList())
+})
+// Publish (on: false) opens the site to every Zalopay employee again (the Zion / Zalopay check still
+// applies); on: true closes it again. Requests to come in during maintenance are moot once it's open.
+router.post('/maintenance', (req, res) => {
+  const on = req.body?.on === true
+  setMaintenance(on, req.user.id)
+  if (!on) {
+    db.prepare("UPDATE access_requests SET status = 'approved', decided_at = datetime('now'), decided_by = ? WHERE kind = 'maintenance' AND status = 'pending'").run(req.user.id)
+    db.prepare("UPDATE notifications SET read = 1 WHERE kind = 'access' AND text LIKE '%trong lúc bảo trì%'").run()
+  }
+  res.json(accessList())
 })
 
 router.use('/reports', adminReportRoutes)

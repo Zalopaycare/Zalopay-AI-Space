@@ -296,17 +296,6 @@ CREATE TABLE IF NOT EXISTS staff_grants (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- People who opened the site while it was under maintenance (maintenance.js), for Admin › Bị chặn khi bảo trì.
-CREATE TABLE IF NOT EXISTS maintenance_hits (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER,
-  email TEXT NOT NULL DEFAULT '',
-  name TEXT NOT NULL DEFAULT '',
-  kind TEXT NOT NULL, -- page (signed in, saw the maintenance page) | anon (not signed in) | refused (not Zalopay staff at sign-in)
-  path TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
 -- Admin invitations to an AI Exhibition booth's owners to write their use case up ("Mời"), for the tracker.
 CREATE TABLE IF NOT EXISTS booth_invites (
   booth_id TEXT NOT NULL,
@@ -385,3 +374,22 @@ CREATE TABLE IF NOT EXISTS comment_files (
   PRIMARY KEY (kind, target_id, idx)
 );
 `)
+
+// Maintenance (maintenance.js): the admins' switch (Publish / Bật bảo trì), which wins over MAINTENANCE on
+// Coolify once used, and the people an admin let in while the site is closed. access_requests.kind tells
+// a request to use the site during maintenance ('maintenance') from one by someone not listed under
+// Zalopay ('staff'). Additive only.
+db.exec(`
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_by INTEGER REFERENCES users(id),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS maintenance_grants (
+  email TEXT PRIMARY KEY,
+  granted_by INTEGER REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`)
+if (!db.prepare('PRAGMA table_info(access_requests)').all().some((x) => x.name === 'kind')) db.exec("ALTER TABLE access_requests ADD COLUMN kind TEXT NOT NULL DEFAULT 'staff'")

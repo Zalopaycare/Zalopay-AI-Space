@@ -13,7 +13,7 @@ import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
 import { companyDomains } from '../auth.js'
-import { maintenanceOn, passesMaintenance, recordMaintenanceHit } from '../maintenance.js'
+import { maintenanceOn, passesMaintenance } from '../maintenance.js'
 import { orgOf, verdict, saveOrg, accessTicket, readTicket, ACCESS_COOKIE, adminEmails } from '../staffCheck.js'
 import { notify } from '../notifications.js'
 import { appUrl } from '../mentions.js'
@@ -158,7 +158,6 @@ router.get('/sso/callback', async (req, res) => {
     const v = verdict(email, org)
     if (!v.allowed) {
       console.warn('[staff] sign-in refused:', email, org ? JSON.stringify(org) : 'no org info')
-      recordMaintenanceHit({ kind: 'refused', email, name: claims.name || '' })
       // The "no access" page can ask the admins for access with this (who Microsoft says they are).
       res.cookie(ACCESS_COOKIE, accessTicket(email, claims.name || '', org), { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 2 * 3600 * 1000, path: '/api/auth' })
       return res.redirect('/no-access')
@@ -182,7 +181,7 @@ router.get('/sso/callback', async (req, res) => {
 })
 
 // ---- Turned away at sign-in: ask the admins for access ----
-const lastRequest = (email) => db.prepare('SELECT * FROM access_requests WHERE email = ? ORDER BY id DESC LIMIT 1').get(email)
+const lastRequest = (email, kind = 'staff') => db.prepare('SELECT * FROM access_requests WHERE email = ? AND kind = ? ORDER BY id DESC LIMIT 1').get(email, kind)
 router.get('/access-request', (req, res) => {
   const tk = readTicket(req.cookies?.[ACCESS_COOKIE])
   if (!tk) return res.json({ ticket: false })
@@ -205,18 +204,34 @@ router.post('/access-request', async (req, res) => {
   res.json({ status: 'pending' })
 })
 
+// ---- Signed in while the site is under maintenance: ask the admins to be let in ----
+const maintenanceStatus = (user) => {
+  if (!maintenanceOn() || passesMaintenance(user)) return 'approved'
+  const last = lastRequest(user.email, 'maintenance')
+  // an approval that no longer holds (access taken back) leaves the person free to ask again
+  return !last || last.status === 'approved' ? 'none' : last.status
+}
+router.get('/maintenance-request', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'login_required' })
+  res.json({ status: maintenanceStatus(req.user) })
+})
+router.post('/maintenance-request', (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'login_required' })
+  const status = maintenanceStatus(req.user)
+  if (status === 'pending' || status === 'approved') return res.json({ status })
+  const note = String(req.body?.note || '').replace(/\r\n/g, '\n').trim().slice(0, 500)
+  db.prepare("INSERT INTO access_requests (email, name, org_info, note, kind) VALUES (?, ?, ?, ?, 'maintenance')").run(req.user.email, String(req.user.name || '').slice(0, 120), req.user.org_info || null, note)
+  const who = req.user.name || req.user.email
+  for (const to of adminEmails()) {
+    notify(to, { kind: 'access', text: `${who} xin vào AI Space trong lúc bảo trì`, href: '/admin#access', actor: req.user.name })
+    sendMail({ to, subject: `Xin vào Zalopay AI Space lúc bảo trì: ${who}`, text: `${who} <${req.user.email}> mở AI Space trong lúc đang bảo trì và xin được vào.${note ? `\n\nLời nhắn: ${note}` : ''}\n\nDuyệt tại: ${appUrl(req)}/admin#access` }).catch(() => {})
+  }
+  res.json({ status: 'pending' })
+})
+
 router.post('/logout', (req, res) => {
   if (req.user) dropGraphTokens(req.user.id)
   clearSession(req, res)
-  res.json({ ok: true })
-})
-
-// The maintenance page reports itself (Admin › Bị chặn khi bảo trì): who saw it, on which page.
-router.post('/maintenance-hit', (req, res) => {
-  if (!maintenanceOn() || passesMaintenance(req.user)) return res.json({ ok: true })
-  const path = String(req.body?.path || '').slice(0, 200)
-  const key = crypto.createHash('sha256').update(`${String(req.headers['x-forwarded-for'] || req.ip).split(',')[0].trim()}|${req.get('user-agent') || ''}`).digest('hex').slice(0, 16)
-  recordMaintenanceHit({ kind: req.user ? 'page' : 'anon', user: req.user, path, key })
   res.json({ ok: true })
 })
 
