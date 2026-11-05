@@ -1,5 +1,5 @@
 // Dark mode ("Khung xám" in the switch): the page around stays dark; the white cards turn see-through
-// black glass (the space backdrop shows through, blurred) and menus / popups solid near-black, with light
+// dark grey glass (the space backdrop shows through, blurred) and menus / popups solid near-black, with light
 // text. Nothing in the pages changes: css() and hoverClass() (lib/style.js) pass every declaration
 // through tone(), which swaps light backgrounds and borders for dark ones, dark text for light text, and
 // lifts coloured text so it reads on black.
@@ -27,9 +27,9 @@ export function setGrayTheme(on) {
   window.location.reload()
 }
 
-// cards: black glass; anything floating (menus, dropdowns, tooltips: position absolute / fixed / sticky)
+// cards: dark grey glass; anything floating (menus, dropdowns, tooltips: position absolute / fixed / sticky)
 // stays solid so what's under it doesn't show through
-const GLASS = [8, 11, 22, 0.55]
+const GLASS = [38, 40, 46, 0.62]
 const SOLID = '#0D1222'
 const GLASS_BLUR = 'blur(16px) saturate(130%)'
 const COLOR = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\([^)]*\)|\bwhite\b/g
