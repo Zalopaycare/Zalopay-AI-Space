@@ -206,8 +206,19 @@ export default function QuestionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.hash])
 
-  // A post in the feed opens its own page, with the replies and comments under it (as on Threads).
-  const toggle = (id) => { if (id !== detailId) navigate('/questions/' + encodeURIComponent(id)) }
+  // A post in the feed opens in a popup over the feed, the replies and comments under it, scrolling inside
+  // it; /questions/<id> (links in notifications and shared links) still shows the post on its own page.
+  const [popupId, setPopupId] = useState(null)
+  const toggle = (id) => { if (!detailId) setPopupId(id) }
+  const popupDialog = useDialog(!!popupId && !detailId, () => setPopupId(null), t('Post'), { focusField: false })
+  useEffect(() => {
+    if (!popupId || detailId) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden' // the feed behind stays put while the popup scrolls
+    return () => { document.body.style.overflow = prev }
+  }, [popupId, detailId])
+  // following a link from inside it (a topic, a mention, a notification…) closes it
+  useEffect(() => { setPopupId(null) }, [location.key])
   const askDialog = useDialog(view === 'ask', () => setView('feed'), t('Post mới'))
   const delDialog = useDialog(!!confirmDeleteId, () => setConfirmDeleteId(null), t('Xác nhận xoá'))
   const accept = (qid, aid) => requireLogin(() => api.acceptAnswer(qid, aid).then((d) => patch(qid, d.question)).catch(() => {}))
@@ -220,6 +231,7 @@ export default function QuestionsPage() {
   const deleteQuestion = (id, reason) => {
     api.deleteQuestion(id, reason).then(() => {
       if (id === detailId) navigate('/', { replace: true })
+      if (id === popupId) setPopupId(null)
       setQuestions((qs) => qs.filter((q) => q.id !== id))
       setConfirmDeleteId(null)
     }).catch(() => setConfirmDeleteId(null))
@@ -420,7 +432,7 @@ export default function QuestionsPage() {
 
   const feed = list.map((q) => {
     const isExpanded = !!expanded[q.id]
-    const full = !!fullBody[q.id] || q.id === detailId
+    const full = !!fullBody[q.id] || q.id === detailId || q.id === popupId
     const long = q.body.length > CLAMP
     const draft = replyDrafts[q.id] || ''
     const ordered = q.answers.slice().sort((a, b) => (b.accepted ? 1 : 0) - (a.accepted ? 1 : 0))
@@ -876,6 +888,21 @@ export default function QuestionsPage() {
         )}
 
         {/* "Thread mới", like Threads: Huỷ · title, then your name and the text box with its tools, Đăng at the bottom */}
+        {popupId && !detailId && createPortal(
+          <div className="zp-overlay-in" onClick={() => setPopupId(null)} style={css('position:fixed; inset:0; z-index:3900; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); overflow-y:auto; padding:56px 16px 40px; box-sizing:border-box;')}>
+            <div ref={popupDialog.ref} {...popupDialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:760px; max-width:100%; margin:0 auto; outline:none;')}>
+              <button onClick={() => setPopupId(null)} aria-label={t('Đóng')} title={t('Đóng')} className={hoverClass('background:rgba(255,255,255,.22) !important;')} style={css('position:absolute; top:-44px; right:0; width:34px; height:34px; border:none; border-radius:50%; background:rgba(255,255,255,.12); color:#fff; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;')}>✕</button>
+              {(() => {
+                const pq = feed.find((q) => q.id === popupId)
+                return pq
+                  ? <div style={css('background:#fff; border-radius:22px; overflow:visible; box-shadow:0 30px 80px rgba(0,0,0,.45);')}>{renderQCard(pq, true)}</div>
+                  : <div style={css('padding:60px 20px; text-align:center; border-radius:22px; background:#fff; color:#64748b; font:600 14px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;')}>{t('Không tìm thấy bài này. Có thể bài đã bị xoá.')}</div>
+              })()}
+            </div>
+          </div>,
+          document.body,
+        )}
+
         {view === 'ask' && createPortal(
           <div className="zp-overlay-in" onClick={() => setView('feed')} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:60px 16px; overflow-y:auto;')}>
             <div ref={askDialog.ref} {...askDialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('width:620px; max-width:100%; margin:auto 0; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:visible;')}>

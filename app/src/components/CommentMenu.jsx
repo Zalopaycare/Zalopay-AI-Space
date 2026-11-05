@@ -90,7 +90,7 @@ export function useCommentModals(api) {
   const [reason, setReason] = useState('')
   const [toast, setToast] = useState('')
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 2600); return () => clearTimeout(t) }, [toast])
-  const overlay = 'position:fixed; inset:0; z-index:3200; background:rgba(4,10,26,.55); display:flex; align-items:center; justify-content:center; padding:24px;'
+  const overlay = 'position:fixed; inset:0; z-index:4100; background:rgba(4,10,26,.55); display:flex; align-items:center; justify-content:center; padding:24px;'
   const box = 'width:440px; max-width:100%; background:#fff; border-radius:20px; padding:24px 26px; box-shadow:0 40px 90px rgba(3,12,40,.5); box-sizing:border-box;'
   const b = (primary, danger) => `height:40px; padding:0 18px; border-radius:999px; font:700 13px ${FONT}; cursor:pointer; ${primary ? `border:none; background:${danger ? '#D8232A' : '#2c5fff'}; color:#fff;` : 'border:1px solid #DDE3EC; background:#fff; color:#3A4757;'}`
   const modals = createPortal((
@@ -120,7 +120,7 @@ export function useCommentModals(api) {
           </div>
         </div>
       )}
-      {toast && <div style={css(`position:fixed; left:50%; bottom:32px; transform:translateX(-50%); z-index:3300; padding:12px 20px; border-radius:999px; background:#0F172A; color:#fff; font:700 13px ${FONT}; box-shadow:0 14px 34px rgba(0,0,0,.35);`)}>{toast}</div>}
+      {toast && <div style={css(`position:fixed; left:50%; bottom:32px; transform:translateX(-50%); z-index:4200; padding:12px 20px; border-radius:999px; background:#0F172A; color:#fff; font:700 13px ${FONT}; box-shadow:0 14px 34px rgba(0,0,0,.35);`)}>{toast}</div>}
     </>
   ), document.body)
   return { askDelete: (run) => setDel({ run }), askReport: (type, id) => { setReason(''); setRep({ type, id }) }, modals }
