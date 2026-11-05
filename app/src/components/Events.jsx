@@ -124,7 +124,7 @@ export default function EventsPanel({ layout = 'rail' }) {
   return (
     <>
       {layout === 'rail' ? (
-        <aside data-tour="events" aria-label="Sự kiện sắp tới" style={css('background:rgba(238,242,248,.74); backdrop-filter:blur(6px) saturate(140%); -webkit-backdrop-filter:blur(6px) saturate(140%); border:1px solid rgba(255,255,255,.35); border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:18px 16px 6px;')}>
+        <aside data-tour="events" aria-label="Sự kiện sắp tới" style={css('background:rgba(255,255,255,.8); backdrop-filter:blur(6px) saturate(140%); -webkit-backdrop-filter:blur(6px) saturate(140%); border:1px solid rgba(255,255,255,.35); border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:18px 16px 6px;')}>
           <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>Sự kiện sắp tới</div>
           <div style={css('margin-top:3px; font:400 12.5px/1.5 var(--zp-font-text); color:#64748b;')}>Đồng nghiệp tổ chức offline, bấm Quan tâm nếu bạn muốn đến</div>
           <button onClick={create} className={hoverClass('filter:brightness(1.06);')} style={css(`margin-top:12px; width:100%; height:38px; border:none; border-radius:10px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:pointer; box-shadow:0 8px 18px rgba(44,95,255,.3);`)}>+ Tạo sự kiện</button>

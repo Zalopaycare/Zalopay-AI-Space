@@ -1,12 +1,13 @@
-// "Thẻ xám": a trial look like Facebook's dark mode. The page around stays dark; the white cards,
-// menus and fields turn grey (#242526) with light text. Nothing in the pages changes: css() and
-// hoverClass() (lib/style.js) pass every declaration through tone(), which swaps light backgrounds
-// and borders for greys, dark text for light text, and lifts coloured text so it reads on grey.
-// The choice is kept per browser; turning it on or off reloads the page.
+// Dark mode ("Khung xám" in the switch): the page around stays dark; the white cards turn see-through
+// black glass (the space backdrop shows through, blurred) and menus / popups solid near-black, with light
+// text. Nothing in the pages changes: css() and hoverClass() (lib/style.js) pass every declaration
+// through tone(), which swaps light backgrounds and borders for dark ones, dark text for light text, and
+// lifts coloured text so it reads on black.
 //
-// "Khung trắng" (the default) is softened the same way: pure white cards on the dark page glare, so every
-// light fill and border is taken one step down to an ivory with a hint of grey-blue (white → #EEF2F8),
-// the lighter panels and lines inside a card moving with it so they still stand apart. Text stays as is.
+// The light look ("Khung trắng", the default) is softened a little: pure white cards on the dark page
+// glare, so light fills and borders are taken a small step down to a near-neutral off-white (white →
+// about #F3F5F8), the lighter panels and lines inside a card moving with it. Text stays as it is.
+// The choice is kept per browser; turning it on or off reloads the page.
 
 const KEY = 'zp-theme'
 
@@ -26,7 +27,11 @@ export function setGrayTheme(on) {
   window.location.reload()
 }
 
-const CARD = '#242526'
+// cards: black glass; anything floating (menus, dropdowns, tooltips: position absolute / fixed / sticky)
+// stays solid so what's under it doesn't show through
+const GLASS = [8, 11, 22, 0.55]
+const SOLID = '#0D1222'
+const GLASS_BLUR = 'blur(16px) saturate(130%)'
 const COLOR = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\([^)]*\)|\bwhite\b/g
 
 function parse(c) {
@@ -55,22 +60,27 @@ const withAlpha = (hex, a) => {
   return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`
 }
 
-// A light fill: white → card grey; faint greys → a step lighter; light tints → the same hue, dark.
-function toneFill(c) {
-  if (c.a < 0.6) return null // see-through glass on the dark page: leave it
-  const { h, l, chroma } = hsl(c)
-  if (l < 0.74) return null
-  if (l >= 0.985) return withAlpha(CARD, c.a)
-  if (chroma < 0.05) return withAlpha(l >= 0.965 ? '#2D2E30' : '#3A3B3C', c.a)
-  if (l >= 0.86) return out(h, 0.32, 0.21, c.a)
-  return chroma < 0.12 ? withAlpha('#4E4F50', c.a) : out(h, 0.34, 0.3, c.a)
+// A light fill: white → black glass (solid near-black when floating); faint greys inside a card → a
+// faint light wash over it; light tints → the same hue, dark.
+const glass = (a) => `rgba(${GLASS[0]},${GLASS[1]},${GLASS[2]},${+(GLASS[3] * a).toFixed(2)})`
+function fillTone(floating) {
+  return (c) => {
+    if (c.a < 0.6) return null // see-through glass on the dark page: leave it
+    const { h, l, chroma } = hsl(c)
+    if (l < 0.74) return null
+    if (l >= 0.985) return floating ? withAlpha(SOLID, c.a) : glass(c.a)
+    if (chroma < 0.05) return floating ? withAlpha(l >= 0.965 ? '#161C2D' : '#1F2638', c.a) : `rgba(255,255,255,${l >= 0.965 ? 0.06 : 0.1})`
+    if (l >= 0.86) return out(h, 0.32, 0.21, c.a)
+    return chroma < 0.12 ? 'rgba(255,255,255,.14)' : out(h, 0.34, 0.3, c.a)
+  }
 }
+const toneFill = fillTone(false)
 
 function toneLine(c) {
   if (c.a < 0.6) return null
   const { h, l, chroma } = hsl(c)
   if (l < 0.74) return null
-  return chroma < 0.1 ? withAlpha('#3E4042', c.a) : out(h, 0.22, 0.3, c.a)
+  return chroma < 0.1 ? 'rgba(255,255,255,.12)' : out(h, 0.22, 0.3, c.a)
 }
 
 // Text: near-black → near-white, slate greys → light greys, coloured text lifted to read on grey.
@@ -86,21 +96,25 @@ function toneText(c) {
   return out(h, Math.min(s, 0.8), 0.68, c.a)
 }
 
-// Softened white: light fills one step down (white → about #EEF2F8), greys towards the same grey-blue,
-// light tints keep their colour; light borders follow so they still show against the card.
+// Off-white: light fills a small step down, greys towards a barely-blue neutral, light tints keep their
+// colour; light borders follow so they still show against the card.
 function softFill(c) {
   if (c.a < 0.6) return null
   const { h, s, l, chroma } = hsl(c)
   if (l < 0.9) return null
-  return chroma < 0.06 ? out(216, 0.45, l - 0.047, c.a) : out(h, s, l - 0.035, c.a)
+  return chroma < 0.06 ? out(216, 0.22, l - 0.035, c.a) : out(h, s, l - 0.025, c.a)
 }
 function softLine(c) {
   if (c.a < 0.6) return null
   const { h, s, l, chroma } = hsl(c)
   if (l < 0.85) return null
-  return chroma < 0.06 ? out(216, 0.3, l - 0.05, c.a) : out(h, s, l - 0.04, c.a)
+  return chroma < 0.06 ? out(216, 0.18, l - 0.035, c.a) : out(h, s, l - 0.03, c.a)
 }
 const softKindOf = (prop) => (/^background/.test(prop) ? softFill : /^(border|outline|column-rule)/.test(prop) ? softLine : null)
+function soften(decls) {
+  if (decls.some(([p, v]) => /background-clip$/.test(p) && /text/.test(v))) return decls
+  return decls.map(([p, v]) => { const fn = softKindOf(p); return fn ? [p, swap(v, fn)] : [p, v] })
+}
 
 const kindOf = (prop) => {
   if (/^(color|caret-color|text-decoration-color|-webkit-text-fill-color|fill|stroke)$/.test(prop)) return toneText
@@ -129,17 +143,25 @@ export function tone(decls) {
   const keepText = solidFill(bg && bg[1])
   // gradient lettering (background clipped to the text, like the page titles) is words, not a box: leave it
   const clipText = decls.some(([p, v]) => /background-clip$/.test(p) && /text/.test(v))
-  return decls.map(([p, v]) => {
+  const pos = (decls.find(([p]) => p === 'position') || [])[1]
+  const floating = pos === 'absolute' || pos === 'fixed' || pos === 'sticky'
+  const fill = floating ? fillTone(true) : toneFill
+  let glassed = false
+  const res = decls.map(([p, v]) => {
     const fn = kindOf(p)
     if (!fn || (keepText && fn === toneText) || (clipText && fn === toneFill)) return [p, v]
+    if (fn === toneFill) {
+      const nv = swap(v, fill)
+      if (!floating && nv !== v && nv.includes(`rgba(${GLASS[0]},${GLASS[1]},${GLASS[2]},`)) glassed = true
+      return [p, nv]
+    }
     return [p, swap(v, fn)]
   })
-}
-
-function soften(decls) {
-  const clipText = decls.some(([p, v]) => /background-clip$/.test(p) && /text/.test(v))
-  if (clipText) return decls
-  return decls.map(([p, v]) => { const fn = softKindOf(p); return fn ? [p, swap(v, fn)] : [p, v] })
+  // glass blurs what's behind it, so text on it stays readable
+  if (glassed && !decls.some(([p]) => p === 'backdrop-filter')) res.push(['backdrop-filter', GLASS_BLUR], ['-webkit-backdrop-filter', GLASS_BLUR])
+  // and a faint edge, so a card still shows where the page behind is just as dark
+  if (glassed && !decls.some(([p]) => /^(border|outline)$/.test(p))) res.push(['outline', '1px solid rgba(160,190,255,.14)'], ['outline-offset', '-1px'])
+  return res
 }
 
 /** Tone a "a:b; c:d" string (hover and ::after rules). */
