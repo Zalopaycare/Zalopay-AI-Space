@@ -151,7 +151,7 @@ export default function EventsPanel({ layout = 'rail' }) {
           {events && !list.length ? (
             <div style={css('padding:12px 14px; border-radius:14px; background:rgba(255,255,255,.06); border:1px dashed rgba(160,196,255,.3); font:400 13px/1.5 var(--zp-font-text); color:#a9b8dc;')}>Chưa có sự kiện nào sắp tới. Muốn rủ mọi người điều gì? Bấm <b>+ Tạo sự kiện</b>.</div>
           ) : (
-            <div style={css('display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin;')}>
+            <div className="zp-noscrollbar" style={css('display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;')}>
               {list.map((ev) => <EventCard key={ev.id} ev={ev} onOpen={setOpenId} onToggle={toggle} compact />)}
             </div>
           )}

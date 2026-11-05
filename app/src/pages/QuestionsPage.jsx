@@ -71,9 +71,12 @@ export default function QuestionsPage() {
   const [playIntro] = useState(() => !introPlayed)
   useEffect(() => { introPlayed = true }, [])
   const { user, requireLogin } = useAuth()
-  // room for the events rail: the feed (760 + gutters) + 24 + 300 + the right gutter
+  // room for the events rail beside the feed: from 900px of content area (the feed narrows, the gutters
+  // tighten to 24px below 1204px, where the full 760px feed + 40px gutters + 24 + 300 fit)
   const { offset } = useSidebarLayout()
-  const wideEvents = useWidth() - offset >= 1204
+  const contentWidth = useWidth() - offset
+  const wideEvents = contentWidth >= 900
+  const railGutter = contentWidth < 1204 ? { '--zp-gutter': '24px' } : null
   const navigate = useNavigate()
   const location = useLocation()
   // Drop a deep-link hash once its modal closes, so clicking the same link again reopens it.
@@ -805,7 +808,7 @@ export default function QuestionsPage() {
           </div>
         ) : (
         // wide enough: the "Sự kiện sắp tới" rail beside the feed; otherwise a strip of events above it
-        <div style={wideEvents ? css('display:grid; grid-template-columns:minmax(0,840px) 300px; gap:24px; justify-content:center; padding-right:var(--zp-gutter);') : undefined}>
+        <div style={wideEvents ? { ...css('display:grid; grid-template-columns:minmax(0,840px) 300px; gap:24px; justify-content:center; padding-right:var(--zp-gutter);'), ...railGutter } : undefined}>
         <div style={{ minWidth: 0 }}>
           {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
           {/* same box as the Use Case Library title (the UFO's 32px strip, then 53px of wordmark, the line under it alike), so switching tabs doesn't jump;
