@@ -255,7 +255,7 @@ html.zp-vt .zp-page-in { animation: none; }
 /* The share-a-use-case form, MS Forms style: every question on its own white card, numbered in order.
    Lines about the step itself (zp-msform-plain) stay as they are. */
 .zp-msform { counter-reset: zp-q; }
-.zp-msform > div:not(.zp-msform-plain) { background: #fff; border: 1px solid #E3E8F0; border-radius: 12px; padding: 16px 18px !important; margin: 0 0 12px !important; counter-increment: zp-q; }
+.zp-msform > div:not(.zp-msform-plain) { background: #EEF2F8; border: 1px solid #D7DEE9; border-radius: 12px; padding: 16px 18px !important; margin: 0 0 12px !important; counter-increment: zp-q; }
 .zp-msform > div:not(.zp-msform-plain) > :first-child::before { content: counter(zp-q) "."; margin-right: 2px; font-size: 13px; font-weight: 800; color: #0F172A; }
 .zp-msform > div:not(.zp-msform-plain) { transition: border-color .15s ease, box-shadow .15s ease; }
 /* the question being filled in: its whole border lights up blue (no bar on the left) */

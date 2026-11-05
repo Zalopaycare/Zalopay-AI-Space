@@ -3,6 +3,10 @@
 // hoverClass() (lib/style.js) pass every declaration through tone(), which swaps light backgrounds
 // and borders for greys, dark text for light text, and lifts coloured text so it reads on grey.
 // The choice is kept per browser; turning it on or off reloads the page.
+//
+// "Khung trắng" (the default) is softened the same way: pure white cards on the dark page glare, so every
+// light fill and border is taken one step down to an ivory with a hint of grey-blue (white → #EEF2F8),
+// the lighter panels and lines inside a card moving with it so they still stand apart. Text stays as is.
 
 const KEY = 'zp-theme'
 
@@ -82,6 +86,22 @@ function toneText(c) {
   return out(h, Math.min(s, 0.8), 0.68, c.a)
 }
 
+// Softened white: light fills one step down (white → about #EEF2F8), greys towards the same grey-blue,
+// light tints keep their colour; light borders follow so they still show against the card.
+function softFill(c) {
+  if (c.a < 0.6) return null
+  const { h, s, l, chroma } = hsl(c)
+  if (l < 0.9) return null
+  return chroma < 0.06 ? out(216, 0.45, l - 0.047, c.a) : out(h, s, l - 0.035, c.a)
+}
+function softLine(c) {
+  if (c.a < 0.6) return null
+  const { h, s, l, chroma } = hsl(c)
+  if (l < 0.85) return null
+  return chroma < 0.06 ? out(216, 0.3, l - 0.05, c.a) : out(h, s, l - 0.04, c.a)
+}
+const softKindOf = (prop) => (/^background/.test(prop) ? softFill : /^(border|outline|column-rule)/.test(prop) ? softLine : null)
+
 const kindOf = (prop) => {
   if (/^(color|caret-color|text-decoration-color|-webkit-text-fill-color|fill|stroke)$/.test(prop)) return toneText
   if (/^background/.test(prop)) return toneFill
@@ -104,7 +124,7 @@ const solidFill = (bg) => {
 
 /** Tone one style: [[cssProp, value], …] → the same list with greys for the trial look. */
 export function tone(decls) {
-  if (!GRAY) return decls
+  if (!GRAY) return soften(decls)
   const bg = decls.find(([p]) => p === 'background' || p === 'background-color' || p === 'background-image')
   const keepText = solidFill(bg && bg[1])
   // gradient lettering (background clipped to the text, like the page titles) is words, not a box: leave it
@@ -116,16 +136,22 @@ export function tone(decls) {
   })
 }
 
+function soften(decls) {
+  const clipText = decls.some(([p, v]) => /background-clip$/.test(p) && /text/.test(v))
+  if (clipText) return decls
+  return decls.map(([p, v]) => { const fn = softKindOf(p); return fn ? [p, swap(v, fn)] : [p, v] })
+}
+
 /** Tone a "a:b; c:d" string (hover and ::after rules). */
 export function toneCss(text) {
-  if (!GRAY || !text) return text
+  if (!text) return text
   const decls = text.split(';').map((d) => { const i = d.indexOf(':'); return i < 0 ? null : [d.slice(0, i).trim(), d.slice(i + 1).trim()] }).filter((d) => d && d[0])
   return tone(decls).map(([p, v]) => `${p}:${v}`).join(';') + ';'
 }
 
 /** Tone a React style object written by hand (style={{ … }}). */
 export function toneObj(obj) {
-  if (!GRAY || !obj) return obj
+  if (!obj) return obj
   const keys = Object.keys(obj)
   const decls = keys.map((k) => [k.startsWith('--') ? k : k.replace(/[A-Z]/g, (x) => '-' + x.toLowerCase()), typeof obj[k] === 'string' ? obj[k] : null])
   const toned = tone(decls.filter((d) => d[1] != null))
