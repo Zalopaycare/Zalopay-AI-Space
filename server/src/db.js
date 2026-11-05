@@ -296,6 +296,17 @@ CREATE TABLE IF NOT EXISTS staff_grants (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- People who opened the site while it was under maintenance (maintenance.js), for Admin › Bị chặn khi bảo trì.
+CREATE TABLE IF NOT EXISTS maintenance_hits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  email TEXT NOT NULL DEFAULT '',
+  name TEXT NOT NULL DEFAULT '',
+  kind TEXT NOT NULL, -- page (signed in, saw the maintenance page) | anon (not signed in) | refused (not Zalopay staff at sign-in)
+  path TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Admin invitations to an AI Exhibition booth's owners to write their use case up ("Mời"), for the tracker.
 CREATE TABLE IF NOT EXISTS booth_invites (
   booth_id TEXT NOT NULL,

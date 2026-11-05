@@ -13,7 +13,7 @@ import { requireAuth } from '../auth.js'
 import { handleOf, initialsOf } from '../mentions.js'
 import { searchDirectory, directoryEnabled, needsRelogin } from '../directory.js'
 import { companyDomains } from '../auth.js'
-import { maintenanceOn } from '../maintenance.js'
+import { maintenanceOn, passesMaintenance, recordMaintenanceHit } from '../maintenance.js'
 import { orgOf, verdict, saveOrg, accessTicket, readTicket, ACCESS_COOKIE, adminEmails } from '../staffCheck.js'
 import { notify } from '../notifications.js'
 import { appUrl } from '../mentions.js'
@@ -158,6 +158,7 @@ router.get('/sso/callback', async (req, res) => {
     const v = verdict(email, org)
     if (!v.allowed) {
       console.warn('[staff] sign-in refused:', email, org ? JSON.stringify(org) : 'no org info')
+      recordMaintenanceHit({ kind: 'refused', email, name: claims.name || '' })
       // The "no access" page can ask the admins for access with this (who Microsoft says they are).
       res.cookie(ACCESS_COOKIE, accessTicket(email, claims.name || '', org), { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 2 * 3600 * 1000, path: '/api/auth' })
       return res.redirect('/no-access')
@@ -207,6 +208,15 @@ router.post('/access-request', async (req, res) => {
 router.post('/logout', (req, res) => {
   if (req.user) dropGraphTokens(req.user.id)
   clearSession(req, res)
+  res.json({ ok: true })
+})
+
+// The maintenance page reports itself (Admin › Bị chặn khi bảo trì): who saw it, on which page.
+router.post('/maintenance-hit', (req, res) => {
+  if (!maintenanceOn() || passesMaintenance(req.user)) return res.json({ ok: true })
+  const path = String(req.body?.path || '').slice(0, 200)
+  const key = crypto.createHash('sha256').update(`${String(req.headers['x-forwarded-for'] || req.ip).split(',')[0].trim()}|${req.get('user-agent') || ''}`).digest('hex').slice(0, 16)
+  recordMaintenanceHit({ kind: req.user ? 'page' : 'anon', user: req.user, path, key })
   res.json({ ok: true })
 })
 

@@ -47,6 +47,7 @@ const foldTitle = (t) => String(t || '').toLowerCase().replace(/\s+/g, ' ').trim
 const MIN_PCT_BASE = 20
 const pctOf = (part, base) => (base >= MIN_PCT_BASE ? Math.round((part / base) * 1000) / 10 : null)
 const cleanName = (n) => String(n || '').replace(/\s*\(\d+\)\s*$/, '').replace(/^([^\s.]+)\.\s+/, '$1 ').trim()
+const fmtWhen = (t) => { const d = toDate(t); if (isNaN(d)) return '—'; const p = (n) => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}` } // "05/11 09:57"
 const fmtDay = (d) => (d ? d.split('-').reverse().join('/') : '—') // "2026-09-30" -> "30/09/2026"
 // "/use-cases/c7" -> "Đang xem use case: Chuẩn bị pentest…" for the online list.
 const PAGE_NAMES = { '/': 'AI Space', '/use-cases': 'Use Case Library', '/questions': 'AI Space', '/profile': 'Trang cá nhân', '/admin': 'Trang Admin', '/chat': 'Chat với Admin' }
@@ -55,8 +56,8 @@ const clamp2 = 'display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:ve
 const fold = (v) => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase()
 // Each section has its own URL, so it can be linked to and Back / Forward work. /admin is Tổng quan;
 // /admin/inbox/<user id> opens that conversation.
-const SLUGS = { dashboard: '', usecases: 'usecases', questions: 'threads', reports: 'reports', users: 'members', inbox: 'inbox', booths: 'booths', access: 'access', admins: 'admins' }
-const SECTION_TITLES = { usecases: 'Duyệt use case', questions: 'Post', reports: 'Báo cáo', users: 'Thành viên', inbox: 'Hộp thư', booths: 'Booth Exhibition', access: 'Yêu cầu truy cập', admins: 'Quản trị viên' }
+const SLUGS = { dashboard: '', usecases: 'usecases', questions: 'threads', reports: 'reports', users: 'members', inbox: 'inbox', booths: 'booths', access: 'access', maint: 'maintenance', admins: 'admins' }
+const SECTION_TITLES = { usecases: 'Duyệt use case', questions: 'Post', reports: 'Báo cáo', users: 'Thành viên', inbox: 'Hộp thư', booths: 'Booth Exhibition', access: 'Yêu cầu truy cập', maint: 'Bị chặn khi bảo trì', admins: 'Quản trị viên' }
 const SECTION_OF = Object.fromEntries(Object.entries(SLUGS).map(([k, v]) => [v, k]))
 const sectionPath = (k, sub) => '/admin' + (SLUGS[k] ? '/' + SLUGS[k] : '') + (SLUGS[k] && sub ? '/' + sub : '')
 // Thành viên › "Cần dọn": the same mailbox twice (quotes, +tag, case) shares this key
@@ -166,6 +167,9 @@ export default function AdminConsolePage() {
   }, [rowMenu])
   const [accessTab, setAccessTab] = useState('pending')
   const reloadAccess = () => api.adminAccess().then(setAccess).catch(() => {})
+  // "Bị chặn khi bảo trì": who opened the site while it was closed
+  const [maint, setMaint] = useState(null)
+  useEffect(() => { if (isAdmin && section === 'maint') api.adminMaintenanceHits().then(setMaint).catch(() => setMaint((m) => m || { people: [], anon: [] })) }, [isAdmin, section])
   const [reports, setReports] = useState([])
   const [dirStatus, setDirStatus] = useState(null) // null = checking
   const [adminStats, setAdminStats] = useState(null)
@@ -445,6 +449,7 @@ export default function AdminConsolePage() {
     ['inbox', 'Hộp thư', '#6F0CE2', chatInbox, 'cuộc trò chuyện đang chờ Admin trả lời'],
     ['booths', 'Booth Exhibition', '#FF8D00', 0],
     ['access', 'Yêu cầu truy cập', '#D8232A', access.requests.filter((r) => r.status === 'pending').length, 'yêu cầu truy cập đang chờ duyệt'],
+    ['maint', 'Bị chặn khi bảo trì', '#B45300', 0],
     ['admins', 'Quản trị viên', '#6F0CE2', 0],
   ]
 
@@ -968,6 +973,63 @@ export default function AdminConsolePage() {
               </div>
             </div>
           )}
+
+          {section === 'maint' && (() => {
+            const people = maint?.people || [], anon = maint?.anon || []
+            const anonTotal = anon.reduce((n, d) => n + d.n, 0)
+            const signedIn = people.filter((p) => p.kind === 'page'), refused = people.filter((p) => p.kind === 'refused')
+            const where = (path) => {
+              const p = String(path || '').split('#')[0] || '/'
+              const m = /^\/use-cases\/([^/?#]+)/.exec(p)
+              if (m) { const c = published.find((x) => x.id === decodeURIComponent(m[1])); return 'Use case' + (c ? ': ' + c.title : ' ' + decodeURIComponent(m[1])) }
+              return PAGE_NAMES[p] || (p.startsWith('/questions/') ? 'Một post ở AI Space' : p.startsWith('/review/') ? 'Trang duyệt use case' : p)
+            }
+            const stat = (n, label, color) => (
+              <div style={css('flex:1 1 180px; padding:16px 18px;' + card)}>
+                <div style={css(font(800, 26, 1.1) + `;color:${color};`)}>{n}</div>
+                <div style={css('margin-top:4px;' + font(600, 12.5) + ';color:#64748b;')}>{label}</div>
+              </div>
+            )
+            return (
+              <div>
+                <Heading title="Bị chặn khi bảo trì" sub={(maint?.on ? 'Web đang bảo trì. ' : 'Web hiện không bảo trì; đây là các lượt bị chặn ở những lần bảo trì trước. ') + 'Ai mở web và thấy trang "Web đang được sửa chữa", lúc nào, định xem trang nào. Cùng một người mở cùng một trang trong 10 phút chỉ tính 1 lượt.' + (maint?.since ? ` Bắt đầu ghi từ ${fmtWhen(maint.since)}.` : '')} />
+                {!maint ? <div style={css('margin-top:18px; overflow:hidden;' + card)}>{empty('Đang tải…')}</div> : (<>
+                  <div style={css('margin-top:18px; display:flex; gap:12px; flex-wrap:wrap;')}>
+                    {stat(signedIn.length, 'người đã đăng nhập', '#2c5fff')}
+                    {stat(anonTotal, 'lượt mở web chưa đăng nhập', '#B45300')}
+                    {stat(refused.length, 'người bị chặn vì không phải nhân viên Zalopay', '#D8232A')}
+                  </div>
+                  <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Theo từng người ({people.length})</div>
+                  <div style={css('margin-top:10px; overflow:hidden;' + card)}>
+                    {!people.length ? empty('Chưa có ai bị chặn.') : people.map((p) => (
+                      <div key={p.kind + p.email} style={css('display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; padding:13px 20px; border-bottom:1px solid #F3F5FA;')}>
+                        <div style={css('flex:1 1 320px; min-width:0;')}>
+                          <div style={css(font(700, 14, 1.4) + ';color:#0f172a;')}>{p.domain || p.name || p.email} <span style={css(font(500, 12.5) + ';color:#94a3b8;')}>· {p.email}</span></div>
+                          <div style={css('margin-top:3px;' + font(400, 12.5, 1.5) + ';color:#64748b;')}>
+                            {p.hits} lượt · lần đầu {fmtWhen(p.first)}{p.hits > 1 ? ` · gần nhất ${fmtWhen(p.last)}` : ''}
+                          </div>
+                          {p.kind === 'page' && p.paths.length > 0 && (
+                            <div style={css('margin-top:7px; display:flex; gap:6px; flex-wrap:wrap;')}>
+                              {p.paths.map((x) => <span key={x} title={x} style={css(pill('#F1F5FD', '#3A4757') + 'max-width:320px; overflow:hidden; text-overflow:ellipsis;')}>{where(x)}</span>)}
+                            </div>
+                          )}
+                        </div>
+                        <span style={css(p.kind === 'refused' ? pill('#FFECEC', '#D8232A') : pill('#EEF3FF', '#2c5fff'))}>{p.kind === 'refused' ? 'Không phải nhân viên Zalopay' : 'Đã đăng nhập'}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={css('margin-top:22px;' + font(800, 15) + ';color:#fff;')}>Chưa đăng nhập, theo ngày</div>
+                  <div style={css('margin-top:10px; overflow:hidden;' + card)}>
+                    {!anon.length ? empty('Chưa có lượt nào.') : anon.map((d) => (
+                      <div key={d.day} style={css('display:flex; align-items:center; justify-content:space-between; padding:11px 20px; border-bottom:1px solid #F3F5FA;' + font(600, 13.5) + ';color:#0f172a;')}>
+                        <span>{fmtDay(d.day)}</span><span style={css(font(700, 13.5) + ';color:#B45300;')}>{d.n} lượt</span>
+                      </div>
+                    ))}
+                  </div>
+                </>)}
+              </div>
+            )
+          })()}
 
           {section === 'inbox' && (
             <div>

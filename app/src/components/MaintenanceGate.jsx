@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { css } from '../lib/style.js'
+import { api } from '../lib/api.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 
 // While the site is under maintenance (MAINTENANCE=on on the server), everyone but the admins and the
@@ -15,10 +16,16 @@ export default function MaintenanceGate({ children }) {
   const closed = maintenance && !user?.isAdmin && !user?.maintenanceOk
   const askLogin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('login')
   useEffect(() => {
-    if (!closed || loading || user || !ssoEnabled || askLogin) return
-    let tried = false
-    try { tried = sessionStorage.getItem(TRIED) === '1'; sessionStorage.setItem(TRIED, '1') } catch { /* storage off: try once anyway */ }
-    if (!tried) window.location.href = '/api/auth/sso/login?next=' + encodeURIComponent(window.location.pathname + window.location.hash)
+    if (!closed || loading) return
+    const path = window.location.pathname + window.location.hash
+    if (!user && ssoEnabled && !askLogin) {
+      let tried = false
+      try { tried = sessionStorage.getItem(TRIED) === '1'; sessionStorage.setItem(TRIED, '1') } catch { /* storage off: try once anyway */ }
+      if (!tried) { window.location.href = '/api/auth/sso/login?next=' + encodeURIComponent(path); return }
+    }
+    // the page is on screen: tell the admins (Admin › Bị chặn khi bảo trì). Sign-ins refused as not
+    // Zalopay staff land on /no-access and are already recorded by the server.
+    if (user || window.location.pathname !== '/no-access') api.maintenanceHit(path).catch(() => {})
   }, [closed, loading, user, ssoEnabled, askLogin])
   if (!closed) return children
   return (

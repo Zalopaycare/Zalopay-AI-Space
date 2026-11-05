@@ -10,6 +10,7 @@ import { sendMail } from '../mailer.js'
 import { appUrl } from '../mentions.js'
 import { vnDay } from '../auth.js'
 import { onlineNow, lastSeen } from '../presence.js'
+import { maintenanceOn } from '../maintenance.js'
 import { visibleShowcase, hideShowcase } from '../showcase.js'
 import { reviewCommenters } from './useCases.js'
 
@@ -294,6 +295,19 @@ router.delete('/access/grants/:email', (req, res) => {
   db.prepare('DELETE FROM staff_grants WHERE email = ?').run(email)
   db.prepare('UPDATE users SET staff_ok = 0 WHERE email = ?').run(email)
   res.json(accessList())
+})
+
+// Who opened the site while it was under maintenance (maintenance.js): one row per person, plus visitors
+// who weren't signed in, counted per day (Vietnam time).
+router.get('/maintenance-hits', (req, res) => {
+  const people = db.prepare(`SELECT COALESCE('u' || user_id, 'e' || email) who, MAX(email) email, MAX(name) name, kind, COUNT(*) n,
+      MIN(created_at) first, MAX(created_at) last, GROUP_CONCAT(DISTINCT path) paths
+    FROM maintenance_hits WHERE kind != 'anon' GROUP BY who, kind ORDER BY last DESC LIMIT 300`).all()
+    .map((r) => ({ email: r.email, name: r.name, domain: domainName(r.email, r.name), kind: r.kind, hits: r.n, first: r.first, last: r.last,
+      paths: String(r.paths || '').split(',').filter(Boolean).slice(0, 8) }))
+  const anon = db.prepare(`SELECT date(created_at, '+7 hours') day, COUNT(*) n FROM maintenance_hits WHERE kind = 'anon' GROUP BY day ORDER BY day DESC LIMIT 30`).all()
+  const since = db.prepare('SELECT MIN(created_at) t FROM maintenance_hits').get().t
+  res.json({ on: maintenanceOn(), since, people, anon })
 })
 
 router.use('/reports', adminReportRoutes)
