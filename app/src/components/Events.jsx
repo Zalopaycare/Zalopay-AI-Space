@@ -188,7 +188,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   const grayBtn = `display:inline-flex; align-items:center; justify-content:center; gap:7px; height:40px; padding:0 16px; border:none; border-radius:10px; background:#EEF1F6; color:#0F172A; cursor:pointer; font:700 13.5px ${FONT};`
   return createPortal(
     <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;')}>
-      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:600px; max-width:100%; margin:auto 0; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden; color-scheme:light;')}>
+      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:600px; max-width:100%; margin:auto 0; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden;')}>
         <button onClick={onClose} aria-label="Đóng" style={css('position:absolute; top:12px; right:12px; z-index:2; width:34px; height:34px; border:none; border-radius:50%; background:rgba(15,23,42,.6); color:#fff; cursor:pointer; font-size:16px;')}>✕</button>
         {!ev ? (
           <div style={css('padding:56px 20px; text-align:center; font:600 14px var(--zp-font-text); color:#64748b;')}>{missing ? 'Không tìm thấy sự kiện này. Có thể đã bị huỷ.' : 'Đang tải…'}</div>
@@ -273,11 +273,11 @@ function EventForm({ initial, onClose, onSaved }) {
       .finally(() => setBusy(false))
   }
   const label = (text, req) => <div style={css(`font:700 13px ${FONT}; color:#0F172A;`)}>{text}{req && <span style={css('color:#D8232A;')}> *</span>}</div>
-  const field = 'width:100%; box-sizing:border-box; margin-top:6px; height:42px; padding:0 13px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#0F172A; font:500 14px var(--zp-font-text); outline:none; color-scheme:light;'
+  const field = 'width:100%; box-sizing:border-box; margin-top:6px; height:42px; padding:0 13px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#0F172A; font:500 14px var(--zp-font-text); outline:none;'
   const pill = `height:30px; padding:0 12px; border:none; border-radius:999px; background:rgba(15,23,42,.7); color:#fff; font:700 12px ${FONT}; cursor:pointer;`
   return createPortal(
     <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;')}>
-      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('width:580px; max-width:100%; margin:auto 0; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden; color-scheme:light;')}>
+      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('width:580px; max-width:100%; margin:auto 0; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden;')}>
         <div style={css('display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:16px 20px; border-bottom:1px solid #EEF1F7;')}>
           <button onClick={onClose} style={css(`justify-self:start; border:none; background:none; padding:0; cursor:pointer; font:500 15px ${FONT}; color:#0F172A;`)}>Huỷ</button>
           <div style={css(`font:800 16px ${FONT}; color:#0F172A;`)}>{editing ? 'Sửa sự kiện' : 'Tạo sự kiện'}</div>

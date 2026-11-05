@@ -288,3 +288,9 @@ html.zp-gray .zp-richarea:focus { border-color: #4a6fbf !important; }
 /* scrolls (wheel, trackpad, swipe) without showing a scrollbar, e.g. the strip of events on phones */
 .zp-noscrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .zp-noscrollbar::-webkit-scrollbar { display: none; }
+/* a thin, quiet scrollbar (the "Sự kiện sắp tới" rail) */
+/* Chrome / Safari draw the ::-webkit-scrollbar below (6px) only while scrollbar-width is unset; Firefox gets "thin" */
+@supports (-moz-appearance: none) { .zp-thinscroll { scrollbar-width: thin; scrollbar-color: rgba(150,170,210,.45) transparent; } }
+.zp-thinscroll::-webkit-scrollbar { width: 6px; }
+.zp-thinscroll::-webkit-scrollbar-track { background: transparent; }
+.zp-thinscroll::-webkit-scrollbar-thumb { background: rgba(150,170,210,.45); border-radius: 999px; }

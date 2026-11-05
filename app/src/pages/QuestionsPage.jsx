@@ -99,20 +99,6 @@ export default function QuestionsPage() {
   const { id: detailId } = useParams()
   const [expanded, setExpanded] = useState(() => (detailId ? { [detailId]: true } : {}))
   useEffect(() => { setExpanded(detailId ? { [detailId]: true } : {}); if (detailId) window.scrollTo(0, 0) }, [detailId])
-  // Facebook-style rail: as long as its events, no scroll of its own. Shorter than the screen it stays put
-  // under the top bar; taller, it scrolls with the page until its end shows, then stays there.
-  const railRef = useRef(null)
-  const [railTop, setRailTop] = useState(80)
-  useEffect(() => {
-    const el = railRef.current
-    if (!wideEvents || !el) return
-    const fit = () => setRailTop(Math.min(80, window.innerHeight - el.offsetHeight - 24))
-    fit()
-    const ro = new ResizeObserver(fit)
-    ro.observe(el)
-    window.addEventListener('resize', fit)
-    return () => { ro.disconnect(); window.removeEventListener('resize', fit) }
-  }, [wideEvents, detailId])
   const detailTitle = detailId ? (questions.find((q) => q.id === detailId) || {}).title : ''
   useTitle(detailTitle ? String(detailTitle).slice(0, 60) + ' · AI Space' : 'AI Space')
   const [fullBody, setFullBody] = useState({})
@@ -854,7 +840,8 @@ export default function QuestionsPage() {
         </div>
         {wideEvents && (
           <div style={css('padding-top:22px;')}>
-            <div ref={railRef} style={{ position: 'sticky', top: railTop }}><EventsPanel layout="rail" /></div>
+            {/* stays under the top bar; a long list scrolls inside it, with a thin scrollbar */}
+            <div className="zp-thinscroll" style={css('position:sticky; top:80px; max-height:calc(100vh - 100px); overflow-y:auto; border-radius:20px;')}><EventsPanel layout="rail" /></div>
           </div>
         )}
         </div>
