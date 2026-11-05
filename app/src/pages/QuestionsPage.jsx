@@ -596,7 +596,7 @@ export default function QuestionsPage() {
                     </div>
 
                     {inModal && (
-                      <div style={css('margin-top:4px; padding:12px 22px 8px; background:#fff; border-top:1px solid #EEF1F7;')}>
+                      <div style={css('margin-top:4px; padding:12px 22px 8px; background:#fff; border-top:1px solid #EEF1F7; border-radius:0 0 22px 22px;')}>
                         <div style={css('display:flex; gap:10px; padding-bottom:10px; margin-bottom:2px; border-bottom:1px solid #E6EBF3;')}>
                           <div style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${user?.avatarColor || '#2c5fff'}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 12px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(user?.avatarUrl)}`)}>{user?.initials || '?'}</div>
                           <div style={{ flex: 1, position: 'relative' }}>
