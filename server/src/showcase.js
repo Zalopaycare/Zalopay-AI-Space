@@ -50,7 +50,16 @@ export function coverOf(id) {
 export function saveCoverFile(id, buf) {
   fs.mkdirSync(COVER_DIR, { recursive: true })
   fs.writeFileSync(path.join(COVER_DIR, `${id}.jpg`), buf)
+  try { fs.unlinkSync(path.join(COVER_DIR, `${id}.none`)) } catch { /* had no "removed" mark */ }
 }
+// "Bỏ ảnh" in the edit form: drop the cover added on the site, and mark the case so a cover that came
+// with its case file isn't shown either (<id>.none, cleared again by a new cover)
+export function removeCover(id) {
+  fs.mkdirSync(COVER_DIR, { recursive: true })
+  try { fs.unlinkSync(path.join(COVER_DIR, `${id}.jpg`)) } catch { /* none added on the site */ }
+  fs.writeFileSync(path.join(COVER_DIR, `${id}.none`), '')
+}
+const coverRemoved = (id) => fs.existsSync(path.join(COVER_DIR, `${id}.none`))
 // Admin edits of a showcase case, made through the share form on the site: <DATA_DIR>/showcase-edits/<id>.json.
 // The case file stays as written; the edit is laid over it when the case is served.
 const EDIT_DIR = path.join(process.env.DATA_DIR || '/data', 'showcase-edits')
@@ -124,7 +133,7 @@ function withEdit(c) {
   }
   return out
 }
-export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id)).map((c) => { const own = coverOf(c.id); const x = withEdit(c); return own ? { ...x, cover: own } : x })
+export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id)).map((c) => { const own = coverOf(c.id); const x = withEdit(c); return own ? { ...x, cover: own } : coverRemoved(c.id) ? { ...x, cover: '' } : x })
 export function hideShowcase(id) {
   if (!SHOWCASE_IDS.has(id)) return false
   hidden.add(id)

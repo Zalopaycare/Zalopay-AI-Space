@@ -468,13 +468,7 @@ export default function UseCaseLibraryPage() {
     setDraftSavedAt('')
   }
 
-  const submitShare = () => {
-    if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Bắt buộc trước khi gửi duyệt.'); return }
-    requireLogin(async () => {
-      // the same title as another of your own posts (waiting, being fixed or published): ask before sending a second one
-      const dup = await api.checkUseCaseTitle(shareForm.title.trim(), editing?.id || '').then((d) => d.duplicates || []).catch(() => [])
-      if (dup.length && !window.confirm(`Bạn đã có use case cùng tên "${dup[0].title}". Vẫn gửi bài này?`)) return
-      ;(editing ? (p) => api.updateSubmission(editing.id, p) : api.submitUseCase)({
+  const submissionPayload = () => ({
         title: shareForm.title.trim(), audience: shareForm.audience.trim(), team: shareForm.team.trim(),
         problem: shareForm.problem.trim(), solution: shareForm.solution.trim(), prep: shareForm.prep.trim(),
         prompt: stepsAsText(shareStepList), result: shareForm.result.trim(), limits: shareForm.limits.trim(),
@@ -483,8 +477,30 @@ export default function UseCaseLibraryPage() {
         category: shareCategoryList, topics: previewTopics, tools: previewTools,
         extra: shareExtra(),
         anonymous: shareAnon && !teamPost, alias: shareAnon && !teamPost ? shareAlias.trim() : '',
-        ...(shareCover?.data ? { cover: shareCover.data } : shareCover?.cleared ? { cover: null } : {}),
-      }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (shareBooth) loadPublishedUseCases(true); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
+  })
+  const coverPayload = () => (shareCover?.data ? { cover: shareCover.data } : shareCover?.cleared ? { cover: null } : {})
+  // Editing (a post or a built-in case): what the form held when it opened, to ask before saving changes
+  const caseEditPayload = () => ({
+      title: shareForm.title, oneLine: shareForm.oneLine, audience: shareForm.audience, level: shareLevel, tools: previewTools,
+      members: teamPost ? shareMemberList : [], problem: shareForm.problem, solution: shareForm.solution, result: shareForm.result,
+      prep: shareForm.prep, fitYes: shareForm.fitYes, fitNo: shareForm.fitNo, success: shareForm.success, pitfalls: shareForm.pitfalls,
+      safety: shareForm.safety, limits: shareForm.limits, steps: shareStepList,
+  })
+  const editSnap = () => JSON.stringify([editingCase ? caseEditPayload() : submissionPayload(), shareCover?.data ? 'new:' + shareCover.data.length : shareCover?.cleared ? 'cleared' : 'kept'])
+  const editStart = useRef(null)
+  useEffect(() => {
+    editStart.current = shareOpen && (editing || editingCase) ? editSnap() : null
+  }, [shareOpen, editing?.id, editingCase]) // eslint-disable-line react-hooks/exhaustive-deps
+  const confirmChanges = () => editStart.current == null || editStart.current === editSnap() || window.confirm('Bạn có chắc muốn cập nhật các thay đổi này?')
+
+  const submitShare = () => {
+    if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Bắt buộc trước khi gửi duyệt.'); return }
+    if (editing && !confirmChanges()) return
+    requireLogin(async () => {
+      // the same title as another of your own posts (waiting, being fixed or published): ask before sending a second one
+      const dup = await api.checkUseCaseTitle(shareForm.title.trim(), editing?.id || '').then((d) => d.duplicates || []).catch(() => [])
+      if (dup.length && !window.confirm(`Bạn đã có use case cùng tên "${dup[0].title}". Vẫn gửi bài này?`)) return
+      ;(editing ? (p) => api.updateSubmission(editing.id, p) : api.submitUseCase)({ ...submissionPayload(), ...coverPayload() }).then(() => { setShareStage('submitted'); setShareError(''); if (!editing) clearDraft(); if (shareBooth) loadPublishedUseCases(true); if (editing?.status === 'approved') { loadPublishedUseCases(true); refreshMeta(editing.id) } })
         .catch((e) => setShareError(e?.data?.message || 'Không gửi được use case, thử lại.'))
     })
   }
@@ -520,14 +536,10 @@ export default function UseCaseLibraryPage() {
   }
   const saveCaseEdit = () => {
     if (!shareForm.title.trim() || !shareForm.problem.trim() || !shareForm.solution.trim()) { setShareError('Cần có Tên use case, Bài toán và Giải pháp.'); return }
+    if (!confirmChanges()) return
     const id = editingCase
-    api.adminEditCase(id, {
-      title: shareForm.title, oneLine: shareForm.oneLine, audience: shareForm.audience, level: shareLevel, tools: previewTools,
-      members: teamPost ? shareMemberList : [], problem: shareForm.problem, solution: shareForm.solution, result: shareForm.result,
-      prep: shareForm.prep, fitYes: shareForm.fitYes, fitNo: shareForm.fitNo, success: shareForm.success, pitfalls: shareForm.pitfalls,
-      safety: shareForm.safety, limits: shareForm.limits, steps: shareStepList,
-    })
-      .then(() => (shareCover?.data ? api.adminSetCover(id, shareCover.data) : null))
+    api.adminEditCase(id, caseEditPayload())
+      .then(() => (shareCover?.data ? api.adminSetCover(id, shareCover.data) : shareCover?.cleared ? api.adminRemoveCover(id) : null))
       .then(() => loadPublishedUseCases(true))
       .then(() => { setShareOpen(false); setEditingCase(null); resetShareForm() })
       .catch((e) => setShareError(e?.data?.message || 'Chưa lưu được, thử lại nhé.'))
@@ -1299,7 +1311,7 @@ export default function UseCaseLibraryPage() {
                               {shareCover && !shareCover.cleared ? t('Đổi ảnh') : t('Tải ảnh lên')}
                             </label>
                             {shareCover && !shareCover.cleared && (
-                              <button type="button" onClick={() => setShareCover(editing ? { cleared: true } : null)} style={css('border:none; background:none; padding:0; cursor:pointer; font-size:12.5px; font-weight:700; color:#D8232A; font-family:inherit;')}>{t('Bỏ ảnh')}</button>
+                              <button type="button" onClick={() => setShareCover(editing || editingCase ? { cleared: true } : null)} style={css('border:none; background:none; padding:0; cursor:pointer; font-size:12.5px; font-weight:700; color:#D8232A; font-family:inherit;')}>{t('Bỏ ảnh')}</button>
                             )}
                           </div>
                           {missCover && <MissLine text={t('Chưa có ảnh bìa: bấm Tải ảnh lên')} />}

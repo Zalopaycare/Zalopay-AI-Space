@@ -107,6 +107,7 @@ export const api = {
   // an admin's edit of a use case already on the site (laid over its case file)
   adminEditCase: (id, edit) => request(`/showcase/admin/edit/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify(edit) }),
   adminSetCover: (id, cover) => request(`/showcase/admin/cover/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify({ cover }) }),
+  adminRemoveCover: (id) => request(`/showcase/admin/cover/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   inviteBooth: (id) => request(`/showcase/admin/booths/${encodeURIComponent(id)}/invite`, { method: 'POST' }),
   inviteAllBooths: () => request('/showcase/admin/booths/invite', { method: 'POST' }),
   // "Chat với Admin": my conversation, and the admins' shared inbox. `after` = last message id I have.

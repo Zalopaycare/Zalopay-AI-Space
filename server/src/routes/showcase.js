@@ -3,7 +3,7 @@ import { requireAuth } from '../auth.js'
 import { db } from '../db.js'
 import { notifyInterest, notifyOnce } from '../notifications.js'
 import { domainName } from '../mentions.js'
-import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, saveShowcaseEdit, showcaseEditOf, caseReview, markCaseReviewed } from '../showcase.js'
+import { visibleShowcase, showcaseCases, MEDIA_DIR, pendingCases, PENDING_BY_ID, SHOWCASE_IDS, boothAccounts, boothEmails, isBoothOwner, BOOTH_DOMAIN, COVER_DIR, coverOf, saveCoverFile, removeCover, saveShowcaseEdit, showcaseEditOf, caseReview, markCaseReviewed } from '../showcase.js'
 import path from 'node:path'
 import { renameFlagIds, setRenameFlag } from '../renameFlags.js'
 
@@ -140,6 +140,13 @@ router.post('/admin/cover/:id', requireAuth, (req, res) => {
   if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) return res.status(400).json({ error: 'bad_cover' })
   saveCoverFile(req.params.id, buf)
   res.json({ cover: coverOf(req.params.id) })
+})
+router.delete('/admin/cover/:id', requireAuth, (req, res) => {
+  const item = PENDING_BY_ID.get(req.params.id) || showcaseCases.find((c) => c.id === req.params.id)
+  if (!item) return res.status(404).json({ error: 'not_found' })
+  if (!req.user.is_admin && !isBoothOwner(item, req.user.email)) return res.status(403).json({ error: 'not_owner' })
+  removeCover(req.params.id)
+  res.json({ cover: '' })
 })
 
 // An edit of a showcase case through the share form (laid over the case file; see showcase.js), by one of
