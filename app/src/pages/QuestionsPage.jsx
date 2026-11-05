@@ -837,7 +837,7 @@ export default function QuestionsPage() {
         </div>
         {wideEvents && (
           <div style={css('padding-top:22px;')}>
-            <div style={css('position:sticky; top:80px; max-height:calc(100vh - 100px); overflow-y:auto; border-radius:20px;')}><EventsPanel layout="rail" /></div>
+            <div className="zp-noscrollbar" style={css('position:sticky; top:80px; max-height:calc(100vh - 100px); overflow-y:auto; border-radius:20px;')}><EventsPanel layout="rail" /></div>
           </div>
         )}
         </div>

@@ -284,3 +284,7 @@ html.zp-gray .zp-ps2 > .zp-ps2-sol { border-color: #3e4042; }
 html.zp-gray .zp-msform > div:not(.zp-msform-plain) { background: #242526; border-color: #3e4042; }
 html.zp-gray .zp-msform > div:not(.zp-msform-plain) > :first-child::before { color: #e4e6eb; }
 html.zp-gray .zp-richarea:focus { border-color: #4a6fbf !important; }
+
+/* scrolls (wheel, trackpad, touch) without showing a scrollbar, e.g. the "Sự kiện sắp tới" rail */
+.zp-noscrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.zp-noscrollbar::-webkit-scrollbar { display: none; }
