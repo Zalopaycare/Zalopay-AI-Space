@@ -72,7 +72,7 @@ app.listen(PORT, () => {
   console.log(`Server listening on :${PORT} (static: ${STATIC_DIR})`)
 })
 
-// "Buổi chia sẻ": the day-before reminder emails (routes/events.js)
+// "Sự kiện": the day-before reminder emails (routes/events.js)
 const remind = () => { try { sendEventReminders(String(process.env.APP_URL || '').replace(/\/+$/, '')) } catch (e) { console.error('[events] reminders failed:', e.message) } }
 setInterval(remind, 10 * 60_000)
 setTimeout(remind, 30_000)

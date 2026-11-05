@@ -790,7 +790,7 @@ export default function QuestionsPage() {
             </div>
           </div>
         ) : (
-        // wide enough: the "Sắp diễn ra" rail beside the feed; otherwise a strip of sessions above it
+        // wide enough: the "Sự kiện sắp tới" rail beside the feed; otherwise a strip of events above it
         <div style={wideEvents ? css('display:grid; grid-template-columns:minmax(0,840px) 300px; gap:24px; justify-content:center; padding-right:var(--zp-gutter);') : undefined}>
         <div style={{ minWidth: 0 }}>
           {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
@@ -871,7 +871,7 @@ export default function QuestionsPage() {
               {!editQId && (
                 <button onClick={() => { setView('feed'); openEventForm() }} className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:8px; width:100%; padding:9px 20px; border:none; border-bottom:1px solid #EEF1F7; background:#F7F9FE; cursor:pointer; text-align:left; font:500 12.5px var(--zp-font-text); color:#475569;')}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c5fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
-                  {t('Muốn hẹn mọi người gặp offline?')} <b style={css('color:#2c5fff;')}>{t('Tạo buổi chia sẻ →')}</b>
+                  {t('Muốn rủ mọi người tham gia gì đó offline?')} <b style={css('color:#2c5fff;')}>{t('Tạo sự kiện →')}</b>
                 </button>
               )}
               <div style={css('display:flex; gap:12px; padding:18px 20px 6px;')}>

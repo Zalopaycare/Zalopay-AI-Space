@@ -22,7 +22,7 @@ const STEPS = [
   { at: '[data-tour="nav-home"]', title: 'AI Space', text: 'Trang chủ: mọi người đăng post hỏi đáp, chia sẻ mẹo hay và kết quả làm với AI.' },
   { at: '[data-tour="compose"]', title: 'Đăng post', text: 'Bấm vào đây để hỏi hay chia sẻ. Gõ @ để gọi tên đồng nghiệp (họ nhận email); ngại thì bật đăng ẩn danh.' },
   { at: '[data-qid]', title: 'Một post', text: 'Bấm vào để đọc và bình luận. ♡ để thích, 💬 để trả lời, 🔖 để lưu đọc lại sau.' },
-  { at: '[data-tour="events"]', title: 'Sắp diễn ra', text: 'Buổi chia sẻ offline do đồng nghiệp tổ chức. Bấm Quan tâm để được nhắc lịch qua email; muốn hẹn mọi người gặp thì bấm + Tạo buổi chia sẻ.' },
+  { at: '[data-tour="events"]', title: 'Sự kiện sắp tới', text: 'Những gì đồng nghiệp tổ chức offline: workshop, gặp mặt, xem chung, ăn mừng… Bấm Quan tâm nếu bạn muốn đến (có email nhắc trước 1 ngày); muốn rủ mọi người thì bấm + Tạo sự kiện.' },
   { at: '[data-tour="nav-usecases"]', title: 'Use Case Library', text: 'Các cách dùng AI đã chạy thật: bài toán, giải pháp và từng bước để bạn tự làm lại. Lọc theo Category và Công cụ AI.' },
   { at: '[data-tour="share"]', title: 'Chia sẻ use case', text: 'Điền form từng bước (kèm hình minh họa hoặc file), hoặc tải template Word về điền. Admin xem và góp ý trước khi đăng.' },
   { at: '[data-tour="mine"]', title: 'Của tôi', text: 'Thông báo khi có người trả lời, bình luận hay tag bạn; Đã lưu là bài bạn đánh dấu; Hồ sơ gom bài của bạn.' },
