@@ -23,11 +23,13 @@ const DAYS = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ
 const p2 = (n) => String(n).padStart(2, '0')
 const hm = (d) => `${p2(d.getHours())}:${p2(d.getMinutes())}`
 const dayStart = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-/** Facebook-style: "Hôm nay lúc 18:00", "Thứ 7 này lúc 07:30", "Thứ 7, 28/11 lúc 18:00" (viewer's time zone) */
+/** Facebook-style: "Hôm nay lúc 18:00", "Thứ 7 này lúc 07:30", "Thứ 7, 28/11 lúc 18:00", or just the day
+ *  when no time was given (viewer's time zone) */
 export function whenLabel(e) {
   const s = new Date(e.startsAt), now = new Date()
   const days = Math.round((dayStart(s) - dayStart(now)) / 86400000)
   const day = days === 0 ? 'Hôm nay' : days === 1 ? 'Ngày mai' : days > 1 && days < 7 ? `${DAYS[s.getDay()]} này` : `${DAYS[s.getDay()]}, ${p2(s.getDate())}/${p2(s.getMonth() + 1)}${s.getFullYear() !== now.getFullYear() ? '/' + s.getFullYear() : ''}`
+  if (e.allDay) return day
   const end = e.endsAt ? new Date(e.endsAt) : null
   if (end && dayStart(end) !== dayStart(s)) return `${day} lúc ${hm(s)} – ${p2(end.getDate())}/${p2(end.getMonth() + 1)}`
   return `${day} lúc ${hm(s)}${end ? '–' + hm(end) : ''}`
@@ -241,7 +243,7 @@ function EventForm({ initial, onClose, onSaved }) {
   const editing = !!initial.id
   const [title, setTitle] = useState(initial.title || '')
   const [date, setDate] = useState(initial.startsAt ? localDate(initial.startsAt) : '')
-  const [start, setStart] = useState(initial.startsAt ? hm(new Date(initial.startsAt)) : '')
+  const [start, setStart] = useState(initial.startsAt && !initial.allDay ? hm(new Date(initial.startsAt)) : '')
   const [end, setEnd] = useState(initial.endsAt ? hm(new Date(initial.endsAt)) : '')
   const [location, setLocation] = useState(initial.location || '')
   const [description, setDescription] = useState(initial.description || '')
@@ -253,15 +255,18 @@ function EventForm({ initial, onClose, onSaved }) {
   const fileRef = useRef(null)
   const dialog = useDialog(true, onClose, editing ? 'Sửa sự kiện' : 'Tạo sự kiện')
   const preview = cover === undefined ? initial.coverUrl || null : cover
-  const ready = title.trim() && date && start && location.trim()
+  // the times are optional: no start time makes it a whole-day event
+  const ready = title.trim() && date && location.trim()
   const pick = (file) => cropCover(file).then((r) => { setCover(r.data); setCoverNote(r.note) }).catch((e) => e.message && setCoverNote(e.message))
   const save = () => {
-    if (!ready) { setError('Điền tên, ngày, giờ bắt đầu và địa điểm nhé.'); return }
-    const startsAt = new Date(`${date}T${start}`)
+    if (!ready) { setError('Điền tên, ngày và địa điểm nhé.'); return }
+    if (end && !start) { setError('Chọn giờ bắt đầu trước khi chọn giờ kết thúc.'); return }
+    const allDay = !start
+    const startsAt = new Date(`${date}T${start || '00:00'}`)
     const endsAt = end ? new Date(`${date}T${end}`) : null
     if (endsAt && endsAt <= startsAt) { setError('Giờ kết thúc phải sau giờ bắt đầu.'); return }
     setBusy(true); setError('')
-    const payload = { title, description, location, startsAt: startsAt.toISOString(), endsAt: endsAt ? endsAt.toISOString() : null, ...(cover !== undefined ? { cover } : {}) }
+    const payload = { title, description, location, allDay, startsAt: startsAt.toISOString(), endsAt: endsAt ? endsAt.toISOString() : null, ...(cover !== undefined ? { cover } : {}) }
     ;(editing ? api.updateEvent(initial.id, payload) : api.createEvent(payload))
       .then((d) => onSaved(d.event))
       .catch((e) => setError(e?.data?.message || 'Chưa lưu được, thử lại nhé.'))
@@ -300,7 +305,7 @@ function EventForm({ initial, onClose, onSaved }) {
           <div style={css('margin-top:14px;')}>{label('Tên sự kiện', true)}<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} placeholder="Ví dụ: Xem chung chung kết, Workshop prompt cho PM" style={css(field)} /></div>
           <div style={css('margin-top:14px; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); gap:10px;')}>
             <div>{label('Ngày', true)}<input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={css(field)} /></div>
-            <div>{label('Bắt đầu', true)}<input type="time" value={start} onChange={(e) => setStart(e.target.value)} style={css(field)} /></div>
+            <div>{label('Bắt đầu')}<input type="time" value={start} onChange={(e) => setStart(e.target.value)} style={css(field)} /></div>
             <div>{label('Kết thúc')}<input type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={css(field)} /></div>
           </div>
           <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Pantry tầng 6, hay một quán gần công ty" style={css(field)} /></div>

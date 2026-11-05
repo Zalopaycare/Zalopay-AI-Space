@@ -35,14 +35,17 @@ CREATE TABLE IF NOT EXISTS event_interests (
   PRIMARY KEY (event_id, user_id)
 );
 `)
+// all_day: no start time given (starts_at is that day's local midnight, no end time)
+if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'all_day')) db.exec('ALTER TABLE events ADD COLUMN all_day INTEGER NOT NULL DEFAULT 0')
 
 const router = express.Router()
 // every column but the cover picture itself (served on its own)
-const COLS = 'id, title, description, starts_at, ends_at, location, cover_mime, author_id, reminded_at, created_at, edited_at'
+const COLS = 'id, title, description, starts_at, ends_at, all_day, location, cover_mime, author_id, reminded_at, created_at, edited_at'
 const byId = (id) => db.prepare(`SELECT ${COLS} FROM events WHERE id = ?`).get(id)
 const DEFAULT_LENGTH_MS = 60 * 60_000
-// a session stays on the rail until it is over (or an hour after it starts, without an end time)
-const endOf = (e) => e.ends_at || new Date(new Date(e.starts_at).getTime() + DEFAULT_LENGTH_MS).toISOString()
+// an event stays on the rail until it is over: its end time, the end of its day (no time given),
+// or an hour after it starts (no end time)
+const endOf = (e) => e.ends_at || new Date(new Date(e.starts_at).getTime() + (e.all_day ? 24 * 3600_000 : DEFAULT_LENGTH_MS)).toISOString()
 
 const userById = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id)
 const person = (u) => (u ? { id: u.id, name: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : null)
@@ -52,7 +55,7 @@ function shape(e, me) {
   const ids = interestedIds(e.id)
   const mine = !!me && e.author_id === me.id
   return {
-    id: e.id, title: e.title, description: e.description, startsAt: e.starts_at, endsAt: e.ends_at, location: e.location,
+    id: e.id, title: e.title, description: e.description, startsAt: e.starts_at, endsAt: e.ends_at, allDay: !!e.all_day, location: e.location,
     coverUrl: e.cover_mime ? `/api/events/${encodeURIComponent(e.id)}/cover?v=${encodeURIComponent(e.edited_at || e.created_at)}` : null,
     host: person(userById(e.author_id)), isMine: mine, canEdit: mine || !!me?.is_admin,
     interestCount: ids.length, interested: !!me && ids.includes(me.id),
@@ -65,9 +68,10 @@ function shape(e, me) {
 const clean = (v, max) => String(v ?? '').replace(/\r\n/g, '\n').trim().slice(0, max)
 const isoOrNull = (v) => { const d = new Date(String(v || '')); return isNaN(d) ? null : d.toISOString() }
 function readFields(body) {
-  const f = { title: clean(body?.title, 160), description: clean(body?.description, 4000), location: clean(body?.location, 200), starts_at: isoOrNull(body?.startsAt), ends_at: body?.endsAt ? isoOrNull(body.endsAt) : null }
+  const allDay = body?.allDay === true
+  const f = { title: clean(body?.title, 160), description: clean(body?.description, 4000), location: clean(body?.location, 200), starts_at: isoOrNull(body?.startsAt), ends_at: !allDay && body?.endsAt ? isoOrNull(body.endsAt) : null, all_day: allDay ? 1 : 0 }
   if (!f.title) return { error: 'Cần đặt tên cho sự kiện.' }
-  if (!f.starts_at) return { error: 'Cần chọn ngày giờ bắt đầu.' }
+  if (!f.starts_at) return { error: 'Cần chọn ngày diễn ra.' }
   if (!f.location) return { error: 'Cần ghi địa điểm.' }
   if (f.ends_at && f.ends_at <= f.starts_at) return { error: 'Giờ kết thúc phải sau giờ bắt đầu.' }
   return { f }
@@ -96,6 +100,7 @@ function whenText(e) {
   const s = vn(e.starts_at)
   const day = `${DAYS[s.getUTCDay()]}, ${p2(s.getUTCDate())}/${p2(s.getUTCMonth() + 1)}`
   const t = (d) => `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`
+  if (e.all_day) return day
   return `${day} · ${t(s)}${e.ends_at ? '–' + t(vn(e.ends_at)) : ''}`
 }
 
@@ -124,12 +129,12 @@ router.get('/:id', (req, res) => {
 router.post('/', requireAuth, (req, res) => {
   const { f, error } = readFields(req.body)
   if (error) return res.status(400).json({ error: 'invalid', message: error })
-  if (f.starts_at < new Date(Date.now() - 5 * 60_000).toISOString()) return res.status(400).json({ error: 'invalid', message: 'Thời gian bắt đầu đã qua rồi.' })
+  if ((f.all_day ? endOf(f) : f.starts_at) < new Date(Date.now() - 5 * 60_000).toISOString()) return res.status(400).json({ error: 'invalid', message: 'Thời gian bắt đầu đã qua rồi.' })
   const cover = decodeCover(req.body?.cover)
   if (cover === false) return res.status(400).json({ error: 'bad_cover', message: 'Ảnh bìa không hợp lệ hoặc lớn hơn 2 MB.' })
   const id = nextId('e')
-  db.prepare('INSERT INTO events (id, title, description, starts_at, ends_at, location, author_id) VALUES (?,?,?,?,?,?,?)')
-    .run(id, f.title, f.description, f.starts_at, f.ends_at, f.location, req.user.id)
+  db.prepare('INSERT INTO events (id, title, description, starts_at, ends_at, all_day, location, author_id) VALUES (?,?,?,?,?,?,?,?)')
+    .run(id, f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, req.user.id)
   saveCover(id, cover)
   res.status(201).json({ event: shape(byId(id), req.user) })
 })
@@ -142,10 +147,10 @@ router.patch('/:id', requireAuth, (req, res) => {
   if (error) return res.status(400).json({ error: 'invalid', message: error })
   const cover = decodeCover(req.body?.cover)
   if (cover === false) return res.status(400).json({ error: 'bad_cover', message: 'Ảnh bìa không hợp lệ hoặc lớn hơn 2 MB.' })
-  const moved = f.starts_at !== e.starts_at || f.ends_at !== e.ends_at || f.location !== e.location
+  const moved = f.starts_at !== e.starts_at || f.ends_at !== e.ends_at || f.all_day !== e.all_day || f.location !== e.location
   // a new time means a new reminder
-  db.prepare(`UPDATE events SET title = ?, description = ?, starts_at = ?, ends_at = ?, location = ?, edited_at = datetime('now')${f.starts_at !== e.starts_at ? ', reminded_at = NULL' : ''} WHERE id = ?`)
-    .run(f.title, f.description, f.starts_at, f.ends_at, f.location, e.id)
+  db.prepare(`UPDATE events SET title = ?, description = ?, starts_at = ?, ends_at = ?, all_day = ?, location = ?, edited_at = datetime('now')${f.starts_at !== e.starts_at ? ', reminded_at = NULL' : ''} WHERE id = ?`)
+    .run(f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, e.id)
   saveCover(e.id, cover)
   const after = byId(e.id)
   if (moved) {
