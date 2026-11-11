@@ -12,18 +12,19 @@ import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
  * page can never scroll past the footer.
  */
 export default function Layout({ active, children }) {
-  const { offset } = useSidebarLayout()
+  const { offset, rightPad } = useSidebarLayout()
   const { pathname } = useLocation()
   return (
     <>
       <Sidebar active={active} />
       {/* full width: the page's backdrop (SpaceBackdrop) runs on under the see-through sidebar; the content
-          itself starts after the sidebar (main's padding, --zp-rail for the backdrops that bleed under it) */}
+          itself starts after the sidebar and keeps as much room on the right (main's padding; --zp-rail and
+          --zp-rail-r for the backdrops that bleed out to both edges), so every page centres on the screen */}
       <div style={{ paddingTop: 58, minHeight: '100vh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', background: '#04060d' }}>
         <TopNav />
         {/* the welcome tour, once for someone new (and on request from the account menu) */}
         <WelcomeTour />
-        <main key={pathname} className={'zp-main ' + (typeof document !== 'undefined' && document.documentElement.classList.contains('zp-vt') ? '' : 'zp-page-in')} style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'clip', paddingLeft: offset, '--zp-rail': offset + 'px', transition: 'padding-left .16s ease' }}>
+        <main key={pathname} className={'zp-main ' + (typeof document !== 'undefined' && document.documentElement.classList.contains('zp-vt') ? '' : 'zp-page-in')} style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'clip', paddingLeft: offset, paddingRight: rightPad, '--zp-rail': offset + 'px', '--zp-rail-r': rightPad + 'px', transition: 'padding-left .16s ease, padding-right .16s ease' }}>
           {children}
         </main>
         {/* a way back to the top of a long page, just under the last post (above the footer line); centred

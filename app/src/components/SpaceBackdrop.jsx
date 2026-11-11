@@ -14,11 +14,11 @@ const STARS = [
  * `arcTop` is where the horizon starts and `bg` must match the page background so the
  * horizon's body blends into the rest of the page.
  */
-// Wrappers that carry a backdrop add BLEED so it runs on under the see-through sidebar (Layout sets
-// --zp-rail to the sidebar's width); their content still starts after it. The glow and horizon stay
-// centred on the content (CX), not on the screen.
-export const BLEED = 'margin-left:calc(-1 * var(--zp-rail, 0px)); padding-left:var(--zp-rail, 0px);'
-const CX = 'calc(50% + var(--zp-rail, 0px) / 2)'
+// Wrappers that carry a backdrop add BLEED so it runs on to both edges of the screen, under the
+// see-through sidebar too (Layout sets --zp-rail to the sidebar's width and --zp-rail-r to the room kept
+// on the right); their content stays between the two. The glow and horizon stay centred on the content (CX).
+export const BLEED = 'margin-left:calc(-1 * var(--zp-rail, 0px)); padding-left:var(--zp-rail, 0px); margin-right:calc(-1 * var(--zp-rail-r, 0px)); padding-right:var(--zp-rail-r, 0px);'
+const CX = 'calc(50% + (var(--zp-rail, 0px) - var(--zp-rail-r, 0px)) / 2)'
 
 // The horizon sits this much higher than `arcTop`, so the curve peeks out right under the page heading.
 const ARC_LIFT = 80

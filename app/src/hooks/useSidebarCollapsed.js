@@ -67,5 +67,8 @@ export function useSidebarLayout() {
   }, [])
   const setDrawerOpen = (v) => { drawerOpenNow = v; setDrawerState(v); window.dispatchEvent(new CustomEvent(DRAWER_EVENT, { detail: v })) }
   const offset = narrow ? 0 : collapsed ? 68 : 224
-  return { collapsed, setCollapsed, narrow, mobile: width < 700, drawerOpen: narrow && drawerOpen, setDrawerOpen, offset }
+  // Pages sit centred on the screen when there's room: the right gets the same space as the sidebar
+  // takes on the left, shrinking to none on smaller screens so the content keeps at least 1000px.
+  const rightPad = narrow ? 0 : Math.max(0, Math.min(offset, width - offset - 1000))
+  return { collapsed, setCollapsed, narrow, mobile: width < 700, drawerOpen: narrow && drawerOpen, setDrawerOpen, offset, rightPad, width }
 }
