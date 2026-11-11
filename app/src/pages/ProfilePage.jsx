@@ -339,8 +339,8 @@ export default function ProfilePage() {
 
   return (
     <Layout active="profile">
-      <div style={css('position:relative; background:#04060d; color:#e8eefc;' + BLEED)}>
-        <SpaceBackdrop arcTop={section ? 200 : 230} bg="#04060d" />
+      <div style={css('position:relative; background:#07070c; color:#e8eefc;' + BLEED)}>
+        <SpaceBackdrop arcTop={section ? 200 : 230} />
 
         {/* Profile header — only on the main view, hidden once a specific section is selected. */}
         {/* Section heading — gradient/glow style, no item-count label (removed per latest design revision). */}
