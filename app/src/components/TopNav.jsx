@@ -20,23 +20,24 @@ export default function TopNav() {
   const location = useLocation()
   const { t } = useI18n()
   const { user, openLogin } = useAuth()
-  const { collapsed, setCollapsed, narrow, mobile, drawerOpen, setDrawerOpen } = useSidebarLayout()
-  const menuLabel = narrow ? (drawerOpen ? t('Đóng menu') : t('Mở menu')) : collapsed ? t('Mở rộng menu') : t('Thu gọn menu')
+  const { narrow, mobile, drawerOpen, setDrawerOpen } = useSidebarLayout()
+  const menuLabel = drawerOpen ? t('Đóng menu') : t('Mở menu')
 
   return (
     <div style={css(`view-transition-name:zp-topnav; position:fixed; top:0; left:0; right:0; height:58px; z-index:2100; display:flex; align-items:center; padding:0 24px 0 16px; background:linear-gradient(90deg, rgba(9,18,58,.86) 0%, rgba(5,9,28,.84) 50%, rgba(9,18,58,.86) 100%); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border-bottom:1px solid rgba(130,170,255,.12); box-shadow:0 8px 30px rgba(0,0,0,.35); font-family:inherit;`)}>
       <div style={css('flex:1; display:flex; align-items:center; gap:10px; min-width:0;')}>
-        <button
-          onClick={() => (narrow ? setDrawerOpen(!drawerOpen) : setCollapsed(!collapsed))}
+        {/* the ☰ only opens the drawer on narrow screens; on wide ones the sidebar is always open */}
+        {narrow && <button
+          onClick={() => setDrawerOpen(!drawerOpen)}
           title={menuLabel}
           aria-label={menuLabel}
           aria-controls="zp-sidebar"
-          aria-expanded={narrow ? drawerOpen : !collapsed}
+          aria-expanded={drawerOpen}
           className={hoverClass('background:rgba(255,255,255,.09) !important; color:#fff !important;')}
           style={css('flex:none; width:36px; height:36px; border:none; border-radius:10px; background:transparent; color:#b4c3e8; cursor:pointer; display:flex; align-items:center; justify-content:center;')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
-        </button>
+        </button>}
         <SoftLink to="/" title="Zalopay AI Space" style={css('display:flex; align-items:center; text-decoration:none;')}>
           <img src={logo} alt="Zalopay AI Space" style={{ height: 17, width: 'auto', display: 'block' }} />
         </SoftLink>

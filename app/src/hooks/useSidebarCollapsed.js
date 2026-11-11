@@ -56,7 +56,9 @@ export function useWidth() {
  * and fixed elements must sit from the left edge (0 in drawer mode).
  */
 export function useSidebarLayout() {
-  const [collapsed, setCollapsed] = useSidebarCollapsed()
+  // the sidebar stays open on wide screens (it can't be folded to icons any more); narrow screens keep the drawer
+  const [, setCollapsed] = useSidebarCollapsed()
+  const collapsed = false
   const width = useWidth()
   const narrow = width < DRAWER_BREAKPOINT
   const [drawerOpen, setDrawerState] = useState(drawerOpenNow)
