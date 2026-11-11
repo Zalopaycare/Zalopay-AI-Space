@@ -529,7 +529,7 @@ export default function QuestionsPage() {
   // row. In the feed the posts sit one under another in a single column; inModal = the post on its own
   // page, with the reply box and the replies under it.
   const renderQCard = (q, inModal) => (
-                  <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : hoverClass(CARD_HOVER)} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`position:relative; ${inModal ? '' : 'cursor:pointer; background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:transform .18s ease, box-shadow .18s ease;'}`)}>
+                  <div key={q.id} data-qid={inModal ? undefined : q.id} className={inModal ? undefined : hoverClass(CARD_HOVER)} onClick={inModal ? undefined : (e) => { if (!e.target.closest('button, a, input, textarea, [role="button"]')) q.onToggle() }} style={css(`position:relative; ${openMenuId === q.id ? 'z-index:30;' : ''} ${inModal ? '' : 'cursor:pointer; background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:transform .18s ease, box-shadow .18s ease;'}`)}>
                     <div style={css(`display:flex; gap:12px; padding:${inModal ? '20px 22px 6px' : '16px 20px 10px'};`)}>
                       <div style={css(`flex:none; width:38px; height:38px; border-radius:50%; background:${q.avatarBg}; color:#fff; display:flex; align-items:center; justify-content:center; font:800 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif;${avatarPhotoCss(q.avatarUrl)}`)}>{q.initials}</div>
                       <div style={css('flex:1; min-width:0;')}>
