@@ -60,6 +60,8 @@ const USER_REFS = [
   ['saved_questions', 'user_id', 'lượt lưu'], ['use_case_saves', 'user_id', 'lượt lưu'], ['use_case_applied', 'user_id', '"Tôi đã áp dụng"'],
   ['use_case_ratings', 'user_id', 'đánh giá'], ['use_case_interest', 'user_id', 'lượt quan tâm booth'], ['reports', 'reporter_id', 'báo cáo đã gửi'],
   ['use_case_submissions', 'reviewed_by', 'quyết định duyệt bài'], ['review_comments', 'resolved_by', 'quyết định duyệt bài'], ['access_requests', 'decided_by', 'quyết định duyệt bài'],
+  ['events', 'author_id', 'sự kiện'], ['event_comments', 'author_id', 'bình luận sự kiện'], ['event_interests', 'user_id', 'lượt quan tâm sự kiện'],
+  ['maintenance_grants', 'granted_by', 'quyết định duyệt bài'], ['app_settings', 'updated_by', 'quyết định duyệt bài'],
   ['staff_grants', 'granted_by', 'quyết định duyệt bài'], ['booth_invites', 'invited_by', 'quyết định duyệt bài'], ['rename_flags', 'by_user', 'quyết định duyệt bài'],
 ]
 // a table this install hasn't created yet (it's made by the feature that uses it) just counts 0

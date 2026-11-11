@@ -3,13 +3,14 @@ import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { domainName, initialsOf, appUrl } from '../mentions.js'
-import { notify, notifyOnce } from '../notifications.js'
+import { notify, notifyOnce, notifyParticipants } from '../notifications.js'
 import { sendMail } from '../mailer.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
 
 // "Sự kiện": anything happening offline that anyone can post (no review), Facebook-event style, shown in
 // the "Sự kiện sắp tới" rail beside the AI Space feed. People press "Quan tâm"; the host sees who, and
 // everyone interested gets an email the day before (and when the time or place changes, or it's cancelled).
+// People comment under it too (event_comments); the host hears of each comment, by email as on a post.
 // Times are ISO strings in UTC ("2026-11-12T07:00:00.000Z"), so they compare as text.
 
 db.exec(`
@@ -34,6 +35,16 @@ CREATE TABLE IF NOT EXISTS event_interests (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (event_id, user_id)
 );
+`)
+db.exec(`
+CREATE TABLE IF NOT EXISTS event_comments (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS event_comments_event ON event_comments (event_id, created_at);
 `)
 // all_day: no start time given (starts_at is that day's local midnight, no end time)
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'all_day')) db.exec('ALTER TABLE events ADD COLUMN all_day INTEGER NOT NULL DEFAULT 0')
@@ -61,9 +72,15 @@ function shape(e, me) {
     interestCount: ids.length, interested: !!me && ids.includes(me.id),
     // who's coming: the host and the admins see everyone; others see a few faces
     people: ids.slice(0, mine || me?.is_admin ? 500 : 8).map((uid) => person(userById(uid))).filter(Boolean),
+    commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n,
     createdAt: e.created_at,
   }
 }
+// oldest first, as a conversation reads
+const commentsOf = (id, me) => db.prepare('SELECT * FROM event_comments WHERE event_id = ? ORDER BY created_at, id').all(id).map((c) => ({
+  id: c.id, body: c.body, time: c.created_at, author: person(userById(c.author_id)),
+  canDelete: !!me && (c.author_id === me.id || !!me.is_admin), isMine: !!me && c.author_id === me.id,
+}))
 
 const clean = (v, max) => String(v ?? '').replace(/\r\n/g, '\n').trim().slice(0, max)
 const isoOrNull = (v) => { const d = new Date(String(v || '')); return isNaN(d) ? null : d.toISOString() }
@@ -123,7 +140,7 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const e = byId(req.params.id)
   if (!e) return res.status(404).json({ error: 'not_found' })
-  res.json({ event: { ...shape(e, req.user), past: endOf(e) <= new Date().toISOString() } })
+  res.json({ event: { ...shape(e, req.user), past: endOf(e) <= new Date().toISOString(), comments: commentsOf(e.id, req.user) } })
 })
 
 router.post('/', requireAuth, (req, res) => {
@@ -180,10 +197,41 @@ router.delete('/:id', requireAuth, (req, res) => {
   }
   db.transaction(() => {
     db.prepare('DELETE FROM event_interests WHERE event_id = ?').run(e.id)
+    db.prepare('DELETE FROM event_comments WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM events WHERE id = ?').run(e.id)
   })()
   afterRemoval(req, { authorId: e.author_id, what: 'sự kiện', title: e.title, content: e.description || e.title })
   res.json({ ok: true })
+})
+
+const MAX_COMMENT = 2000
+router.post('/:id/comments', requireAuth, (req, res) => {
+  const e = byId(req.params.id)
+  if (!e) return res.status(404).json({ error: 'not_found' })
+  const body = clean(req.body?.body, MAX_COMMENT)
+  if (!body) return res.status(400).json({ error: 'empty_body' })
+  const cid = nextId('ec')
+  db.prepare('INSERT INTO event_comments (id, event_id, author_id, body) VALUES (?, ?, ?, ?)').run(cid, e.id, req.user.id, body)
+  const who = domainName(req.user.email, req.user.name)
+  const href = `/?event=${encodeURIComponent(e.id)}`
+  const host = userById(e.author_id)
+  if (host && host.id !== req.user.id) {
+    notify(host.email, { kind: 'comment', text: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, href, actor: req.user.name })
+    sendMail({ to: host.email, subject: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
+  }
+  // the others who commented before: one in-app note per event, kept up to date
+  const before = db.prepare('SELECT DISTINCT author_id FROM event_comments WHERE event_id = ? AND id != ?').all(e.id, cid).map((r) => r.author_id)
+  notifyParticipants(before, [req.user.email, host?.email], { ref: 'joined:ev:' + e.id, text: `${who} cũng đã bình luận trong sự kiện "${e.title}"`, href, actor: req.user.name })
+  res.status(201).json({ comments: commentsOf(e.id, req.user), commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n })
+})
+router.delete('/:id/comments/:cid', requireAuth, (req, res) => {
+  const c = db.prepare('SELECT * FROM event_comments WHERE id = ? AND event_id = ?').get(req.params.cid, req.params.id)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  const block = removalCheck(req, c.author_id)
+  if (block) return res.status(block.status).json({ error: block.error })
+  db.prepare('DELETE FROM event_comments WHERE id = ?').run(c.id)
+  afterRemoval(req, { authorId: c.author_id, what: 'bình luận', title: '', content: c.body })
+  res.json({ comments: commentsOf(req.params.id, req.user), commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(req.params.id).n })
 })
 
 router.post('/:id/interest', requireAuth, (req, res) => {

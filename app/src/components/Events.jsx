@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { css, hoverClass } from '../lib/style.js'
-import { api } from '../lib/api.js'
+import { api, relativeTime } from '../lib/api.js'
 import { cropCover } from '../lib/cover.js'
 import { copyWithToast } from '../lib/clipboard.js'
 import { useAuth } from '../auth/AuthContext.jsx'
@@ -82,6 +82,8 @@ function ShareButton({ ev, height = 36, onDark = false }) {
 }
 
 const countLabel = (n) => (n ? `${n} người quan tâm` : 'Chưa ai quan tâm')
+/** "3 người quan tâm · 2 bình luận" */
+const statsLabel = (ev) => [countLabel(ev.interestCount), ev.commentCount ? `${ev.commentCount} bình luận` : ''].filter(Boolean).join(' · ')
 
 /** One event as a card: cover, date line, title, place, count, buttons. */
 function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false }) {
@@ -96,7 +98,7 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false }) {
         <div style={css(`font:700 ${onDark ? 11.5 : 12.5}px ${FONT}; color:${ink.when};`)}>{whenLabel(ev)}</div>
         <div style={css(`margin-top:2px; font:800 ${onDark ? 13.5 : 15}px/1.3 ${FONT}; color:${ink.title}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;`)}>{ev.title}</div>
         <div style={css(`margin-top:2px; font:500 ${onDark ? 12 : 13}px/1.4 var(--zp-font-text); color:${ink.place}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;`)} title={ev.location}>{ev.location}</div>
-        <div style={css(`margin-top:2px; font:400 ${onDark ? 11.5 : 12.5}px var(--zp-font-text); color:${ink.count};`)}>{countLabel(ev.interestCount)}</div>
+        <div style={css(`margin-top:2px; font:400 ${onDark ? 11.5 : 12.5}px var(--zp-font-text); color:${ink.count};`)}>{statsLabel(ev)}</div>
       </div>
       <div style={css(`margin-top:${onDark ? 8 : 10}px; display:flex; gap:${onDark ? 6 : 8}px;`)}>
         {ev.isMine
@@ -208,7 +210,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
             <h2 style={css(`margin:5px 0 0; font:800 22px/1.3 ${FONT}; color:#0F172A; word-break:break-word;`)}>{ev.title}</h2>
             {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>, ev.location)}
             {ev.host && row(<Avatar user={ev.host} size={20} fontSize={8} />, <>Tổ chức bởi <b style={css('color:#0F172A;')}>{ev.host.name}</b></>)}
-            {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>, countLabel(ev.interestCount))}
+            {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>, statsLabel(ev))}
           </div>
           <div style={css('display:flex; gap:8px; padding:16px 22px 0;')}>
             {!ev.past && !ev.isMine && <InterestButton ev={ev} onToggle={toggle} grow height={40} />}
@@ -235,6 +237,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               </div>
             </div>
           )}
+          <EventComments ev={ev} onChange={(d) => { setEv((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ ...ev, commentCount: d.commentCount }) }} />
           <div style={css('display:flex; align-items:center; gap:12px; padding:18px 22px 20px; margin-top:18px; border-top:1px solid #EEF1F7;')}>
             <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past && !ev.isMine ? 'Bấm Quan tâm để nhận email nhắc trước 1 ngày, và khi sự kiện đổi giờ, đổi chỗ hay huỷ.' : ''}</div>
             {ev.canEdit && <button onClick={remove} style={css(`flex:none; height:32px; padding:0 14px; border:1px solid #F5C9CB; border-radius:999px; background:#fff; color:#D8232A; font:700 12.5px ${FONT}; cursor:pointer;`)}>{ev.isMine ? 'Huỷ sự kiện' : 'Xoá'}</button>}
@@ -243,6 +246,58 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
       </div>
     </div>,
     document.body,
+  )
+}
+
+// ---- comments under an event, oldest first ----
+function EventComments({ ev, onChange }) {
+  const { user, requireLogin } = useAuth()
+  const [draft, setDraft] = useState('')
+  const [busy, setBusy] = useState(false)
+  const list = ev.comments || []
+  const send = () => {
+    const body = draft.trim()
+    if (!body || busy) return
+    requireLogin(() => {
+      setBusy(true)
+      api.postEventComment(ev.id, body).then((d) => { setDraft(''); onChange(d) }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
+    })
+  }
+  const remove = (c) => {
+    if (c.isMine) {
+      if (window.confirm('Xoá bình luận này?')) api.deleteEventComment(ev.id, c.id).then(onChange).catch(() => {})
+    } else {
+      askRemovalReason({ what: 'bình luận', title: c.body.slice(0, 80) }).then((r) => r && api.deleteEventComment(ev.id, c.id, r).then(onChange).catch(() => {}))
+    }
+  }
+  return (
+    <div style={css('margin:18px 22px 0;')}>
+      <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>Bình luận{list.length ? ` (${list.length})` : ''}</div>
+      <div style={css('display:flex; gap:10px; margin-top:10px;')}>
+        <Avatar user={user} size={32} fontSize={11} />
+        <div style={css('flex:1; min-width:0;')}>
+          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} rows={2} maxLength={2000} placeholder="Viết bình luận…"
+            style={css('width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font:400 14px/1.5 var(--zp-font-text); color:#0F172A; background:#F7F9FD; outline:none; resize:vertical;')} />
+          <div style={css('display:flex; justify-content:flex-end; margin-top:6px;')}>
+            <button onClick={send} disabled={!draft.trim() || busy} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer; opacity:${draft.trim() && !busy ? 1 : 0.5};`)}>{busy ? 'Đang gửi…' : 'Gửi'}</button>
+          </div>
+        </div>
+      </div>
+      {list.map((c) => (
+        <div key={c.id} style={css('display:flex; gap:10px; padding:10px 0 4px; border-top:1px solid #EEF1F7; margin-top:8px;')}>
+          <Avatar user={c.author} size={32} fontSize={11} />
+          <div style={css('flex:1; min-width:0;')}>
+            <div style={css('display:flex; align-items:center; gap:6px;')}>
+              <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{c.author?.name || 'Ẩn danh'}</span>
+              <span style={css('font:400 12px var(--zp-font-text); color:#94a3b8;')}>· {relativeTime(c.time)}</span>
+              <span style={{ flex: 1 }} />
+              {c.canDelete && <button onClick={() => remove(c)} className={hoverClass('color:#D8232A !important;')} style={css(`border:none; background:none; padding:0; cursor:pointer; font:600 12px ${FONT}; color:#94a3b8;`)}>Xoá</button>}
+            </div>
+            <div style={css('margin-top:2px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{c.body}</div>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 
