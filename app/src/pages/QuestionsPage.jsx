@@ -71,12 +71,13 @@ export default function QuestionsPage() {
   const [playIntro] = useState(() => !introPlayed)
   useEffect(() => { introPlayed = true }, [])
   const { user, requireLogin } = useAuth()
-  // room for the events rail beside the feed: from 900px of content area (the feed narrows, the gutters
-  // tighten to 24px below 1164px, where the full 760px feed + 40px gutters + 24 + the 260px rail fit)
+  // The events rail sits against the right edge, fixed like the menu on the left, from 1000px of content
+  // area; the feed is centred in what's left between the two (gutters tighten to 24px below 1160px).
   const { offset } = useSidebarLayout()
   const contentWidth = useWidth() - offset
-  const wideEvents = contentWidth >= 900
-  const railGutter = contentWidth < 1164 ? { '--zp-gutter': '24px' } : null
+  const wideEvents = contentWidth >= 1000
+  const RAIL_W = 284
+  const railGutter = contentWidth < 1160 ? { '--zp-gutter': '24px' } : null
   // a post on its own page: "Quay lại" sits left of the card when the margin has room for it (~110px)
   const backBeside = contentWidth >= 760 + 2 * 130
   const navigate = useNavigate()
@@ -818,7 +819,7 @@ export default function QuestionsPage() {
           </div>
         ) : (
         // wide enough: the "Sự kiện sắp tới" rail beside the feed; otherwise a strip of events above it
-        <div style={wideEvents ? { ...css('display:grid; grid-template-columns:minmax(0,840px) 260px; gap:24px; justify-content:center; padding-right:var(--zp-gutter);'), ...railGutter } : undefined}>
+        <div style={wideEvents ? { paddingRight: RAIL_W, ...railGutter } : undefined}>
         <div style={{ minWidth: 0 }}>
           {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
           {/* same box as the Use Case Library title (the UFO's 32px strip, then 53px of wordmark, the line under it alike), so switching tabs doesn't jump;
@@ -863,10 +864,8 @@ export default function QuestionsPage() {
           </div>
         </div>
         {wideEvents && (
-          <div style={css('padding-top:22px;')}>
-            {/* stays under the top bar; a long list scrolls inside it, with a thin scrollbar */}
-            <div className="zp-thinscroll" style={css('position:sticky; top:80px; max-height:calc(100vh - 100px); overflow-y:auto; border-radius:20px;')}><EventsPanel layout="rail" /></div>
-          </div>
+          // fixed to the right edge under the top bar, the length of the screen; a long list scrolls inside it
+          <div className="zp-thinscroll" style={{ ...css('position:fixed; top:58px; right:0; bottom:0; z-index:40; overflow-y:auto; box-sizing:border-box; padding:22px 16px 24px 4px;'), width: RAIL_W }}><EventsPanel layout="rail" /></div>
         )}
         </div>
         )}
