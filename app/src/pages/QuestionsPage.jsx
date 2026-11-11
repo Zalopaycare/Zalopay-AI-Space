@@ -71,17 +71,13 @@ export default function QuestionsPage() {
   const [playIntro] = useState(() => !introPlayed)
   useEffect(() => { introPlayed = true }, [])
   const { user, requireLogin } = useAuth()
-  // The events rail sits against the right edge, fixed like the menu on the left, from 1100px of content
-  // area. The feed stays centred where every page is (Layout), narrowing on both sides as much as it
-  // must to clear the rail, so it doesn't move sideways next to the Use Case Library.
+  // The events rail sits against the right edge, fixed and as wide as the menu on the left, so the feed,
+  // centred between the two, keeps the same gap on either side (and stays near the screen's centre, where
+  // the Use Case Library is). It shows once the full 760px feed fits between them.
   const { offset, rightPad } = useSidebarLayout()
-  const screenW = useWidth()
-  const contentWidth = screenW - offset
-  const wideEvents = contentWidth >= 1100
-  const RAIL_W = 284
-  const boxW = contentWidth - rightPad
-  const feedRight = offset + boxW / 2 + Math.min(420, boxW / 2) // the feed's right edge, gutter included
-  const clearRail = Math.max(0, Math.ceil(feedRight - (screenW - RAIL_W - 8)))
+  const contentWidth = useWidth() - offset
+  const RAIL_W = 224
+  const wideEvents = contentWidth - RAIL_W >= 840
   // a post on its own page: "Quay lại" sits left of the card when the margin has room for it (~110px)
   const backBeside = contentWidth >= 760 + 2 * 130
   const navigate = useNavigate()
@@ -823,7 +819,7 @@ export default function QuestionsPage() {
           </div>
         ) : (
         // wide enough: the "Sự kiện sắp tới" rail beside the feed; otherwise a strip of events above it
-        <div style={wideEvents ? { paddingLeft: clearRail, paddingRight: clearRail } : undefined}>
+        <div style={wideEvents ? { paddingRight: Math.max(0, RAIL_W - rightPad) } : undefined}>
         <div style={{ minWidth: 0 }}>
           {/* the home page's wordmark (with its one-time intro motion), then what the space is for */}
           {/* same box as the Use Case Library title (the UFO's 32px strip, then 53px of wordmark, the line under it alike), so switching tabs doesn't jump;
@@ -869,7 +865,7 @@ export default function QuestionsPage() {
         </div>
         {wideEvents && (
           // fixed to the right edge under the top bar, the length of the screen; a long list scrolls inside it
-          <div className="zp-thinscroll" style={{ ...css('position:fixed; top:58px; right:0; bottom:0; z-index:40; overflow-y:auto; box-sizing:border-box; padding:22px 16px 24px 4px;'), width: RAIL_W }}><EventsPanel layout="rail" /></div>
+          <div className="zp-thinscroll" style={{ ...css('position:fixed; top:58px; right:0; bottom:0; z-index:40; overflow-y:auto; box-sizing:border-box; padding:22px 18px 24px 6px;'), width: RAIL_W }}><EventsPanel layout="rail" /></div>
         )}
         </div>
         )}
