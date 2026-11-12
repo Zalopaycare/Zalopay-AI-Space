@@ -8,6 +8,8 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { useDialog } from '../hooks/useDialog.js'
 import Avatar from './Avatar.jsx'
 import { askRemovalReason } from './RemovalReason.jsx'
+import MentionInput from './MentionInput.jsx'
+import { renderMentions } from './MentionField.jsx'
 
 // "Sự kiện": anything happening offline that anyone can post (server: routes/events.js), shown like a
 // Facebook event: cover picture, when, what, where, how many are interested, "Quan tâm" and share. Beside
@@ -254,13 +256,15 @@ function EventComments({ ev, onChange }) {
   const { user, requireLogin } = useAuth()
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+  const boxRef = useRef(null)
   const list = ev.comments || []
   const send = () => {
     const body = draft.trim()
     if (!body || busy) return
     requireLogin(() => {
       setBusy(true)
-      api.postEventComment(ev.id, body).then((d) => { setDraft(''); onChange(d) }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
+      // "@handle" picked from the suggestions goes out as the full address, so they get the email
+      api.postEventComment(ev.id, boxRef.current ? boxRef.current.expand(body) : body).then((d) => { setDraft(''); onChange(d) }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
     })
   }
   const remove = (c) => {
@@ -276,8 +280,8 @@ function EventComments({ ev, onChange }) {
       <div style={css('display:flex; gap:10px; margin-top:10px;')}>
         <Avatar user={user} size={32} fontSize={11} />
         <div style={css('flex:1; min-width:0;')}>
-          <textarea value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} rows={2} maxLength={2000} placeholder="Viết bình luận…"
-            style={css('width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font:400 14px/1.5 var(--zp-font-text); color:#0F172A; background:#F7F9FD; outline:none; resize:vertical;')} />
+          <MentionInput ref={boxRef} multiline rows={2} popupWidth={320} value={draft} onChange={setDraft} onEnter={send} maxLength={2000} placeholder="Viết bình luận… Gõ @ để nhắc tên đồng nghiệp."
+            style={css('width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font:400 14px/1.5 var(--zp-font-text); color:#0F172A; background:#F7F9FD; outline:none; resize:vertical; display:block;')} />
           <div style={css('display:flex; justify-content:flex-end; margin-top:6px;')}>
             <button onClick={send} disabled={!draft.trim() || busy} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer; opacity:${draft.trim() && !busy ? 1 : 0.5};`)}>{busy ? 'Đang gửi…' : 'Gửi'}</button>
           </div>
@@ -293,7 +297,7 @@ function EventComments({ ev, onChange }) {
               <span style={{ flex: 1 }} />
               {c.canDelete && <button onClick={() => remove(c)} className={hoverClass('color:#D8232A !important;')} style={css(`border:none; background:none; padding:0; cursor:pointer; font:600 12px ${FONT}; color:#94a3b8;`)}>Xoá</button>}
             </div>
-            <div style={css('margin-top:2px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{c.body}</div>
+            <div style={css('margin-top:2px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{renderMentions(c.body)}</div>
           </div>
         </div>
       ))}

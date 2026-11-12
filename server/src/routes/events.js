@@ -2,7 +2,7 @@ import express from 'express'
 import { db, nextId } from '../db.js'
 import { requireAuth } from '../auth.js'
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
-import { domainName, initialsOf, appUrl } from '../mentions.js'
+import { domainName, initialsOf, appUrl, notifyMentions } from '../mentions.js'
 import { notify, notifyOnce, notifyParticipants } from '../notifications.js'
 import { sendMail } from '../mailer.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
@@ -221,6 +221,8 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   }
   // the others who commented before: one in-app note per event, kept up to date
   const before = db.prepare('SELECT DISTINCT author_id FROM event_comments WHERE event_id = ? AND id != ?').all(e.id, cid).map((r) => r.author_id)
+  // @mentions: a notification and an email each (the host already heard of this comment)
+  notifyMentions(req, { text: body, where: `sự kiện "${e.title}"`, path: href, skip: [host?.email] })
   notifyParticipants(before, [req.user.email, host?.email], { ref: 'joined:ev:' + e.id, text: `${who} cũng đã bình luận trong sự kiện "${e.title}"`, href, actor: req.user.name })
   res.status(201).json({ comments: commentsOf(e.id, req.user), commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n })
 })
