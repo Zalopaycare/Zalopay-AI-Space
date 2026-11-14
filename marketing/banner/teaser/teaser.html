@@ -1,0 +1,127 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Zalopay AI Space teaser</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;800&family=Orbitron:wght@500;700&display=block" rel="stylesheet">
+<style>
+html,body{margin:0;background:#04060d}
+#b{position:relative;width:1920px;height:1080px;overflow:hidden;font-family:"Be Vietnam Pro",sans-serif;
+  background:radial-gradient(75% 75% at 50% 78%,#3f6dff 0%,#2a4fe0 28%,#1b33a8 55%,#10206a 78%,#0a1440 100%)}
+.grid{position:absolute;inset:-72px 0 0 0;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:72px 72px;
+  -webkit-mask-image:radial-gradient(70% 70% at 50% 45%,#000 30%,transparent 85%)}
+.glow{position:absolute;left:50%;top:50%;width:1700px;height:900px;margin:-520px 0 0 -850px;border-radius:50%;background:radial-gradient(50% 50% at 50% 55%,rgba(150,190,255,.45) 0%,rgba(60,120,255,.25) 40%,rgba(60,120,255,0) 75%)}
+.horizon{position:absolute;left:50%;top:830px;width:3600px;height:3600px;margin-left:-1800px;border-radius:50%;background:radial-gradient(closest-side,#0b1650 96%,#1d3bb8 99%,#7fb0ff 100%);box-shadow:0 0 60px 14px rgba(110,170,255,.75),0 0 180px 60px rgba(60,120,255,.45),inset 0 30px 80px rgba(120,180,255,.35)}
+.vign{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 45%,rgba(2,4,15,0) 55%,rgba(2,4,15,.55) 100%)}
+.stars{position:absolute;left:0;top:0;width:2600px;height:1080px}
+.st{position:absolute;border-radius:50%;background:#fff;box-shadow:0 0 8px 1px rgba(200,225,255,.8)}
+.stage{position:absolute;inset:0;perspective:1900px;perspective-origin:62% 45%}
+.scene{position:absolute;inset:0;opacity:0;perspective:1700px;perspective-origin:62% 45%}
+.scr{position:absolute;border-radius:20px;overflow:hidden;opacity:0;
+  border:1.5px solid rgba(150,200,255,.7);
+  box-shadow:0 0 0 1px rgba(255,255,255,.08),0 40px 140px rgba(0,0,0,.65),0 0 90px rgba(70,140,255,.6),inset 0 0 40px rgba(120,180,255,.25)}
+.scr img,.card img{display:block;width:100%}
+.scr .scan{position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(140,190,255,.06) 0 2px,transparent 2px 5px);mix-blend-mode:screen}
+.scr .tint{position:absolute;inset:0;background:linear-gradient(160deg,rgba(80,140,255,.1),rgba(10,20,80,.18))}
+.sweep{position:absolute;top:-20%;bottom:-20%;width:38%;left:-60%;background:linear-gradient(100deg,transparent,rgba(200,230,255,.35) 45%,rgba(255,255,255,.55) 50%,rgba(200,230,255,.35) 55%,transparent);transform:skewX(-18deg)}
+.card{position:absolute;opacity:0}
+.card .in{position:relative;border-radius:20px;overflow:hidden;border:1.5px solid rgba(170,215,255,.9);
+  box-shadow:0 0 0 1px rgba(255,255,255,.15),0 30px 80px rgba(0,0,0,.55),0 0 60px 6px rgba(80,150,255,.75)}
+.card.dk .in{background:rgba(8,14,40,.85);padding:10px;backdrop-filter:blur(8px)}
+.hud{position:absolute;left:110px;top:300px;width:560px;color:#fff}
+.hud .num{font-family:Orbitron,sans-serif;font-weight:700;font-size:26px;letter-spacing:.3em;color:#7fc4ff;text-shadow:0 0 18px rgba(90,170,255,.9);opacity:0}
+.hud .line{height:2px;width:0;margin:16px 0 18px;background:linear-gradient(90deg,#9fd2ff,rgba(90,150,255,0));box-shadow:0 0 12px #6fb4ff}
+.hud .lbl{font-family:Orbitron,sans-serif;font-weight:500;font-size:16px;letter-spacing:.35em;color:#b9d6ff;opacity:0;text-transform:uppercase}
+.hud h2{margin:22px 0 0;font-size:70px;line-height:1.08;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(90deg,#fff 30%,#8fc4ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 4px 24px rgba(40,100,255,.6));clip-path:inset(0 100% 0 0)}
+.hud p{margin:22px 0 0;font-size:27px;line-height:1.5;color:#d6e3ff;opacity:0}
+.hud .br{position:absolute;width:26px;height:26px;border:2px solid #7fc4ff;opacity:0;filter:drop-shadow(0 0 6px #6fb4ff)}
+.hud .br.a{left:-34px;top:-14px;border-right:0;border-bottom:0}
+.hud .br.b{left:-34px;bottom:-24px;border-right:0;border-top:0}
+.ring{position:absolute;left:50%;top:48%;width:400px;height:400px;margin:-200px 0 0 -200px;border-radius:50%;border:3px solid rgba(180,220,255,.9);box-shadow:0 0 40px 10px rgba(90,160,255,.7),inset 0 0 40px rgba(90,160,255,.6);opacity:0}
+.streak{position:absolute;height:2px;border-radius:2px;background:linear-gradient(90deg,rgba(160,210,255,0),rgba(200,230,255,.95));box-shadow:0 0 8px #8fc4ff;opacity:0}
+.tlabel{position:absolute;font-weight:700;font-size:30px;color:#fff;text-shadow:0 0 20px rgba(90,160,255,.9);opacity:0}
+</style></head><body>
+<div id="b"><div class="glow"></div><div class="grid"></div><div class="stars" id="s1"></div><div class="stars" id="s2"></div><div class="horizon"></div><div class="vign"></div>
+<div class="stage" id="stage"></div></div>
+<script>
+const $ = (p, cls, css = {}, html = '') => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css); d.innerHTML = html; p.appendChild(d); return d }
+const A = (el, kf, delay, dur, easing = 'cubic-bezier(.2,.7,.25,1)', fill = 'both') => el.animate(kf, { delay: delay * 1000, duration: dur * 1000, easing, fill })
+const rnd = ((s) => () => (s = (s * 16807) % 2147483647) / 2147483647)(42)
+// star layers drifting at two speeds (parallax)
+for (const [id, n, sz, dx] of [['s1', 140, [1, 2], -260], ['s2', 60, [2, 4], -620]]) {
+  const L = document.getElementById(id)
+  for (let i = 0; i < n; i++) { const w = sz[0] + Math.round(rnd() * (sz[1] - sz[0])); const s = $(L, 'st', { left: rnd() * 2600 + 'px', top: rnd() * 1000 + 'px', width: w + 'px', height: w + 'px' }); A(s, [{ opacity: .25 }, { opacity: 1 }, { opacity: .25 }], -rnd() * 3, 1.5 + rnd() * 2, 'ease-in-out').effect.updateTiming({ iterations: Infinity }) }
+  A(L, [{ transform: 'translateX(0)' }, { transform: `translateX(${dx}px)` }], 0, 30, 'linear')
+}
+const stage = document.getElementById('stage')
+const SL = 5.0, OV = 0.45
+const scenes = []
+function scene(i, hud) {
+  const D = i * (SL - OV), el = $(stage, 'scene')
+  A(el, [{ opacity: 0, transform: 'translateZ(-260px)', filter: 'blur(8px)' }, { opacity: 1, transform: 'translateZ(0)', filter: 'blur(0)' }], D, .7)
+  el.animate([{ opacity: 1, transform: 'translateZ(0)', filter: 'blur(0)' }, { opacity: 0, transform: 'translateZ(420px)', filter: 'blur(10px)' }], { delay: (D + SL - OV) * 1000, duration: OV * 1000, easing: 'cubic-bezier(.6,0,.9,.4)', fill: 'forwards' })
+  // HUD
+  const h = $(el, 'hud', {}, `<div class="br a"></div><div class="br b"></div><div class="num">${hud[0]}</div><div class="line"></div><div class="lbl">${hud[1]}</div><h2>${hud[2]}</h2><p>${hud[3]}</p>`)
+  A(h.querySelector('.num'), [{ opacity: 0, transform: 'translateX(-30px)' }, { opacity: 1, transform: 'none' }], D + .25, .6)
+  A(h.querySelector('.line'), [{ width: '0px' }, { width: '220px' }], D + .4, .7)
+  A(h.querySelector('.lbl'), [{ opacity: 0, letterSpacing: '.8em' }, { opacity: 1, letterSpacing: '.35em' }], D + .5, .8)
+  A(h.querySelector('h2'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], D + .6, .8)
+  A(h.querySelector('p'), [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], D + 1.0, .7)
+  h.querySelectorAll('.br').forEach((b) => A(b, [{ opacity: 0, transform: 'scale(1.6)' }, { opacity: 1, transform: 'none' }], D + .3, .5))
+  // warp ring + streaks on entry
+  if (i > 0) {
+    const r = $(stage, 'ring'); A(r, [{ opacity: .95, transform: 'scale(.2)' }, { opacity: 0, transform: 'scale(5)' }], D - .1, .9, 'cubic-bezier(.1,.6,.3,1)', 'forwards')
+    for (let k = 0; k < 18; k++) { const y = 80 + rnd() * 900, w = 200 + rnd() * 500, s = $(stage, 'streak', { top: y + 'px', left: '-700px', width: w + 'px' }); A(s, [{ opacity: 0, transform: 'translateX(0)' }, { opacity: 1, offset: .2 }, { opacity: 0, transform: `translateX(${2600 + rnd() * 600}px)` }], D - .3 + rnd() * .3, .55 + rnd() * .3, 'cubic-bezier(.4,0,.8,.6)', 'forwards') }
+  }
+  scenes.push(D); return [el, D]
+}
+function screen(el, D, src, css, from, to, drift) {
+  const s = $(el, 'scr', css, `<img src="a/${src}"><div class="tint"></div><div class="scan"></div><div class="sweep"></div>`)
+  A(s, [{ opacity: 0, transform: from }, { opacity: 1, transform: to }], D + .1, 1.2)
+  A(s, [{ transform: to }, { transform: drift }], D + 1.3, SL - 1.3, 'ease-in-out').effect.updateTiming({ fill: 'forwards' })
+  A(s.querySelector('.sweep'), [{ left: '-60%' }, { left: '130%' }], D + 1.0, 1.6, 'ease-in-out')
+  return s
+}
+function card(el, D, src, css, t0, from, to, dark) {
+  const c = $(el, 'card' + (dark ? ' dk' : ''), css, `<div class="in"><img src="a/${src}"><div class="sweep"></div></div>`)
+  A(c, [{ opacity: 0, transform: from, filter: 'brightness(2.2)' }, { opacity: 1, transform: to, filter: 'brightness(1)' }], D + t0, .9)
+  const fl = to + ' translateY(-14px)'
+  A(c, [{ transform: to }, { transform: fl }], D + t0 + .9, SL - t0 - .9, 'ease-in-out').effect.updateTiming({ fill: 'forwards' })
+  A(c.querySelector('.sweep'), [{ left: '-60%' }, { left: '140%' }], D + t0 + .5, 1.1, 'ease-in-out')
+  return c
+}
+const deep = (x, y, ry, rx) => `translate3d(${x}px,${y}px,-1100px) rotateY(${ry}deg) rotateX(${rx}deg)`
+const pose = (x, y, z, ry, rx = 0) => `translate3d(${x}px,${y}px,${z}px) rotateY(${ry}deg) rotateX(${rx}deg)`
+
+// 1 · AI Space feed
+{ const [e, D] = scene(0, ['01', 'AI Space · Feed', 'AI Space', 'Hỏi đáp, chia sẻ mẹo và công cụ AI cùng các Zalopay Starter'])
+  screen(e, D, 'feed.png', { left: '720px', top: '190px', width: '1100px' }, deep(300, 60, -34, 12), pose(0, 0, 0, -16, 5), pose(-30, -6, 30, -11, 4))
+  card(e, D, 'post1.png', { left: '650px', top: '250px', width: '720px' }, 1.3, pose(120, 60, -300, -20), pose(0, 0, 160, -10))
+  card(e, D, 'post2.png', { left: '1000px', top: '610px', width: '720px' }, 1.9, pose(-60, 40, -300, -20), pose(0, 0, 220, -10)) }
+// 2 · Post popup
+{ const [e, D] = scene(1, ['02', 'Post · Popup', 'Mở post ngay trên trang', 'Đọc trọn bài, bình luận và trả lời mà không rời feed'])
+  screen(e, D, 'popup-full.png', { left: '760px', top: '200px', width: '1080px' }, deep(-200, 80, 30, 10), pose(0, 0, -60, 14, 4), pose(20, -6, -20, 10, 3))
+  card(e, D, 'popup.png', { left: '930px', top: '250px', width: '700px' }, 1.2, pose(0, 120, -400, 18, 8), pose(0, 0, 240, 6, 2)) }
+// 3 · Events
+{ const [e, D] = scene(2, ['03', 'Events', 'Sự kiện sắp tới', 'Tạo sự kiện, bấm Quan tâm, chia sẻ và bình luận'])
+  card(e, D, 'evhead.png', { left: '1150px', top: '170px', width: '300px' }, .5, pose(0, -60, -200, 0), pose(0, 0, 40, 0), true)
+  card(e, D, 'ev1.png', { left: '850px', top: '300px', width: '300px' }, .8, pose(-200, 300, -600, 50), pose(0, 0, -40, 22), true)
+  card(e, D, 'ev2.png', { left: '1150px', top: '290px', width: '300px' }, 1.1, pose(0, 360, -600, 0), pose(0, 0, 160, 0), true)
+  card(e, D, 'ev3.png', { left: '1450px', top: '310px', width: '300px' }, 1.4, pose(200, 300, -600, -50), pose(0, 0, -40, -22), true) }
+// 4 · Use Case Library
+{ const [e, D] = scene(3, ['04', 'Use Case Library', 'Use Case Library', 'Cách các team Zalopay áp dụng AI vào công việc thật'])
+  screen(e, D, 'lib.png', { left: '720px', top: '190px', width: '1100px' }, deep(300, -60, -34, -10), pose(0, 0, 0, -16, -4), pose(-30, 6, 30, -11, -3))
+  card(e, D, 'uc1.png', { left: '690px', top: '290px', width: '760px' }, 1.2, pose(80, 0, -300, -20), pose(0, 0, 150, -10))
+  card(e, D, 'uc2.png', { left: '860px', top: '480px', width: '760px' }, 1.6, pose(80, 0, -300, -20), pose(0, 0, 200, -10))
+  card(e, D, 'uc3.png', { left: '1030px', top: '670px', width: '760px' }, 2.0, pose(80, 0, -300, -20), pose(0, 0, 250, -10)) }
+// 5 · Use case detail
+{ const [e, D] = scene(4, ['05', 'Use Case · Detail', 'Chia sẻ use case của bạn', 'Bài toán, cách làm, công cụ AI để ai cũng áp dụng được'])
+  screen(e, D, 'detail.png', { left: '720px', top: '190px', width: '1100px' }, deep(-260, 60, 30, 10), pose(0, 0, -40, 14, 4), pose(20, -6, 0, 10, 3))
+  card(e, D, 'ucinfo.png', { left: '760px', top: '450px', width: '900px' }, 1.2, pose(0, 160, -400, 16, 10), pose(0, 0, 220, 6, 2), true)
+  card(e, D, 'toc.png', { left: '1480px', top: '220px', width: '250px' }, 1.7, pose(120, -60, -400, -10), pose(0, 0, 180, -8), true) }
+// 6 · Light / dark
+{ const [e, D] = scene(5, ['06', 'Theme', 'Khung trắng hoặc chế độ tối', 'Chọn giao diện bạn thích ở góc phải phía trên'])
+  screen(e, D, 'feed.png', { left: '700px', top: '250px', width: '570px' }, deep(-200, 0, 50, 0), pose(0, 0, 0, 14), pose(-10, 0, 20, 11))
+  screen(e, D, 'gray.png', { left: '1290px', top: '250px', width: '570px' }, deep(200, 0, -50, 0), pose(0, 0, 0, -14), pose(-10, 0, 20, -11))
+  const l1 = $(e, 'tlabel', { left: '700px', top: '620px', width: '570px', textAlign: 'center' }, 'Khung trắng'), l2 = $(e, 'tlabel', { left: '1290px', top: '620px', width: '570px', textAlign: 'center' }, 'Chế độ tối')
+  ;[l1, l2].forEach((l, k) => A(l, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], D + 1.2 + k * .3, .6)) }
+window.TOTAL = scenes[scenes.length - 1] + SL
+</script></body></html>
