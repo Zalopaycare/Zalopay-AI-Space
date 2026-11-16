@@ -28,9 +28,9 @@ html,body{margin:0;background:#04060d}
 .hud .num{font-family:Orbitron,sans-serif;font-weight:700;font-size:26px;letter-spacing:.3em;color:#7fc4ff;text-shadow:0 0 18px rgba(90,170,255,.9);opacity:0}
 .hud .line{height:2px;width:0;margin:16px 0 18px;background:linear-gradient(90deg,#9fd2ff,rgba(90,150,255,0));box-shadow:0 0 12px #6fb4ff}
 .hud .lbl{font-family:Orbitron,sans-serif;font-weight:500;font-size:16px;letter-spacing:.35em;color:#b9d6ff;opacity:0;text-transform:uppercase}
-.hud h2{margin:22px 0 0;font-size:70px;line-height:1.08;font-weight:800;letter-spacing:-.02em;
+.hud h2{margin:6px 0 -14px;padding:16px 24px 22px 0;font-size:70px;line-height:1.12;font-weight:800;letter-spacing:-.02em;
   background:linear-gradient(90deg,#fff 30%,#8fc4ff);-webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 4px 24px rgba(40,100,255,.6));clip-path:inset(0 100% 0 0)}
+  text-shadow:none;clip-path:inset(-20% 100% -30% -10%)}
 .hud p{margin:22px 0 0;font-size:27px;line-height:1.5;color:#d6e3ff;opacity:0}
 .hud .br{position:absolute;width:26px;height:26px;border:2px solid #7fc4ff;opacity:0;filter:drop-shadow(0 0 6px #6fb4ff)}
 .hud .br.a{left:-34px;top:-14px;border-right:0;border-bottom:0}
@@ -78,7 +78,7 @@ function scene(D, L, hud) {
   A(h.querySelector('.num'), [{ opacity: 0, transform: 'translateX(-30px)' }, { opacity: 1, transform: 'none' }], D + .25, .6)
   A(h.querySelector('.line'), [{ width: '0px' }, { width: '220px' }], D + .4, .7)
   A(h.querySelector('.lbl'), [{ opacity: 0, letterSpacing: '.8em' }, { opacity: 1, letterSpacing: '.35em' }], D + .5, .8)
-  A(h.querySelector('h2'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], D + .6, .8)
+  A(h.querySelector('h2'), [{ clipPath: 'inset(-20% 100% -30% -10%)' }, { clipPath: 'inset(-20% -10% -30% -10%)' }], D + .6, .8)
   h.querySelectorAll('.br').forEach((b) => A(b, [{ opacity: 0, transform: 'scale(1.6)' }, { opacity: 1, transform: 'none' }], D + .3, .5))
   // feature rows: button chip + what it does; earlier rows dim when the next one comes in
   const rows = hud.rows.map(([img, text, t], k) => {
