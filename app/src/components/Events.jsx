@@ -105,7 +105,28 @@ const countLabel = (n) => (n ? `${n} người quan tâm` : 'Chưa ai quan tâm')
 const statsLabel = (ev) => [countLabel(ev.interestCount), ev.commentCount ? `${ev.commentCount} bình luận` : ''].filter(Boolean).join(' · ')
 
 /** One event as a card: cover, date line, title, place, count, buttons. */
-function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false }) {
+/** Facebook-style: a few faces of who's interested, "Bạn và 2 người khác quan tâm", plus the comments. */
+function InterestedRow({ ev, me }) {
+  const n = ev.interestCount
+  const others = (ev.people || []).filter((p) => !me || p.id !== me.id)
+  const faces = [...(ev.interested && me ? [me] : []), ...others].slice(0, 3)
+  const first = ev.interested ? 'Bạn' : others[0]?.name
+  const text = !n ? 'Chưa ai quan tâm' : n === 1 || !first ? `${first || n + ' người'} quan tâm` : `${first} và ${n - 1} người khác quan tâm`
+  return (
+    <div style={css('margin-top:8px; display:flex; align-items:center; gap:8px; min-width:0;')}>
+      {faces.length > 0 && (
+        <span style={css('flex:none; display:inline-flex;')}>
+          {faces.map((p, i) => <span key={p.id || i} style={css(`display:inline-flex; margin-left:${i ? -7 : 0}px; border-radius:50%; box-shadow:0 0 0 2px #fff;`)}><Avatar user={p} size={22} fontSize={8} /></span>)}
+        </span>
+      )}
+      <span style={css('min-width:0; font:500 12.5px var(--zp-font-text); color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{text}{ev.commentCount ? ` · ${ev.commentCount} bình luận` : ''}</span>
+    </div>
+  )
+}
+
+// `rich` (the events page grid): a short intro from the details and the faces of who's interested
+function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false, rich = false }) {
+  const { user } = useAuth()
   const ink = onDark ? { title: '#FFFFFF', place: '#C9D6F5', count: '#8EA0C8', when: '#FF7A7F' } : { title: '#0F172A', place: '#475569', count: '#64748b', when: '#D8232A' }
   // the rail (onDark) is the compact one: narrower column, smaller type and buttons
   const bh = onDark ? 30 : 36
@@ -117,12 +138,11 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false }) {
         <div style={css(`font:700 ${onDark ? 11.5 : 12.5}px ${FONT}; color:${ink.when};`)}>{whenLabel(ev)}</div>
         <div style={css(`margin-top:2px; font:800 ${onDark ? 13.5 : 15}px/1.3 ${FONT}; color:${ink.title}; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;`)}>{ev.title}</div>
         <div style={css(`margin-top:2px; font:500 ${onDark ? 12 : 13}px/1.4 var(--zp-font-text); color:${ink.place}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;`)} title={ev.location}>{ev.location}</div>
-        <div style={css(`margin-top:2px; font:400 ${onDark ? 11.5 : 12.5}px var(--zp-font-text); color:${ink.count};`)}>{statsLabel(ev)}</div>
+        {rich && ev.description && <div style={css('margin-top:6px; font:400 13px/1.5 var(--zp-font-text); color:#475569; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{ev.description}</div>}
+        {rich ? <InterestedRow ev={ev} me={user} /> : <div style={css(`margin-top:2px; font:400 ${onDark ? 11.5 : 12.5}px var(--zp-font-text); color:${ink.count};`)}>{statsLabel(ev)}</div>}
       </div>
       <div style={css(`margin-top:${onDark ? 8 : 10}px; display:flex; gap:${onDark ? 6 : 8}px;`)}>
-        {ev.isMine
-          ? <span style={css(`flex:1; display:inline-flex; align-items:center; justify-content:center; height:${bh}px; border-radius:${onDark ? 8 : 10}px; ${onDark ? 'background:rgba(255,255,255,.05); color:#A9B8DC;' : 'background:#F6F8FC; color:#64748b;'} font:700 12px ${FONT};`)}>Bạn tổ chức</span>
-          : <InterestButton ev={ev} onToggle={onToggle} grow onDark={onDark} height={bh} />}
+        <InterestButton ev={ev} onToggle={onToggle} grow onDark={onDark} height={bh} />
         <ShareButton ev={ev} onDark={onDark} height={bh} />
       </div>
     </div>
@@ -174,10 +194,10 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
               {!q && <button onClick={create} style={css(`margin-top:18px; height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 14px ${FONT}; cursor:pointer;`)}>+ Tạo sự kiện</button>}
             </div>
           ) : (
-            <div style={css('display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:16px;')}>
+            <div style={css('display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px;')}>
               {shown.map((ev) => (
                 <div key={ev.id} className={hoverClass(CARD_HOVER)} style={css('background:#fff; border-radius:18px; padding:12px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:transform .18s ease, box-shadow .18s ease;')}>
-                  <EventCard ev={ev} onOpen={setOpenId} onToggle={toggle} />
+                  <EventCard ev={ev} onOpen={setOpenId} onToggle={toggle} rich />
                 </div>
               ))}
             </div>
@@ -261,14 +281,14 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
             {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>, statsLabel(ev))}
           </div>
           <div style={css('display:flex; flex-wrap:wrap; gap:8px; padding:16px 22px 0;')}>
-            {!ev.past && !ev.isMine && <InterestButton ev={ev} onToggle={toggle} grow height={40} />}
+            {!ev.past && <InterestButton ev={ev} onToggle={toggle} grow height={40} />}
             {!ev.past && (
               <a href={outlookLink(ev)} target="_blank" rel="noopener noreferrer" className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none; text-decoration:none;' + grayBtn)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"></path></svg>
                 Thêm vào lịch Outlook
               </a>
             )}
-            <button onClick={() => share(ev)} className={hoverClass('background:#E4E9F2 !important;')} style={css((ev.past || ev.isMine ? 'flex:1;' : 'flex:none;') + grayBtn)}>
+            <button onClick={() => share(ev)} className={hoverClass('background:#E4E9F2 !important;')} style={css((ev.past ? 'flex:1;' : 'flex:none;') + grayBtn)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 4.5V9C7 9.5 4 14 3 20c2.5-3.5 6-5.1 11-5.1v4.6l7-7.5-7-7.5z"></path></svg>
               Chia sẻ
             </button>
@@ -293,7 +313,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           )}
           <EventComments ev={ev} onChange={(d) => { setEv((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ ...ev, commentCount: d.commentCount }) }} />
           <div style={css('display:flex; align-items:center; gap:12px; padding:18px 22px 20px; margin-top:18px; border-top:1px solid #EEF1F7;')}>
-            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past && !ev.isMine ? 'Bấm Quan tâm để nhận email nhắc trước 1 ngày, và khi sự kiện đổi giờ, đổi chỗ hay huỷ.' : ''}</div>
+            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past ? 'Bấm Quan tâm để nhận email nhắc trước 1 ngày, và khi sự kiện đổi giờ, đổi chỗ hay huỷ.' : ''}</div>
             {ev.canEdit && <button onClick={remove} style={css(`flex:none; height:32px; padding:0 14px; border:1px solid #F5C9CB; border-radius:999px; background:#fff; color:#D8232A; font:700 12.5px ${FONT}; cursor:pointer;`)}>{ev.isMine ? 'Huỷ sự kiện' : 'Xoá'}</button>}
           </div>
         </>)}
