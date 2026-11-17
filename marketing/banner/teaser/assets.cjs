@@ -1,0 +1,25 @@
+const { chromium } = require('playwright')
+const [,, S] = process.argv
+const A = S + '/fx/a/', APP = 'http://localhost:3011'
+;(async () => {
+  const b = await chromium.launch()
+  const ctx = await b.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 2, storageState: S + '/state.json' })
+  const p = await ctx.newPage()
+  const go = async (u) => { await p.goto(APP + u); await p.waitForLoadState('networkidle'); await p.waitForTimeout(2500); await p.addStyleTag({ content: '*{scrollbar-width:none!important}::-webkit-scrollbar{display:none!important}' }) }
+  const clip = (name, x, y, width, height) => p.screenshot({ path: A + name + '.png', clip: { x, y, width, height } })
+  await go('/?theme=default')
+  await p.screenshot({ path: A + 'feed.png' })
+  await clip('post1', 580, 326, 760, 168); await clip('post2', 580, 508, 760, 144); await clip('post3', 580, 666, 760, 169); await clip('composer', 580, 214, 760, 48)
+  await clip('ev1', 1700, 154, 200, 246); await clip('ev2', 1700, 417, 200, 247); await clip('ev3', 1700, 680, 200, 228); await clip('evhead', 1700, 80, 200, 70)
+  await p.getByText('Mọi người đang dùng AI để tóm tắt biên bản họp').first().click(); await p.waitForTimeout(1500)
+  await p.screenshot({ path: A + 'popup-full.png' }); await clip('popup', 580, 56, 760, 491)
+  await go('/use-cases?theme=default')
+  await p.screenshot({ path: A + 'lib.png' })
+  await clip('uc1', 580, 336, 760, 145); await clip('uc2', 580, 493, 760, 145); await clip('uc3', 580, 650, 760, 145); await clip('filters', 580, 272, 760, 40)
+  await p.getByText('Xem Use Case').first().click(); await p.waitForLoadState('networkidle'); await p.waitForTimeout(2000)
+  await p.screenshot({ path: A + 'detail.png' }); await clip('ucinfo', 400, 216, 925, 207); await clip('toc', 1352, 210, 200, 115)
+  await go('/?theme=gray'); await p.screenshot({ path: A + 'gray.png' })
+  await go('/use-cases?theme=gray'); await p.screenshot({ path: A + 'libgray.png' })
+  await p.goto(APP + '/?theme=default')
+  await b.close()
+})()

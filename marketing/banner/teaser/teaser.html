@@ -1,0 +1,215 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Zalopay AI Space teaser</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;800&family=Orbitron:wght@500;700&display=block" rel="stylesheet">
+<style>
+html,body{margin:0;background:#04060d}
+#b{position:relative;width:1920px;height:1080px;overflow:hidden;font-family:"Be Vietnam Pro",sans-serif;
+  background:radial-gradient(75% 75% at 50% 78%,#3f6dff 0%,#2a4fe0 28%,#1b33a8 55%,#10206a 78%,#0a1440 100%)}
+.grid{position:absolute;inset:-72px 0 0 0;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:72px 72px;
+  -webkit-mask-image:radial-gradient(70% 70% at 50% 45%,#000 30%,transparent 85%)}
+.glow{position:absolute;left:50%;top:50%;width:1700px;height:900px;margin:-520px 0 0 -850px;border-radius:50%;background:radial-gradient(50% 50% at 50% 55%,rgba(150,190,255,.45) 0%,rgba(60,120,255,.25) 40%,rgba(60,120,255,0) 75%)}
+.horizon{position:absolute;left:50%;top:830px;width:3600px;height:3600px;margin-left:-1800px;border-radius:50%;background:radial-gradient(closest-side,#0b1650 96%,#1d3bb8 99%,#7fb0ff 100%);box-shadow:0 0 60px 14px rgba(110,170,255,.75),0 0 180px 60px rgba(60,120,255,.45),inset 0 30px 80px rgba(120,180,255,.35)}
+.vign{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 45%,rgba(2,4,15,0) 55%,rgba(2,4,15,.55) 100%)}
+.stars{position:absolute;left:0;top:0;width:2600px;height:1080px}
+.st{position:absolute;border-radius:50%;background:#fff;box-shadow:0 0 8px 1px rgba(200,225,255,.8)}
+.stage{position:absolute;inset:0;perspective:1900px;perspective-origin:62% 45%}
+.scene{position:absolute;inset:0;opacity:0;perspective:1700px;perspective-origin:62% 45%}
+.scr{position:absolute;border-radius:20px;overflow:hidden;opacity:0;
+  border:1.5px solid rgba(150,200,255,.7);
+  box-shadow:0 0 0 1px rgba(255,255,255,.08),0 40px 140px rgba(0,0,0,.65),0 0 90px rgba(70,140,255,.6),inset 0 0 40px rgba(120,180,255,.25)}
+.scr img,.card img{display:block;width:100%}
+.scr .scan{position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(140,190,255,.06) 0 2px,transparent 2px 5px);mix-blend-mode:screen}
+.scr .tint{position:absolute;inset:0;background:linear-gradient(160deg,rgba(80,140,255,.1),rgba(10,20,80,.18))}
+.sweep{position:absolute;top:-20%;bottom:-20%;width:38%;left:-60%;background:linear-gradient(100deg,transparent,rgba(200,230,255,.35) 45%,rgba(255,255,255,.55) 50%,rgba(200,230,255,.35) 55%,transparent);transform:skewX(-18deg)}
+.card{position:absolute;opacity:0}
+.card .in{position:relative;border-radius:20px;overflow:hidden;border:1.5px solid rgba(170,215,255,.9);
+  box-shadow:0 0 0 1px rgba(255,255,255,.15),0 30px 80px rgba(0,0,0,.55),0 0 60px 6px rgba(80,150,255,.75)}
+.card.dk .in{background:rgba(8,14,40,.85);padding:10px;backdrop-filter:blur(8px)}
+.hud{position:absolute;left:110px;top:300px;width:560px;color:#fff}
+.hud .num{font-family:Orbitron,sans-serif;font-weight:700;font-size:26px;letter-spacing:.3em;color:#7fc4ff;text-shadow:0 0 18px rgba(90,170,255,.9);opacity:0}
+.hud .line{height:2px;width:0;margin:16px 0 18px;background:linear-gradient(90deg,#9fd2ff,rgba(90,150,255,0));box-shadow:0 0 12px #6fb4ff}
+.hud .lbl{font-family:Orbitron,sans-serif;font-weight:500;font-size:16px;letter-spacing:.35em;color:#b9d6ff;opacity:0;text-transform:uppercase}
+.hud h2{margin:6px 0 -14px;padding:16px 24px 22px 0;font-size:70px;line-height:1.12;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(90deg,#fff 30%,#8fc4ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:none;clip-path:inset(-20% 100% -30% -10%)}
+.hud p{margin:22px 0 0;font-size:27px;line-height:1.5;color:#d6e3ff;opacity:0}
+.hud .br{position:absolute;width:26px;height:26px;border:2px solid #7fc4ff;opacity:0;filter:drop-shadow(0 0 6px #6fb4ff)}
+.hud .br.a{left:-34px;top:-14px;border-right:0;border-bottom:0}
+.hud .br.b{left:-34px;bottom:-24px;border-right:0;border-top:0}
+.ring{position:absolute;left:50%;top:48%;width:400px;height:400px;margin:-200px 0 0 -200px;border-radius:50%;border:3px solid rgba(180,220,255,.9);box-shadow:0 0 40px 10px rgba(90,160,255,.7),inset 0 0 40px rgba(90,160,255,.6);opacity:0}
+.streak{position:absolute;height:2px;border-radius:2px;background:linear-gradient(90deg,rgba(160,210,255,0),rgba(200,230,255,.95));box-shadow:0 0 8px #8fc4ff;opacity:0}
+.tlabel{position:absolute;font-weight:700;font-size:30px;color:#fff;text-shadow:0 0 20px rgba(90,160,255,.9);opacity:0}
+.hud{top:240px;width:580px}
+.row{margin-top:30px;opacity:0}
+.chip{display:inline-block;height:58px;border-radius:16px;overflow:hidden;box-shadow:0 0 0 1.5px rgba(170,215,255,.85),0 0 26px rgba(80,150,255,.75)}
+.chip img{height:58px;display:block}
+.row .arrow{display:none}
+.row p{margin:14px 0 0;font-size:27px;line-height:1.45;color:#e2ecff;opacity:1}
+.holo{position:absolute;opacity:0}
+.holo img{display:block;width:100%;border-radius:20px;box-shadow:0 0 0 2px rgba(190,225,255,.9),0 20px 60px rgba(0,0,0,.5),0 0 50px 8px rgba(80,150,255,.8)}
+.holo .halo{position:absolute;inset:-8px;border-radius:26px;border:3px solid #a8d8ff;box-shadow:0 0 30px #5aa8ff,inset 0 0 18px #5aa8ff}
+.over{position:absolute;inset:0;opacity:0}
+.over img{display:block;width:100%}
+.holo .over img{box-shadow:none}
+.cur{position:absolute;opacity:0;transform-origin:8px 4px;filter:drop-shadow(0 0 10px rgba(140,200,255,.95)) drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+.ripple{position:absolute;width:120px;height:120px;border-radius:50%;border:3px solid #c4e6ff;box-shadow:0 0 30px #6fb4ff,inset 0 0 20px #6fb4ff;opacity:0}
+.flash{position:absolute;inset:0;background:radial-gradient(circle at 62% 50%,rgba(220,240,255,.9),rgba(120,170,255,.35) 40%,transparent 72%);opacity:0}
+.mark{position:absolute;border-radius:14px;border:0;opacity:0;box-shadow:0 0 0 3px #bfe6ff,0 0 26px 8px rgba(90,170,255,.95)}
+.callout{position:absolute;opacity:0;padding:22px 28px 22px 30px;border-radius:18px;background:linear-gradient(135deg,rgba(20,40,120,.82),rgba(8,16,60,.82));border:1.5px solid rgba(160,210,255,.75);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 20px 60px rgba(0,0,0,.45),0 0 40px rgba(70,140,255,.55);backdrop-filter:blur(10px)}
+.callout p{margin:0;font-size:30px;line-height:1.42;font-weight:600;color:#fff}
+.callout .dot{position:absolute;left:-1px;top:22px;bottom:22px;width:4px;border-radius:4px;background:linear-gradient(#9fe0ff,#4f8cff);box-shadow:0 0 12px #6fb4ff}
+.lead{position:absolute;height:3px;margin-top:-1.5px;transform-origin:0 50%;background:linear-gradient(90deg,#d6f0ff,#7fbfff);box-shadow:0 0 10px #6fb4ff,0 0 22px rgba(90,160,255,.7);opacity:0}
+.ldot{position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 12px 4px #7fc4ff;opacity:0}
+.ehead{position:absolute;font-size:44px;font-weight:800;color:#fff;letter-spacing:-.01em;text-shadow:0 4px 24px rgba(40,100,255,.6);opacity:0}
+.eyebrow{position:absolute;font-family:Orbitron,sans-serif;font-weight:700;font-size:20px;letter-spacing:.32em;color:#9fd2ff;text-shadow:0 0 14px rgba(90,170,255,.9);opacity:0}
+</style></head><body>
+<div id="b"><div class="glow"></div><div class="grid"></div><div class="stars" id="s1"></div><div class="stars" id="s2"></div><div class="horizon"></div><div class="vign"></div>
+<div class="stage" id="stage"></div></div>
+<script>
+const $ = (p, cls, css = {}, html = '') => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css); d.innerHTML = html; p.appendChild(d); return d }
+const A = (el, kf, delay, dur, easing = 'cubic-bezier(.2,.7,.25,1)', fill = 'both') => el.animate(kf, { delay: delay * 1000, duration: dur * 1000, easing, fill })
+const rnd = ((s) => () => (s = (s * 16807) % 2147483647) / 2147483647)(42)
+// star layers drifting at two speeds (parallax)
+for (const [id, n, sz, dx] of [['s1', 140, [1, 2], -260], ['s2', 60, [2, 4], -620]]) {
+  const L = document.getElementById(id)
+  for (let i = 0; i < n; i++) { const w = sz[0] + Math.round(rnd() * (sz[1] - sz[0])); const s = $(L, 'st', { left: rnd() * 2600 + 'px', top: rnd() * 1000 + 'px', width: w + 'px', height: w + 'px' }); A(s, [{ opacity: .25 }, { opacity: 1 }, { opacity: .25 }], -rnd() * 3, 1.5 + rnd() * 2, 'ease-in-out').effect.updateTiming({ iterations: Infinity }) }
+  A(L, [{ transform: 'translateX(0)' }, { transform: `translateX(${dx}px)` }], 0, 30, 'linear')
+}
+const stage = document.getElementById('stage')
+const OV = 0.45
+let TEND = 0
+const later = []   // callout lines and cursor targets, laid out once images are in
+const P = (src) => (src.includes('/') ? src : 'v/' + src)
+function scene(D, L, hud) {
+  const el = $(stage, 'scene')
+  A(el, [{ opacity: 0, transform: 'translateZ(-260px)', filter: 'blur(8px)' }, { opacity: 1, transform: 'translateZ(0)', filter: 'blur(0)' }], D, .7)
+  el.animate([{ opacity: 1, transform: 'translateZ(0)', filter: 'blur(0)' }, { opacity: 0, transform: 'translateZ(420px)', filter: 'blur(10px)' }], { delay: (D + L - OV) * 1000, duration: OV * 1000, easing: 'cubic-bezier(.6,0,.9,.4)', fill: 'forwards' })
+  const h = $(el, 'hud', {}, `<div class="br a"></div><div class="br b"></div><div class="num">${hud.num}</div><div class="line"></div><div class="lbl">${hud.lbl}</div><h2>${hud.title}</h2>`)
+  A(h.querySelector('.num'), [{ opacity: 0, transform: 'translateX(-30px)' }, { opacity: 1, transform: 'none' }], D + .2, .5)
+  A(h.querySelector('.line'), [{ width: '0px' }, { width: '220px' }], D + .3, .6)
+  A(h.querySelector('.lbl'), [{ opacity: 0, letterSpacing: '.8em' }, { opacity: 1, letterSpacing: '.35em' }], D + .35, .7)
+  A(h.querySelector('h2'), [{ clipPath: 'inset(-20% 100% -30% -10%)' }, { clipPath: 'inset(-20% -10% -30% -10%)' }], D + .45, .7)
+  h.querySelectorAll('.br').forEach((b) => A(b, [{ opacity: 0, transform: 'scale(1.6)' }, { opacity: 1, transform: 'none' }], D + .2, .5))
+  if (D > 0) {
+    const r = $(stage, 'ring'); A(r, [{ opacity: .95, transform: 'scale(.2)' }, { opacity: 0, transform: 'scale(5)' }], D - .1, .9, 'cubic-bezier(.1,.6,.3,1)', 'forwards')
+    for (let k = 0; k < 18; k++) { const y = 80 + rnd() * 900, w = 200 + rnd() * 500, s = $(stage, 'streak', { top: y + 'px', left: '-700px', width: w + 'px' }); A(s, [{ opacity: 0, transform: 'translateX(0)' }, { opacity: 1, offset: .2 }, { opacity: 0, transform: `translateX(${2600 + rnd() * 600}px)` }], D - .3 + rnd() * .3, .55 + rnd() * .3, 'cubic-bezier(.4,0,.8,.6)', 'forwards') }
+  }
+  TEND = Math.max(TEND, D + L)
+  return el
+}
+function screen(el, D, src, css, from, to, drift, t0, tEnd) {
+  const s = $(el, 'scr', css, `<img src="${P(src)}"><div class="tint"></div><div class="scan"></div><div class="sweep"></div>`)
+  A(s, [{ opacity: 0, transform: from }, { opacity: 1, transform: to }], D + t0, 1.0)
+  A(s, [{ transform: to }, { transform: drift }], D + t0 + 1.0, tEnd - t0 - 1.0, 'ease-in-out', 'forwards')
+  A(s.querySelector('.sweep'), [{ left: '-60%' }, { left: '130%' }], D + t0 + .7, 1.4, 'ease-in-out')
+  return s
+}
+function card(el, D, src, css, t0, from, to, cls = '') {
+  const c = $(el, 'card ' + cls, css, `<div class="in"><img src="${P(src)}"><div class="sweep"></div></div>`)
+  A(c, [{ opacity: 0, transform: from, filter: 'brightness(2.2)' }, { opacity: 1, transform: to, filter: 'brightness(1)' }], D + t0, .7)
+  A(c, [{ transform: to }, { transform: to + ' translateY(-10px)' }], D + t0 + .7, 5, 'ease-in-out', 'forwards')
+  A(c.querySelector('.sweep'), [{ left: '-60%' }, { left: '140%' }], D + t0 + .4, 1.0, 'ease-in-out')
+  return c
+}
+const out = (e, t, to = 'translate3d(0,0,-500px)', d = .45) => e.animate([{ opacity: 1 }, { opacity: 0, transform: to }], { delay: t * 1000, duration: d * 1000, easing: 'cubic-bezier(.5,0,.9,.5)', fill: 'forwards' })
+const fade = (e, t, d = .35) => e.animate([{ opacity: 1 }, { opacity: 0 }], { delay: t * 1000, duration: d * 1000, fill: 'forwards' })
+const fadeIn = (e, t, d = .35) => e.animate([{ opacity: 0 }, { opacity: 1 }], { delay: t * 1000, duration: d * 1000, fill: 'both' })
+// glowing ring drawn on the screen itself around a button (x, y, w, h in screenshot css px; k = shown px per css px)
+function mark(scr, k, x, y, w, h, t, tOff, pad = 8) {
+  const m = $(scr, 'mark', { left: (x - pad) * k + 'px', top: (y - pad) * k + 'px', width: (w + 2 * pad) * k + 'px', height: (h + 2 * pad) * k + 'px' })
+  A(m, [{ opacity: 0, transform: 'scale(1.5)' }, { opacity: 1, transform: 'scale(1)' }], t, .45, 'cubic-bezier(.2,.8,.3,1.2)')
+  A(m, [{ boxShadow: '0 0 0 3px #bfe6ff, 0 0 26px 8px rgba(90,170,255,.95), inset 0 0 18px rgba(120,190,255,.7)' }, { boxShadow: '0 0 0 3px #bfe6ff, 0 0 46px 16px rgba(90,170,255,.55), inset 0 0 18px rgba(120,190,255,.4)' }], t + .45, .55, 'ease-in-out').effect.updateTiming({ iterations: 6, direction: 'alternate' })
+  if (tOff) fade(m, tOff)
+  return m
+}
+// callout: line from the ring out to a glass box with the description
+function callout(el, m, t, tOff, box, text, side = 'right') {
+  const b = $(el, 'callout', { left: box.x + 'px', top: box.y + 'px', width: box.w + 'px' }, `<div class="dot"></div><p>${text}</p>`)
+  A(b, [{ opacity: 0, transform: 'translateX(24px)', clipPath: 'inset(0 100% 0 0 round 18px)' }, { opacity: 1, transform: 'none', clipPath: 'inset(0 0 0 0 round 18px)' }], t + .35, .55)
+  const ln = $(el, 'lead'), dot = $(el, 'ldot')
+  later.push([t + .7, () => {
+    const r = m.getBoundingClientRect(), br = b.getBoundingClientRect()
+    const x0 = side === 'right' ? r.right : r.left, y0 = r.top + r.height / 2
+    const x1 = side === 'right' ? br.left : br.right, y1 = br.top + Math.min(44, br.height / 2)
+    const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy)
+    Object.assign(ln.style, { left: x0 + 'px', top: y0 + 'px', width: len + 'px', transform: `rotate(${Math.atan2(dy, dx)}rad)` })
+    Object.assign(dot.style, { left: x0 - 6 + 'px', top: y0 - 6 + 'px' })
+    A(ln, [{ clipPath: 'inset(-6px 100% -6px 0)', opacity: 1 }, { clipPath: 'inset(-6px 0 -6px 0)', opacity: 1 }], t + .1, .35, 'ease-out')
+    A(dot, [{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1)' }], t + .05, .25)
+    if (tOff) { fade(ln, tOff); fade(dot, tOff) }
+  }])
+  if (tOff) fade(b, tOff)
+  return b
+}
+// cursor flies in and clicks the centre of a ring
+function click(el, m, tIn, tClick, from = [1750, 1020]) {
+  const c = $(el, 'cur', { left: '0px', top: '0px' }, '<svg viewBox="0 0 24 24" width="46" height="46"><path d="M4 2 L4 19 L8.6 14.8 L11.6 21.5 L14.4 20.3 L11.4 13.7 L17.6 13.7 Z" fill="#fff" stroke="#1a3a9a" stroke-width="1.3" stroke-linejoin="round"/></svg>')
+  const r1 = $(el, 'ripple'), r2 = $(el, 'ripple')
+  later.push([tClick, () => {
+    const r = m.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2
+    A(c, [{ opacity: 0, transform: `translate(${from[0]}px,${from[1]}px)` }, { opacity: 1, offset: .15 }, { opacity: 1, transform: `translate(${x}px,${y}px)` }], tIn, tClick - tIn - .08, 'cubic-bezier(.3,.1,.2,1)')
+    c.animate([{ transform: `translate(${x}px,${y}px) scale(1)` }, { transform: `translate(${x}px,${y}px) scale(.8)` }, { transform: `translate(${x}px,${y}px) scale(1)` }], { delay: tClick * 1000, duration: 240, fill: 'forwards' })
+    c.animate([{ opacity: 1 }, { opacity: 0 }], { delay: (tClick + .6) * 1000, duration: 250, fill: 'forwards' })
+    for (const [rr, d, s] of [[r1, .04, 2.2], [r2, .16, 3.2]]) { Object.assign(rr.style, { left: x - 60 + 'px', top: y - 60 + 'px' }); A(rr, [{ opacity: 1, transform: 'scale(.2)' }, { opacity: 0, transform: `scale(${s})` }], tClick + d, .7, 'ease-out', 'forwards') }
+  }])
+}
+const deep = (x, y, ry, rx) => `translate3d(${x}px,${y}px,-1100px) rotateY(${ry}deg) rotateX(${rx}deg)`
+const pose = (x, y, z, ry, rx = 0) => `translate3d(${x}px,${y}px,${z}px) rotateY(${ry}deg) rotateX(${rx}deg)`
+window.CUES = {}
+
+// 1 · Tạo sự kiện  (events column: 216 css px wide, shown at 240)
+{ const D = 0, L = 8.2, k = 240 / 216
+  const e = scene(D, L, { num: '01', lbl: 'Events', title: 'Tạo sự kiện' })
+  const pan = screen(e, D, 'events.png', { left: '800px', top: '62px', width: '240px' }, deep(-200, 80, 40, 6), pose(0, 0, 0, 12, 2), pose(0, -4, 10, 11, 2), .1, L)
+  const pan2 = $(pan, 'over', {}, '<img src="v/events-int.png">'); fadeIn(pan2, D + 5.45, .3)
+  const m1 = mark(pan, k, 10, 40, 192, 34, D + 1.0, D + 3.9)
+  callout(e, m1, D + 1.0, D + 3.9, { x: 1130, y: 96, w: 640 }, 'Chủ động tạo sự kiện để chia sẻ về cách mình ứng dụng AI vào công việc.')
+  click(e, m1, D + 1.5, D + 2.3)
+  const form = card(e, D, 'evform.png', { left: '1330px', top: '290px', width: '420px' }, 2.5, pose(300, 80, -700, -30, 8), pose(0, 0, 60, -10, 2))
+  out(form, D + 3.8, 'translate3d(200px,0,-700px) rotateY(-30deg)')
+  const m2 = mark(pan, k, 10, 293.9, 146, 30, D + 4.2)
+  callout(e, m2, D + 4.2, 0, { x: 1130, y: 330, w: 640 }, 'Tham gia sự kiện để học hỏi thêm về AI từ đồng nghiệp.')
+  click(e, m2, D + 4.6, D + 5.4)
+  const burst = $(e, 'ring', { left: '0px', top: '0px' })
+  later.push([D + 5.5, () => { const r = m2.getBoundingClientRect(); Object.assign(burst.style, { left: r.left + r.width / 2 + 'px', top: r.top + r.height / 2 + 'px' }); A(burst, [{ opacity: .9, transform: 'scale(.1)' }, { opacity: 0, transform: 'scale(1.1)' }], D + 5.5, .8, 'ease-out', 'forwards') }])
+  card(e, D, 'card-int.png', { left: '1330px', top: '480px', width: '300px' }, 5.8, pose(-200, 60, -500, -20), pose(0, 0, 90, -8), 'dk')
+  CUES.s1 = { D, L, clicks: [2.3, 5.4], marks: [1.0, 4.2], pops: [2.5, 5.8], chime: 5.5 } }
+
+// 2 · Đăng post  (feed crop 800x500 css, shown at 760)
+{ const D = 8.2 - OV, L = 5.4, k = 760 / 800
+  const e = scene(D, L, { num: '02', lbl: 'Post', title: 'Đăng post' })
+  const pan = screen(e, D, 'feedz.png', { left: '700px', top: '250px', width: '760px' }, deep(300, 60, -34, 10), pose(0, 0, 0, -10, 3), pose(-10, -4, 10, -9, 3), .1, L)
+  const m = mark(pan, k, 682.4, 161.6, 88.6, 32, D + 1.0)
+  callout(e, m, D + 1.0, 0, { x: 1520, y: 250, w: 360 }, 'Đặt câu hỏi hoặc chia sẻ mọi thứ liên quan đến AI.')
+  click(e, m, D + 1.4, D + 2.2)
+  card(e, D, 'compose.png', { left: '820px', top: '230px', width: '640px' }, 2.4, pose(0, 160, -700, -14, 12), pose(0, 0, 120, -6, 2))
+  CUES.s2 = { D, L, clicks: [2.2], marks: [1.0], pops: [2.4] } }
+
+// 3 · Use Case  (library crop 800x740 css, shown at 700) then the step-by-step guide
+{ const D = 8.2 - OV + 5.4 - OV, L = 8.8, k = 700 / 800
+  const e = scene(D, L, { num: '03', lbl: 'Use Case Library', title: 'Use Case' })
+  const pan = screen(e, D, 'libz.png', { left: '700px', top: '190px', width: '700px' }, deep(300, -60, -34, -8), pose(0, 0, 0, -10, -2), pose(-10, 4, 10, -9, -2), .1, 4.6)
+  const m1 = mark(pan, k, 644.5, 161.5, 126.5, 32, D + 1.0, D + 3.1)
+  callout(e, m1, D + 1.0, D + 3.1, { x: 1500, y: 230, w: 380 }, 'Chia sẻ cách mình ứng dụng AI vào công việc.')
+  click(e, m1, D + 1.4, D + 2.2)
+  const m2 = mark(pan, k, 658.8, 391.2, 98, 15, D + 3.2, 0, 10)
+  const c2 = callout(e, m2, D + 3.2, 0, { x: 1500, y: 470, w: 380 }, 'Xem chi tiết cách đồng nghiệp áp dụng AI vào công việc và áp dụng ngay.')
+  click(e, m2, D + 3.6, D + 4.4)
+  for (const x of [pan]) x.animate([{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, transform: 'translate3d(0,0,700px)', filter: 'blur(10px)' }], { delay: (D + 4.6) * 1000, duration: 420, easing: 'cubic-bezier(.6,0,.9,.4)', fill: 'forwards' })
+  later.push([0, () => { for (const q of e.querySelectorAll('.lead,.ldot')) fade(q, D + 4.6, .3) }])
+  fade(c2, D + 4.55, .3)
+  const fl = $(e, 'flash'); A(fl, [{ opacity: 0 }, { opacity: .85, offset: .3 }, { opacity: 0 }], D + 4.6, .6, 'ease-out', 'forwards')
+  // stepper: the use case's own "Các bước", advancing 1 → 5
+  const eb = $(e, 'eyebrow', { left: '722px', top: '250px' }, 'STEP BY STEP'); fadeIn(eb, D + 4.95, .4)
+  const eh = $(e, 'ehead', { left: '720px', top: '286px' }, 'Làm theo từng bước để áp dụng ngay'); A(eh, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], D + 5.05, .5)
+  const st = card(e, D, 'step1.png', { left: '720px', top: '380px', width: '1060px' }, 4.9, pose(0, 0, -800, -6, 6), pose(0, 0, 60, -5, 2))
+  const steps = [5.0, 5.7, 6.4, 7.1, 7.8]
+  const layers = [st.querySelector('.in > img')]
+  steps.slice(1).forEach((t, i) => { const o = $(st.querySelector('.in'), 'over', {}, `<img src="v/step${i + 2}.png">`); fadeIn(o, D + t, .22); const prev = layers[layers.length - 1]; prev.animate([{ opacity: 1 }, { opacity: 0 }], { delay: (D + t + .22) * 1000, duration: 1, fill: 'forwards' }); layers.push(o) })
+  CUES.s3 = { D, L, clicks: [2.2, 4.4], marks: [1.0, 3.2], warp: 4.6, steps } }
+
+window.addEventListener('load', () => {
+  const at = (ms) => { for (const a of document.getAnimations()) { a.pause(); a.currentTime = ms } }
+  for (const [t, f] of later) { at(t * 1000); f() }
+  window.TOTAL = TEND
+})
+</script></body></html>
