@@ -38,15 +38,14 @@ const UC_STATUS = {
   approved: { label: 'Đã đăng', bg: '#E7F9F0', color: '#00893F', accent: '#00CF6A' },
 }
 const UC_ORDER = ['draft', 'pending', 'changes_requested', 'rejected', 'approved']
-// Status tabs on "Use case của tôi": each has its own colour; tabs holding posts glow in it.
+// Status tabs on "Use case của tôi" (Shopee-style, "Tất cả" first); each keeps its colour for the count.
 const UC_TABS = [
+  { key: 'all', label: 'Tất cả', color: '#2c5fff' },
   { key: 'pending', label: 'Chờ duyệt', color: '#FFB020' },
   { key: 'approved', label: 'Đã đăng', color: '#22C55E' },
   { key: 'changes_requested', label: 'Cần chỉnh sửa', color: '#FF7A1A' },
   { key: 'rejected', label: 'Từ chối', color: '#EF4444' },
-  { key: 'all', label: 'Tất cả', color: '#6EA8FF' },
 ]
-const hexA = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`
 
 // Same bright gradient/glow text treatment as the Use Case Library hero title.
 const GRAD_TEXT = 'background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));'
@@ -289,7 +288,7 @@ export default function ProfilePage() {
     return { ...tab, label: t(tab.label), count: items.length, items }
   })
   // Default: posts that need my action first, then whatever has posts, else "Tất cả".
-  const activeUcTab = ucTabs.find((x) => x.key === ucTab) || ucTabs.find((x) => x.key === 'changes_requested' && x.count > 0) || ucTabs.find((x) => x.key !== 'all' && x.count > 0) || ucTabs[ucTabs.length - 1]
+  const activeUcTab = ucTabs.find((x) => x.key === ucTab) || ucTabs.find((x) => x.key === 'changes_requested' && x.count > 0) || ucTabs.find((x) => x.key !== 'all' && x.count > 0) || ucTabs.find((x) => x.key === 'all')
 
   // ---- saved section ----
   const savedUseCaseCards = savedUseCaseIds
@@ -419,8 +418,10 @@ export default function ProfilePage() {
           <section style={css(`position:relative; padding:${section === 'overview' ? '10px var(--zp-gutter) 12px' : '18px var(--zp-gutter) 40px'};`)}>
             <div style={css('max-width:760px; margin:0 auto;')}>
               {section === 'overview' && <h2 id="my-usecases" style={css(`scroll-margin-top:80px; margin:0 0 12px; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Use case của tôi')}</h2>}
+              {/* one white card, Shopee-style: the status tabs across the top, the use cases under them */}
+              <div style={css('background:#fff; border-radius:18px; box-shadow:0 14px 34px rgba(3,12,40,.3); overflow:hidden;')}>
               <StatusTabs tabs={ucTabs} active={activeUcTab.key} onPick={setUcTab} />
-              <div style={css('display:flex; flex-direction:column; gap:12px; margin-top:16px;')}>
+              <div style={css('display:flex; flex-direction:column; gap:12px; padding:16px;')}>
                 {ucDrafts.map((d) => (
                   <div key={d.id} id={'uc-draft-' + d.id} onClick={() => navigate('/use-cases?share=1&draft=' + encodeURIComponent(d.id))} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
                     <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
@@ -432,8 +433,8 @@ export default function ProfilePage() {
                   </div>
                 ))}
                 {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
-                {activeUcTab.items.length === 0 && (
-                  <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>
+                {activeUcTab.items.length === 0 && ucDrafts.length === 0 && (
+                  <div style={css(`padding:28px 24px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>
                     {activeUcTab.key === 'all' ? t('Bạn chưa chia sẻ use case nào.') : t('Chưa có use case ở mục này.')}
                     {ucPosts.length === 0 && (
                       <div style={{ marginTop: 14 }}>
@@ -442,6 +443,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                 )}
+              </div>
               </div>
             </div>
           </section>
@@ -497,33 +499,28 @@ export default function ProfilePage() {
   )
 }
 
-// Status filter pills (colour per status; pills holding items glow). Used by "Use case của tôi" and "Câu hỏi của tôi".
+// Status tabs, Shopee-style: equal tabs across the top of the white card, the current one in blue with a
+// line under it; a count shows in brackets once the tab holds something. Used by "Use case của tôi".
 function StatusTabs({ tabs, active, onPick }) {
   return (
-  <div style={css('display:flex; flex-wrap:wrap; gap:6px; padding:5px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(130,170,255,.22); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); width:fit-content; max-width:100%;')}>
-    {tabs.map((tab) => {
-      const on = tab.key === active
-      const lit = tab.count > 0
-      return (
-        <button
-          key={tab.key}
-          onClick={() => onPick(tab.key)}
-          className={on ? undefined : hoverClass(`background:${hexA(tab.color, .16)} !important;`)}
-          style={css(`display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px 0 16px; border-radius:999px; cursor:pointer; white-space:nowrap; font:700 13.5px ${FONT}; transition:background .15s, box-shadow .15s; `
-            + (on
-              ? `background:#fff; border:1px solid #fff; color:${tab.key === 'all' ? '#2c5fff' : '#0F172A'}; box-shadow:0 0 0 1px ${hexA(tab.color, .5)}, 0 0 18px ${hexA(tab.color, .55)};`
-              : lit
-                ? `background:${hexA(tab.color, .1)}; border:1px solid ${hexA(tab.color, .55)}; color:${tab.color}; box-shadow:0 0 14px ${hexA(tab.color, .35)};`
-                : `background:rgba(255,255,255,.05); border:1px solid ${hexA(tab.color, .35)}; color:#E4ECFF;`))}
-        >
-          <span style={css(`width:8px; height:8px; border-radius:50%; background:${tab.color}; ${lit ? `box-shadow:0 0 8px ${tab.color};` : ''}`)}></span>
-          {tab.label}
-          <span style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:999px; font:800 12px ${FONT}; `
-            + (lit ? `background:${tab.color}; color:#fff;` : on ? `background:${hexA(tab.color, .16)}; color:#0F172A;` : `background:${hexA(tab.color, .22)}; color:#fff;`))}>{tab.count}</span>
-        </button>
-      )
-    })}
-  </div>
+    <div role="tablist" className="zp-noscrollbar" style={css('display:flex; overflow-x:auto; border-bottom:1px solid #EEF1F7;')}>
+      {tabs.map((tab) => {
+        const on = tab.key === active
+        return (
+          <button
+            key={tab.key}
+            role="tab"
+            aria-selected={on}
+            onClick={() => onPick(tab.key)}
+            className={on ? undefined : hoverClass('color:#2c5fff !important;')}
+            style={css(`flex:1 0 auto; height:52px; padding:0 12px; border:none; border-bottom:2px solid ${on ? '#2c5fff' : 'transparent'}; margin-bottom:-1px; background:transparent; cursor:pointer; white-space:nowrap; font:${on ? 700 : 600} 14px ${FONT}; color:${on ? '#2c5fff' : '#334155'}; transition:color .15s, border-color .15s;`)}
+          >
+            {tab.label}
+            {tab.count > 0 && <span style={css(`margin-left:4px; color:${tab.key === 'all' ? (on ? '#2c5fff' : '#64748b') : tab.color};`)}>({tab.count})</span>}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
