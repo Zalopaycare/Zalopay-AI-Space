@@ -265,7 +265,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
       <span style={css('flex:none; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; color:#64748b; margin-top:1px;')}>{icon}</span><span style={{ minWidth: 0 }}>{text}</span>
     </div>
   )
-  const grayBtn = `display:inline-flex; align-items:center; justify-content:center; gap:7px; height:40px; padding:0 16px; border:none; border-radius:10px; background:#EEF1F6; color:#0F172A; cursor:pointer; font:700 13.5px ${FONT};`
+  const grayBtn = `display:inline-flex; align-items:center; justify-content:center; gap:7px; height:32px; padding:0 14px; border:none; border-radius:9px; background:#EEF1F6; color:#0F172A; cursor:pointer; font:700 12.5px ${FONT};`
   return createPortal(
     <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:24px 16px;')}>
       {/* fits the screen: a long event (details, people, comments) scrolls inside, the ✕ stays in its corner */}
@@ -285,7 +285,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
             {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>, statsLabel(ev))}
           </div>
           <div style={css('display:flex; flex-wrap:wrap; gap:8px; padding:16px 22px 0;')}>
-            {!ev.past && <InterestButton ev={ev} onToggle={toggle} grow height={40} />}
+            {!ev.past && <InterestButton ev={ev} onToggle={toggle} grow height={32} />}
             {!ev.past && (
               <a href={outlookLink(ev)} target="_blank" rel="noopener noreferrer" className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none; text-decoration:none;' + grayBtn)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"></path></svg>
