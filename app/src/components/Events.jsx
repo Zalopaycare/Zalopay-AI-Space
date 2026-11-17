@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { css, hoverClass } from '../lib/style.js'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { css, hoverClass, CARD_HOVER } from '../lib/style.js'
+import { fold } from '../lib/fold.js'
 import { api, relativeTime } from '../lib/api.js'
 import { cropCover } from '../lib/cover.js'
 import { copyWithToast } from '../lib/clipboard.js'
@@ -112,8 +114,10 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false }) {
   )
 }
 
-// ---- the list: the rail (wide screens) or the strip above the feed (narrow ones) ----
-export default function EventsPanel({ layout = 'rail' }) {
+// ---- the list: the grid of the events page (AI Space home), the rail or the strip ----
+// `query` (grid): only the events whose title, place or host match. /?new=event opens the "Tạo sự kiện"
+// form (the sidebar's link).
+export default function EventsPanel({ layout = 'rail', query = '' }) {
   const { user, requireLogin } = useAuth()
   const [events, setEvents] = useState(null)
   const [openId, setOpenId] = useState(() => new URLSearchParams(window.location.search).get('event'))
@@ -134,10 +138,37 @@ export default function EventsPanel({ layout = 'rail' }) {
   }
   const create = () => requireLogin(() => setForm({}))
   const list = events || []
+  const location = useLocation()
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('new') !== 'event') return
+    navigate({ pathname: location.pathname, hash: location.hash }, { replace: true })
+    requireLogin(() => setForm({}))
+  }, [location.search]) // eslint-disable-line react-hooks/exhaustive-deps
+  const q = fold(query.trim())
+  const shown = q ? list.filter((ev) => [ev.title, ev.location, ev.host?.name, ev.host?.fullName, ev.description].some((x) => fold(x).includes(q))) : list
 
   return (
     <>
-      {layout === 'rail' ? (
+      {layout === 'grid' ? (
+        <div data-tour="events">
+          {!events ? null : !shown.length ? (
+            <div style={css('background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:48px 24px; text-align:center;')}>
+              <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>{q ? 'Không tìm thấy sự kiện nào' : 'Chưa có sự kiện nào sắp tới'}</div>
+              <div style={css('margin-top:8px; font:400 14px/1.6 var(--zp-font-text); color:#64748b;')}>{q ? 'Thử từ khoá khác nhé.' : 'Có topic AI nào muốn chia sẻ? Tạo sự kiện đầu tiên để mọi người cùng tham gia.'}</div>
+              {!q && <button onClick={create} style={css(`margin-top:18px; height:44px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 14px ${FONT}; cursor:pointer;`)}>+ Tạo sự kiện</button>}
+            </div>
+          ) : (
+            <div style={css('display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:16px;')}>
+              {shown.map((ev) => (
+                <div key={ev.id} className={hoverClass(CARD_HOVER)} style={css('background:#fff; border-radius:18px; padding:12px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:transform .18s ease, box-shadow .18s ease;')}>
+                  <EventCard ev={ev} onOpen={setOpenId} onToggle={toggle} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : layout === 'rail' ? (
         // no box of its own, like the menu on the left: the events sit straight on the page
         <aside data-tour="events" aria-label="Sự kiện sắp tới" style={css('padding:4px 6px 6px 2px;')}>
           <div style={css(`font:800 15px ${FONT}; color:#FFFFFF;`)}>Sự kiện sắp tới</div>

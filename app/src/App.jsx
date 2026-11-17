@@ -8,6 +8,7 @@ import PageFade from './components/PageFade.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
 import UseCaseLibraryPage from './pages/UseCaseLibraryPage.jsx'
 import QuestionsPage from './pages/QuestionsPage.jsx'
+import EventsPage from './pages/EventsPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import AdminConsolePage from './pages/AdminConsolePage.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
@@ -15,7 +16,7 @@ import ChatPage from './pages/ChatPage.jsx'
 import NoAccessPage from './pages/NoAccessPage.jsx'
 import MaintenanceGate from './components/MaintenanceGate.jsx'
 
-// Old /questions links (and #ask, #edit=…, ?q=) land on the home page, which is the feed now.
+// Old /questions links (and #ask, #edit=…, ?q=) land on the home page, which is the events page now.
 function ToHome() {
   const { search, hash } = useLocation()
   return <Navigate to={{ pathname: '/', search, hash }} replace />
@@ -29,8 +30,9 @@ export default function App() {
           <PageFade>
             <MaintenanceGate>
             <Routes>
-              {/* AI Space (the threads) is the home page; there's no separate Home any more */}
-              <Route path="/" element={<RequireAuth><QuestionsPage /></RequireAuth>} />
+              {/* AI Space, the home page: the events colleagues hold to share an AI topic. Posts aren't written
+                  any more; an old post's link (/questions/<id>) still opens it on its own page. */}
+              <Route path="/" element={<RequireAuth><EventsPage /></RequireAuth>} />
               <Route path="/use-cases" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
               <Route path="/use-cases/:id" element={<RequireAuth><UseCaseLibraryPage /></RequireAuth>} />
               <Route path="/questions" element={<ToHome />} />
