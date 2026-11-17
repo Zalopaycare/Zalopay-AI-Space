@@ -251,10 +251,11 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   const dialog = useDialog(true, onClose, 'Sự kiện')
   useEffect(() => { api.getEvent(id).then((d) => setEv(d.event)).catch(() => setMissing(true)) }, [id])
   const toggle = () => requireLogin(() => api.toggleEventInterest(id).then((d) => { setEv((x) => ({ ...d.event, past: x?.past })); onChanged(d.event) }).catch(() => {}))
+  const [askCancel, setAskCancel] = useState(false)
+  const cancelEvent = () => { setAskCancel(false); api.deleteEvent(ev.id).then(onDeleted).catch(() => window.alert('Chưa huỷ được, thử lại nhé.')) }
   const remove = () => {
     if (ev.isMine) {
-      if (!window.confirm(`Huỷ sự kiện "${ev.title}"? ${ev.interestCount ? `${ev.interestCount} người đã quan tâm sẽ nhận thông báo huỷ.` : ''}`)) return
-      api.deleteEvent(ev.id).then(onDeleted).catch(() => window.alert('Chưa huỷ được, thử lại nhé.'))
+      setAskCancel(true)
     } else {
       askRemovalReason({ what: 'sự kiện', title: ev.title }).then((r) => r && api.deleteEvent(ev.id, r).then(onDeleted).catch(() => window.alert('Chưa xoá được, thử lại nhé.')))
     }
@@ -266,9 +267,12 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   )
   const grayBtn = `display:inline-flex; align-items:center; justify-content:center; gap:7px; height:40px; padding:0 16px; border:none; border-radius:10px; background:#EEF1F6; color:#0F172A; cursor:pointer; font:700 13.5px ${FONT};`
   return createPortal(
-    <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;')}>
-      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:600px; max-width:100%; margin:auto 0; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden;')}>
-        <button onClick={onClose} aria-label="Đóng" style={css('position:absolute; top:12px; right:12px; z-index:2; width:34px; height:34px; border:none; border-radius:50%; background:rgba(15,23,42,.6); color:#fff; cursor:pointer; font-size:16px;')}>✕</button>
+    <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:24px 16px;')}>
+      {/* fits the screen: a long event (details, people, comments) scrolls inside, the ✕ stays in its corner */}
+      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in zp-thinscroll" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:520px; max-width:100%; max-height:calc(100vh - 48px); overflow-y:auto; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45);')}>
+        <div style={css('position:sticky; top:0; z-index:3; height:0;')}>
+          <button onClick={onClose} aria-label="Đóng" style={css('position:absolute; top:12px; right:12px; width:34px; height:34px; border:none; border-radius:50%; background:rgba(15,23,42,.6); color:#fff; cursor:pointer; font-size:16px;')}>✕</button>
+        </div>
         {!ev ? (
           <div style={css('padding:56px 20px; text-align:center; font:600 14px var(--zp-font-text); color:#64748b;')}>{missing ? 'Không tìm thấy sự kiện này. Có thể đã bị huỷ.' : 'Đang tải…'}</div>
         ) : (<>
@@ -318,6 +322,21 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           </div>
         </>)}
       </div>
+      {askCancel && (
+        <div onClick={(e) => { e.stopPropagation(); setAskCancel(false) }} style={css('position:fixed; inset:0; z-index:4100; background:rgba(4,10,26,.55); display:flex; align-items:center; justify-content:center; padding:24px;')}>
+          <div role="alertdialog" aria-modal="true" aria-label="Huỷ sự kiện" onClick={(e) => e.stopPropagation()} style={css('width:380px; max-width:100%; background:#fff; border-radius:20px; padding:24px; box-shadow:0 30px 70px rgba(3,12,40,.5); text-align:center;')}>
+            <div style={css('width:48px; height:48px; margin:0 auto; border-radius:50%; background:#FFECEC; color:#D8232A; display:flex; align-items:center; justify-content:center;')}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M10 14l4 4M14 14l-4 4"></path></svg>
+            </div>
+            <div style={css(`margin-top:14px; font:800 17px/1.35 ${FONT}; color:#0F172A;`)}>Bạn có chắc muốn huỷ sự kiện?</div>
+            <div style={css('margin-top:8px; font:400 13.5px/1.55 var(--zp-font-text); color:#475569;')}>Những người quan tâm sẽ nhận được thông báo sự kiện bị huỷ.</div>
+            <div style={css('display:flex; gap:10px; margin-top:20px;')}>
+              <button autoFocus onClick={() => setAskCancel(false)} style={css(`flex:1; height:42px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px ${FONT}; cursor:pointer;`)}>Quay lại</button>
+              <button onClick={cancelEvent} style={css(`flex:1; height:42px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px ${FONT}; cursor:pointer;`)}>Huỷ sự kiện</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   )
@@ -416,9 +435,10 @@ function EventForm({ initial, onClose, onSaved }) {
   const field = 'width:100%; box-sizing:border-box; margin-top:6px; height:42px; padding:0 13px; border:1px solid #E6EBF3; border-radius:12px; background:#fff; color:#0F172A; font:500 14px var(--zp-font-text); outline:none;'
   const pill = `height:30px; padding:0 12px; border:none; border-radius:999px; background:rgba(15,23,42,.7); color:#fff; font:700 12px ${FONT}; cursor:pointer;`
   return createPortal(
-    <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;')}>
-      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in" onClick={(e) => e.stopPropagation()} style={css('width:580px; max-width:100%; margin:auto 0; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden;')}>
-        <div style={css('display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:16px 20px; border-bottom:1px solid #EEF1F7;')}>
+    <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:24px 16px;')}>
+      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in zp-soft-ph zp-thinscroll" onClick={(e) => e.stopPropagation()} style={css('width:560px; max-width:100%; max-height:calc(100vh - 48px); overflow-y:auto; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45);')}>
+        {/* header and the Đăng button stay put while the form scrolls between them */}
+        <div style={css('position:sticky; top:0; z-index:2; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:16px 20px; border-bottom:1px solid #EEF1F7; background:#fff;')}>
           <button onClick={onClose} style={css(`justify-self:start; border:none; background:none; padding:0; cursor:pointer; font:500 15px ${FONT}; color:#0F172A;`)}>Huỷ</button>
           <div style={css(`font:800 16px ${FONT}; color:#0F172A;`)}>{editing ? 'Sửa sự kiện' : 'Tạo sự kiện'}</div>
           <span />
@@ -442,17 +462,17 @@ function EventForm({ initial, onClose, onSaved }) {
             )}
             {coverNote && <div style={css('margin-top:6px; font:400 12px/1.5 var(--zp-font-text); color:#64748b;')}>{coverNote}</div>}
           </div>
-          <div style={css('margin-top:14px;')}>{label('Tên sự kiện', true)}<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} placeholder="Ví dụ: Xem chung chung kết, Workshop prompt cho PM" style={css(field)} /></div>
+          <div style={css('margin-top:14px;')}>{label('Tên sự kiện', true)}<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} placeholder="Ví dụ: Demo Claude Code cho dev, Chia sẻ prompt viết PRD" style={css(field)} /></div>
           <div style={css('margin-top:14px; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); gap:10px;')}>
-            <div>{label('Ngày', true)}<input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={css(field)} /></div>
-            <div>{label('Bắt đầu')}<input type="time" value={start} onChange={(e) => setStart(e.target.value)} style={css(field)} /></div>
-            <div>{label('Kết thúc')}<input type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={css(field)} /></div>
+            <div>{label('Ngày', true)}<input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={css(field + (date ? '' : 'color:#B3BDCC;'))} /></div>
+            <div>{label('Bắt đầu')}<input type="time" value={start} onChange={(e) => setStart(e.target.value)} style={css(field + (start ? '' : 'color:#B3BDCC;'))} /></div>
+            <div>{label('Kết thúc')}<input type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={css(field + (end ? '' : 'color:#B3BDCC;'))} /></div>
           </div>
-          <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Pantry tầng 6, hay một quán gần công ty" style={css(field)} /></div>
-          <div style={css('margin-top:14px;')}>{label('Chi tiết')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Sự kiện có gì, dành cho ai, cần mang gì theo…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
+          <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Phòng họp tầng 8, Pantry tầng 6 hay link Teams" style={css(field)} /></div>
+          <div style={css('margin-top:14px;')}>{label('Chi tiết')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Ví dụ: Topic AI sẽ chia sẻ, dành cho ai, cần chuẩn bị gì trước khi đến…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
           {error && <div style={css(`margin-top:10px; font:600 13px ${FONT}; color:#D8232A;`)}>{error}</div>}
         </div>
-        <div style={css('display:flex; justify-content:flex-end; gap:10px; padding:16px 22px 20px;')}>
+        <div style={css('position:sticky; bottom:0; z-index:2; display:flex; justify-content:flex-end; gap:10px; padding:14px 22px 18px; background:#fff; border-top:1px solid #EEF1F7;')}>
           <button onClick={save} disabled={busy} style={css(`height:44px; padding:0 24px; border:none; border-radius:999px; background:${ready ? 'linear-gradient(180deg,#4480ff,#2c5fff)' : '#E3E8F2'}; color:${ready ? '#fff' : '#94a3b8'}; font:700 14px ${FONT}; cursor:pointer; opacity:${busy ? 0.6 : 1};`)}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Đăng sự kiện'}</button>
         </div>
       </div>

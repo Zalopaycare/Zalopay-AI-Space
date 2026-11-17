@@ -294,3 +294,5 @@ html.zp-gray .zp-richarea:focus { border-color: #4a6fbf !important; }
 .zp-thinscroll::-webkit-scrollbar { width: 6px; }
 .zp-thinscroll::-webkit-scrollbar-track { background: transparent; }
 .zp-thinscroll::-webkit-scrollbar-thumb { background: rgba(150,170,210,.45); border-radius: 999px; }
+/* lighter example text (placeholders) in a form, e.g. "Tạo sự kiện" */
+.zp-soft-ph input::placeholder, .zp-soft-ph textarea::placeholder { color: #B3BDCC; opacity: 1; }
