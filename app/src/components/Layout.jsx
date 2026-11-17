@@ -30,7 +30,7 @@ export default function Layout({ active, children }) {
             own: it sits on the same near-black as the pages, #07070c); centred
             on the screen like the tabs in the top bar (the right padding matches the sidebar on the left) */}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', padding: '4px var(--zp-gutter) 32px', paddingRight: `calc(var(--zp-gutter) + ${offset}px)`, marginLeft: offset, transition: 'margin-left .16s ease, padding-right .16s ease' }}>
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="zp-to-top" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 18px', border: 'none', borderRadius: 999, background: 'linear-gradient(180deg,#4480ff 0%,#2c5fff 100%)', color: '#fff', font: '700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif', cursor: 'pointer', boxShadow: '0 0 0 1px rgba(130,175,255,.35), 0 8px 24px rgba(44,95,255,.45)' }}>
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="zp-to-top" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 2px', border: 'none', background: 'none', color: '#9DB8FF', font: '600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif', textDecoration: 'underline', textUnderlineOffset: 4, cursor: 'pointer', transition: 'color .15s' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg>
             Về đầu trang
           </button>
