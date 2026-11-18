@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { css } from '../lib/style.js'
+import { playSound } from '../lib/sound.js'
 
 // Tiny app-wide toast: call showToast('Đã copy ✓') from anywhere; one message at a time, 2 s.
 const EVENT = 'zp-toast'
@@ -9,7 +10,7 @@ export default function Toaster() {
   const [msg, setMsg] = useState(null)
   useEffect(() => {
     let timer
-    const on = (e) => { setMsg({ text: e.detail, key: Date.now() }); clearTimeout(timer); timer = setTimeout(() => setMsg(null), 2000) }
+    const on = (e) => { playSound(); setMsg({ text: e.detail, key: Date.now() }); clearTimeout(timer); timer = setTimeout(() => setMsg(null), 2000) }
     window.addEventListener(EVENT, on)
     return () => { window.removeEventListener(EVENT, on); clearTimeout(timer) }
   }, [])

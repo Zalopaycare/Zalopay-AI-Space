@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, relativeTime } from './api.js'
+import { playSound } from './sound.js'
 
 // Real in-app notifications from the server, shared by the sidebar badge, the profile
 // "Thông báo" list and the admin bell. One module-level store so every consumer agrees
@@ -13,7 +14,11 @@ let inflight = null
 export function refreshNotifications() {
   if (inflight) return inflight
   inflight = api.listNotifications()
-    .then((d) => { state = { loaded: true, unread: d.unread || 0, items: d.notifications || [] }; emit() })
+    .then((d) => {
+      // a new one since the last check: the chime (not on the first load of the page)
+      if (state.loaded && (d.unread || 0) > state.unread) playSound('notify')
+      state = { loaded: true, unread: d.unread || 0, items: d.notifications || [] }; emit()
+    })
     .catch(() => { state = { ...state, loaded: true }; emit() })
     .finally(() => { inflight = null })
   return inflight

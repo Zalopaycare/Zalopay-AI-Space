@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { css, hoverClass, CARD_HOVER } from '../lib/style.js'
 import RichText from './RichText.jsx'
+import { playSound } from '../lib/sound.js'
 
+// "Quan tâm": an outline until pressed, filled blue once pressed.
 // AI Exhibition booths with no write-up yet, as small tiles in the style of the exhibition's booth
 // list: name, members and a
 // "Quan tâm" toggle that pings the booth members ("…nhận được N lượt quan tâm. Đăng Use Case ngay!").
@@ -46,7 +48,7 @@ function InterestButton({ p, busy, onToggle, t }) {
       onClick={(e) => { e.stopPropagation(); onToggle(p) }}
       aria-pressed={!!p.mine}
       title={t('Nhắc người làm đăng Use Case này')}
-      style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1px solid ${p.mine ? '#9FB6F5' : 'transparent'}; background:${p.mine ? '#EEF3FF' : 'linear-gradient(180deg,#4480ff 0%,#2c5fff 100%)'}; color:${p.mine ? '#2c5fff' : '#fff'}; box-shadow:${p.mine ? 'none' : '0 6px 16px rgba(44,95,255,.35)'}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; font-variant-numeric:tabular-nums; opacity:${busy ? 0.6 : 1};`)}
+      style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 12px; border-radius:999px; border:1.5px solid ${p.mine ? 'transparent' : '#9FB6F5'}; background:${p.mine ? 'linear-gradient(180deg,#4480ff 0%,#2c5fff 100%)' : '#fff'}; color:${p.mine ? '#fff' : '#2c5fff'}; box-shadow:${p.mine ? '0 6px 16px rgba(44,95,255,.35)' : 'none'}; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; font-variant-numeric:tabular-nums; opacity:${busy ? 0.6 : 1};`)}
     >
       <Star on={p.mine} />
       {t('Quan tâm')}{p.interest > 0 ? ` · ${p.interest}` : ''}
@@ -92,7 +94,7 @@ export function BoothInterest({ p, t, requireLogin }) {
     if (busy) return
     setBusy(true)
     api.interestPending(p.id)
-      .then((r) => { p.interest = r.interest; p.mine = r.mine; setTick((n) => n + 1) })
+      .then((r) => { p.interest = r.interest; p.mine = r.mine; setTick((n) => n + 1); playSound() })
       .catch(() => {})
       .finally(() => setBusy(false))
   })
@@ -114,7 +116,7 @@ export default function PendingCases({ items, written = [], t, requireLogin }) {
     if (busy) return
     setBusy(p.id)
     api.interestPending(p.id)
-      .then((r) => { p.interest = r.interest; p.mine = r.mine; setTick((n) => n + 1) })
+      .then((r) => { p.interest = r.interest; p.mine = r.mine; setTick((n) => n + 1); playSound() })
       .catch(() => {})
       .finally(() => setBusy(null))
   })

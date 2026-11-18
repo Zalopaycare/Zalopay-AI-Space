@@ -1,8 +1,8 @@
 import express from 'express'
 import { db, nextId } from '../db.js'
-import { requireAuth } from '../auth.js'
+import { requireAuth, isCompanyEmail } from '../auth.js'
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
-import { domainName, initialsOf, appUrl, notifyMentions } from '../mentions.js'
+import { domainName, initialsOf, appUrl, notifyMentions, handleOf } from '../mentions.js'
 import { notify, notifyOnce, notifyParticipants } from '../notifications.js'
 import { sendMail, senderAddress } from '../mailer.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
@@ -53,6 +53,18 @@ if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'all_d
 // Outlook invitations: who currently has the event in their calendar from us (event_invites), and the
 // event's iCalendar SEQUENCE, raised with every invitation or cancellation sent so the newest always wins
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'ics_seq')) db.exec('ALTER TABLE events ADD COLUMN ics_seq INTEGER NOT NULL DEFAULT 0')
+// Co-hosts: people the creator adds to run the event with them (by company email, so someone who has
+// never signed in can be one). They edit it, see who's interested and hear of comments as the creator
+// does; cancelling it and changing the co-hosts stay with the creator (and the admins).
+db.exec(`
+CREATE TABLE IF NOT EXISTS event_cohosts (
+  event_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  added_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (event_id, email)
+);
+`)
 db.exec(`
 CREATE TABLE IF NOT EXISTS event_invites (
   event_id TEXT NOT NULL,
@@ -74,17 +86,28 @@ const endOf = (e) => e.ends_at || new Date(new Date(e.starts_at).getTime() + (e.
 const userById = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id)
 const person = (u) => (u ? { id: u.id, name: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : null)
 const interestedIds = (id) => db.prepare('SELECT user_id FROM event_interests WHERE event_id = ? ORDER BY created_at').all(id).map((r) => r.user_id)
+const cohostRows = (id) => db.prepare('SELECT email, name FROM event_cohosts WHERE event_id = ? ORDER BY added_at, rowid').all(id)
+const userByEmail = (email) => db.prepare('SELECT * FROM users WHERE lower(email) = ?').get(String(email || '').toLowerCase())
+// a co-host as the page shows them: their account if they have one, else the name picked in the form
+const cohostPerson = (r) => { const u = userByEmail(r.email); return u ? { ...person(u), email: r.email } : { id: null, email: r.email, name: handleOf(r.email), fullName: r.name || handleOf(r.email), initials: initialsOf({ email: r.email, name: r.name }), avatarColor: null, avatarUrl: null } }
+/** The creator and the co-hosts, as email addresses (lower-case). */
+const hostEmails = (e) => [userById(e.author_id)?.email, ...cohostRows(e.id).map((r) => r.email)].filter(Boolean).map((x) => x.toLowerCase())
+const isHost = (e, user) => !!user && hostEmails(e).includes(String(user.email || '').toLowerCase())
 
 function shape(e, me) {
   const ids = interestedIds(e.id)
   const mine = !!me && e.author_id === me.id
+  const host = isHost(e, me)
   return {
     id: e.id, title: e.title, description: e.description, startsAt: e.starts_at, endsAt: e.ends_at, allDay: !!e.all_day, location: e.location,
     coverUrl: e.cover_mime ? `/api/events/${encodeURIComponent(e.id)}/cover?v=${encodeURIComponent(e.edited_at || e.created_at)}` : null,
-    host: person(userById(e.author_id)), isMine: mine, canEdit: mine || !!me?.is_admin,
+    host: person(userById(e.author_id)), cohosts: cohostRows(e.id).map(cohostPerson),
+    // isMine: the creator; isHost: the creator or a co-host (may edit); canEdit: may cancel (creator, admins);
+    // canEditCohosts: may change who the co-hosts are
+    isMine: mine, isHost: host, canEdit: mine || !!me?.is_admin, canEditCohosts: mine || !!me?.is_admin,
     interestCount: ids.length, interested: !!me && ids.includes(me.id),
-    // who's coming: the host and the admins see everyone; others see a few faces
-    people: ids.slice(0, mine || me?.is_admin ? 500 : 8).map((uid) => person(userById(uid))).filter(Boolean),
+    // who's coming: the hosts and the admins see everyone; others see a few faces
+    people: ids.slice(0, host || me?.is_admin ? 500 : 8).map((uid) => person(userById(uid))).filter(Boolean),
     commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n,
     createdAt: e.created_at,
   }
@@ -106,6 +129,39 @@ function readFields(body) {
   if (f.ends_at && f.ends_at <= f.starts_at) return { error: 'Giờ kết thúc phải sau giờ bắt đầu.' }
   return { f }
 }
+// Co-hosts from the form: [{ email, name }], company addresses only, at most 10; undefined = leave as they are
+const MAX_COHOSTS = 10
+function readCohosts(body, creatorEmail) {
+  if (!Array.isArray(body?.cohosts)) return undefined
+  const seen = new Set([String(creatorEmail || '').toLowerCase()])
+  const out = []
+  for (const c of body.cohosts) {
+    const email = String(c?.email || '').trim().toLowerCase()
+    if (!email || seen.has(email) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !isCompanyEmail(email)) continue
+    seen.add(email)
+    out.push({ email, name: clean(c?.name, 120) })
+    if (out.length >= MAX_COHOSTS) break
+  }
+  return out
+}
+/** Save the co-hosts; the ones just added hear of it (in the app and by email). */
+function saveCohosts(req, e, list) {
+  if (list === undefined) return
+  const before = new Set(cohostRows(e.id).map((r) => r.email))
+  db.transaction(() => {
+    db.prepare('DELETE FROM event_cohosts WHERE event_id = ?').run(e.id)
+    const ins = db.prepare('INSERT INTO event_cohosts (event_id, email, name) VALUES (?, ?, ?)')
+    for (const c of list) ins.run(e.id, c.email, c.name)
+  })()
+  const who = domainName(req.user.email, req.user.name)
+  const href = `/?event=${encodeURIComponent(e.id)}`
+  for (const c of list) {
+    if (before.has(c.email) || c.email === req.user.email.toLowerCase()) continue
+    notify(c.email, { kind: 'event', text: `${who} đã thêm bạn làm người đồng tổ chức sự kiện "${e.title}"`, href, actor: req.user.name })
+    sendMail({ to: c.email, subject: `Bạn là người đồng tổ chức: ${e.title}`, text: `${req.user.name} đã thêm bạn làm người đồng tổ chức sự kiện "${e.title}" trên Zalopay AI Space.\n\nThời gian: ${whenText(e)}\nĐịa điểm: ${e.location}\n\nBạn có thể sửa thông tin sự kiện, xem ai quan tâm và nhận thông báo bình luận.\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
+  }
+}
+const hostNames = (e) => [userById(e.author_id)?.name, ...cohostRows(e.id).map((r) => { const u = userByEmail(r.email); return u ? u.name : r.name || handleOf(r.email) })].filter(Boolean)
 
 // Cover picture: "data:image/<png|jpeg|webp|gif>;base64,..." up to 2 MB; null/'' removes it; undefined keeps it.
 const MAX_COVER = 2 * 1024 * 1024
@@ -154,12 +210,12 @@ function fold(line) {
 const ORGANIZER = senderAddress || 'no-reply@ai-space.zalopay.vn'
 function inviteIcs(e, user, method, seq, baseUrl) {
   const link = `${baseUrl}/?event=${encodeURIComponent(e.id)}`
-  const host = userById(e.author_id)
+  const hosts = hostNames(e)
   const day = vn(e.starts_at)
   const when = e.all_day
     ? [`DTSTART;VALUE=DATE:${icsDate(day)}`, `DTEND;VALUE=DATE:${icsDate(new Date(day.getTime() + 24 * 3600_000))}`]
     : [`DTSTART:${icsTime(e.starts_at)}`, `DTEND:${icsTime(endOf(e))}`]
-  const desc = [e.description, host ? `Người tổ chức: ${host.name}` : '', `Xem và bình luận: ${link}`].filter(Boolean).join('\n\n')
+  const desc = [e.description, hosts.length ? `Người tổ chức: ${hosts.join(', ')}` : '', `Xem và bình luận: ${link}`].filter(Boolean).join('\n\n')
   const lines = [
     'BEGIN:VCALENDAR', 'PRODID:-//Zalopay AI Space//Su kien//VI', 'VERSION:2.0', 'CALSCALE:GREGORIAN', `METHOD:${method}`,
     'BEGIN:VEVENT', `UID:${e.id}@ai-space.zalopay.vn`, `SEQUENCE:${seq}`, `DTSTAMP:${icsTime(new Date().toISOString())}`, ...when,
@@ -209,12 +265,12 @@ function syncInvite(eventId, userId, baseUrl) {
   if (times.length >= MAX_INVITES_PER_DAY) return // the 10-minute sweep tries again later
   recentInvites.set(key, [...times, Date.now()])
   const link = `${baseUrl}/?event=${encodeURIComponent(e.id)}`
-  const host = userById(e.author_id)
+  const hosts = hostNames(e)
   if (interested) {
     db.prepare('INSERT OR IGNORE INTO event_invites (event_id, user_id) VALUES (?, ?)').run(e.id, user.id)
     sendInvite(e, user, 'REQUEST', baseUrl, {
       subject: `Lời mời: ${e.title} (${whenText(e)})`,
-      text: `Bạn đã bấm Quan tâm sự kiện "${e.title}".\n\nThời gian: ${whenText(e)}\nĐịa điểm: ${e.location}${host ? `\nNgười tổ chức: ${host.name}` : ''}\n\nBấm "Chấp nhận" (Accept) trong email này để thêm sự kiện vào lịch Outlook của bạn. Khi sự kiện đổi giờ, đổi địa điểm hay bị huỷ, lịch của bạn sẽ tự cập nhật theo.\n\nXem tại: ${link}`,
+      text: `Bạn đã bấm Quan tâm sự kiện "${e.title}".\n\nThời gian: ${whenText(e)}\nĐịa điểm: ${e.location}${hosts.length ? `\nNgười tổ chức: ${hosts.join(', ')}` : ''}\n\nBấm "Chấp nhận" (Accept) trong email này để thêm sự kiện vào lịch Outlook của bạn. Khi sự kiện đổi giờ, đổi địa điểm hay bị huỷ, lịch của bạn sẽ tự cập nhật theo.\n\nXem tại: ${link}`,
     }).catch(() => {})
   } else {
     db.prepare('DELETE FROM event_invites WHERE event_id = ? AND user_id = ?').run(e.id, user.id)
@@ -284,13 +340,14 @@ router.post('/', requireAuth, (req, res) => {
   db.prepare('INSERT INTO events (id, title, description, starts_at, ends_at, all_day, location, author_id) VALUES (?,?,?,?,?,?,?,?)')
     .run(id, f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, req.user.id)
   saveCover(id, cover)
+  saveCohosts(req, byId(id), readCohosts(req.body, req.user.email))
   res.status(201).json({ event: shape(byId(id), req.user) })
 })
 
 router.patch('/:id', requireAuth, (req, res) => {
   const e = byId(req.params.id)
   if (!e) return res.status(404).json({ error: 'not_found' })
-  if (e.author_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'not_owner' })
+  if (e.author_id !== req.user.id && !req.user.is_admin && !isHost(e, req.user)) return res.status(403).json({ error: 'not_owner' })
   const { f, error } = readFields(req.body)
   if (error) return res.status(400).json({ error: 'invalid', message: error })
   const cover = decodeCover(req.body?.cover)
@@ -300,6 +357,8 @@ router.patch('/:id', requireAuth, (req, res) => {
   db.prepare(`UPDATE events SET title = ?, description = ?, starts_at = ?, ends_at = ?, all_day = ?, location = ?, edited_at = datetime('now')${f.starts_at !== e.starts_at ? ', reminded_at = NULL' : ''} WHERE id = ?`)
     .run(f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, e.id)
   saveCover(e.id, cover)
+  // only the creator (and the admins) choose the co-hosts
+  if (e.author_id === req.user.id || req.user.is_admin) saveCohosts(req, byId(e.id), readCohosts(req.body, userById(e.author_id)?.email))
   const after = byId(e.id)
   if (moved) {
     tellInterested(req, after, {
@@ -337,6 +396,7 @@ router.delete('/:id', requireAuth, (req, res) => {
     db.prepare('DELETE FROM event_interests WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM event_comments WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM event_invites WHERE event_id = ?').run(e.id)
+    db.prepare('DELETE FROM event_cohosts WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM events WHERE id = ?').run(e.id)
   })()
   afterRemoval(req, { authorId: e.author_id, what: 'sự kiện', title: e.title, content: e.description || e.title })
@@ -353,16 +413,18 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   db.prepare('INSERT INTO event_comments (id, event_id, author_id, body) VALUES (?, ?, ?, ?)').run(cid, e.id, req.user.id, body)
   const who = domainName(req.user.email, req.user.name)
   const href = `/?event=${encodeURIComponent(e.id)}`
-  const host = userById(e.author_id)
-  if (host && host.id !== req.user.id) {
-    notify(host.email, { kind: 'comment', text: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, href, actor: req.user.name })
-    sendMail({ to: host.email, subject: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
+  // the hosts (creator and co-hosts) hear of every comment
+  const hosts = hostEmails(e)
+  for (const to of hosts) {
+    if (to === req.user.email.toLowerCase()) continue
+    notify(to, { kind: 'comment', text: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, href, actor: req.user.name })
+    sendMail({ to, subject: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
   // the others who commented before: one in-app note per event, kept up to date
   const before = db.prepare('SELECT DISTINCT author_id FROM event_comments WHERE event_id = ? AND id != ?').all(e.id, cid).map((r) => r.author_id)
   // @mentions: a notification and an email each (the host already heard of this comment)
-  notifyMentions(req, { text: body, where: `sự kiện "${e.title}"`, path: href, skip: [host?.email] })
-  notifyParticipants(before, [req.user.email, host?.email], { ref: 'joined:ev:' + e.id, text: `${who} cũng đã bình luận trong sự kiện "${e.title}"`, href, actor: req.user.name })
+  notifyMentions(req, { text: body, where: `sự kiện "${e.title}"`, path: href, skip: hosts })
+  notifyParticipants(before, [req.user.email, ...hosts], { ref: 'joined:ev:' + e.id, text: `${who} cũng đã bình luận trong sự kiện "${e.title}"`, href, actor: req.user.name })
   res.status(201).json({ comments: commentsOf(e.id, req.user), commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n })
 })
 router.delete('/:id/comments/:cid', requireAuth, (req, res) => {
@@ -384,10 +446,10 @@ router.post('/:id/interest', requireAuth, (req, res) => {
   // the Outlook invitation (or, taken back, its cancellation)
   queueInvite(e.id, req.user.id, appUrl(req))
   // the host: one notification per session, kept up to date
-  const host = userById(e.author_id)
   const n = interestedIds(e.id).length
-  if (!had && host && host.id !== req.user.id) {
-    notifyOnce(host.email, 'event', { ref: 'event-interest:' + e.id, text: n === 1 ? `${domainName(req.user.email, req.user.name)} quan tâm sự kiện "${e.title}" của bạn` : `${n} người quan tâm sự kiện "${e.title}" của bạn`, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
+  for (const to of had ? [] : hostEmails(e)) {
+    if (to === req.user.email.toLowerCase()) continue
+    notifyOnce(to, 'event', { ref: 'event-interest:' + e.id, text: n === 1 ? `${domainName(req.user.email, req.user.name)} quan tâm sự kiện "${e.title}" của bạn` : `${n} người quan tâm sự kiện "${e.title}" của bạn`, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
   }
   res.json({ event: shape(byId(e.id), req.user) })
 })
@@ -412,9 +474,9 @@ export function sendEventReminders(baseUrl) {
     const n = interestedIds(e.id).length
     for (const to of emailsOfInterested(e.id, e.author_id)) {
       notify(to, { kind: 'event', text: `Nhắc bạn: sự kiện "${e.title}" diễn ra ${whenText(e)} tại ${e.location}`, href: `/?event=${encodeURIComponent(e.id)}`, actor: host?.name || '' })
-      sendMail({ to, subject: `Nhắc lịch: ${e.title} (${whenText(e)})`, text: `Sự kiện bạn quan tâm sắp diễn ra:\n\n${e.title}\nThời gian: ${whenText(e)}\nĐịa điểm: ${e.location}${host ? `\nNgười tổ chức: ${host.name}` : ''}\n\nXem tại: ${link}` }).catch(() => {})
+      sendMail({ to, subject: `Nhắc lịch: ${e.title} (${whenText(e)})`, text: `Sự kiện bạn quan tâm sắp diễn ra:\n\n${e.title}\nThời gian: ${whenText(e)}\nĐịa điểm: ${e.location}${hostNames(e).length ? `\nNgười tổ chức: ${hostNames(e).join(', ')}` : ''}\n\nXem tại: ${link}` }).catch(() => {})
     }
-    if (host && n) sendMail({ to: host.email, subject: `Sự kiện của bạn sắp diễn ra: ${e.title}`, text: `Sự kiện "${e.title}" diễn ra ${whenText(e)} tại ${e.location}, đang có ${n} người quan tâm.\n\nXem danh sách tại: ${link}` }).catch(() => {})
+    if (n) for (const to of hostEmails(e)) sendMail({ to, subject: `Sự kiện của bạn sắp diễn ra: ${e.title}`, text: `Sự kiện "${e.title}" diễn ra ${whenText(e)} tại ${e.location}, đang có ${n} người quan tâm.\n\nXem danh sách tại: ${link}` }).catch(() => {})
   }
 }
 

@@ -12,6 +12,7 @@ import Avatar from './Avatar.jsx'
 import { askRemovalReason } from './RemovalReason.jsx'
 import MentionInput from './MentionInput.jsx'
 import { renderMentions } from './MentionField.jsx'
+import { playSound } from '../lib/sound.js'
 
 // "Sự kiện": anything happening offline that anyone can post (server: routes/events.js), shown like a
 // Facebook event: cover picture, when, what, where, how many are interested, "Quan tâm" and share. Beside
@@ -80,12 +81,12 @@ function InterestButton({ ev, onToggle, grow = false, height = 36, onDark = fals
   const on = ev.interested
   const look = onDark
     ? (on ? 'background:rgba(68,128,255,.2); color:#9DB8FF;' : 'background:rgba(255,255,255,.08); color:#E8EEFC;')
-    : (on ? 'background:#E7EEFF; color:#2c5fff;' : 'background:#EEF1F6; color:#0F172A;')
-  const hover = onDark ? (on ? 'background:rgba(68,128,255,.28) !important;' : 'background:rgba(255,255,255,.14) !important;') : (on ? 'background:#DCE6FF !important;' : 'background:#E4E9F2 !important;')
+    : (on ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; border:1.5px solid transparent;' : 'background:#fff; color:#2c5fff; border:1.5px solid #9FB6F5;')
+  const hover = onDark ? (on ? 'background:rgba(68,128,255,.28) !important;' : 'background:rgba(255,255,255,.14) !important;') : (on ? 'filter:brightness(1.06);' : 'background:#EEF3FF !important;')
   return (
     <button onClick={(e) => { e.stopPropagation(); onToggle(ev) }} aria-pressed={on}
       className={hoverClass(hover)}
-      style={css(`${grow ? 'flex:1 1 auto;' : 'flex:none;'} min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:${height}px; padding:0 14px; border:none; border-radius:10px; cursor:pointer; white-space:nowrap; font:700 ${height < 34 ? 12.5 : 13.5}px ${FONT}; ${look}`)}>
+      style={css(`${grow ? 'flex:1 1 auto;' : 'flex:none;'} min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:${height}px; padding:0 14px; border:none; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font:700 ${height < 34 ? 12.5 : 13.5}px ${FONT}; ${look}`)}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
       {on ? 'Đã quan tâm' : 'Quan tâm'}
     </button>
@@ -165,7 +166,7 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
     return () => window.removeEventListener(OPEN_FORM, on)
   }, [requireLogin])
   const put = (ev) => setEvents((list) => (list || []).map((x) => (x.id === ev.id ? ev : x)))
-  const toggle = (ev) => requireLogin(() => api.toggleEventInterest(ev.id).then((d) => put(d.event)).catch(() => {}))
+  const toggle = (ev) => requireLogin(() => api.toggleEventInterest(ev.id).then((d) => { put(d.event); playSound() }).catch(() => {}))
   const close = () => {
     setOpenId(null)
     const u = new URL(window.location.href)
@@ -181,7 +182,7 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
     requireLogin(() => setForm({}))
   }, [location.search]) // eslint-disable-line react-hooks/exhaustive-deps
   const q = fold(query.trim())
-  const shown = q ? list.filter((ev) => [ev.title, ev.location, ev.host?.name, ev.host?.fullName, ev.description].some((x) => fold(x).includes(q))) : list
+  const shown = q ? list.filter((ev) => [ev.title, ev.location, ev.host?.name, ev.host?.fullName, ...(ev.cohosts || []).flatMap((h) => [h.name, h.fullName]), ev.description].some((x) => fold(x).includes(q))) : list
 
   return (
     <>
@@ -250,7 +251,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   const [missing, setMissing] = useState(false)
   const dialog = useDialog(true, onClose, 'Sự kiện')
   useEffect(() => { api.getEvent(id).then((d) => setEv(d.event)).catch(() => setMissing(true)) }, [id])
-  const toggle = () => requireLogin(() => api.toggleEventInterest(id).then((d) => { setEv((x) => ({ ...d.event, past: x?.past })); onChanged(d.event) }).catch(() => {}))
+  const toggle = () => requireLogin(() => api.toggleEventInterest(id).then((d) => { setEv((x) => ({ ...d.event, past: x?.past })); onChanged(d.event); playSound() }).catch(() => {}))
   const [askCancel, setAskCancel] = useState(false)
   const cancelEvent = () => { setAskCancel(false); api.deleteEvent(ev.id).then(onDeleted).catch(() => window.alert('Chưa huỷ được, thử lại nhé.')) }
   const remove = () => {
@@ -281,7 +282,13 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
             <div style={css(`font:700 14px ${FONT}; color:#D8232A;`)}>{ev.past ? 'Đã diễn ra · ' : ''}{whenLabel(ev)}</div>
             <h2 style={css(`margin:5px 0 0; font:800 22px/1.3 ${FONT}; color:#0F172A; word-break:break-word;`)}>{ev.title}</h2>
             {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>, ev.location)}
-            {ev.host && row(<Avatar user={ev.host} size={20} fontSize={8} />, <>Tổ chức bởi <b style={css('color:#0F172A;')}>{ev.host.name}</b></>)}
+            {ev.host && (() => {
+              // the creator first, then the co-hosts: "Tổ chức bởi A, B và C"
+              const hosts = [ev.host, ...(ev.cohosts || [])]
+              const names = hosts.map((h, i) => <b key={i} title={h.fullName || h.name} style={css('color:#0F172A;')}>{h.name}</b>)
+              const joined = names.flatMap((n, i) => (i === 0 ? [n] : [i === names.length - 1 ? ' và ' : ', ', n]))
+              return row(<Avatar user={ev.host} size={20} fontSize={8} />, <>Tổ chức bởi {joined}</>)
+            })()}
             {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>, statsLabel(ev))}
           </div>
           <div style={css('display:flex; flex-wrap:wrap; gap:8px; padding:16px 22px 0;')}>
@@ -296,7 +303,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 4.5V9C7 9.5 4 14 3 20c2.5-3.5 6-5.1 11-5.1v4.6l7-7.5-7-7.5z"></path></svg>
               Chia sẻ
             </button>
-            {ev.isMine && <button onClick={() => onEdit(ev)} className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none;' + grayBtn)}>Sửa</button>}
+            {(ev.isHost || ev.canEdit) && <button onClick={() => onEdit(ev)} className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none;' + grayBtn)}>Sửa</button>}
           </div>
           {ev.description && (
             <div style={css('margin:18px 22px 0;')}>
@@ -355,7 +362,7 @@ function EventComments({ ev, onChange }) {
     requireLogin(() => {
       setBusy(true)
       // "@handle" picked from the suggestions goes out as the full address, so they get the email
-      api.postEventComment(ev.id, boxRef.current ? boxRef.current.expand(body) : body).then((d) => { setDraft(''); onChange(d) }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
+      api.postEventComment(ev.id, boxRef.current ? boxRef.current.expand(body) : body).then((d) => { setDraft(''); onChange(d); playSound() }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
     })
   }
   const remove = (c) => {
@@ -398,6 +405,61 @@ function EventComments({ ev, onChange }) {
 
 // ---- create / edit ----
 const localDate = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` }
+/** "Người đồng tổ chức" (optional): search colleagues (people on the site and the company directory), each
+ *  picked one a chip with ✕. Co-hosts may edit the event and see who's interested. */
+function CohostPicker({ value, onChange, field }) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState([])
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const term = q.trim()
+    if (!term) { setResults([]); return undefined }
+    let stop = false
+    const t = setTimeout(() => api.listUsers(term).then((d) => { if (!stop) setResults(d.users || []) }).catch(() => {}), 200)
+    return () => { stop = true; clearTimeout(t) }
+  }, [q])
+  const picked = new Set(value.map((c) => c.email))
+  const add = (u) => {
+    const email = String(u.key || '').toLowerCase()
+    if (!email.includes('@') || picked.has(email) || value.length >= 10) return
+    onChange([...value, { email, name: u.name, fullName: u.name, initials: u.initials, avatarColor: u.avatarColor, avatarUrl: u.avatarUrl }])
+    setQ(''); setResults([])
+  }
+  const shown = results.filter((u) => !picked.has(String(u.key || '').toLowerCase()))
+  return (
+    <div style={css('position:relative;')}>
+      {value.length > 0 && (
+        <div style={css('margin-top:6px; display:flex; flex-wrap:wrap; gap:6px;')}>
+          {value.map((c) => (
+            <span key={c.email} title={c.email} style={css('display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 4px 0 4px; border-radius:999px; background:#EEF3FF; border:1px solid #D6E1FF; font:600 12.5px var(--zp-font-text); color:#1E3A7A;')}>
+              <Avatar user={c} size={22} fontSize={8} />
+              {c.fullName || c.name}
+              <button type="button" onClick={() => onChange(value.filter((x) => x.email !== c.email))} aria-label={'Bỏ ' + (c.fullName || c.name)} className={hoverClass('background:#DCE6FF !important;')} style={css('width:22px; height:22px; border:none; border-radius:50%; background:transparent; color:#5B6B82; font-size:14px; line-height:1; cursor:pointer;')}>✕</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <input value={q} onChange={(e) => { setQ(e.target.value); setOpen(true) }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (shown[0]) add(shown[0]) } }}
+        placeholder="Không bắt buộc · gõ tên hoặc email đồng nghiệp" style={css(field)} />
+      {open && shown.length > 0 && (
+        <div style={css('position:absolute; left:0; right:0; top:100%; z-index:5; margin-top:4px; max-height:240px; overflow-y:auto; background:#fff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 16px 36px rgba(8,16,40,.18); padding:4px;')}>
+          {shown.map((u) => (
+            <button key={u.key} type="button" onMouseDown={(e) => { e.preventDefault(); add(u) }} className={hoverClass('background:#F1F5FD !important;')}
+              style={css('display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:none; border-radius:9px; background:transparent; cursor:pointer; text-align:left;')}>
+              <Avatar user={u} size={28} fontSize={10} />
+              <span style={css('min-width:0;')}>
+                <span style={css(`display:block; font:700 13px ${FONT}; color:#0F172A;`)}>{u.name}</span>
+                <span style={css('display:block; font:400 12px var(--zp-font-text); color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{u.sub}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function EventForm({ initial, onClose, onSaved }) {
   const editing = !!initial.id
   const [title, setTitle] = useState(initial.title || '')
@@ -406,6 +468,9 @@ function EventForm({ initial, onClose, onSaved }) {
   const [end, setEnd] = useState(initial.endsAt ? hm(new Date(initial.endsAt)) : '')
   const [location, setLocation] = useState(initial.location || '')
   const [description, setDescription] = useState(initial.description || '')
+  // co-hosts ({ email, name, … }): only the creator (and the admins) choose them
+  const [cohosts, setCohosts] = useState(initial.cohosts || [])
+  const canCohost = !editing || !!initial.canEditCohosts
   // undefined = keep the cover already saved; null = remove it; a data URL = the new one
   const [cover, setCover] = useState(undefined)
   const [coverNote, setCoverNote] = useState('')
@@ -425,9 +490,9 @@ function EventForm({ initial, onClose, onSaved }) {
     const endsAt = end ? new Date(`${date}T${end}`) : null
     if (endsAt && endsAt <= startsAt) { setError('Giờ kết thúc phải sau giờ bắt đầu.'); return }
     setBusy(true); setError('')
-    const payload = { title, description, location, allDay, startsAt: startsAt.toISOString(), endsAt: endsAt ? endsAt.toISOString() : null, ...(cover !== undefined ? { cover } : {}) }
+    const payload = { title, description, location, allDay, startsAt: startsAt.toISOString(), endsAt: endsAt ? endsAt.toISOString() : null, ...(cover !== undefined ? { cover } : {}), ...(canCohost ? { cohosts: cohosts.map((c) => ({ email: c.email, name: c.fullName || c.name })) } : {}) }
     ;(editing ? api.updateEvent(initial.id, payload) : api.createEvent(payload))
-      .then((d) => onSaved(d.event))
+      .then((d) => { playSound(); onSaved(d.event) })
       .catch((e) => setError(e?.data?.message || 'Chưa lưu được, thử lại nhé.'))
       .finally(() => setBusy(false))
   }
@@ -469,6 +534,7 @@ function EventForm({ initial, onClose, onSaved }) {
             <div>{label('Kết thúc')}<input type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={css(field + (end ? '' : 'color:#B3BDCC;'))} /></div>
           </div>
           <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Phòng họp tầng 8, Pantry tầng 6 hay link Teams" style={css(field)} /></div>
+          {canCohost && <div style={css('margin-top:14px;')}>{label('Người đồng tổ chức')}<CohostPicker value={cohosts} onChange={setCohosts} field={field} /></div>}
           <div style={css('margin-top:14px;')}>{label('Chi tiết')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Ví dụ: Topic AI sẽ chia sẻ, dành cho ai, cần chuẩn bị gì trước khi đến…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
           {error && <div style={css(`margin-top:10px; font:600 13px ${FONT}; color:#D8232A;`)}>{error}</div>}
         </div>
