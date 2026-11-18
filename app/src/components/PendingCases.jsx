@@ -29,6 +29,19 @@ function ownerHref(p) {
   return sub.status === 'changes_requested' ? `/review/${encodeURIComponent(sub.id)}` : `/use-cases?edit=${encodeURIComponent(sub.id)}`
 }
 
+/** 💬 + count: the booth's page, at its comments (to ask the team to post it, or ask about it). */
+function CommentsButton({ p, t }) {
+  const navigate = useNavigate()
+  return (
+    <button onClick={(e) => { e.stopPropagation(); navigate(`/use-cases/${encodeURIComponent(p.id)}#comments`) }} title={t('Bình luận')} aria-label={t('Bình luận')}
+      className={hoverClass('background:#EEF3FF !important;')}
+      style={css('flex:none; display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 11px; border-radius:999px; border:1.5px solid #DDE3EC; background:#fff; color:#475569; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;')}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
+      {p.comments > 0 ? p.comments : t('Bình luận')}
+    </button>
+  )
+}
+
 // What a booth's owners get on the tile instead of "Quan tâm".
 const OWNER_TILE = { pending: 'Đang chờ duyệt', changes_requested: 'Cần chỉnh sửa' }
 function OwnerButton({ p, t }) {
@@ -175,6 +188,7 @@ export default function PendingCases({ items, written = [], t, requireLogin }) {
                 )}
                 {/* "Quan tâm" pinned to the bottom-right corner */}
                 <div style={css('display:flex; align-items:flex-end; justify-content:flex-end; gap:8px; margin-top:auto; padding-top:8px;')}>
+                  <CommentsButton p={p} t={t} />
                   {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
                 </div>
               </div>
@@ -220,6 +234,7 @@ function BoothPopup({ p, t, busy, onToggle, onClose }) {
         </div>
         <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid #EEF1F7;')}>
           <span style={css('flex:1; min-width:0; font-size:12px; line-height:1.5; color:#64748b;')}>{p.owner ? t('Bạn là Owner: bổ sung các bước, ảnh bìa… để use case có trang đầy đủ.') : t('Use case này chưa có bài chi tiết trên AI Space. Bấm "Quan tâm" để nhắc team đăng lên.')}</span>
+          <CommentsButton p={p} t={t} />
           {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy} onToggle={onToggle} t={t} />}
         </div>
       </div>

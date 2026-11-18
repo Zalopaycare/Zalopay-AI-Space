@@ -41,6 +41,8 @@ const pendingFor = (user) => {
       id: p.id, booth: p.booth, title: p.title, team: p.team, label: p.label, category: p.category, members: p.members || [], problem: p.problem || '', solution: p.solution || '',
       cover: coverOf(p.id),
       interest: interestCount(p.id),
+      // comments on the booth's page (people nudging the team to post it)
+      comments: db.prepare('SELECT COUNT(*) n FROM use_case_comments WHERE use_case_id = ?').get(p.id).n,
       mine: !!db.prepare('SELECT 1 FROM use_case_interest WHERE use_case_id = ? AND user_id = ?').get(p.id, user.id),
       // the signed-in person is one of the booth's owners: they get "Cập nhật use case này".
       owner,
