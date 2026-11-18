@@ -28,6 +28,23 @@ export const SHOWCASE_IDS = new Set(showcaseCases.map((c) => c.id))
 // AI Exhibition booths with no write-up yet: shown as "Chưa có thông tin" tiles with a "Quan tâm"
 // button, listing the booth's members (public on the exhibition site too).
 export const pendingCases = (await import(pathToFileURL(path.join(ROOT, 'pending.js')).href)).default
+// Use cases written up here from a booth's documents that are listed as booth tiles again ("Quan tâm", only
+// the exhibition's Vấn đề and Giải pháp); Zalopay Agent Base (c4, booth 2) keeps its full page. Their files
+// stay as they are; the tile keeps the case's id, so old links, covers and interest carry on.
+const AS_BOOTH = { c7: 1, c2: 3, c9: 4, c8: 5, c3: 10, c6: 24, c5: 27 }
+export const BOOTH_CASE_IDS = new Set(Object.keys(AS_BOOTH))
+for (const c of showcaseCases) {
+  if (!BOOTH_CASE_IDS.has(c.id)) continue
+  pendingCases.push({
+    id: c.id, booth: AS_BOOTH[c.id], team: c.ownerTeam || '', label: 'AI Exhibition 2026', category: c.category,
+    members: c.members || [], pic: c.author ? [c.author] : [],
+    // read through the admin's edits, as the page did
+    get title() { return withEdit(c).title },
+    get problem() { return (withEdit(c).exhibition || {}).problem || '' },
+    get solution() { return (withEdit(c).exhibition || {}).solution || '' },
+  })
+}
+pendingCases.sort((a, b) => a.booth - b.booth)
 export const PENDING_BY_ID = new Map(pendingCases.map((p) => [p.id, p]))
 // A booth's owners: its PIC and members, as company account names (lower-case, the part before @).
 // Their mailbox is <account>@vng.com.vn; only those exact addresses count as the booth's owners.
@@ -133,7 +150,7 @@ function withEdit(c) {
   }
   return out
 }
-export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id)).map((c) => { const own = coverOf(c.id); const x = withEdit(c); return own ? { ...x, cover: own } : coverRemoved(c.id) ? { ...x, cover: '' } : x })
+export const visibleShowcase = () => showcaseCases.filter((c) => !hidden.has(c.id) && !BOOTH_CASE_IDS.has(c.id)).map((c) => { const own = coverOf(c.id); const x = withEdit(c); return own ? { ...x, cover: own } : coverRemoved(c.id) ? { ...x, cover: '' } : x })
 export function hideShowcase(id) {
   if (!SHOWCASE_IDS.has(id)) return false
   hidden.add(id)
