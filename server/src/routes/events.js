@@ -496,6 +496,19 @@ router.get('/', (req, res) => {
   res.json({ events: rows.filter((e) => endOf(e) > now).map((e) => shape(e, req.user)) })
 })
 
+// "Sự kiện của tôi" (profile): the events I run (created or co-host) and the ones I'm interested in, past ones
+// included (the last 180 days), soonest upcoming first, then the past ones newest first.
+router.get('/mine', requireAuth, (req, res) => {
+  const since = new Date(Date.now() - 180 * 24 * 3600_000).toISOString()
+  const me = req.user.email.toLowerCase()
+  const rows = db.prepare(`SELECT ${COLS} FROM events WHERE starts_at >= ? AND (author_id = ? OR id IN (SELECT event_id FROM event_interests WHERE user_id = ?)
+    OR id IN (SELECT event_id FROM event_cohosts WHERE lower(email) = ?))`).all(since, req.user.id, req.user.id, me)
+  const now = new Date().toISOString()
+  const list = rows.map((e) => ({ ...shape(e, req.user), past: endOf(e) <= now }))
+  const order = (a, b) => (a.past !== b.past ? (a.past ? 1 : -1) : a.past ? b.startsAt.localeCompare(a.startsAt) : a.startsAt.localeCompare(b.startsAt))
+  res.json({ hosting: list.filter((e) => e.isHost).sort(order), interested: list.filter((e) => e.interested && !e.isHost).sort(order) })
+})
+
 router.get('/:id', (req, res) => {
   const e = byId(req.params.id)
   if (!e) return res.status(404).json({ error: 'not_found' })

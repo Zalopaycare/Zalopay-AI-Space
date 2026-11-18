@@ -39,6 +39,7 @@ export const api = {
   sendAccessRequest: (note) => request('/auth/access-request', { method: 'POST', body: JSON.stringify({ note }) }),
   adminAccess: () => request('/admin/access'),
   listEvents: () => request('/events'),
+  myEvents: () => request('/events/mine'),
   getEvent: (id) => request(`/events/${encodeURIComponent(id)}`),
   createEvent: (payload) => request('/events', { method: 'POST', body: JSON.stringify(payload) }),
   updateEvent: (id, payload) => request(`/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),

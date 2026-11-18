@@ -81,8 +81,8 @@ export default function Sidebar({ active }) {
   }, [menuOpen])
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
-  // #usecase / #question are parts of the profile page now, so they light up "Hồ sơ".
-  const sub = active === 'profile' ? ({ usecase: 'overview', question: 'overview' }[/#(overview|activity|usecase|question|saved)\b/.exec(hash)?.[1]] || /#(activity|saved)\b/.exec(hash)?.[1] || 'overview') : null
+  // #usecase is part of the profile page, so it lights up "Hồ sơ"; #event (and the old #question) "Sự kiện của tôi".
+  const sub = active === 'profile' ? ({ usecase: 'overview', question: 'event' }[/#(overview|activity|usecase|question|event|saved)\b/.exec(hash)?.[1]] || /#(activity|event|saved)\b/.exec(hash)?.[1] || 'overview') : null
   const { unread: unreadCount } = useNotifications(!!user)
   // unread admin replies in my "Chat với Admin" (admins answer others from the Admin Console)
   const chatCount = useChatUnread(!!user).mine
@@ -149,6 +149,9 @@ export default function Sidebar({ active }) {
             <SubLink to="/profile#activity" active={sub === 'activity'} icon={
               <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
             }><span style={css('white-space:nowrap;')}>{t('Thông báo')}</span><span style={css(`margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:${unreadCount ? '#FF3B30' : 'rgba(255,255,255,.14)'}; color:#fff; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;`)}>{unreadCount}</span></SubLink>
+            <SubLink to="/profile#event" active={sub === 'event'} icon={
+              <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+            }>{t('Sự kiện của tôi')}</SubLink>
             <SubLink to="/profile#saved" active={sub === 'saved'} icon={
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             }>{t('Đã lưu')}</SubLink>

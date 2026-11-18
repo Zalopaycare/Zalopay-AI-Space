@@ -21,7 +21,7 @@ import CardActions from '../components/CardActions.jsx'
 import TagRow from '../components/TagRow.jsx'
 import { useNotifications, markNotificationsRead } from '../lib/notifications.js'
 import { NOTIF_ICONS } from '../components/notifIcons.jsx'
-import { QUESTION_DRAFT_KEY } from './QuestionsPage.jsx'
+import { whenLabel } from '../components/Events.jsx'
 import { listUcDrafts, ucDraftTitle, ucDraftWhen } from '../lib/ucDrafts.js'
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
@@ -162,13 +162,17 @@ export default function ProfilePage() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
   const notif = useNotifications(!!user)
-  const section = /#(overview|activity|usecase|question|saved)\b/.exec(hash || '')?.[1] || 'overview'
-  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', question: 'Post của tôi', saved: 'Đã lưu' }[section])
+  // (#question, the posts part, is now "Sự kiện của tôi": posts are no longer written)
+  const section = { question: 'event' }[/#(overview|activity|usecase|question|event|saved)\b/.exec(hash || '')?.[1]] || /#(overview|activity|usecase|event|saved)\b/.exec(hash || '')?.[1] || 'overview'
+  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', event: 'Sự kiện của tôi', saved: 'Đã lưu' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
   const [answersGiven, setAnswersGiven] = useState(0)
   const [myUseCases, setMyUseCases] = useState([])
+  // events I run (created / co-host) and the ones I'm interested in, past ones included
+  const [myEvents, setMyEvents] = useState({ hosting: [], interested: [] })
+  const [evTab, setEvTab] = useState('hosting')
   const [savedUseCaseIds, setSavedUseCaseIds] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [ucMeta, setUcMeta] = useState({})
@@ -193,6 +197,7 @@ export default function ProfilePage() {
         setAnswersGiven(answered)
       }),
       part('usecases', api.listSubmissions('?mine=1'), (sd) => setMyUseCases(sd.submissions || [])),
+      part('events', api.myEvents(), (d) => setMyEvents({ hosting: d.hosting || [], interested: d.interested || [] })),
       part('saved', api.mySavedUseCaseIds(), (d) => setSavedUseCaseIds(d.ids || [])),
     ]).finally(() => setLoaded(true))
   }, [user, reloadKey])
@@ -322,18 +327,8 @@ export default function ProfilePage() {
 
   // The share form's autosaved drafts (kept in this browser, several at once): shown on top of "Use case của tôi".
   const ucDrafts = listUcDrafts().filter((d) => d.shareForm && Object.values(d.shareForm).some((v) => String(v || '').trim()))
-  let qDraft = null
-  try { qDraft = JSON.parse(localStorage.getItem(QUESTION_DRAFT_KEY) || 'null') } catch { /* ignore */ }
-  const qDraftOn = !!(qDraft && (qDraft.title || qDraft.body))
-  const draftItem = qDraftOn ? [{
-    tagLabel: t('Post'), tagBg: '#E7ECFB', tagColor: '#2c5fff',
-    title: qDraft.title || t('(Chưa có tiêu đề)'), meta: t('Bản nháp') + ' · ' + relativeTime(qDraft.savedAt),
-    statusLabel: t('Đang nháp'), statusBg: '#EDF0FA', statusColor: '#3A4757',
-    cta: t('Tiếp tục'), primary: true,
-    onOpen: () => navigate('/#ask'),
-  }] : []
 
-  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'question' ? t('Post của tôi') : section === 'saved' ? t('Đã lưu') : ''
+  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'event' ? t('Sự kiện của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
   return (
     <Layout active="profile">
@@ -358,15 +353,15 @@ export default function ProfilePage() {
               <div className="zp-profile-stats">
                 {[
                   ['usecase', 'Use case của bạn', myUseCases.length, `${myUseCases.filter((c) => c.reviewStatus === 'approved').length} ${t('đã đăng')}`],
-                  ['question', 'Post của bạn', myQuestions.length, `${myQuestions.filter((q) => q.answers.length).length} ${t('đã có câu trả lời')}`],
-                  // Đã lưu has its own link in the menu; this card counts what's still being written
-                  ['drafts', 'Đang nháp', ucDrafts.length + (qDraftOn ? 1 : 0), `${ucDrafts.length} use case · ${qDraftOn ? 1 : 0} ${t('post')}`],
+                  ['event', 'Sự kiện bạn tổ chức', myEvents.hosting.length, `${myEvents.interested.length} ${t('sự kiện bạn quan tâm')}`],
+                  // Đã lưu has its own link in the menu; this card counts the use cases still being written
+                  ['drafts', 'Đang nháp', ucDrafts.length, `${t('use case chưa gửi duyệt')}`],
                 ].map(([key, label, n, sub]) => (
                   <div key={key} style={css('display:flex; flex-direction:column; padding:16px 18px; border-radius:18px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 10px 24px rgba(30,50,90,.08);')}>
                     <div style={css(`font:700 13px ${FONT}; color:#64748b;`)}>{t(label)}</div>
                     <div style={css(`margin-top:4px; font:800 34px/1.1 ${FONT}; color:#0F172A;`)}>{loaded ? n : '…'}</div>
                     <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{loaded ? sub : ''}</div>
-                    <button onClick={() => (key === 'drafts' ? (ucDrafts.length ? document.getElementById('my-usecases')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : navigate('/#ask')) : document.getElementById(key === 'usecase' ? 'my-usecases' : 'my-questions')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className={hoverClass('gap:9px !important;')} style={css(`margin-top:12px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .15s;`)}>
+                    <button onClick={() => (key === 'drafts' ? (ucDrafts.length ? document.getElementById('my-usecases')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : navigate('/use-cases?share=1')) : document.getElementById(key === 'usecase' ? 'my-usecases' : 'my-events')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))} className={hoverClass('gap:9px !important;')} style={css(`margin-top:12px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; font:800 13px ${FONT}; color:#2c5fff; transition:gap .15s;`)}>
                       {t('Xem thêm')}
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                     </button>
@@ -448,27 +443,35 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {(section === 'question' || section === 'overview') && (
-          <section style={css(`position:relative; padding:${section === 'overview' ? '22px var(--zp-gutter) 40px' : '18px var(--zp-gutter) 40px'};`)}>
-            <div style={css('max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:14px;')}>
-              {section === 'overview' && <h2 id="my-questions" style={css(`scroll-margin-top:80px; margin:0; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Post của tôi')}</h2>}
-              {draftItem.map((r) => (
-                <div key="draft" onClick={r.onOpen} className={'zp-card ' + hoverClass('transform:translateY(-2px); border-color:#CFE0FF;')} style={css('cursor:pointer; background:#fff; border:1.5px dashed #B9CCF8; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:14px;')}>
-                  <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
-                  <div style={css('flex:1; min-width:0;')}>
-                    <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{r.title}</div>
-                    <div style={css(`margin-top:3px; font:400 12.5px var(--zp-font-text); color:#94a3b8;`)}>{r.meta}</div>
+        {(section === 'event' || section === 'overview') && (() => {
+          // the same white card as "Use case của tôi": tabs across the top, the events under them
+          const tabs = [
+            { key: 'hosting', label: t('Tôi tổ chức'), count: myEvents.hosting.length, color: '#2c5fff' },
+            { key: 'interested', label: t('Tôi quan tâm'), count: myEvents.interested.length, color: '#2c5fff' },
+          ]
+          const items = myEvents[evTab] || []
+          return (
+            <section style={css(`position:relative; padding:${section === 'overview' ? '22px var(--zp-gutter) 40px' : '18px var(--zp-gutter) 40px'};`)}>
+              <div style={css('max-width:760px; margin:0 auto;')}>
+                {section === 'overview' && <h2 id="my-events" style={css(`scroll-margin-top:80px; margin:0 0 12px; font:800 22px ${FONT}; ${GRAD_TEXT_SM}`)}>{t('Sự kiện của tôi')}</h2>}
+                <div style={css('background:#fff; border-radius:18px; box-shadow:0 14px 34px rgba(3,12,40,.3); overflow:hidden;')}>
+                  <StatusTabs tabs={tabs} active={evTab} onPick={setEvTab} />
+                  <div style={css('display:flex; flex-direction:column; padding:6px 16px 10px;')}>
+                    {items.map((ev) => <EventRow key={ev.id} ev={ev} onOpen={() => navigate('/?event=' + encodeURIComponent(ev.id))} />)}
+                    {loaded && items.length === 0 && (
+                      <div style={css(`padding:26px 16px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>
+                        {evTab === 'hosting' ? t('Bạn chưa tổ chức sự kiện nào.') : t('Bạn chưa quan tâm sự kiện nào.')}
+                        <div style={{ marginTop: 12 }}>
+                          <button onClick={() => navigate(evTab === 'hosting' ? '/?new=event' : '/')} style={css(`height:38px; padding:0 18px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer;`)}>{evTab === 'hosting' ? t('Tạo sự kiện') : t('Xem các sự kiện')}</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); r.onOpen() }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
                 </div>
-              ))}
-              {myQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
-              {loaded && myQuestionCards.length === 0 && (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:40px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa có post nào.')}</div>
-              )}
-            </div>
-          </section>
-        )}
+              </div>
+            </section>
+          )
+        })()}
 
         {section === 'saved' && (
           <section style={css('position:relative; padding:14px var(--zp-gutter) 28px;')}>
@@ -482,19 +485,39 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <h3 style={subHeading}>{t('Post đã lưu')}</h3>
-              {savedQuestionCards.length === 0 ? (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu post nào.')}</div>
-              ) : (
+              {/* posts saved before posting was taken off the site */}
+              {savedQuestionCards.length > 0 && (<>
+                <h3 style={subHeading}>{t('Post đã lưu')}</h3>
                 <div style={css('display:flex; flex-direction:column; gap:12px;')}>
                   {savedQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
                 </div>
-              )}
+              </>)}
             </div>
           </section>
         )}
       </div>
     </Layout>
+  )
+}
+
+/** One event in "Sự kiện của tôi": the date as a little calendar leaf, name, when and where, my role. */
+function EventRow({ ev, onOpen }) {
+  const d = new Date(ev.startsAt)
+  const role = ev.isMine ? 'Người tạo' : ev.isHost ? 'Đồng tổ chức' : ''
+  return (
+    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen() }} className={hoverClass('background:#F5F8FE !important;')}
+      style={css(`display:flex; align-items:center; gap:14px; padding:12px 10px; margin:0 -10px; border-radius:12px; cursor:pointer; opacity:${ev.past ? 0.62 : 1}; border-bottom:1px solid #F1F4F9;`)}>
+      <div style={css('flex:none; width:48px; border-radius:10px; overflow:hidden; text-align:center; border:1px solid #E6EBF3; background:#fff;')}>
+        <div style={css(`background:${ev.past ? '#94a3b8' : '#D8232A'}; color:#fff; font:700 10px/18px ${FONT};`)}>TH {d.getMonth() + 1}</div>
+        <div style={css(`font:800 18px/28px ${FONT}; color:#0F172A;`)}>{d.getDate()}</div>
+      </div>
+      <div style={css('flex:1; min-width:0;')}>
+        <div style={css(`font:700 14.5px/1.35 ${FONT}; color:#0F172A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;`)}>{ev.title}</div>
+        <div style={css('margin-top:2px; font:400 12.5px/1.45 var(--zp-font-text); color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')}>{ev.past ? 'Đã diễn ra · ' : ''}{whenLabel(ev)} · {ev.location}</div>
+        <div style={css('margin-top:2px; font:400 12px var(--zp-font-text); color:#94a3b8;')}>{ev.interestCount ? `${ev.interestCount} người quan tâm` : 'Chưa ai quan tâm'}{ev.commentCount ? ` · ${ev.commentCount} bình luận` : ''}</div>
+      </div>
+      {role && <span style={css(`flex:none; height:24px; padding:0 10px; border-radius:999px; background:#EEF3FF; color:#2c5fff; display:inline-flex; align-items:center; font:700 11.5px ${FONT};`)}>{role}</span>}
+    </div>
   )
 }
 

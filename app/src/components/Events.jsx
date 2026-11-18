@@ -120,7 +120,7 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false, rich
   const bh = onDark ? 30 : 36
   return (
     <div role="button" tabIndex={0} onClick={() => onOpen(ev.id)} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(ev.id) }}
-      style={css(`cursor:pointer; ${compact ? 'flex:none; width:250px; padding:10px; border-radius:16px; background:#fff; box-shadow:0 10px 24px rgba(3,12,40,.28); box-sizing:border-box;' : ''}`)}>
+      style={css(`cursor:pointer; ${compact ? 'flex:none; width:250px; padding:10px; border-radius:16px; background:#fff; box-shadow:0 10px 24px rgba(3,12,40,.28); box-sizing:border-box;' : ''} ${rich ? 'flex:1; display:flex; flex-direction:column;' : ''}`)}>
       <Cover ev={ev} radius={compact || onDark ? 10 : 14} />
       <div style={css(`margin-top:${onDark ? 8 : 10}px;`)}>
         <div style={css(`font:700 ${onDark ? 11.5 : 12.5}px ${FONT}; color:${ink.when};`)}>{whenLabel(ev)}</div>
@@ -129,7 +129,8 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false, rich
         {rich && ev.description && <div style={css('margin-top:6px; font:400 13px/1.5 var(--zp-font-text); color:#475569; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{ev.description}</div>}
         {rich ? <InterestedRow ev={ev} me={user} /> : <div style={css(`margin-top:2px; font:400 ${onDark ? 11.5 : 12.5}px var(--zp-font-text); color:${ink.count};`)}>{statsLabel(ev)}</div>}
       </div>
-      <div style={css(`margin-top:${onDark ? 8 : 10}px; display:flex; gap:${onDark ? 6 : 8}px;`)}>
+      {/* in the grid the buttons sit at the bottom of the card, so they line up across a row */}
+      <div style={css(`margin-top:${rich ? 'auto' : (onDark ? 8 : 10) + 'px'}; ${rich ? 'padding-top:10px;' : ''} display:flex; gap:${onDark ? 6 : 8}px;`)}>
         <InterestButton ev={ev} onToggle={onToggle} grow onDark={onDark} height={bh} />
         <ShareButton ev={ev} onDark={onDark} height={bh} />
       </div>
@@ -184,7 +185,7 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
           ) : (
             <div style={css('display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px;')}>
               {shown.map((ev) => (
-                <div key={ev.id} className={hoverClass(CARD_HOVER)} style={css('background:#fff; border-radius:18px; padding:12px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:transform .18s ease, box-shadow .18s ease;')}>
+                <div key={ev.id} className={hoverClass(CARD_HOVER)} style={css('display:flex; flex-direction:column; background:#fff; border-radius:18px; padding:12px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:transform .18s ease, box-shadow .18s ease;')}>
                   <EventCard ev={ev} onOpen={setOpenId} onToggle={toggle} rich />
                 </div>
               ))}
