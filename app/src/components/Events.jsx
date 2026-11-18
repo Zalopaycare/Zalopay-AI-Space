@@ -12,6 +12,7 @@ import Avatar from './Avatar.jsx'
 import { askRemovalReason } from './RemovalReason.jsx'
 import MentionInput from './MentionInput.jsx'
 import { renderMentions } from './MentionField.jsx'
+import { LikeButton, ReplyButton, RepliesToggle } from './CommentMenu.jsx'
 import { playSound } from '../lib/sound.js'
 
 // "Sự kiện": anything happening offline that anyone can post (server: routes/events.js), shown like a
@@ -336,21 +337,40 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
 }
 
 // ---- comments under an event, oldest first ----
+// Comments under an event, as on posts: ♡ and 💬 under each one; replies hang under the comment they belong
+// to (one level), shown with "Hiện N trả lời", and the reply box starts with "@who" you're answering.
 function EventComments({ ev, onChange }) {
   const { user, requireLogin } = useAuth()
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const boxRef = useRef(null)
+  const replyRef = useRef(null)
+  const [replyTo, setReplyTo] = useState(null) // { id, parentId, handle }
+  const [replyDraft, setReplyDraft] = useState('')
+  const [open, setOpen] = useState(() => new Set())
   const list = ev.comments || []
-  const send = () => {
-    const body = draft.trim()
+  const top = list.filter((c) => !c.parentId)
+  const repliesOf = (id) => list.filter((c) => c.parentId === id)
+  const post = (text, ref, replyId, done) => {
+    const body = text.trim()
     if (!body || busy) return
     requireLogin(() => {
       setBusy(true)
       // "@handle" picked from the suggestions goes out as the full address, so they get the email
-      api.postEventComment(ev.id, boxRef.current ? boxRef.current.expand(body) : body).then((d) => { setDraft(''); onChange(d); playSound() }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
+      api.postEventComment(ev.id, ref.current ? ref.current.expand(body) : body, replyId).then((d) => { done(); onChange(d); playSound() }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
     })
   }
+  const send = () => post(draft, boxRef, null, () => setDraft(''))
+  const sendReply = () => post(replyDraft, replyRef, replyTo.id, () => { setOpen((o) => new Set(o).add(replyTo.parentId)); setReplyDraft(''); setReplyTo(null) })
+  const startReply = (c) => requireLogin(() => {
+    const parentId = c.parentId || c.id
+    setReplyTo({ id: c.id, parentId })
+    setOpen((o) => new Set(o).add(parentId))
+    // answering someone else's reply: start with their @name
+    setReplyDraft(c.parentId && c.author && c.author.id !== user?.id ? `@${(c.author.name || '').toLowerCase()} ` : '')
+    setTimeout(() => replyRef.current?.focus?.(), 50)
+  })
+  const like = (c) => requireLogin(() => api.likeEventComment(ev.id, c.id).then((d) => { onChange({ comments: d.comments, commentCount: d.comments.length }); playSound() }).catch(() => {}))
   const remove = (c) => {
     if (c.isMine) {
       if (window.confirm('Xoá bình luận này?')) api.deleteEventComment(ev.id, c.id).then(onChange).catch(() => {})
@@ -358,33 +378,68 @@ function EventComments({ ev, onChange }) {
       askRemovalReason({ what: 'bình luận', title: c.body.slice(0, 80) }).then((r) => r && api.deleteEventComment(ev.id, c.id, r).then(onChange).catch(() => {}))
     }
   }
+  const field = 'width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font:400 14px/1.5 var(--zp-font-text); color:#0F172A; background:#F7F9FD; outline:none; resize:vertical; display:block;'
+  const sendBtn = (enabled, onClick, label = 'Gửi') => (
+    <button onClick={onClick} disabled={!enabled || busy} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer; opacity:${enabled && !busy ? 1 : 0.5};`)}>{label}</button>
+  )
+  const row = (c, small) => {
+    const replies = small ? [] : repliesOf(c.id)
+    return (
+      <div style={css(`display:flex; gap:10px; ${small ? 'padding:8px 0 0;' : 'padding:10px 0 2px; border-top:1px solid #EEF1F7; margin-top:8px;'}`)}>
+        <Avatar user={c.author} size={small ? 26 : 32} fontSize={small ? 9 : 11} />
+        <div style={css('flex:1; min-width:0;')}>
+          <div style={css('display:flex; align-items:center; gap:6px;')}>
+            <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{c.author?.name || 'Ẩn danh'}</span>
+            <span style={css('font:400 12px var(--zp-font-text); color:#94a3b8;')}>· {relativeTime(c.time)}</span>
+            <span style={{ flex: 1 }} />
+            {c.canDelete && <button onClick={() => remove(c)} className={hoverClass('color:#D8232A !important;')} style={css(`border:none; background:none; padding:0; cursor:pointer; font:600 12px ${FONT}; color:#94a3b8;`)}>Xoá</button>}
+          </div>
+          <div style={css('margin-top:2px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{renderMentions(c.body)}</div>
+          <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -7px;')}>
+            <LikeButton r={c.likes} onLike={() => like(c)} />
+            <ReplyButton count={replies.length} active={replyTo?.id === c.id} onClick={() => startReply(c)} />
+          </div>
+        </div>
+      </div>
+    )
+  }
   return (
     <div style={css('margin:18px 22px 0;')}>
       <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>Bình luận{list.length ? ` (${list.length})` : ''}</div>
       <div style={css('display:flex; gap:10px; margin-top:10px;')}>
         <Avatar user={user} size={32} fontSize={11} />
         <div style={css('flex:1; min-width:0;')}>
-          <MentionInput ref={boxRef} multiline rows={2} popupWidth={320} value={draft} onChange={setDraft} onEnter={send} maxLength={2000} placeholder="Viết bình luận… Gõ @ để nhắc tên đồng nghiệp."
-            style={css('width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font:400 14px/1.5 var(--zp-font-text); color:#0F172A; background:#F7F9FD; outline:none; resize:vertical; display:block;')} />
-          <div style={css('display:flex; justify-content:flex-end; margin-top:6px;')}>
-            <button onClick={send} disabled={!draft.trim() || busy} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer; opacity:${draft.trim() && !busy ? 1 : 0.5};`)}>{busy ? 'Đang gửi…' : 'Gửi'}</button>
-          </div>
+          <MentionInput ref={boxRef} multiline rows={2} popupWidth={320} value={draft} onChange={setDraft} onEnter={send} maxLength={2000} placeholder="Viết bình luận… Gõ @ để nhắc tên đồng nghiệp." style={css(field)} />
+          <div style={css('display:flex; justify-content:flex-end; margin-top:6px;')}>{sendBtn(!!draft.trim(), send)}</div>
         </div>
       </div>
-      {list.map((c) => (
-        <div key={c.id} style={css('display:flex; gap:10px; padding:10px 0 4px; border-top:1px solid #EEF1F7; margin-top:8px;')}>
-          <Avatar user={c.author} size={32} fontSize={11} />
-          <div style={css('flex:1; min-width:0;')}>
-            <div style={css('display:flex; align-items:center; gap:6px;')}>
-              <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{c.author?.name || 'Ẩn danh'}</span>
-              <span style={css('font:400 12px var(--zp-font-text); color:#94a3b8;')}>· {relativeTime(c.time)}</span>
-              <span style={{ flex: 1 }} />
-              {c.canDelete && <button onClick={() => remove(c)} className={hoverClass('color:#D8232A !important;')} style={css(`border:none; background:none; padding:0; cursor:pointer; font:600 12px ${FONT}; color:#94a3b8;`)}>Xoá</button>}
-            </div>
-            <div style={css('margin-top:2px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{renderMentions(c.body)}</div>
+      {top.map((c) => {
+        const replies = repliesOf(c.id)
+        const shown = open.has(c.id)
+        return (
+          <div key={c.id}>
+            {row(c, false)}
+            {(replies.length > 0 || replyTo?.parentId === c.id) && (
+              <div style={css('margin-left:42px;')}>
+                {replies.length > 0 && <RepliesToggle people={replies.map((r) => r.author).filter(Boolean)} count={replies.length} open={shown} onClick={() => setOpen((o) => { const n = new Set(o); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n })} style={{ marginTop: 2 }} />}
+                {shown && replies.map((r) => <div key={r.id}>{row(r, true)}</div>)}
+                {replyTo?.parentId === c.id && (
+                  <div style={css('display:flex; gap:8px; margin-top:8px;')}>
+                    <Avatar user={user} size={26} fontSize={9} />
+                    <div style={css('flex:1; min-width:0;')}>
+                      <MentionInput ref={replyRef} multiline rows={2} popupWidth={300} value={replyDraft} onChange={setReplyDraft} onEnter={sendReply} maxLength={2000} placeholder="Viết trả lời…" style={css(field)} />
+                      <div style={css('display:flex; justify-content:flex-end; gap:8px; margin-top:6px;')}>
+                        <button onClick={() => { setReplyTo(null); setReplyDraft('') }} style={css(`height:32px; padding:0 14px; border:none; border-radius:999px; background:#EEF1F6; color:#334155; font:700 13px ${FONT}; cursor:pointer;`)}>Huỷ</button>
+                        {sendBtn(!!replyDraft.trim(), sendReply, 'Trả lời')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

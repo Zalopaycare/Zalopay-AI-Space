@@ -49,6 +49,19 @@ CREATE TABLE IF NOT EXISTS event_comments (
 );
 CREATE INDEX IF NOT EXISTS event_comments_event ON event_comments (event_id, created_at);
 `)
+// Replies and likes on comments, as on posts: a reply hangs under a top-level comment (parent_id; one level,
+// a reply to a reply goes under the same comment) and names who it answers (reply_to_id).
+for (const col of ['parent_id', 'reply_to_id']) {
+  if (!db.prepare('PRAGMA table_info(event_comments)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE event_comments ADD COLUMN ${col} TEXT`)
+}
+db.exec(`
+CREATE TABLE IF NOT EXISTS event_comment_likes (
+  comment_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (comment_id, user_id)
+);
+`)
 // all_day: no start time given (starts_at is that day's local midnight, no end time)
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'all_day')) db.exec('ALTER TABLE events ADD COLUMN all_day INTEGER NOT NULL DEFAULT 0')
 // Outlook invitations: who currently has the event in their calendar from us (event_invites), and the
@@ -147,10 +160,21 @@ function shape(e, me) {
   }
 }
 // oldest first, as a conversation reads
-const commentsOf = (id, me) => db.prepare('SELECT * FROM event_comments WHERE event_id = ? ORDER BY created_at, id').all(id).map((c) => ({
-  id: c.id, body: c.body, time: c.created_at, author: person(userById(c.author_id)),
-  canDelete: !!me && (c.author_id === me.id || !!me.is_admin), isMine: !!me && c.author_id === me.id,
-}))
+// parentId: the top-level comment a reply hangs under (null for a comment); replyTo: who it answers;
+// likes: { total, mine }
+const commentsOf = (id, me) => {
+  const rows = db.prepare('SELECT * FROM event_comments WHERE event_id = ? ORDER BY created_at, id').all(id)
+  const authorOf = Object.fromEntries(rows.map((c) => [c.id, c.author_id]))
+  return rows.map((c) => {
+    const to = c.reply_to_id && authorOf[c.reply_to_id] ? userById(authorOf[c.reply_to_id]) : null
+    return {
+      id: c.id, body: c.body, time: c.created_at, author: person(userById(c.author_id)),
+      parentId: c.parent_id || null, replyTo: to ? { name: domainName(to.email, to.name), handle: handleOf(to.email) } : null,
+      likes: { total: db.prepare('SELECT COUNT(*) n FROM event_comment_likes WHERE comment_id = ?').get(c.id).n, mine: !!me && !!db.prepare('SELECT 1 FROM event_comment_likes WHERE comment_id = ? AND user_id = ?').get(c.id, me.id) },
+      canDelete: !!me && (c.author_id === me.id || !!me.is_admin), isMine: !!me && c.author_id === me.id,
+    }
+  })
+}
 
 const clean = (v, max) => String(v ?? '').replace(/\r\n/g, '\n').trim().slice(0, max)
 const isoOrNull = (v) => { const d = new Date(String(v || '')); return isNaN(d) ? null : d.toISOString() }
@@ -570,22 +594,31 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   if (!e) return res.status(404).json({ error: 'not_found' })
   const body = clean(req.body?.body, MAX_COMMENT)
   if (!body) return res.status(400).json({ error: 'empty_body' })
+  // a reply: under the top-level comment (a reply to a reply goes under the same one), answering `replyToId`
+  const target = req.body?.replyToId || req.body?.parentId ? db.prepare('SELECT * FROM event_comments WHERE id = ? AND event_id = ?').get(String(req.body.replyToId || req.body.parentId), e.id) : null
+  const parentId = target ? target.parent_id || target.id : null
   const cid = nextId('ec')
-  db.prepare('INSERT INTO event_comments (id, event_id, author_id, body) VALUES (?, ?, ?, ?)').run(cid, e.id, req.user.id, body)
+  db.prepare('INSERT INTO event_comments (id, event_id, author_id, body, parent_id, reply_to_id) VALUES (?, ?, ?, ?, ?, ?)').run(cid, e.id, req.user.id, body, parentId, target ? target.id : null)
   const who = domainName(req.user.email, req.user.name)
   const href = `/?event=${encodeURIComponent(e.id)}`
+  // the one answered hears of it (in the app and by email)
+  const answered = target && target.author_id !== req.user.id ? userById(target.author_id) : null
+  if (answered) {
+    notify(answered.email, { kind: 'comment', text: `${who} đã trả lời bình luận của bạn trong sự kiện "${e.title}"`, href, actor: req.user.name })
+    sendMail({ to: answered.email, subject: `${who} đã trả lời bình luận của bạn: ${e.title}`, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
+  }
   // the hosts (creator and co-hosts) hear of every comment
   const hosts = hostEmails(e)
   for (const to of hosts) {
-    if (to === req.user.email.toLowerCase()) continue
+    if (to === req.user.email.toLowerCase() || to === answered?.email.toLowerCase()) continue
     notify(to, { kind: 'comment', text: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, href, actor: req.user.name })
     sendMail({ to, subject: `${who} đã bình luận trong sự kiện "${e.title}" của bạn`, text: `${req.user.name}: "${body}"\n\nXem tại: ${appUrl(req)}${href}` }).catch(() => {})
   }
   // the others who commented before: one in-app note per event, kept up to date
   const before = db.prepare('SELECT DISTINCT author_id FROM event_comments WHERE event_id = ? AND id != ?').all(e.id, cid).map((r) => r.author_id)
   // @mentions: a notification and an email each (the host already heard of this comment)
-  notifyMentions(req, { text: body, where: `sự kiện "${e.title}"`, path: href, skip: hosts })
-  notifyParticipants(before, [req.user.email, ...hosts], { ref: 'joined:ev:' + e.id, text: `${who} cũng đã bình luận trong sự kiện "${e.title}"`, href, actor: req.user.name })
+  notifyMentions(req, { text: body, where: `sự kiện "${e.title}"`, path: href, skip: [...hosts, answered?.email] })
+  notifyParticipants(before, [req.user.email, ...hosts, answered?.email], { ref: 'joined:ev:' + e.id, text: `${who} cũng đã bình luận trong sự kiện "${e.title}"`, href, actor: req.user.name })
   res.status(201).json({ comments: commentsOf(e.id, req.user), commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n })
 })
 router.delete('/:id/comments/:cid', requireAuth, (req, res) => {
@@ -593,9 +626,30 @@ router.delete('/:id/comments/:cid', requireAuth, (req, res) => {
   if (!c) return res.status(404).json({ error: 'not_found' })
   const block = removalCheck(req, c.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
-  db.prepare('DELETE FROM event_comments WHERE id = ?').run(c.id)
+  // a comment goes with its replies, and the likes on all of them
+  db.transaction(() => {
+    const ids = [c.id, ...db.prepare('SELECT id FROM event_comments WHERE parent_id = ?').all(c.id).map((r) => r.id)]
+    for (const x of ids) db.prepare('DELETE FROM event_comment_likes WHERE comment_id = ?').run(x)
+    db.prepare('DELETE FROM event_comments WHERE id = ? OR parent_id = ?').run(c.id, c.id)
+  })()
   afterRemoval(req, { authorId: c.author_id, what: 'bình luận', title: '', content: c.body })
   res.json({ comments: commentsOf(req.params.id, req.user), commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(req.params.id).n })
+})
+
+// ♡ on a comment or reply: a click likes, again takes it back; the author hears of it (one note, kept up to date)
+router.post('/:id/comments/:cid/like', requireAuth, (req, res) => {
+  const e = byId(req.params.id)
+  const c = e && db.prepare('SELECT * FROM event_comments WHERE id = ? AND event_id = ?').get(req.params.cid, e.id)
+  if (!c) return res.status(404).json({ error: 'not_found' })
+  const had = db.prepare('SELECT 1 FROM event_comment_likes WHERE comment_id = ? AND user_id = ?').get(c.id, req.user.id)
+  if (had) db.prepare('DELETE FROM event_comment_likes WHERE comment_id = ? AND user_id = ?').run(c.id, req.user.id)
+  else db.prepare('INSERT INTO event_comment_likes (comment_id, user_id) VALUES (?, ?)').run(c.id, req.user.id)
+  const author = userById(c.author_id)
+  const n = db.prepare('SELECT COUNT(*) n FROM event_comment_likes WHERE comment_id = ?').get(c.id).n
+  if (!had && author && author.id !== req.user.id) {
+    notifyOnce(author.email, 'upvote', { ref: 'evlike:' + c.id, text: n === 1 ? `${domainName(req.user.email, req.user.name)} đã thích bình luận của bạn trong sự kiện "${e.title}"` : `Bình luận của bạn trong sự kiện "${e.title}" có ${n} lượt thích`, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
+  }
+  res.json({ comments: commentsOf(e.id, req.user) })
 })
 
 router.post('/:id/interest', requireAuth, (req, res) => {
