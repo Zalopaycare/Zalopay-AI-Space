@@ -36,11 +36,16 @@ if (SMTP_HOST) {
 export const mailerConfigured = !!transporter
 export const devLoginCodeAllowed = String(ALLOW_DEV_LOGIN_CODE || '').toLowerCase() === 'true'
 
-export async function sendMail({ to, subject, text }) {
+/** The address mail goes out from ("Name <a@b>" → "a@b"); calendar invites name it as their organizer. */
+export const senderAddress = (() => { const f = String(SMTP_FROM || SMTP_USER || ''); const m = /<([^>]+)>/.exec(f); return (m ? m[1] : f).trim() })()
+
+// `icalEvent` ({ method: 'REQUEST' | 'CANCEL', content }) adds a calendar invitation: Outlook shows it as a
+// meeting request (Accept puts it in the calendar) and a CANCEL takes it out again.
+export async function sendMail({ to, subject, text, icalEvent }) {
   if (!transporter) {
-    console.log(`[mailer] SMTP not configured — would send to ${to}: ${subject}\n${text}`)
+    console.log(`[mailer] SMTP not configured — would send to ${to}: ${subject}\n${text}${icalEvent ? `\n[calendar ${icalEvent.method}]\n${icalEvent.content}` : ''}`)
     return { sent: false }
   }
-  await transporter.sendMail({ from: SMTP_FROM || SMTP_USER, to, subject, text })
+  await transporter.sendMail({ from: SMTP_FROM || SMTP_USER, to, subject, text, ...(icalEvent ? { icalEvent: { filename: 'invite.ics', ...icalEvent } } : {}) })
   return { sent: true }
 }

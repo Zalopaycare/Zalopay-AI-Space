@@ -4,12 +4,14 @@ import { requireAuth } from '../auth.js'
 import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { domainName, initialsOf, appUrl, notifyMentions } from '../mentions.js'
 import { notify, notifyOnce, notifyParticipants } from '../notifications.js'
-import { sendMail } from '../mailer.js'
+import { sendMail, senderAddress } from '../mailer.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
 
 // "Sự kiện": anything happening offline that anyone can post (no review), Facebook-event style, shown in
 // the "Sự kiện sắp tới" rail beside the AI Space feed. People press "Quan tâm"; the host sees who, and
 // everyone interested gets an email the day before (and when the time or place changes, or it's cancelled).
+// Pressing "Quan tâm" also sends an Outlook invitation (an iCalendar REQUEST): Accept puts the event in their
+// calendar, which then follows it (new time or place, cancelled); taking the interest back sends a CANCEL.
 // People comment under it too (event_comments); the host hears of each comment, by email as on a post.
 // Times are ISO strings in UTC ("2026-11-12T07:00:00.000Z"), so they compare as text.
 
@@ -48,6 +50,17 @@ CREATE INDEX IF NOT EXISTS event_comments_event ON event_comments (event_id, cre
 `)
 // all_day: no start time given (starts_at is that day's local midnight, no end time)
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'all_day')) db.exec('ALTER TABLE events ADD COLUMN all_day INTEGER NOT NULL DEFAULT 0')
+// Outlook invitations: who currently has the event in their calendar from us (event_invites), and the
+// event's iCalendar SEQUENCE, raised with every invitation or cancellation sent so the newest always wins
+if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'ics_seq')) db.exec('ALTER TABLE events ADD COLUMN ics_seq INTEGER NOT NULL DEFAULT 0')
+db.exec(`
+CREATE TABLE IF NOT EXISTS event_invites (
+  event_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL,
+  sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (event_id, user_id)
+);
+`)
 
 const router = express.Router()
 // every column but the cover picture itself (served on its own)
@@ -121,12 +134,130 @@ function whenText(e) {
   return `${day} · ${t(s)}${e.ends_at ? '–' + t(vn(e.ends_at)) : ''}`
 }
 
+// ---- Outlook invitations (iCalendar, RFC 5545) ----
+const icsText = (v) => String(v || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+const icsName = (v) => '"' + String(v || '').replace(/["\r\n]/g, '') + '"'
+const icsTime = (iso) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+const icsDate = (d) => `${d.getUTCFullYear()}${p2(d.getUTCMonth() + 1)}${p2(d.getUTCDate())}`
+// lines are folded at 75 bytes (continuations start with a space), never inside a character
+function fold(line) {
+  const parts = []
+  let cur = '', bytes = 0
+  for (const ch of line) {
+    const b = Buffer.byteLength(ch)
+    if (bytes + b > (parts.length ? 74 : 75)) { parts.push(cur); cur = ''; bytes = 0 }
+    cur += ch; bytes += b
+  }
+  parts.push(cur)
+  return parts.join('\r\n ')
+}
+const ORGANIZER = senderAddress || 'no-reply@ai-space.zalopay.vn'
+function inviteIcs(e, user, method, seq, baseUrl) {
+  const link = `${baseUrl}/?event=${encodeURIComponent(e.id)}`
+  const host = userById(e.author_id)
+  const day = vn(e.starts_at)
+  const when = e.all_day
+    ? [`DTSTART;VALUE=DATE:${icsDate(day)}`, `DTEND;VALUE=DATE:${icsDate(new Date(day.getTime() + 24 * 3600_000))}`]
+    : [`DTSTART:${icsTime(e.starts_at)}`, `DTEND:${icsTime(endOf(e))}`]
+  const desc = [e.description, host ? `Người tổ chức: ${host.name}` : '', `Xem và bình luận: ${link}`].filter(Boolean).join('\n\n')
+  const lines = [
+    'BEGIN:VCALENDAR', 'PRODID:-//Zalopay AI Space//Su kien//VI', 'VERSION:2.0', 'CALSCALE:GREGORIAN', `METHOD:${method}`,
+    'BEGIN:VEVENT', `UID:${e.id}@ai-space.zalopay.vn`, `SEQUENCE:${seq}`, `DTSTAMP:${icsTime(new Date().toISOString())}`, ...when,
+    `SUMMARY:${icsText(e.title)}`, `LOCATION:${icsText(e.location)}`, `DESCRIPTION:${icsText(desc)}`, `URL:${link}`,
+    `ORGANIZER;CN=${icsName('Zalopay AI Space')}:mailto:${ORGANIZER}`,
+    // RSVP=FALSE: accepting sends nothing back (no flood of replies to the site's mailbox)
+    `ATTENDEE;CN=${icsName(user.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:${user.email}`,
+    `STATUS:${method === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'}`, `TRANSP:${e.all_day ? 'TRANSPARENT' : 'OPAQUE'}`, 'CLASS:PUBLIC',
+  ]
+  // Outlook's own reminder: 15 minutes before, or 9:00 the day before an all-day event
+  if (method === 'REQUEST') lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsText(e.title)}`, `TRIGGER:${e.all_day ? '-PT15H' : '-PT15M'}`, 'END:VALARM')
+  lines.push('END:VEVENT', 'END:VCALENDAR')
+  return lines.map(fold).join('\r\n') + '\r\n'
+}
+function sendInvite(e, user, method, baseUrl, { subject, text }) {
+  const seq = db.prepare('UPDATE events SET ics_seq = ics_seq + 1 WHERE id = ? RETURNING ics_seq').get(e.id).ics_seq
+  return sendMail({ to: user.email, subject, text, icalEvent: { method, content: inviteIcs(e, user, method, seq, baseUrl) } })
+}
+const invitedIds = (id) => db.prepare('SELECT user_id FROM event_invites WHERE event_id = ?').all(id).map((r) => r.user_id)
+const isInterested = (eid, uid) => !!db.prepare('SELECT 1 FROM event_interests WHERE event_id = ? AND user_id = ?').get(eid, uid)
+const isInvited = (eid, uid) => !!db.prepare('SELECT 1 FROM event_invites WHERE event_id = ? AND user_id = ?').get(eid, uid)
+
+// "Quan tâm" pressed or taken back: the invitation (or its cancellation) goes out half a minute later, so
+// someone toggling a few times gets one email for where they ended up, and at most a few a day per event.
+const INVITE_DELAY_MS = 30_000
+const MAX_INVITES_PER_DAY = 4
+const pendingInvites = new Map()
+const recentInvites = new Map()
+function queueInvite(eventId, userId, baseUrl) {
+  const key = `${eventId}:${userId}`
+  clearTimeout(pendingInvites.get(key))
+  pendingInvites.set(key, setTimeout(() => {
+    pendingInvites.delete(key)
+    try { syncInvite(eventId, userId, baseUrl) } catch (err) { console.error('[events] invitation failed:', err.message) }
+  }, INVITE_DELAY_MS))
+}
+/** Bring one person's calendar in line with their "Quan tâm": invite them, or take the event out again. */
+function syncInvite(eventId, userId, baseUrl) {
+  const e = byId(eventId)
+  const user = userById(userId)
+  const invited = isInvited(eventId, userId)
+  if (!e || !user?.email) { if (invited) db.prepare('DELETE FROM event_invites WHERE event_id = ? AND user_id = ?').run(eventId, userId); return }
+  const interested = isInterested(eventId, userId)
+  if (interested === invited || endOf(e) <= new Date().toISOString()) return
+  const key = `${eventId}:${userId}`
+  const times = (recentInvites.get(key) || []).filter((t) => t > Date.now() - 24 * 3600_000)
+  if (times.length >= MAX_INVITES_PER_DAY) return // the 10-minute sweep tries again later
+  recentInvites.set(key, [...times, Date.now()])
+  const link = `${baseUrl}/?event=${encodeURIComponent(e.id)}`
+  const host = userById(e.author_id)
+  if (interested) {
+    db.prepare('INSERT OR IGNORE INTO event_invites (event_id, user_id) VALUES (?, ?)').run(e.id, user.id)
+    sendInvite(e, user, 'REQUEST', baseUrl, {
+      subject: `Lời mời: ${e.title} (${whenText(e)})`,
+      text: `Bạn đã bấm Quan tâm sự kiện "${e.title}".\n\nThời gian: ${whenText(e)}\nĐịa điểm: ${e.location}${host ? `\nNgười tổ chức: ${host.name}` : ''}\n\nBấm "Chấp nhận" (Accept) trong email này để thêm sự kiện vào lịch Outlook của bạn. Khi sự kiện đổi giờ, đổi địa điểm hay bị huỷ, lịch của bạn sẽ tự cập nhật theo.\n\nXem tại: ${link}`,
+    }).catch(() => {})
+  } else {
+    db.prepare('DELETE FROM event_invites WHERE event_id = ? AND user_id = ?').run(e.id, user.id)
+    sendInvite(e, user, 'CANCEL', baseUrl, {
+      subject: `Đã bỏ quan tâm: ${e.title}`,
+      text: `Bạn đã bỏ quan tâm sự kiện "${e.title}" (${whenText(e)}), nên sự kiện được gỡ khỏi lịch Outlook của bạn.\n\nXem tại: ${link}`,
+    }).catch(() => {})
+  }
+}
+/** Every 10 minutes: anyone whose calendar doesn't match their "Quan tâm" (a restart dropped the timer,
+ * the daily cap held it back, or they were interested before invitations existed) is brought in line. */
+export function syncEventInvites(baseUrl) {
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString()
+  const missing = db.prepare(`SELECT i.event_id, i.user_id FROM event_interests i JOIN events e ON e.id = i.event_id
+    LEFT JOIN event_invites v ON v.event_id = i.event_id AND v.user_id = i.user_id
+    WHERE v.event_id IS NULL AND e.starts_at >= ? AND i.created_at <= datetime('now', '-2 minutes')`).all(since)
+  const stale = db.prepare(`SELECT v.event_id, v.user_id FROM event_invites v
+    LEFT JOIN event_interests i ON i.event_id = v.event_id AND i.user_id = v.user_id
+    WHERE i.event_id IS NULL AND v.sent_at <= datetime('now', '-2 minutes')`).all()
+  for (const r of [...missing, ...stale]) if (!pendingInvites.has(`${r.event_id}:${r.user_id}`)) syncInvite(r.event_id, r.user_id, baseUrl)
+}
+
 const emailsOfInterested = (id, exceptId) => interestedIds(id).filter((uid) => uid !== exceptId).map((uid) => userById(uid)?.email).filter(Boolean)
-function tellInterested(req, e, { text, subject, body, exceptId }) {
-  const link = `${appUrl(req)}/?event=${encodeURIComponent(e.id)}`
-  for (const to of emailsOfInterested(e.id, exceptId)) {
-    notify(to, { kind: 'event', text, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
-    sendMail({ to, subject, text: `${body}\n\nXem tại: ${link}` }).catch(() => {})
+// The people interested (but `exceptId`, who made the change) hear of it in the app and by email; whoever has
+// the event in their Outlook from us gets that email as a calendar update (`method`) so their calendar follows,
+// the one who made the change included. `calendarOnly`: a change only calendars need (a new name).
+function tellInterested(req, e, { text, subject, body, exceptId, method, calendarOnly = false }) {
+  const base = appUrl(req)
+  const link = `${base}/?event=${encodeURIComponent(e.id)}`
+  const invited = new Set(method ? invitedIds(e.id) : [])
+  const interested = interestedIds(e.id)
+  for (const uid of new Set([...interested, ...invited])) {
+    const u = userById(uid)
+    if (!u?.email) continue
+    const calendar = invited.has(uid)
+    if (!calendar && (uid === exceptId || calendarOnly)) continue
+    if (uid !== exceptId && !calendarOnly && interested.includes(uid)) notify(u.email, { kind: 'event', text, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
+    const note = calendar ? (method === 'CANCEL' ? 'Sự kiện đã được gỡ khỏi lịch Outlook của bạn.\n\n' : 'Lịch Outlook của bạn đã được cập nhật theo.\n\n') : ''
+    const msg = { subject, text: `${body}\n\n${note}Xem tại: ${link}` }
+    if (calendar) {
+      if (method === 'CANCEL') db.prepare('DELETE FROM event_invites WHERE event_id = ? AND user_id = ?').run(e.id, uid)
+      sendInvite(e, u, method, base, msg).catch(() => {})
+    } else sendMail({ to: u.email, ...msg }).catch(() => {})
   }
 }
 
@@ -172,10 +303,17 @@ router.patch('/:id', requireAuth, (req, res) => {
   const after = byId(e.id)
   if (moved) {
     tellInterested(req, after, {
-      exceptId: req.user.id,
+      exceptId: req.user.id, method: 'REQUEST',
       text: `Sự kiện "${after.title}" đổi sang ${whenText(after)} tại ${after.location}`,
       subject: `Sự kiện đổi giờ / địa điểm: ${after.title}`,
       body: `Sự kiện "${after.title}" mà bạn quan tâm vừa được cập nhật:\n\nThời gian: ${whenText(after)}\nĐịa điểm: ${after.location}`,
+    })
+  } else if (f.title !== e.title) {
+    // a new name: only the calendars need to hear of it
+    tellInterested(req, after, {
+      exceptId: req.user.id, method: 'REQUEST', calendarOnly: true, text: '',
+      subject: `Sự kiện đổi tên: ${after.title}`,
+      body: `Sự kiện "${e.title}" mà bạn quan tâm đổi tên thành "${after.title}".\n\nThời gian: ${whenText(after)}\nĐịa điểm: ${after.location}`,
     })
   }
   res.json({ event: shape(after, req.user) })
@@ -189,7 +327,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   // only an upcoming session is "cancelled"; a past one just goes
   if (endOf(e) > new Date().toISOString()) {
     tellInterested(req, e, {
-      exceptId: req.user.id,
+      exceptId: req.user.id, method: 'CANCEL',
       text: `Sự kiện "${e.title}" (${whenText(e)}) đã huỷ`,
       subject: `Sự kiện đã huỷ: ${e.title}`,
       body: `Sự kiện "${e.title}" (${whenText(e)} tại ${e.location}) mà bạn quan tâm đã huỷ.`,
@@ -198,6 +336,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   db.transaction(() => {
     db.prepare('DELETE FROM event_interests WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM event_comments WHERE event_id = ?').run(e.id)
+    db.prepare('DELETE FROM event_invites WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM events WHERE id = ?').run(e.id)
   })()
   afterRemoval(req, { authorId: e.author_id, what: 'sự kiện', title: e.title, content: e.description || e.title })
@@ -242,6 +381,8 @@ router.post('/:id/interest', requireAuth, (req, res) => {
   const had = db.prepare('SELECT 1 FROM event_interests WHERE event_id = ? AND user_id = ?').get(e.id, req.user.id)
   if (had) db.prepare('DELETE FROM event_interests WHERE event_id = ? AND user_id = ?').run(e.id, req.user.id)
   else db.prepare('INSERT INTO event_interests (event_id, user_id) VALUES (?, ?)').run(e.id, req.user.id)
+  // the Outlook invitation (or, taken back, its cancellation)
+  queueInvite(e.id, req.user.id, appUrl(req))
   // the host: one notification per session, kept up to date
   const host = userById(e.author_id)
   const n = interestedIds(e.id).length

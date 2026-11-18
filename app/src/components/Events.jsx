@@ -317,7 +317,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           )}
           <EventComments ev={ev} onChange={(d) => { setEv((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ ...ev, commentCount: d.commentCount }) }} />
           <div style={css('display:flex; align-items:center; gap:12px; padding:18px 22px 20px; margin-top:18px; border-top:1px solid #EEF1F7;')}>
-            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past ? 'Bấm Quan tâm để nhận email nhắc trước 1 ngày, và khi sự kiện đổi giờ, đổi chỗ hay huỷ.' : ''}</div>
+            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past ? 'Bấm Quan tâm để nhận thư mời vào lịch Outlook và email nhắc trước 1 ngày; khi sự kiện đổi giờ, đổi chỗ hay huỷ, lịch của bạn tự cập nhật.' : ''}</div>
             {ev.canEdit && <button onClick={remove} style={css(`flex:none; height:32px; padding:0 14px; border:1px solid #F5C9CB; border-radius:999px; background:#fff; color:#D8232A; font:700 12.5px ${FONT}; cursor:pointer;`)}>{ev.isMine ? 'Huỷ sự kiện' : 'Xoá'}</button>}
           </div>
         </>)}
