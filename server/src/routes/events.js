@@ -102,7 +102,11 @@ const endOf = (e) => e.ends_at || new Date(new Date(e.starts_at).getTime() + (e.
 const userById = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id)
 const person = (u) => (u ? { id: u.id, name: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : null)
 const interestedIds = (id) => db.prepare('SELECT user_id FROM event_interests WHERE event_id = ? ORDER BY created_at').all(id).map((r) => r.user_id)
-const cohostRows = (id) => db.prepare('SELECT email, name FROM event_cohosts WHERE event_id = ? ORDER BY added_at, rowid').all(id)
+// (a row that is the creator under another address, saved before that was blocked, is left out)
+const cohostRows = (id) => {
+  const creator = handleOf(db.prepare('SELECT u.email FROM events e JOIN users u ON u.id = e.author_id WHERE e.id = ?').get(id)?.email)
+  return db.prepare('SELECT email, name FROM event_cohosts WHERE event_id = ? ORDER BY added_at, rowid').all(id).filter((r) => handleOf(r.email) !== creator)
+}
 const userByEmail = (email) => db.prepare('SELECT * FROM users WHERE lower(email) = ?').get(String(email || '').toLowerCase())
 // a co-host as the page shows them: their account if they have one, else the name picked in the form
 const cohostPerson = (r) => { const u = userByEmail(r.email); return u ? { ...person(u), email: r.email } : { id: null, email: r.email, name: handleOf(r.email), fullName: r.name || handleOf(r.email), initials: initialsOf({ email: r.email, name: r.name }), avatarColor: null, avatarUrl: null } }
@@ -161,14 +165,16 @@ function readFields(body) {
 }
 // Co-hosts from the form: [{ email, name }], company addresses only, at most 10; undefined = leave as they are
 const MAX_COHOSTS = 10
+// One person can have an address on each company domain (thyndm@vng.com.vn, thyndm@zalopay.vn…): the
+// account name before @ is what says who it is.
 function readCohosts(body, creatorEmail) {
   if (!Array.isArray(body?.cohosts)) return undefined
-  const seen = new Set([String(creatorEmail || '').toLowerCase()])
+  const seen = new Set([handleOf(creatorEmail)])
   const out = []
   for (const c of body.cohosts) {
     const email = String(c?.email || '').trim().toLowerCase()
-    if (!email || seen.has(email) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !isCompanyEmail(email)) continue
-    seen.add(email)
+    if (!email || seen.has(handleOf(email)) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !isCompanyEmail(email)) continue
+    seen.add(handleOf(email))
     out.push({ email, name: clean(c?.name, 120) })
     if (out.length >= MAX_COHOSTS) break
   }
@@ -350,10 +356,18 @@ function meetingOf(e, baseUrl) {
   }
 }
 /** Who should be on the meeting: the co-hosts and everyone interested, not the creator (it's their meeting). */
+// Once each, by account name: the creator under another of their addresses would get an invitation to their
+// own meeting (a second, "tentative" copy in their calendar), and two addresses of one person two invitations.
 function wantedAttendees(e) {
-  const organizer = String(userById(e.author_id)?.email || '').toLowerCase()
-  const list = [...cohostRows(e.id).map((r) => r.email), ...interestedIds(e.id).map((uid) => userById(uid)?.email)]
-  return [...new Set(list.filter(Boolean).map((x) => x.toLowerCase()))].filter((x) => x !== organizer)
+  const seen = new Set([handleOf(userById(e.author_id)?.email)])
+  const out = []
+  for (const x of [...cohostRows(e.id).map((r) => r.email), ...interestedIds(e.id).map((uid) => userById(uid)?.email)]) {
+    const email = String(x || '').toLowerCase()
+    if (!email || seen.has(handleOf(email))) continue
+    seen.add(handleOf(email))
+    out.push(email)
+  }
+  return out
 }
 const attendeesOf = (emails) => emails.map((address) => ({ emailAddress: { address }, type: 'required' }))
 const sentAttendees = (e) => { try { return JSON.parse(e.ol_attendees || '[]') } catch { return [] } }

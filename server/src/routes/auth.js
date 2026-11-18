@@ -304,8 +304,9 @@ router.get('/users', requireAuth, async (req, res) => {
     .filter((u) => !q || fold(u.name).replace(/\s+/g, '').includes(fold(q).replace(/\s+/g, '')) || u.email.toLowerCase().includes(q))
     .slice(0, 8)
     .map((u) => ({ key: u.email.toLowerCase(), name: u.name, mention: handleOf(u.email), sub: '@' + handleOf(u.email) + (u.team ? ' · ' + u.team : ''), initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) }))
-  const seen = new Set([me, ...known.map((u) => u.key)])
-  const dir = q ? (await searchDirectory(q, req.user.id)).filter((u) => !seen.has(u.email)).map((u) => ({ key: u.email, name: u.name, mention: u.email, sub: u.email + (u.title ? ' · ' + u.title : ''), initials: u.initials, avatarColor: null })) : []
+  // the same person can have an address on each company domain: compare the account name before @
+  const seen = new Set([me, ...known.map((u) => u.key)].map(handleOf))
+  const dir = q ? (await searchDirectory(q, req.user.id)).filter((u) => !seen.has(handleOf(u.email))).map((u) => ({ key: u.email, name: u.name, mention: u.email, sub: u.email + (u.title ? ' · ' + u.title : ''), initials: u.initials, avatarColor: null })) : []
   res.json({ users: [...known, ...dir].slice(0, 10), domains: companyDomains(), directory: directoryEnabled(), relogin: needsRelogin(req.user.id) })
 })
 
