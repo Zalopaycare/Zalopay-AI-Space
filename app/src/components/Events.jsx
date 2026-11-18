@@ -239,7 +239,13 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   const [missing, setMissing] = useState(false)
   const dialog = useDialog(true, onClose, 'Sự kiện')
   useEffect(() => { api.getEvent(id).then((d) => setEv(d.event)).catch(() => setMissing(true)) }, [id])
-  const toggle = () => requireLogin(() => api.toggleEventInterest(id).then((d) => { setEv((x) => ({ ...d.event, past: x?.past })); onChanged(d.event); playSound() }).catch(() => {}))
+  const [opening, setOpening] = useState(false)
+  const openInvites = () => {
+    setOpening(true)
+    api.openEventInvites(id).then((d) => { setEv((x) => ({ ...d.event, past: x?.past, comments: x?.comments })); onChanged(d.event); playSound() })
+      .catch((e) => window.alert(e?.data?.message || 'Chưa gửi được, thử lại nhé.')).finally(() => setOpening(false))
+  }
+  const toggle = () => requireLogin(() => api.toggleEventInterest(id).then((d) => { setEv((x) => ({ ...d.event, past: x?.past, comments: x?.comments })); onChanged(d.event); playSound() }).catch(() => {}))
   const [askCancel, setAskCancel] = useState(false)
   const cancelEvent = () => { setAskCancel(false); api.deleteEvent(ev.id).then(onDeleted).catch(() => window.alert('Chưa huỷ được, thử lại nhé.')) }
   const remove = () => {
@@ -287,6 +293,20 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
             </button>
             {(ev.isHost || ev.canEdit) && <button onClick={() => onEdit(ev)} className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none;' + grayBtn)}>Sửa</button>}
           </div>
+          {/* the creator: invitations wait for enough interest, then one click sends them */}
+          {(ev.isMine || ev.canEdit) && !ev.past && !ev.invitesOpen && (() => {
+            const ready = ev.othersInterested >= ev.openAt
+            return (
+              <div style={css(`margin:14px 22px 0; padding:12px 14px; border-radius:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; ${ready ? 'background:#EEF3FF; border:1px solid #CFDDFB;' : 'background:#F3F6FA; border:1px solid #E6EBF3;'}`)}>
+                <div style={css('flex:1; min-width:200px; font:400 12.5px/1.55 var(--zp-font-text); color:#334155;')}>
+                  {ready
+                    ? <><b style={css('color:#1E44A8;')}>Đã đủ {ev.othersInterested} người quan tâm.</b> Gửi lời mời Outlook để sự kiện vào lịch của mọi người; ai quan tâm sau sẽ được mời tiếp.</>
+                    : <>Lời mời Outlook gửi được khi đủ <b>{ev.openAt} người quan tâm</b> (hiện có {ev.othersInterested}/{ev.openAt}). Bạn sẽ nhận thông báo khi đủ.</>}
+                </div>
+                {ready && <button onClick={openInvites} disabled={opening} style={css(`flex:none; height:34px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer; opacity:${opening ? 0.6 : 1};`)}>{opening ? 'Đang gửi…' : 'Gửi lời mời Outlook'}</button>}
+              </div>
+            )
+          })()}
           {ev.description && (
             <div style={css('margin:18px 22px 0;')}>
               <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>Chi tiết</div>
@@ -312,7 +332,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           )}
           <EventComments ev={ev} onChange={(d) => { setEv((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ ...ev, commentCount: d.commentCount }) }} />
           <div style={css('display:flex; align-items:center; gap:12px; padding:18px 22px 20px; margin-top:18px; border-top:1px solid #EEF1F7;')}>
-            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past && ev.isMine && ev.outlook ? 'Sự kiện đã ở trong lịch Outlook của bạn; người bấm Quan tâm nhận lời mời từ bạn và vào chung cuộc họp.' : !ev.past ? 'Bấm Quan tâm để nhận thư mời vào lịch Outlook và email nhắc trước 1 ngày; khi sự kiện đổi giờ, đổi chỗ hay huỷ, lịch của bạn tự cập nhật.' : ''}</div>
+            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{ev.past ? '' : ev.isMine && ev.outlook ? 'Sự kiện đã ở trong lịch Outlook của bạn; người bấm Quan tâm nhận lời mời từ bạn và vào chung cuộc họp.' : ev.invitesOpen ? 'Bấm Quan tâm để nhận lời mời vào lịch Outlook và email nhắc trước 1 ngày; khi sự kiện đổi giờ, đổi chỗ hay huỷ, lịch của bạn tự cập nhật.' : `Bấm Quan tâm để nhận email nhắc trước 1 ngày. Khi đủ ${ev.openAt} người quan tâm và người tổ chức mở sự kiện, bạn nhận lời mời vào lịch Outlook.`}</div>
             {ev.canEdit && <button onClick={remove} style={css(`flex:none; height:32px; padding:0 14px; border:1px solid #F5C9CB; border-radius:999px; background:#fff; color:#D8232A; font:700 12.5px ${FONT}; cursor:pointer;`)}>{ev.isMine ? 'Huỷ sự kiện' : 'Xoá'}</button>}
           </div>
         </>)}
@@ -577,7 +597,7 @@ function EventForm({ initial, onClose, onSaved }) {
           </div>
           <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Phòng họp tầng 8, Pantry tầng 6 hay link Teams" style={css(field)} /></div>
           {canCohost && <div style={css('margin-top:14px;')}>{label('Người đồng tổ chức')}<CohostPicker value={cohosts} onChange={setCohosts} field={field} /></div>}
-          {!editing && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Sự kiện được tạo thành cuộc họp trong lịch Outlook của bạn. Người đồng tổ chức và người bấm Quan tâm sẽ nhận lời mời từ bạn, và bạn xem được ai đồng ý ngay trên trang sự kiện.</div>}
+          {!editing && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Khi có từ 3 người quan tâm, bạn nhận thông báo để gửi lời mời Outlook: sự kiện thành cuộc họp trong lịch của bạn, mọi người quan tâm nhận lời mời từ bạn, ai quan tâm sau được mời tiếp, và bạn xem được ai đồng ý ngay trên trang sự kiện.</div>}
           <div style={css('margin-top:14px;')}>{label('Chi tiết')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Ví dụ: Topic AI sẽ chia sẻ, dành cho ai, cần chuẩn bị gì trước khi đến…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
           {error && <div style={css(`margin-top:10px; font:600 13px ${FONT}; color:#D8232A;`)}>{error}</div>}
         </div>

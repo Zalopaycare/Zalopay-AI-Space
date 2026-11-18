@@ -103,9 +103,17 @@ CREATE TABLE IF NOT EXISTS event_rsvp (
 );
 `)
 
+// Invitations wait for interest: a new event sends none until OPEN_AT people (besides its creator) are
+// interested; then the creator is told and sends them with "Gửi lời mời Outlook" (invites_open = 1), after
+// which everyone interested later is added as they come. ready_notified_at: when the creator was told.
+// Events from before this had their invitations going out already (the column starts at 1 for them).
+if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'invites_open')) db.exec('ALTER TABLE events ADD COLUMN invites_open INTEGER NOT NULL DEFAULT 1')
+if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'ready_notified_at')) db.exec('ALTER TABLE events ADD COLUMN ready_notified_at TEXT')
+const OPEN_AT = 3
+
 const router = express.Router()
 // every column but the cover picture itself (served on its own)
-const COLS = 'id, title, description, starts_at, ends_at, all_day, location, cover_mime, author_id, reminded_at, created_at, edited_at, ol_id, ol_attendees'
+const COLS = 'id, title, description, starts_at, ends_at, all_day, location, cover_mime, author_id, reminded_at, created_at, edited_at, ol_id, ol_attendees, invites_open'
 const byId = (id) => db.prepare(`SELECT ${COLS} FROM events WHERE id = ?`).get(id)
 const DEFAULT_LENGTH_MS = 60 * 60_000
 // an event stays on the rail until it is over: its end time, the end of its day (no time given),
@@ -154,6 +162,8 @@ function shape(e, me) {
     people: ids.slice(0, host || me?.is_admin ? 500 : 8).map((uid) => { const u = userById(uid); return u ? { ...person(u), ...(host || me?.is_admin ? { rsvp: rsvpOf(e.id)[u.email.toLowerCase()] || null } : {}) } : null }).filter(Boolean),
     // a meeting in the creator's Outlook (invitations from them); for the hosts, how the attendees answered
     outlook: !!e.ol_id,
+    // invitations: sent yet (invitesOpen); how many are interested besides the creator, against the OPEN_AT needed
+    invitesOpen: !!e.invites_open, openAt: OPEN_AT, othersInterested: ids.filter((uid) => uid !== e.author_id).length,
     ...(e.ol_id && (host || me?.is_admin) ? { rsvpCounts: rsvpCounts(e.id), outlookInvited: sentAttendees(e).length } : {}),
     commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n,
     createdAt: e.created_at,
@@ -320,7 +330,8 @@ function syncInvite(eventId, userId, baseUrl) {
   if (!e || !user?.email) { if (invited) db.prepare('DELETE FROM event_invites WHERE event_id = ? AND user_id = ?').run(eventId, userId); return }
   const interested = isInterested(eventId, userId)
   // an Outlook meeting: Outlook sends the invitations (outlookAttendees)
-  if (e.ol_id || interested === invited || endOf(e) <= new Date().toISOString()) return
+  // waiting for enough interest (no invitations yet), or an Outlook meeting (Outlook sends them: outlookAttendees)
+  if (!e.invites_open || e.ol_id || interested === invited || endOf(e) <= new Date().toISOString()) return
   const key = `${eventId}:${userId}`
   const times = (recentInvites.get(key) || []).filter((t) => t > Date.now() - 24 * 3600_000)
   if (times.length >= MAX_INVITES_PER_DAY) return // the 10-minute sweep tries again later
@@ -347,7 +358,7 @@ export function syncEventInvites(baseUrl) {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString()
   const missing = db.prepare(`SELECT i.event_id, i.user_id FROM event_interests i JOIN events e ON e.id = i.event_id
     LEFT JOIN event_invites v ON v.event_id = i.event_id AND v.user_id = i.user_id
-    WHERE v.event_id IS NULL AND e.ol_id IS NULL AND e.starts_at >= ? AND i.created_at <= datetime('now', '-2 minutes')`).all(since)
+    WHERE v.event_id IS NULL AND e.ol_id IS NULL AND e.invites_open = 1 AND e.starts_at >= ? AND i.created_at <= datetime('now', '-2 minutes')`).all(since)
   const stale = db.prepare(`SELECT v.event_id, v.user_id FROM event_invites v
     LEFT JOIN event_interests i ON i.event_id = v.event_id AND i.user_id = v.user_id
     WHERE i.event_id IS NULL AND v.sent_at <= datetime('now', '-2 minutes')`).all()
@@ -527,12 +538,11 @@ router.post('/', requireAuth, (req, res) => {
   const cover = decodeCover(req.body?.cover)
   if (cover === false) return res.status(400).json({ error: 'bad_cover', message: 'Ảnh bìa không hợp lệ hoặc lớn hơn 2 MB.' })
   const id = nextId('e')
-  db.prepare('INSERT INTO events (id, title, description, starts_at, ends_at, all_day, location, author_id) VALUES (?,?,?,?,?,?,?,?)')
+  // no invitations yet: they go out once OPEN_AT people are interested and the creator sends them
+  db.prepare('INSERT INTO events (id, title, description, starts_at, ends_at, all_day, location, author_id, invites_open) VALUES (?,?,?,?,?,?,?,?,0)')
     .run(id, f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, req.user.id)
   saveCover(id, cover)
   saveCohosts(req, byId(id), readCohosts(req.body, req.user.email))
-  // the meeting in the creator's Outlook (in the background; the page doesn't wait for Microsoft)
-  outlookCreate(id, appUrl(req)).catch((err) => console.error('[outlook] create failed:', err.message))
   res.status(201).json({ event: shape(byId(id), req.user) })
 })
 
@@ -665,17 +675,45 @@ router.post('/:id/comments/:cid/like', requireAuth, (req, res) => {
   res.json({ comments: commentsOf(e.id, req.user) })
 })
 
+// "Gửi lời mời Outlook": the creator (or an admin) sends the invitations once OPEN_AT people are interested —
+// a meeting in the creator's Outlook with everyone on it, or (no calendar access) the site's own invitations.
+router.post('/:id/open-invites', requireAuth, async (req, res) => {
+  const e = byId(req.params.id)
+  if (!e) return res.status(404).json({ error: 'not_found' })
+  if (e.author_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'not_owner' })
+  if (endOf(e) <= new Date().toISOString()) return res.status(400).json({ error: 'past', message: 'Sự kiện đã diễn ra.' })
+  const others = interestedIds(e.id).filter((uid) => uid !== e.author_id).length
+  if (!e.invites_open && others < OPEN_AT) return res.status(400).json({ error: 'not_enough', message: `Cần ít nhất ${OPEN_AT} người quan tâm.` })
+  db.prepare('UPDATE events SET invites_open = 1 WHERE id = ?').run(e.id)
+  const base = appUrl(req)
+  try { await outlookCreate(e.id, base) } catch (err) { console.error('[outlook] create failed:', err.message) }
+  // no Outlook meeting (no calendar access): each person gets the site's invitation instead
+  if (!byId(e.id).ol_id) for (const uid of interestedIds(e.id)) if (uid !== e.author_id) queueInvite(e.id, uid, base)
+  res.json({ event: shape(byId(e.id), req.user) })
+})
+
 router.post('/:id/interest', requireAuth, (req, res) => {
   const e = byId(req.params.id)
   if (!e) return res.status(404).json({ error: 'not_found' })
   const had = db.prepare('SELECT 1 FROM event_interests WHERE event_id = ? AND user_id = ?').get(e.id, req.user.id)
   if (had) db.prepare('DELETE FROM event_interests WHERE event_id = ? AND user_id = ?').run(e.id, req.user.id)
   else db.prepare('INSERT INTO event_interests (event_id, user_id) VALUES (?, ?)').run(e.id, req.user.id)
-  // the Outlook invitation (or, taken back, its cancellation)
+  // the Outlook invitation (or, taken back, its cancellation), once invitations are open
   queueInvite(e.id, req.user.id, appUrl(req))
   if (e.ol_id) queueOutlook(e.id)
   // the host: one notification per session, kept up to date
   const n = interestedIds(e.id).length
+  // enough people now: the creator is told (once) they can send the Outlook invitations
+  const others = interestedIds(e.id).filter((uid) => uid !== e.author_id).length
+  if (!e.invites_open && others >= OPEN_AT && endOf(e) > new Date().toISOString()) {
+    const fresh = db.prepare("UPDATE events SET ready_notified_at = datetime('now') WHERE id = ? AND ready_notified_at IS NULL").run(e.id)
+    const creator = userById(e.author_id)
+    if (fresh.changes && creator) {
+      const href = `/?event=${encodeURIComponent(e.id)}`
+      notify(creator.email, { kind: 'event', text: `Sự kiện "${e.title}" đã đủ ${OPEN_AT} người quan tâm. Mở sự kiện để gửi lời mời Outlook cho mọi người.`, href, actor: '' })
+      sendMail({ to: creator.email, subject: `Đủ ${OPEN_AT} người quan tâm: ${e.title}`, text: `Sự kiện "${e.title}" (${whenText(e)}) đã có ${others} người quan tâm, đủ điều kiện để mở.\n\nMở sự kiện và bấm "Gửi lời mời Outlook": sự kiện sẽ được tạo trong lịch Outlook của bạn và mọi người quan tâm nhận lời mời. Ai quan tâm sau đó cũng được mời tiếp.\n\nMở sự kiện: ${appUrl(req)}${href}` }).catch(() => {})
+    }
+  }
   for (const to of had ? [] : hostEmails(e)) {
     if (to === req.user.email.toLowerCase()) continue
     notifyOnce(to, 'event', { ref: 'event-interest:' + e.id, text: n === 1 ? `${domainName(req.user.email, req.user.name)} quan tâm sự kiện "${e.title}" của bạn` : `${n} người quan tâm sự kiện "${e.title}" của bạn`, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })

@@ -40,6 +40,7 @@ export const api = {
   adminAccess: () => request('/admin/access'),
   listEvents: () => request('/events'),
   myEvents: () => request('/events/mine'),
+  openEventInvites: (id) => request(`/events/${encodeURIComponent(id)}/open-invites`, { method: 'POST' }),
   getEvent: (id) => request(`/events/${encodeURIComponent(id)}`),
   createEvent: (payload) => request('/events', { method: 'POST', body: JSON.stringify(payload) }),
   updateEvent: (id, payload) => request(`/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
