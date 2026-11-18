@@ -86,3 +86,43 @@ export async function graphTokenFor(userId) {
   }
   return refreshing.get(userId)
 }
+
+// ---- Outlook calendar (events become meetings in the host's calendar: outlook.js) ----
+export const CALENDAR_SCOPE = 'https://graph.microsoft.com/Calendars.ReadWrite'
+const scpOf = (jwt) => { try { return String(JSON.parse(Buffer.from(String(jwt).split('.')[1], 'base64url').toString()).scp || '') } catch { return '' } }
+const calFailedAt = new Map()
+
+/**
+ * A delegated token that may write this person's Outlook calendar, or null. Sign-in doesn't ask for it:
+ * the admins consented to Calendars.ReadWrite for the whole company, so the refresh token from sign-in is
+ * redeemed for it when needed (no new sign-in). A refusal is remembered for 30 minutes; the token used for
+ * the directory search is left alone either way.
+ */
+export async function calendarTokenFor(userId) {
+  const row = db.prepare('SELECT * FROM graph_tokens WHERE user_id = ?').get(userId)
+  if (!row) return null
+  const access = open(row.access_token)
+  if (access && row.expires_at > Date.now() + 2 * 60_000 && /Calendars\.ReadWrite/i.test(scpOf(access))) return access
+  if (calFailedAt.get(userId) > Date.now() - 30 * 60_000) return null
+  const refresh = open(row.refresh_token)
+  if (!refresh) return null
+  const key = 'cal:' + userId
+  if (!refreshing.has(key)) {
+    refreshing.set(key, (async () => {
+      try {
+        const scope = ['openid profile email offline_access', String(row.scope || '').split(/\s+/).filter((s) => /^https:\/\/graph\.microsoft\.com\//i.test(s) && !/Calendars\./i.test(s)).join(' '), CALENDAR_SCOPE].filter(Boolean).join(' ')
+        const tokens = await client.refreshTokenGrant(await getOidcConfig(), refresh, { scope })
+        if (!/Calendars\.ReadWrite/i.test(scpOf(tokens.access_token))) throw new Error('calendar scope not granted')
+        saveGraphTokens(userId, tokens)
+        return tokens.access_token
+      } catch (e) {
+        console.error('[outlook] no calendar access for user', userId, e.error || e.message)
+        calFailedAt.set(userId, Date.now())
+        return null
+      } finally {
+        refreshing.delete(key)
+      }
+    })())
+  }
+  return refreshing.get(key)
+}

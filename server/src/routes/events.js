@@ -5,6 +5,7 @@ import { colorOf, avatarUrlOf } from '../avatarColors.js'
 import { domainName, initialsOf, appUrl, notifyMentions, handleOf } from '../mentions.js'
 import { notify, notifyOnce, notifyParticipants } from '../notifications.js'
 import { sendMail, senderAddress } from '../mailer.js'
+import { outlookEnabled, createMeeting, updateMeeting, cancelMeeting, meetingResponses } from '../outlook.js'
 import { removalCheck, afterRemoval } from '../moderation.js'
 
 // "Sự kiện": anything happening offline that anyone can post (no review), Facebook-event style, shown in
@@ -74,9 +75,24 @@ CREATE TABLE IF NOT EXISTS event_invites (
 );
 `)
 
+// Outlook meeting (outlook.js): ol_id = the meeting in the creator's calendar, ol_attendees = the addresses
+// last sent to it (JSON), ol_checked_at = when the answers were last read; event_rsvp = those answers
+for (const [col, type] of [['ol_id', 'TEXT'], ['ol_attendees', 'TEXT'], ['ol_checked_at', 'TEXT']]) {
+  if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === col)) db.exec(`ALTER TABLE events ADD COLUMN ${col} ${type}`)
+}
+db.exec(`
+CREATE TABLE IF NOT EXISTS event_rsvp (
+  event_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  status TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (event_id, email)
+);
+`)
+
 const router = express.Router()
 // every column but the cover picture itself (served on its own)
-const COLS = 'id, title, description, starts_at, ends_at, all_day, location, cover_mime, author_id, reminded_at, created_at, edited_at'
+const COLS = 'id, title, description, starts_at, ends_at, all_day, location, cover_mime, author_id, reminded_at, created_at, edited_at, ol_id, ol_attendees'
 const byId = (id) => db.prepare(`SELECT ${COLS} FROM events WHERE id = ?`).get(id)
 const DEFAULT_LENGTH_MS = 60 * 60_000
 // an event stays on the rail until it is over: its end time, the end of its day (no time given),
@@ -94,6 +110,17 @@ const cohostPerson = (r) => { const u = userByEmail(r.email); return u ? { ...pe
 const hostEmails = (e) => [userById(e.author_id)?.email, ...cohostRows(e.id).map((r) => r.email)].filter(Boolean).map((x) => x.toLowerCase())
 const isHost = (e, user) => !!user && hostEmails(e).includes(String(user.email || '').toLowerCase())
 
+const rsvpOf = (id) => Object.fromEntries(db.prepare('SELECT email, status FROM event_rsvp WHERE event_id = ?').all(id).map((r) => [r.email, r.status]))
+function rsvpCounts(id) {
+  const n = { accepted: 0, tentative: 0, declined: 0 }
+  for (const { status } of db.prepare('SELECT status FROM event_rsvp WHERE event_id = ?').all(id)) {
+    if (status === 'accepted') n.accepted++
+    else if (status === 'tentativelyAccepted') n.tentative++
+    else if (status === 'declined') n.declined++
+  }
+  return n
+}
+
 function shape(e, me) {
   const ids = interestedIds(e.id)
   const mine = !!me && e.author_id === me.id
@@ -106,8 +133,11 @@ function shape(e, me) {
     // canEditCohosts: may change who the co-hosts are
     isMine: mine, isHost: host, canEdit: mine || !!me?.is_admin, canEditCohosts: mine || !!me?.is_admin,
     interestCount: ids.length, interested: !!me && ids.includes(me.id),
-    // who's coming: the hosts and the admins see everyone; others see a few faces
-    people: ids.slice(0, host || me?.is_admin ? 500 : 8).map((uid) => person(userById(uid))).filter(Boolean),
+    // who's coming: the hosts and the admins see everyone (with their answer on Outlook); others see a few faces
+    people: ids.slice(0, host || me?.is_admin ? 500 : 8).map((uid) => { const u = userById(uid); return u ? { ...person(u), ...(host || me?.is_admin ? { rsvp: rsvpOf(e.id)[u.email.toLowerCase()] || null } : {}) } : null }).filter(Boolean),
+    // a meeting in the creator's Outlook (invitations from them); for the hosts, how the attendees answered
+    outlook: !!e.ol_id,
+    ...(e.ol_id && (host || me?.is_admin) ? { rsvpCounts: rsvpCounts(e.id) } : {}),
     commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n,
     createdAt: e.created_at,
   }
@@ -259,7 +289,8 @@ function syncInvite(eventId, userId, baseUrl) {
   const invited = isInvited(eventId, userId)
   if (!e || !user?.email) { if (invited) db.prepare('DELETE FROM event_invites WHERE event_id = ? AND user_id = ?').run(eventId, userId); return }
   const interested = isInterested(eventId, userId)
-  if (interested === invited || endOf(e) <= new Date().toISOString()) return
+  // an Outlook meeting: Outlook sends the invitations (outlookAttendees)
+  if (e.ol_id || interested === invited || endOf(e) <= new Date().toISOString()) return
   const key = `${eventId}:${userId}`
   const times = (recentInvites.get(key) || []).filter((t) => t > Date.now() - 24 * 3600_000)
   if (times.length >= MAX_INVITES_PER_DAY) return // the 10-minute sweep tries again later
@@ -286,11 +317,106 @@ export function syncEventInvites(baseUrl) {
   const since = new Date(Date.now() - 24 * 3600_000).toISOString()
   const missing = db.prepare(`SELECT i.event_id, i.user_id FROM event_interests i JOIN events e ON e.id = i.event_id
     LEFT JOIN event_invites v ON v.event_id = i.event_id AND v.user_id = i.user_id
-    WHERE v.event_id IS NULL AND e.starts_at >= ? AND i.created_at <= datetime('now', '-2 minutes')`).all(since)
+    WHERE v.event_id IS NULL AND e.ol_id IS NULL AND e.starts_at >= ? AND i.created_at <= datetime('now', '-2 minutes')`).all(since)
   const stale = db.prepare(`SELECT v.event_id, v.user_id FROM event_invites v
     LEFT JOIN event_interests i ON i.event_id = v.event_id AND i.user_id = v.user_id
     WHERE i.event_id IS NULL AND v.sent_at <= datetime('now', '-2 minutes')`).all()
   for (const r of [...missing, ...stale]) if (!pendingInvites.has(`${r.event_id}:${r.user_id}`)) syncInvite(r.event_id, r.user_id, baseUrl)
+}
+
+// ---- Outlook meetings (outlook.js) ----
+// A new event becomes a meeting in its creator's Outlook calendar, made through their own Microsoft
+// account; the co-hosts and everyone interested are its attendees, so Outlook sends the invitations (from
+// the creator), the updates and the cancellations, and records who accepted. Kept in step half a minute
+// after the last "Quan tâm" (one change for several clicks). Events made before this, or whose creator's
+// calendar can't be reached, keep the site's own .ics invitations above.
+const escHtml = (v) => String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+const utcTime = (iso) => ({ dateTime: new Date(iso).toISOString().replace(/\.\d{3}Z$/, ''), timeZone: 'UTC' })
+function meetingOf(e, baseUrl) {
+  const link = `${baseUrl}/?event=${encodeURIComponent(e.id)}`
+  const day = vn(e.starts_at)
+  const d = (x) => `${x.getUTCFullYear()}-${p2(x.getUTCMonth() + 1)}-${p2(x.getUTCDate())}T00:00:00`
+  const when = e.all_day
+    ? { isAllDay: true, start: { dateTime: d(day), timeZone: 'SE Asia Standard Time' }, end: { dateTime: d(new Date(day.getTime() + 24 * 3600_000)), timeZone: 'SE Asia Standard Time' } }
+    : { isAllDay: false, start: utcTime(e.starts_at), end: utcTime(endOf(e)) }
+  const desc = escHtml(e.description).replace(/\n/g, '<br>')
+  return {
+    subject: e.title,
+    body: { contentType: 'HTML', content: `${desc ? desc + '<br><br>' : ''}Sự kiện trên Zalopay AI Space: <a href="${escHtml(link)}">${escHtml(link)}</a>` },
+    ...when,
+    location: { displayName: e.location },
+    isReminderOn: true, reminderMinutesBeforeStart: e.all_day ? 900 : 15,
+    responseRequested: true, allowNewTimeProposals: false, showAs: e.all_day ? 'free' : 'busy',
+  }
+}
+/** Who should be on the meeting: the co-hosts and everyone interested, not the creator (it's their meeting). */
+function wantedAttendees(e) {
+  const organizer = String(userById(e.author_id)?.email || '').toLowerCase()
+  const list = [...cohostRows(e.id).map((r) => r.email), ...interestedIds(e.id).map((uid) => userById(uid)?.email)]
+  return [...new Set(list.filter(Boolean).map((x) => x.toLowerCase()))].filter((x) => x !== organizer)
+}
+const attendeesOf = (emails) => emails.map((address) => ({ emailAddress: { address }, type: 'required' }))
+const sentAttendees = (e) => { try { return JSON.parse(e.ol_attendees || '[]') } catch { return [] } }
+
+/** Put a new event in its creator's Outlook (with whoever is already on it). */
+async function outlookCreate(eventId, baseUrl) {
+  const e = byId(eventId)
+  if (!e || e.ol_id || !outlookEnabled() || endOf(e) <= new Date().toISOString()) return
+  const wanted = wantedAttendees(e)
+  const id = await createMeeting(e.author_id, { ...meetingOf(e, baseUrl), attendees: attendeesOf(wanted) }, e.id)
+  if (id) db.prepare('UPDATE events SET ol_id = ?, ol_attendees = ? WHERE id = ?').run(id, JSON.stringify(wanted), e.id)
+}
+// the meeting is gone from the creator's calendar (they deleted it in Outlook): back to the .ics invitations
+const dropMeeting = (id) => { db.prepare('UPDATE events SET ol_id = NULL, ol_attendees = NULL WHERE id = ?').run(id); db.prepare('DELETE FROM event_rsvp WHERE event_id = ?').run(id) }
+/** Send the meeting its new details (time, place, name…); Outlook tells the attendees. */
+async function outlookUpdate(eventId, baseUrl) {
+  const e = byId(eventId)
+  if (!e?.ol_id) return
+  const r = await updateMeeting(e.author_id, e.ol_id, meetingOf(e, baseUrl))
+  if (r === 'gone') dropMeeting(e.id)
+}
+/** Bring the attendee list in line with the co-hosts and "Quan tâm"; Outlook invites the new ones and cancels for the ones gone. */
+async function outlookAttendees(eventId) {
+  const e = byId(eventId)
+  if (!e?.ol_id || endOf(e) <= new Date().toISOString()) return
+  const wanted = wantedAttendees(e)
+  const sent = sentAttendees(e)
+  if (wanted.length === sent.length && wanted.every((x) => sent.includes(x))) return
+  const r = await updateMeeting(e.author_id, e.ol_id, { attendees: attendeesOf(wanted) })
+  if (r === true) {
+    db.prepare('UPDATE events SET ol_attendees = ? WHERE id = ?').run(JSON.stringify(wanted), e.id)
+    for (const x of sent.filter((y) => !wanted.includes(y))) db.prepare('DELETE FROM event_rsvp WHERE event_id = ? AND email = ?').run(e.id, x)
+  } else if (r === 'gone') dropMeeting(e.id)
+}
+const olTimers = new Map()
+function queueOutlook(eventId) {
+  clearTimeout(olTimers.get(eventId))
+  olTimers.set(eventId, setTimeout(() => { olTimers.delete(eventId); outlookAttendees(eventId).catch((err) => console.error('[outlook] attendees failed:', err.message)) }, INVITE_DELAY_MS))
+}
+/** Read who accepted / declined from the meeting. */
+async function outlookResponses(eventId) {
+  const e = byId(eventId)
+  if (!e?.ol_id) return
+  db.prepare("UPDATE events SET ol_checked_at = datetime('now') WHERE id = ?").run(e.id)
+  const list = await meetingResponses(e.author_id, e.ol_id)
+  if (list === 'gone') return dropMeeting(e.id)
+  if (!list) return
+  db.transaction(() => {
+    db.prepare('DELETE FROM event_rsvp WHERE event_id = ?').run(e.id)
+    const ins = db.prepare('INSERT INTO event_rsvp (event_id, email, status) VALUES (?, ?, ?)')
+    for (const a of list) ins.run(e.id, a.email, a.status)
+  })()
+}
+/** Every 10 minutes: the upcoming meetings' attendees kept in step, and their answers read. */
+export async function syncOutlookMeetings() {
+  if (!outlookEnabled()) return
+  const now = new Date().toISOString()
+  const rows = db.prepare(`SELECT ${COLS} FROM events WHERE ol_id IS NOT NULL AND starts_at >= ?`).all(new Date(Date.now() - 24 * 3600_000).toISOString())
+  for (const e of rows) {
+    if (endOf(e) <= now || olTimers.has(e.id)) continue
+    await outlookAttendees(e.id).catch(() => {})
+    await outlookResponses(e.id).catch(() => {})
+  }
 }
 
 const emailsOfInterested = (id, exceptId) => interestedIds(id).filter((uid) => uid !== exceptId).map((uid) => userById(uid)?.email).filter(Boolean)
@@ -302,9 +428,15 @@ function tellInterested(req, e, { text, subject, body, exceptId, method, calenda
   const link = `${base}/?event=${encodeURIComponent(e.id)}`
   const invited = new Set(method ? invitedIds(e.id) : [])
   const interested = interestedIds(e.id)
+  // on the Outlook meeting: Outlook itself sends them the update / cancellation
+  const onMeeting = new Set(e.ol_id ? sentAttendees(e) : [])
   for (const uid of new Set([...interested, ...invited])) {
     const u = userById(uid)
     if (!u?.email) continue
+    if (onMeeting.has(u.email.toLowerCase())) {
+      if (uid !== exceptId && !calendarOnly) notify(u.email, { kind: 'event', text, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
+      continue
+    }
     const calendar = invited.has(uid)
     if (!calendar && (uid === exceptId || calendarOnly)) continue
     if (uid !== exceptId && !calendarOnly && interested.includes(uid)) notify(u.email, { kind: 'event', text, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
@@ -327,6 +459,11 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const e = byId(req.params.id)
   if (!e) return res.status(404).json({ error: 'not_found' })
+  // a host looking: read the latest answers from Outlook (at most every 2 minutes; shown on the next look)
+  if (e.ol_id && (isHost(e, req.user) || req.user?.is_admin)) {
+    const fresh = db.prepare("SELECT 1 FROM events WHERE id = ? AND ol_checked_at > datetime('now', '-2 minutes')").get(e.id)
+    if (!fresh) outlookResponses(e.id).catch(() => {})
+  }
   res.json({ event: { ...shape(e, req.user), past: endOf(e) <= new Date().toISOString(), comments: commentsOf(e.id, req.user) } })
 })
 
@@ -341,6 +478,8 @@ router.post('/', requireAuth, (req, res) => {
     .run(id, f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, req.user.id)
   saveCover(id, cover)
   saveCohosts(req, byId(id), readCohosts(req.body, req.user.email))
+  // the meeting in the creator's Outlook (in the background; the page doesn't wait for Microsoft)
+  outlookCreate(id, appUrl(req)).catch((err) => console.error('[outlook] create failed:', err.message))
   res.status(201).json({ event: shape(byId(id), req.user) })
 })
 
@@ -360,6 +499,10 @@ router.patch('/:id', requireAuth, (req, res) => {
   // only the creator (and the admins) choose the co-hosts
   if (e.author_id === req.user.id || req.user.is_admin) saveCohosts(req, byId(e.id), readCohosts(req.body, userById(e.author_id)?.email))
   const after = byId(e.id)
+  if (after.ol_id) {
+    const base = appUrl(req)
+    ;(async () => { if (moved || f.title !== e.title || f.description !== e.description) await outlookUpdate(e.id, base); await outlookAttendees(e.id) })().catch((err) => console.error('[outlook] update failed:', err.message))
+  }
   if (moved) {
     tellInterested(req, after, {
       exceptId: req.user.id, method: 'REQUEST',
@@ -385,6 +528,7 @@ router.delete('/:id', requireAuth, (req, res) => {
   if (block) return res.status(block.status).json({ error: block.error })
   // only an upcoming session is "cancelled"; a past one just goes
   if (endOf(e) > new Date().toISOString()) {
+    if (e.ol_id) cancelMeeting(e.author_id, e.ol_id, `Sự kiện "${e.title}" đã được huỷ trên Zalopay AI Space.`).catch(() => {})
     tellInterested(req, e, {
       exceptId: req.user.id, method: 'CANCEL',
       text: `Sự kiện "${e.title}" (${whenText(e)}) đã huỷ`,
@@ -397,6 +541,7 @@ router.delete('/:id', requireAuth, (req, res) => {
     db.prepare('DELETE FROM event_comments WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM event_invites WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM event_cohosts WHERE event_id = ?').run(e.id)
+    db.prepare('DELETE FROM event_rsvp WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM events WHERE id = ?').run(e.id)
   })()
   afterRemoval(req, { authorId: e.author_id, what: 'sự kiện', title: e.title, content: e.description || e.title })
@@ -445,6 +590,7 @@ router.post('/:id/interest', requireAuth, (req, res) => {
   else db.prepare('INSERT INTO event_interests (event_id, user_id) VALUES (?, ?)').run(e.id, req.user.id)
   // the Outlook invitation (or, taken back, its cancellation)
   queueInvite(e.id, req.user.id, appUrl(req))
+  if (e.ol_id) queueOutlook(e.id)
   // the host: one notification per session, kept up to date
   const n = interestedIds(e.id).length
   for (const to of had ? [] : hostEmails(e)) {

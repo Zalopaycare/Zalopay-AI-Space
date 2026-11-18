@@ -15,7 +15,7 @@ import adminRoutes from './routes/admin.js'
 import { reportRoutes } from './reports.js'
 import showcaseRoutes from './routes/showcase.js'
 import chatRoutes from './routes/chat.js'
-import eventRoutes, { sendEventReminders, syncEventInvites } from './routes/events.js'
+import eventRoutes, { sendEventReminders, syncEventInvites, syncOutlookMeetings } from './routes/events.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STATIC_DIR = process.env.STATIC_DIR || path.join(__dirname, '..', 'public')
@@ -77,6 +77,7 @@ const remind = () => {
   const base = String(process.env.APP_URL || '').replace(/\/+$/, '')
   try { sendEventReminders(base) } catch (e) { console.error('[events] reminders failed:', e.message) }
   try { syncEventInvites(base) } catch (e) { console.error('[events] invitations failed:', e.message) }
+  syncOutlookMeetings().catch((e) => console.error('[events] outlook sync failed:', e.message))
 }
 setInterval(remind, 10 * 60_000)
 setTimeout(remind, 30_000)

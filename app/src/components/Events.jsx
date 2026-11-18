@@ -101,6 +101,8 @@ function ShareButton({ ev, height = 36, onDark = false }) {
   )
 }
 
+// an attendee's answer on Outlook: mark, words, colour
+const RSVP = { accepted: ['✓', 'Đồng ý trên Outlook', '#00893F'], tentativelyAccepted: ['?', 'Có thể tham gia', '#B45300'], declined: ['✕', 'Từ chối trên Outlook', '#D8232A'] }
 const countLabel = (n) => (n ? `${n} người quan tâm` : 'Chưa ai quan tâm')
 /** "3 người quan tâm · 2 bình luận" */
 const statsLabel = (ev) => [countLabel(ev.interestCount), ev.commentCount ? `${ev.commentCount} bình luận` : ''].filter(Boolean).join(' · ')
@@ -314,9 +316,15 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           {ev.people.length > 0 && (
             <div style={css('margin:18px 22px 0;')}>
               <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>Người quan tâm</div>
+              {/* the hosts: how people answered the Outlook invitation */}
+              {ev.rsvpCounts && (
+                <div style={css('margin-top:4px; font:400 12.5px/1.5 var(--zp-font-text); color:#64748b;')}>
+                  Trên Outlook: <b style={css('color:#00893F;')}>{ev.rsvpCounts.accepted} đồng ý</b> · {ev.rsvpCounts.tentative} có thể · {ev.rsvpCounts.declined} từ chối
+                </div>
+              )}
               <div style={css('margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;')}>
                 {ev.people.map((p) => (
-                  <span key={p.id} title={p.fullName || p.name} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px 0 4px; border-radius:999px; background:#F1F4FA; font:600 12px var(--zp-font-text); color:#334155;')}><Avatar user={p} size={20} fontSize={8} />{p.name}</span>
+                  <span key={p.id} title={(p.fullName || p.name) + (RSVP[p.rsvp] ? ' · ' + RSVP[p.rsvp][1] : '')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px 0 4px; border-radius:999px; background:#F1F4FA; font:600 12px var(--zp-font-text); color:#334155;')}><Avatar user={p} size={20} fontSize={8} />{p.name}{RSVP[p.rsvp] && <span style={css(`font-weight:800; color:${RSVP[p.rsvp][2]};`)}>{RSVP[p.rsvp][0]}</span>}</span>
                 ))}
                 {ev.interestCount > ev.people.length && <span style={css('display:inline-flex; align-items:center; height:28px; padding:0 10px; font:600 12px var(--zp-font-text); color:#64748b;')}>+{ev.interestCount - ev.people.length} người khác</span>}
               </div>
@@ -535,6 +543,7 @@ function EventForm({ initial, onClose, onSaved }) {
           </div>
           <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Phòng họp tầng 8, Pantry tầng 6 hay link Teams" style={css(field)} /></div>
           {canCohost && <div style={css('margin-top:14px;')}>{label('Người đồng tổ chức')}<CohostPicker value={cohosts} onChange={setCohosts} field={field} /></div>}
+          {!editing && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Sự kiện được tạo thành cuộc họp trong lịch Outlook của bạn. Người đồng tổ chức và người bấm Quan tâm sẽ nhận lời mời từ bạn, và bạn xem được ai đồng ý ngay trên trang sự kiện.</div>}
           <div style={css('margin-top:14px;')}>{label('Chi tiết')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Ví dụ: Topic AI sẽ chia sẻ, dành cho ai, cần chuẩn bị gì trước khi đến…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
           {error && <div style={css(`margin-top:10px; font:600 13px ${FONT}; color:#D8232A;`)}>{error}</div>}
         </div>
