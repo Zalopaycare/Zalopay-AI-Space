@@ -11,6 +11,8 @@ import RichText from './RichText.jsx'
 // A tile opens a popup with the booth's Bài toán and Giải pháp as the exhibition wrote them. Its owners
 // get "Bổ sung thông tin" instead of "Quan tâm", straight to the share form.
 // The booth also has a page of its own (/use-cases/ex6), where notifications and invites link to.
+// `written`: use cases that already have their full write-up (library cards), listed first in the same
+// tiles; one opens its page ("Xem Use Case").
 
 
 function Star({ on }) {
@@ -102,11 +104,11 @@ export function BoothInterest({ p, t, requireLogin }) {
   )
 }
 
-export default function PendingCases({ items, t, requireLogin }) {
+export default function PendingCases({ items, written = [], t, requireLogin }) {
   const [, setTick] = useState(0)
   const [busy, setBusy] = useState(null)
   const [shown, setShown] = useState(null) // the booth whose popup is open
-  if (!items.length) return null
+  if (!items.length && !written.length) return null
 
   const toggle = (p) => requireLogin(() => {
     if (busy) return
@@ -121,10 +123,36 @@ export default function PendingCases({ items, t, requireLogin }) {
     <section style={css('margin-top:28px;')}>
       <div style={css('display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px;')}>
         <h2 style={css('margin:0; font-size:18px; font-weight:800; letter-spacing:-.2px; color:#fff;')}>{t('Use case từ AI Exhibition 2026')}</h2>
-        <span style={css('font-size:12.5px; color:#8fa6d8;')}>{items.length}</span>
+        <span style={css('font-size:12.5px; color:#8fa6d8;')}>{items.length + written.length}</span>
       </div>
-      <p style={css('margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Use case mang về từ AI Exhibition. Bấm "Quan tâm" để team nhận thông báo và đăng bài chi tiết lên AI Space.')}</p>
+      <p style={css('margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#a9b8dc;')}>{t('Use case mang về từ AI Exhibition. Use case chưa có bài chi tiết: bấm "Quan tâm" để team nhận thông báo và đăng bài lên AI Space.')}</p>
       <div className="zp-pending-grid">
+        {written.map((c) => (
+          <div
+            key={c.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => c.onOpen()}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.onOpen() } }}
+            className={hoverClass(CARD_HOVER)}
+            style={css('display:flex; align-items:flex-start; gap:12px; padding:12px 12px 12px 14px; border-radius:16px; background:#F8FAFE; border:1px solid transparent; cursor:pointer; transition:transform .18s ease, border-color .16s ease, box-shadow .16s ease;')}
+          >
+            <div style={css('flex:1; min-width:0; display:flex; flex-direction:column; align-self:stretch;')}>
+              <div style={css('font-size:13.5px; font-weight:800; line-height:1.35; color:#0F172A; text-wrap:pretty;')}>{c.title}</div>
+              {(c.byline || c.author) && (
+                <div style={css('margin-top:3px; font-size:12px; line-height:1.45; color:#5B6B82;')}>
+                  <span style={css('font-weight:600; color:#3A4757;')}>Owner:</span> {c.byline || c.author}
+                </div>
+              )}
+              <div style={css('display:flex; align-items:flex-end; justify-content:flex-end; gap:8px; margin-top:auto; padding-top:8px;')}>
+                <span className={hoverClass('gap:9px;')} style={css('flex:none; display:inline-flex; align-items:center; gap:6px; height:30px; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
+                  {t('Xem Use Case')}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
         {items.map((p) => {
           return (
             <div

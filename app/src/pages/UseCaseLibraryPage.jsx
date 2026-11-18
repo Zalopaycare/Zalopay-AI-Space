@@ -647,8 +647,12 @@ export default function UseCaseLibraryPage() {
   // kind, so any of those filters hides them.
   const pendingList = (libTool || libTopic || libKind || libGroup) ? [] : pendingCases.filter((p) =>
     (!libCat || categoryOf(p.category) === libCat) && (!q || fold([p.title, p.team, p.label, p.category, ...(p.members || [])].join(' ')).includes(q)))
-  // every use case on one page (no paging while the library is small)
-  const libCards = libCases.map(mapCard)
+  // every use case on one page (no paging while the library is small). Only Zalopay Agent Base (c4) keeps its
+  // big card up top; every other written-up use case is listed with the AI Exhibition tiles below.
+  const allCards = libCases.map(mapCard)
+  const pinnedTop = (c) => c.id === 'c4' || fold(c.title || '').includes('zalopay agent base')
+  const libCards = allCards.filter(pinnedTop)
+  const writtenBelow = allCards.filter((c) => !pinnedTop(c))
   const activeFilterCount = [libCat, libTopic, libTool, libGroup, libKind].filter(Boolean).length
 
   // every Chủ đề the share form offers, in its order (an empty one shows 0), so the two lists match
@@ -1012,7 +1016,7 @@ export default function UseCaseLibraryPage() {
               )}
 
             <div id="lib-grid">
-              {libCards.length === 0 && pendingList.length === 0 && (
+              {allCards.length === 0 && pendingList.length === 0 && (
                 <div style={css('padding:74px 0; text-align:center; color:#8a8a9e; font-size:15px;')}>{t('Không tìm thấy use case phù hợp. Thử đổi bộ lọc hoặc từ khóa khác nhé.')}</div>
               )}
 
@@ -1086,7 +1090,7 @@ export default function UseCaseLibraryPage() {
                 </div>
               )}
 
-              <PendingCases items={pendingList} t={t} requireLogin={requireLogin} />
+              <PendingCases items={pendingList} written={writtenBelow} t={t} requireLogin={requireLogin} />
             </div>
           </div>
         </section>
