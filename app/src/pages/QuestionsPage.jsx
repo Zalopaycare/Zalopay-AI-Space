@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import AnonTag from '../components/AnonTag.jsx'
-import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
+import { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import FileLinks from '../components/FileLinks.jsx'
 import CardActions from '../components/CardActions.jsx'
 import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
@@ -131,9 +131,9 @@ export default function QuestionsPage() {
   const [askTopicsSel, setAskTopicsSel] = useState([])
   const [askFiles, setAskFiles] = useState([]) // [{ name, size, dataUrl }] — uploaded with the question
   const [askAnon, setAskAnon] = useState(false)
-  const [ansAnon, setAnsAnon] = useState(false) // answer boxes: post the next answer anonymously
   // One switch for everything you write under a question: answers, comments and replies.
-  const anonOpts = () => ({ anonymous: ansAnon })
+  // answers and comments go up under your name (anonymous posting was taken off the site)
+  const anonOpts = () => ({})
   const [askImages, setAskImages] = useState([]) // [{name, dataUrl}] — up to MAX_ASK_IMAGES, uploaded with the question
   const [askKeep, setAskKeep] = useState({ images: [], files: [] }) // editing: the attachments already posted that stay
   const [askDraftSaved, setAskDraftSaved] = useState(false)
@@ -147,12 +147,6 @@ export default function QuestionsPage() {
   const askDocInputRef = useRef(null)
 
   const patch = (id, updated) => setQuestions((qs) => qs.map((q) => (q.id === id ? updated : q)))
-  // In your own anonymous thread, what you write under it starts out anonymous too (one slip would
-  // put your real name right under your anonymous post); switched off, a line in red says so.
-  const detailRaw = detailId ? questions.find((q) => q.id === detailId) : null
-  const ownAnonThread = !!(detailRaw && detailRaw.anonymous && user && detailRaw.authorId === user.id)
-  useEffect(() => { setAnsAnon(ownAnonThread) }, [detailId, ownAnonThread])
-  const anonWarn = ownAnonThread ? 'Bạn đang bình luận bằng tên thật trong post ẩn danh của mình.' : ''
 
   const reload = () => api.listQuestions().then((d) => { setQuestions(d.questions); setLoaded(true) }).catch(() => setLoaded(true))
   // Again when the signed-in user changes their photo or anonymous name, so their own posts pick it up at once.
@@ -618,7 +612,6 @@ export default function QuestionsPage() {
                             <PendingAttachments files={att.files('ans:' + q.id)} onRemove={(k) => att.remove('ans:' + q.id, k)} error={att.errorFor('ans:' + q.id)} />
                             {/* one row: anonymous switch on the left, attach + Đăng on the right; the mention note small under it */}
                             <div style={css('display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;')}>
-                              <AnonToggle compact on={ansAnon} onChange={setAnsAnon} warn={anonWarn} label="Bình luận ẩn danh" />
                               <span style={{ marginLeft: 'auto' }}></span>
                               <AttachButton onFiles={(fl) => att.add('ans:' + q.id, fl)} size={36} />
                               <button onClick={q.onPostReply} style={css(` height:36px; padding:0 18px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${q.replyOpacity};`)}>{t('Gửi')}</button>
@@ -734,7 +727,6 @@ export default function QuestionsPage() {
                                           )}
                                           {commentReplyTarget?.answerId === a.id && commentReplyTarget?.parentId === c.id && (<>
                                             <div style={css('margin-left:70px;')}><PendingAttachments files={att.files('rep:' + a.id + ':' + c.id)} onRemove={(i) => att.remove('rep:' + a.id + ':' + c.id, i)} error={att.errorFor('rep:' + a.id + ':' + c.id)} /></div>
-                                            <div style={css('margin:6px 0 0 70px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} warn={anonWarn} label="Bình luận ẩn danh" /></div>
                                           </>)}
                                         </div>
                                       )
@@ -761,7 +753,6 @@ export default function QuestionsPage() {
                                       <button onClick={a.onPostComment} style={css('flex:none; height:34px; padding:0 15px; border:none; border-radius:999px; background:#EDF0FA; color:#2A3A57; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Gửi')}</button>
                                     </div>
                                     <div style={css('margin-left:36px;')}><PendingAttachments files={att.files('cmt:' + a.id)} onRemove={(k) => att.remove('cmt:' + a.id, k)} error={att.errorFor('cmt:' + a.id)} /></div>
-                                    <div style={css('margin:6px 0 0 36px;')}><AnonToggle compact on={ansAnon} onChange={setAnsAnon} warn={anonWarn} label="Bình luận ẩn danh" /></div>
                                   </div>
                                 )}
                               </div>
@@ -998,7 +989,6 @@ export default function QuestionsPage() {
                       />
                     )}
                   </div>
-                  <AnonToggle on={askAnon} onChange={setAskAnon} />
                   {askError && <div style={css('margin-top:10px; font:600 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{askError}</div>}
                 </div>
               </div>

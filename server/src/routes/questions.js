@@ -140,7 +140,7 @@ router.patch('/:id', requireAuth, (req, res) => {
   if (!String(body || '').trim()) return res.status(400).json({ error: 'missing_fields' })
   db.prepare("UPDATE questions SET title = ?, body = ?, topics = ?, tools = ?, edited_at = datetime('now') WHERE id = ?")
     .run(String(title).trim(), String(body).trim(), JSON.stringify(tagList(topics)), JSON.stringify(tagList(tools)), q.id)
-  if (req.body && req.body.anonymous !== undefined) { const an = anonFields(req.body); db.prepare('UPDATE questions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, q.id) }
+  // (an edit leaves an old anonymous post as it was: anonymous posting is gone, but who wrote it stays private)
   const b = req.body || {}
   if (Array.isArray(b.keepImages) || Array.isArray(b.keepFiles)) {
     const keepImg = new Set((b.keepImages || []).map(Number)), keepFile = new Set((b.keepFiles || []).map(Number))

@@ -30,7 +30,7 @@ import { DetailSections, detailLayout } from '../components/UseCaseDetailView.js
 import { buildTemplate } from '../data/useCaseTemplate.js'
 import { submissionTpl } from '../data/submissionTpl.js'
 import AnonTag from '../components/AnonTag.jsx'
-import AnonToggle, { alertIfAliasTaken } from '../components/AnonToggle.jsx'
+import { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import { cropCover } from '../lib/cover.js'
 import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
@@ -177,8 +177,8 @@ export default function UseCaseLibraryPage() {
   const [shareStage, setShareStage] = useState('form')
   const [shareStep, setShareStep] = useState(0)
   const [shareType, setShareType] = useState('')
-  const [cmtAnon, setCmtAnon] = useState(false) // comments + replies on the detail page
-  const cmtAnonOpts = () => ({ anonymous: cmtAnon })
+  // comments go up under your name (anonymous posting was taken off the site)
+  const cmtAnonOpts = () => ({})
   const [shareAnon, setShareAnon] = useState(false)
   const [shareAlias, setShareAlias] = useState('')
   // Posted for myself or for a team; a team post shows every member ("a, b, c") instead of me.
@@ -882,7 +882,7 @@ export default function UseCaseLibraryPage() {
                   />
                   <PendingAttachments files={att.files('cmt:' + dsel.id)} onRemove={(x) => att.remove('cmt:' + dsel.id, x)} error={att.errorFor('cmt:' + dsel.id)} />
                   <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:8px;')}>
-                    <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} label="Bình luận ẩn danh" /></div>
+                    <div style={css('margin-right:auto;')} />
                     <AttachButton onFiles={(fl) => att.add('cmt:' + dsel.id, fl)} size={32} />
                     <button
                       onClick={postDComment}
@@ -962,7 +962,7 @@ export default function UseCaseLibraryPage() {
                             <PendingAttachments files={att.files('rep:' + replyTarget.parentId)} onRemove={(x) => att.remove('rep:' + replyTarget.parentId, x)} error={att.errorFor('rep:' + replyTarget.parentId)} />
                             <div style={css('display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;')}>
                               {/* same switch as the comment box above: replies follow it too */}
-                              <div style={css('margin-right:auto;')}><AnonToggle compact on={cmtAnon} onChange={setCmtAnon} label="Bình luận ẩn danh" /></div>
+                              <div style={css('margin-right:auto;')} />
                               <AttachButton onFiles={(fl) => att.add('rep:' + replyTarget.parentId, fl)} size={32} />
                               <button onClick={cancelReply} style={css('height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
                               <button onClick={() => submitReply(dsel.id)} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${replyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>

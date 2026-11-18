@@ -1,7 +1,6 @@
 import { rememberReturn, useScrollReturn } from '../lib/scrollReturn.js'
 import { stripInline } from '../lib/inlineFormat.js'
 import AnonTag from '../components/AnonTag.jsx'
-import { useAliasCheck } from '../components/AnonToggle.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { copyWithToast } from '../lib/clipboard.js'
 import AvatarPhotoPicker from '../components/AvatarPhotoPicker.jsx'
@@ -566,26 +565,8 @@ function QuestionMenu({ m, kind = 'post' }) {
   )
 }
 
-/** Profile header: photo, name, department, and the default name for anonymous posts — all editable. */
-function ProfileCard({ user, setUser }) {
-  const { t } = useI18n()
-  const [alias, setAlias] = useState(user.anonAlias || '')
-  const [state, setState] = useState('') // '' | 'saving' | 'saved' | 'error'
-  const dirty = alias.trim() !== (user.anonAlias || '')
-  const aliasTaken = useAliasCheck(dirty ? alias : '')
-  const save = () => {
-    setState('saving')
-    api.updateMe({ anonAlias: alias.trim() })
-      .then((d) => { if (d?.user) setUser(d.user); setState('saved') })
-      .catch((e) => setState(e?.data?.error === 'alias_taken' ? 'taken' : 'error'))
-  }
-  const field = (label, hint, value, onChange, placeholder, max) => (
-    <label style={css('display:block;')}>
-      <div style={css(`font:800 13px ${FONT}; color:#0F172A;`)}>{label}</div>
-      {hint && <div style={css(`margin-top:2px; font:500 12px ${FONT}; color:#94a3b8;`)}>{hint}</div>}
-      <input value={value} maxLength={max} placeholder={placeholder} onChange={(e) => { onChange(e.target.value); setState('') }} style={css(`width:100%; margin-top:7px; height:40px; padding:0 12px; border:1px solid #DDE3EC; border-radius:11px; background:#fff; color-scheme:light; font:500 14px ${FONT}; color:#0F172A; outline:none; box-sizing:border-box;`)} />
-    </label>
-  )
+/** Profile header: photo, name and department (from Microsoft). */
+function ProfileCard({ user }) {
   return (
     <div style={css('padding:22px 24px; border-radius:20px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 14px 34px rgba(8,16,40,.25);')}>
       <div style={css('display:flex; align-items:center; gap:18px; flex-wrap:wrap;')}>
@@ -595,15 +576,6 @@ function ProfileCard({ user, setUser }) {
           <div style={css(`margin-top:3px; font:500 13.5px ${FONT}; color:#64748b;`)}>{[user.name, user.team].filter(Boolean).join(' · ')}</div>
           <div style={css(`margin-top:2px; font:500 12.5px ${FONT}; color:#94a3b8;`)}>{user.email}</div>
         </div>
-      </div>
-      <div style={{ marginTop: 14 }}>
-        {field(t('Tên hiển thị khi ẩn danh'), t('Mọi bài và bình luận ẩn danh của bạn đều hiện tên này (đổi tên thì bài cũ cũng đổi theo). Để trống thì hiện "Anonymous" kèm một số riêng của bạn (ví dụ Anonymous 4821).'), alias, setAlias, 'Ví dụ: Cú mèo', 40)}
-      </div>
-      <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px;')}>
-        <button onClick={save} disabled={!dirty || state === 'saving'} style={css(`height:40px; padding:0 20px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13.5px ${FONT}; cursor:${dirty ? 'pointer' : 'default'}; opacity:${dirty && state !== 'saving' ? 1 : 0.5};`)}>{state === 'saving' ? t('Đang lưu...') : t('Lưu thay đổi')}</button>
-        {state === 'saved' && !dirty && <span style={css(`font:700 12.5px ${FONT}; color:#00893F;`)}>✓ {t('Đã lưu')}</span>}
-        {state === 'error' && <span style={css(`font:700 12.5px ${FONT}; color:#D8232A;`)}>{t('Không lưu được, thử lại.')}</span>}
-        {(state === 'taken' || (aliasTaken && state !== 'saved')) && <span style={css(`font:700 12.5px ${FONT}; color:#D8232A;`)}>{t('Tên này trùng với một thành viên khác, hãy chọn tên khác.')}</span>}
       </div>
     </div>
   )

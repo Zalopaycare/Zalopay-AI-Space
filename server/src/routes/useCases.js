@@ -436,7 +436,7 @@ router.patch('/submissions/:id', requireAuth, (req, res) => {
   if (f.title.trim() !== row.title) setRenameFlag(row.id, false, req.user.id)
   // Older clients don't send `extra`; leave what's stored untouched then.
   if (f.extra !== undefined) { db.prepare('UPDATE use_case_submissions SET extra = ? WHERE id = ?').run(cleanExtra(f.extra, req.user), row.id); saveFormFiles(row.id, f.extra) }
-  if (f.anonymous !== undefined) { const an = anonFields(f); db.prepare('UPDATE use_case_submissions SET anonymous = ?, alias = ? WHERE id = ?').run(an.anonymous, an.alias, row.id) }
+  // (an edit leaves an old anonymous post as it was: anonymous posting is gone, but who wrote it stays private)
   if (row.review_status === 'approved') {
     const who = domainName(req.user.email, req.user.name)
     for (const to of adminEmailsFor(req)) {

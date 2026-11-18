@@ -9,10 +9,10 @@ import { handleOf, domainName } from './mentions.js'
 export const ANON_COLOR = '#64748B'
 const MAX_ALIAS = 40
 
-/** Read { anonymous, alias } from a request body. A per-post alias is no longer taken: the name comes from the account. */
-export function anonFields(body) {
-  const anonymous = body && (body.anonymous === true || body.anonymous === 1 || body.anonymous === '1') ? 1 : 0
-  return { anonymous, alias: null }
+/** { anonymous, alias } for a new post or comment. Anonymous posting was taken off the site: everything new
+ *  goes up under the person's name. Posts made anonymously before keep showing as they did. */
+export function anonFields() {
+  return { anonymous: 0, alias: null }
 }
 export const cleanAlias = (v) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, MAX_ALIAS)
 
