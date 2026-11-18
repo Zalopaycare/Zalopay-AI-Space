@@ -8,8 +8,9 @@ import { css } from '../lib/style.js'
 // The welcome tour, as a guided walk over the real page: everything dims, the feature in question is
 // cut out of the dark with a glowing frame, and a glass card next to it says what it does. Shown once
 // to everyone who hasn't seen it (the server remembers, so not again on another device), and again
-// from the account menu ("Hướng dẫn sử dụng"). It runs on the home page, where most of what it points
-// at lives; a mark that isn't on screen (the sidebar on a phone) gets the card in the middle instead.
+// from the account menu ("Hướng dẫn sử dụng"). It walks the AI Space page, then the Use Case Library (opening
+// each page as it gets there), then the sidebar; a mark that isn't on screen (the sidebar on a phone) gets
+// the card in the middle instead.
 
 const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const OPEN_EVENT = 'zp-open-tour'
@@ -17,15 +18,21 @@ const OPEN_EVENT = 'zp-open-tour'
 export const openTour = () => window.dispatchEvent(new Event(OPEN_EVENT))
 
 // `at`: the element to light up (a data-tour mark or a selector); none = the card alone, centred.
+// `path`: the page the step is on (the tour opens it): AI Space first, then the Library, then the sidebar.
 const STEPS = [
-  { title: 'Chào mừng đến Zalopay AI Space', text: 'Nơi các Zalopay Starter chia sẻ, hỏi đáp và học nhau cách dùng AI trong công việc. Đi một vòng chưa tới một phút nhé.' },
-  { at: '[data-tour="nav-home"]', title: 'AI Space', text: 'Trang chủ: các sự kiện đồng nghiệp tạo ra để cùng chia sẻ về AI.' },
-  { at: '[data-tour="compose"]', title: 'Tạo sự kiện', text: 'Có topic AI nào muốn chia sẻ? Chủ động bấm Tạo sự kiện để mọi người cùng tham gia: đặt tên, ngày, địa điểm, thêm ảnh bìa nếu muốn.' },
-  { at: '[data-tour="events"]', title: 'Sự kiện sắp tới', text: 'Quan tâm một sự kiện đã được tạo thì bấm Quan tâm (có email nhắc trước 1 ngày). Bấm vào sự kiện để xem chi tiết, bình luận và tag đồng nghiệp.' },
-  { at: '[data-tour="nav-usecases"]', title: 'Use Case Library', text: 'Các cách dùng AI đã chạy thật: bài toán, giải pháp và từng bước để bạn tự làm lại. Lọc theo Category và Công cụ AI.' },
-  { at: '[data-tour="share"]', title: 'Chia sẻ use case', text: 'Điền form 4 bước, kèm hình minh họa hoặc file. Admin kiểm duyệt, góp ý để bạn chỉnh sửa bổ sung nếu cần, rồi publish lên Use Case Library.' },
-  { at: '[data-tour="mine"]', title: 'Của tôi', text: 'Thông báo khi có người trả lời, bình luận hay tag bạn; Đã lưu là bài bạn đánh dấu; Hồ sơ gom bài của bạn.' },
+  { path: '/', title: 'Chào mừng đến Zalopay AI Space', text: 'Nơi đồng nghiệp tạo và cùng tham gia các buổi chia sẻ về AI, và học nhau qua những use case đã chạy thật. Đi một vòng chưa tới một phút nhé.' },
+  // 1. the AI Space page: events
+  { path: '/', at: '[data-tour="nav-home"]', title: 'Trang AI Space', text: 'Trang chủ: các sự kiện đồng nghiệp tạo ra để cùng chia sẻ về AI.' },
+  { path: '/', at: '[data-tour="compose"]', title: 'Tạo sự kiện', text: 'Có topic AI muốn chia sẻ? Bấm Tạo sự kiện: đặt tên, ngày, địa điểm, thêm người đồng tổ chức và ảnh bìa nếu muốn.' },
+  { path: '/', at: '[data-tour="events"]', title: 'Quan tâm sự kiện', text: 'Bấm Quan tâm để nhận email nhắc trước 1 ngày. Khi đủ 3 người quan tâm, người tổ chức gửi lời mời Outlook để sự kiện vào lịch của bạn. Bấm vào sự kiện để xem chi tiết, bình luận và tag đồng nghiệp.' },
+  // 2. the Use Case Library
+  { path: '/use-cases', at: '[data-tour="nav-usecases"]', title: 'Use Case Library', text: 'Các cách dùng AI đã chạy thật ở Zalopay: bài toán, giải pháp và từng bước để bạn tự làm lại.' },
+  { path: '/use-cases', at: '[data-tour="lib-compose"]', title: 'Tìm và chia sẻ use case', text: 'Tìm theo từ khoá, lọc theo chủ đề và công cụ AI. Có use case muốn chia sẻ thì bấm Chia sẻ use case: điền form 4 bước, Admin duyệt rồi publish.' },
+  { path: '/use-cases', at: '[data-tour="exhibition"]', title: 'Use case từ AI Exhibition', text: 'Use case các team mang về từ AI Exhibition. Chưa có bài chi tiết thì bấm Quan tâm hoặc bình luận để nhắc team đăng lên.' },
+  // 3. the sidebar
+  { at: '[data-tour="post"]', title: 'Thanh bên trái', text: 'Tạo sự kiện và Chia sẻ use case luôn nằm ở đây, mở từ trang nào cũng được.' },
   { at: '[data-tour="chat"]', title: 'Chat với Admin', text: 'Có câu hỏi, góp ý hay thấy lỗi thì nhắn ở đây.' },
+  { at: '[data-tour="mine"]', title: 'Của tôi', text: 'Hồ sơ với use case của bạn; Thông báo khi có người trả lời, bình luận hay tag bạn; Sự kiện bạn tổ chức và quan tâm; Đã lưu là những gì bạn đánh dấu.' },
   { at: '[data-tour="account"]', title: 'Xem lại hướng dẫn', text: 'Menu tài khoản > Hướng dẫn sử dụng để đi lại vòng này bất cứ lúc nào. Chúc bạn khám phá vui!' },
 ]
 const PAD = 8 // room around the lit-up element
@@ -50,19 +57,24 @@ function cardPos(box, h) {
   return { top: Math.max(12, Math.min(vh - h - 12, box.top)), left: clampX(box.left + box.width + 14), w }
 }
 
+// Each page has its own layout, so the tour is mounted afresh when it opens the Library: where it is lives
+// here, outside the component, so it carries on from the same step (and the first-visit start happens once).
+const live = { open: false, step: 0, started: false }
+
 export default function WelcomeTour() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const [open, setOpen] = useState(false)
-  const [step, setStep] = useState(0)
+  const [open, setOpen] = useState(live.open)
+  const [step, setStep] = useState(live.step)
+  useEffect(() => { live.open = open; live.step = step }, [open, step])
   const [box, setBox] = useState(null)
   const [cardH, setCardH] = useState(200)
   const cardRef = useRef(null)
 
-  const start = () => { if (window.location.pathname !== '/') navigate('/'); setStep(0); setOpen(true) }
-  // first visit: start by itself once the account is known
-  useEffect(() => { if (user && !user.tourSeen) start() }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const start = () => { live.started = true; if (window.location.pathname !== '/') navigate('/'); setStep(0); setOpen(true) }
+  // first visit: start by itself once the account is known (once: not again when a page change remounts it)
+  useEffect(() => { if (user && !user.tourSeen && !live.started) start() }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     window.addEventListener(OPEN_EVENT, start)
     return () => window.removeEventListener(OPEN_EVENT, start)
@@ -72,6 +84,12 @@ export default function WelcomeTour() {
     if (user && !user.tourSeen) api.updateMe({ tourSeen: true }).then((d) => d?.user && setUser(d.user)).catch(() => {})
   }
 
+  // a step on another page opens that page first
+  useEffect(() => {
+    if (!open) return
+    const path = STEPS[step].path
+    if (path && pathname !== path) navigate(path)
+  }, [open, step]) // eslint-disable-line react-hooks/exhaustive-deps
   // light up this step's element: bring it into view, then follow it on scroll / resize
   useLayoutEffect(() => {
     if (!open) return undefined
@@ -81,10 +99,15 @@ export default function WelcomeTour() {
     let raf = 0
     const measure = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setBox(rectOf(sel))) }
     measure()
-    const settle = setTimeout(measure, 420) // after the smooth scroll (and the page, if it was just opened)
+    // after the smooth scroll, and again once a page just opened has loaded what's marked
+    const settle = [420, 900, 1600].map((ms) => setTimeout(() => {
+      const late = sel && document.querySelector(sel)
+      if (ms > 420 && late && !el && late.getBoundingClientRect().height) late.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      measure()
+    }, ms))
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
-    return () => { clearTimeout(settle); cancelAnimationFrame(raf); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
+    return () => { settle.forEach(clearTimeout); cancelAnimationFrame(raf); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
   }, [open, step, pathname])
   useLayoutEffect(() => { if (cardRef.current) setCardH(cardRef.current.offsetHeight) }, [open, step])
 

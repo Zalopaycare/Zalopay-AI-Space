@@ -136,7 +136,8 @@ export default function PendingCases({ items, written = [], t, requireLogin }) {
 
   return (
     <section style={css('margin-top:28px;')}>
-      <div style={css('display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px;')}>
+      {/* the tour lights up the heading (the whole list is taller than the screen) */}
+      <div data-tour="exhibition" style={css('display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px;')}>
         <h2 style={css('margin:0; font-size:18px; font-weight:800; letter-spacing:-.2px; color:#fff;')}>{t('Use case từ AI Exhibition 2026')}</h2>
         <span style={css('font-size:12.5px; color:#8fa6d8;')}>{items.length + written.length}</span>
       </div>
