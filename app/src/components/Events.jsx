@@ -42,22 +42,6 @@ export function whenLabel(e) {
 const happeningNow = (e) => new Date(e.startsAt) <= new Date()
 const eventLink = (id) => `${window.location.origin}/?event=${encodeURIComponent(id)}`
 const share = (ev) => copyWithToast(eventLink(ev.id), 'Đã copy link sự kiện ✓')
-/** "Thêm vào lịch Outlook": Outlook on the web opens a new calendar entry filled in (title, time, place,
- *  details and a link back); the person only presses Save. Without a time it's a whole-day entry. */
-function outlookLink(ev) {
-  const s = new Date(ev.startsAt)
-  const day = (d) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`
-  const end = ev.endsAt ? new Date(ev.endsAt) : new Date(s.getTime() + (ev.allDay ? 86400000 : 3600000))
-  const q = new URLSearchParams({
-    path: '/calendar/action/compose', rru: 'addevent',
-    subject: ev.title, location: ev.location || '',
-    body: [ev.description, `Zalopay AI Space: ${eventLink(ev.id)}`].filter(Boolean).join('\n\n'),
-    startdt: ev.allDay ? day(s) : s.toISOString(), enddt: ev.allDay ? day(end) : end.toISOString(),
-    ...(ev.allDay ? { allday: 'true' } : {}),
-  })
-  return 'https://outlook.office.com/calendar/0/deeplink/compose?' + q.toString()
-}
-
 /** The cover, or (without one) a gradient carrying the date. Always 16:9. */
 function Cover({ ev, radius = 14 }) {
   const d = new Date(ev.startsAt)
@@ -295,14 +279,6 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           </div>
           <div style={css('display:flex; flex-wrap:wrap; gap:8px; padding:16px 22px 0;')}>
             {!ev.past && <InterestButton ev={ev} onToggle={toggle} grow height={32} />}
-            {/* an Outlook meeting already: the invitation (Quan tâm) puts it in the calendar; a second, personal
-                copy from this button would only confuse */}
-            {!ev.past && !ev.outlook && (
-              <a href={outlookLink(ev)} target="_blank" rel="noopener noreferrer" className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none; text-decoration:none;' + grayBtn)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"></path></svg>
-                Thêm vào lịch Outlook
-              </a>
-            )}
             <button onClick={() => share(ev)} className={hoverClass('background:#E4E9F2 !important;')} style={css((ev.past ? 'flex:1;' : 'flex:none;') + grayBtn)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 4.5V9C7 9.5 4 14 3 20c2.5-3.5 6-5.1 11-5.1v4.6l7-7.5-7-7.5z"></path></svg>
               Chia sẻ
