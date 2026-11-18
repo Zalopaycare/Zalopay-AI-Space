@@ -141,7 +141,7 @@ function shape(e, me) {
     people: ids.slice(0, host || me?.is_admin ? 500 : 8).map((uid) => { const u = userById(uid); return u ? { ...person(u), ...(host || me?.is_admin ? { rsvp: rsvpOf(e.id)[u.email.toLowerCase()] || null } : {}) } : null }).filter(Boolean),
     // a meeting in the creator's Outlook (invitations from them); for the hosts, how the attendees answered
     outlook: !!e.ol_id,
-    ...(e.ol_id && (host || me?.is_admin) ? { rsvpCounts: rsvpCounts(e.id) } : {}),
+    ...(e.ol_id && (host || me?.is_admin) ? { rsvpCounts: rsvpCounts(e.id), outlookInvited: sentAttendees(e).length } : {}),
     commentCount: db.prepare('SELECT COUNT(*) n FROM event_comments WHERE event_id = ?').get(e.id).n,
     createdAt: e.created_at,
   }
@@ -379,6 +379,7 @@ async function outlookCreate(eventId, baseUrl) {
   const wanted = wantedAttendees(e)
   const id = await createMeeting(e.author_id, { ...meetingOf(e, baseUrl), attendees: attendeesOf(wanted) }, e.id)
   if (id) db.prepare('UPDATE events SET ol_id = ?, ol_attendees = ? WHERE id = ?').run(id, JSON.stringify(wanted), e.id)
+  console.log(`[outlook] event ${e.id}: ${id ? `meeting created in the host's calendar, ${wanted.length} invited` : 'no meeting (no calendar access): .ics invitations instead'}`)
 }
 // the meeting is gone from the creator's calendar (they deleted it in Outlook): back to the .ics invitations
 const dropMeeting = (id) => { db.prepare('UPDATE events SET ol_id = NULL, ol_attendees = NULL WHERE id = ?').run(id); db.prepare('DELETE FROM event_rsvp WHERE event_id = ?').run(id) }
@@ -397,6 +398,7 @@ async function outlookAttendees(eventId) {
   const sent = sentAttendees(e)
   if (wanted.length === sent.length && wanted.every((x) => sent.includes(x))) return
   const r = await updateMeeting(e.author_id, e.ol_id, { attendees: attendeesOf(wanted) })
+  console.log(`[outlook] event ${e.id}: attendees ${sent.length} → ${wanted.length} ${r === true ? 'sent' : r === 'gone' ? '(meeting gone)' : '(failed)'}`)
   if (r === true) {
     db.prepare('UPDATE events SET ol_attendees = ? WHERE id = ?').run(JSON.stringify(wanted), e.id)
     for (const x of sent.filter((y) => !wanted.includes(y))) db.prepare('DELETE FROM event_rsvp WHERE event_id = ? AND email = ?').run(e.id, x)

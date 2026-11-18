@@ -295,7 +295,9 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           </div>
           <div style={css('display:flex; flex-wrap:wrap; gap:8px; padding:16px 22px 0;')}>
             {!ev.past && <InterestButton ev={ev} onToggle={toggle} grow height={32} />}
-            {!ev.past && (
+            {/* an Outlook meeting already: the invitation (Quan tâm) puts it in the calendar; a second, personal
+                copy from this button would only confuse */}
+            {!ev.past && !ev.outlook && (
               <a href={outlookLink(ev)} target="_blank" rel="noopener noreferrer" className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none; text-decoration:none;' + grayBtn)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"></path></svg>
                 Thêm vào lịch Outlook
@@ -319,7 +321,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               {/* the hosts: how people answered the Outlook invitation */}
               {ev.rsvpCounts && (
                 <div style={css('margin-top:4px; font:400 12.5px/1.5 var(--zp-font-text); color:#64748b;')}>
-                  Trên Outlook: <b style={css('color:#00893F;')}>{ev.rsvpCounts.accepted} đồng ý</b> · {ev.rsvpCounts.tentative} có thể · {ev.rsvpCounts.declined} từ chối
+                  Đã mời qua Outlook {ev.outlookInvited} người: <b style={css('color:#00893F;')}>{ev.rsvpCounts.accepted} đồng ý</b> · {ev.rsvpCounts.tentative} có thể · {ev.rsvpCounts.declined} từ chối
                 </div>
               )}
               <div style={css('margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;')}>
@@ -332,7 +334,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           )}
           <EventComments ev={ev} onChange={(d) => { setEv((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ ...ev, commentCount: d.commentCount }) }} />
           <div style={css('display:flex; align-items:center; gap:12px; padding:18px 22px 20px; margin-top:18px; border-top:1px solid #EEF1F7;')}>
-            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past ? 'Bấm Quan tâm để nhận thư mời vào lịch Outlook và email nhắc trước 1 ngày; khi sự kiện đổi giờ, đổi chỗ hay huỷ, lịch của bạn tự cập nhật.' : ''}</div>
+            <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{!ev.past && ev.isMine && ev.outlook ? 'Sự kiện đã ở trong lịch Outlook của bạn; người bấm Quan tâm nhận lời mời từ bạn và vào chung cuộc họp.' : !ev.past ? 'Bấm Quan tâm để nhận thư mời vào lịch Outlook và email nhắc trước 1 ngày; khi sự kiện đổi giờ, đổi chỗ hay huỷ, lịch của bạn tự cập nhật.' : ''}</div>
             {ev.canEdit && <button onClick={remove} style={css(`flex:none; height:32px; padding:0 14px; border:1px solid #F5C9CB; border-radius:999px; background:#fff; color:#D8232A; font:700 12.5px ${FONT}; cursor:pointer;`)}>{ev.isMine ? 'Huỷ sự kiện' : 'Xoá'}</button>}
           </div>
         </>)}
