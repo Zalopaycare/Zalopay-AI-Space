@@ -14,7 +14,7 @@ import RichText from './RichText.jsx'
 // 4 Tự áp dụng (links first; the one highlighted block) · 5 Kết quả · 6 Trách nhiệm & giới hạn · 7 Demo —
 // with a sticky table of contents on wide screens. Technical details are not shown.
 
-export const DETAIL_COL = 'max-width:1120px; margin:0 auto;'
+export const DETAIL_COL = 'max-width:1400px; margin:0 auto;'
 const CARD = 'border:1px solid #E6EBF3; border-radius:20px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30); padding:18px 20px;'
 // Heading scale on a use case page: part titles outside the cards (20px white) > SUB, the headings
 // inside a card (Bài toán, Giải pháp, Cần chuẩn bị, Các bước…; 16px deep blue) > SUB2, what sits under
