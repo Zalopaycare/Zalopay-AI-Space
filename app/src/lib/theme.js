@@ -12,17 +12,11 @@
 
 const KEY = 'zp-theme'
 
-function readTheme() {
-  try {
-    const q = new URLSearchParams(window.location.search).get('theme')
-    if (q === 'gray' || q === 'default') localStorage.setItem(KEY, q)
-    // white cards unless this browser last picked dark mode
-    return localStorage.getItem(KEY) === 'gray'
-  } catch { return false }
-}
+// Dark mode was taken off the site (its switch is gone): everyone sees the white cards. The old choice
+// stored in a browser is cleared, so it can't come back on its own.
+try { localStorage.removeItem(KEY) } catch { /* ignore */ }
 
-export const GRAY = typeof window !== 'undefined' && readTheme()
-if (GRAY) document.documentElement.classList.add('zp-gray')
+export const GRAY = false
 
 export function setGrayTheme(on) {
   try { localStorage.setItem(KEY, on ? 'gray' : 'default') } catch { /* ignore */ }
