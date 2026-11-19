@@ -352,6 +352,11 @@ export default function EventsPanel({ layout = 'rail', query = '', calendar = fa
   const list = events || []
   const location = useLocation()
   const navigate = useNavigate()
+  // a link to an event while already on this page (a notification, say): open it too
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get('event')
+    if (id) setOpenId(id)
+  }, [location.search, location.key]) // the key: the same link clicked again
   useEffect(() => {
     const sp = new URLSearchParams(location.search)
     if (sp.get('new') !== 'event') return

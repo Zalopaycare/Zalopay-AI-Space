@@ -84,6 +84,11 @@ export default function TopicsPanel({ query = '', layout = 'list' }) {
   }, [requireLogin])
   const location = useLocation()
   const navigate = useNavigate()
+  // a link to a topic while already on this page (a notification, say): open it too
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get('topic')
+    if (id) setOpenId(id)
+  }, [location.search, location.key]) // the key: the same link clicked again
   useEffect(() => {
     if (new URLSearchParams(location.search).get('new') !== 'topic') return
     navigate({ pathname: location.pathname, search: '?tab=wish', hash: location.hash }, { replace: true })
