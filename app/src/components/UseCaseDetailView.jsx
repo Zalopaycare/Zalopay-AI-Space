@@ -23,7 +23,7 @@ export function detailLayout(tp, t, showEmpty = false) {
     ['tldr', 'uc-tldr', 'Tóm tắt'],
     ['ps', 'uc-problem', 'Bài toán & giải pháp'],
     ['apply', 'uc-apply', tp.apply.title],
-    ['safety', 'uc-safety', 'Trách nhiệm & giới hạn'],
+    ['safety', 'uc-safety', 'Trách nhiệm & lưu ý'],
     // the author's own parts ("Phần khác" in the form), each a numbered part of its own
     ...(tp.custom || []).map((x, i) => ['custom' + i, 'uc-more-' + i, x.title]),
     ['demo', 'uc-demo', 'Demo'],
@@ -54,14 +54,14 @@ export function DetailSections({ id, tp, t, layout }) {
         const dataLines = [...tp.safety.rules, ...tp.safety.limits].filter(isDataLine).map(dataOf)
         const humanOn = human.length > 0 || tp.safety.tables.length > 0 || (tp.safety.images || []).length > 0 || dataLines.length > 0, aiOn = ai.length > 0 || (tp.safety.limitImages || []).length > 0
         return (
-        <Section id="uc-safety" num={num.safety} title={t('Trách nhiệm & giới hạn')}>
+        <Section id="uc-safety" num={num.safety} title={t('Trách nhiệm & lưu ý')}>
           <div style={css('display:flex; flex-direction:column; gap:16px;')}>
             {/* two columns, like Bài toán | Giải pháp; one column when only one of them is filled. Who may
                 do what (the role tables) belongs to the people's side. */}
             <div className={humanOn && aiOn ? 'zp-ps2' : undefined}>
               {humanOn && (
                 <div style={{ minWidth: 0 }}>
-                  <div style={css(SUBHEAD)}>{t('Trách nhiệm của con người')}</div>
+                  <div style={css(SUBHEAD)}>{t('Trách nhiệm của người dùng')}</div>
                   {human.length > 0 && <BulletList items={human} dot="#6F0CE2" />}
                   {tp.safety.tables.map((tb, i) => <div key={i} style={{ marginTop: human.length ? 14 : 0 }}><PlainTable flat table={tb} /></div>)}
                   <Images images={tp.safety.images} />

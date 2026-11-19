@@ -899,7 +899,7 @@ export default function QuestionsPage() {
               <div style={css('display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:16px 20px; border-bottom:1px solid #EEF1F7;')}>
                 <button onClick={() => setView('feed')} style={css('justify-self:start; border:none; background:none; padding:0; cursor:pointer; font:500 15px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{t('Huỷ')}</button>
                 <div style={css('font:800 16px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A;')}>{editQId ? t('Sửa post') : t('Post mới')}</div>
-                {!editQId ? <button onClick={saveAskDraft} title={t('Lưu nháp')} style={css('justify-self:end; border:none; background:none; padding:0; cursor:pointer; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Lưu nháp')}</button> : <span />}
+                {!editQId ? <button onClick={saveAskDraft} title={t('Lưu bản nháp')} style={css('justify-self:end; border:none; background:none; padding:0; cursor:pointer; font:600 13px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#64748b;')}>{t('Lưu nháp')}</button> : <span />}
               </div>
               {!editQId && (
                 <button onClick={() => { setView('feed'); openEventForm() }} className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:8px; width:100%; padding:9px 20px; border:none; border-bottom:1px solid #EEF1F7; background:#F7F9FE; cursor:pointer; text-align:left; font:500 12.5px var(--zp-font-text); color:#475569;')}>

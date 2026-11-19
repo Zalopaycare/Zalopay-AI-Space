@@ -30,7 +30,7 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 // 'draft' has no backend equivalent yet (api.listSubmissions only returns approved/pending/rejected),
 // so that column is always empty — it still renders per the design spec.
 const UC_STATUS = {
-  draft: { label: 'Đang nháp', bg: '#EDF0FA', color: '#3A4757', accent: '#94a3b8' },
+  draft: { label: 'Bản nháp', bg: '#EDF0FA', color: '#3A4757', accent: '#94a3b8' },
   pending: { label: 'Chờ duyệt', bg: '#FFF1E0', color: '#B45300', accent: '#FF8D00' },
   changes_requested: { label: 'Cần chỉnh sửa', bg: '#FFF4E3', color: '#9A5B00', accent: '#F5A524' },
   rejected: { label: 'Bị từ chối', bg: '#FFECEC', color: '#D8232A', accent: '#E0353F' },
@@ -269,7 +269,7 @@ export default function ProfilePage() {
   const savedQuestionCards = savedQuestions.map(mapQuestion)
 
   // ---- use case board (status columns, always in this order) ----
-  const ucCta = (c) => ({ changes_requested: t('Xem góp ý & chỉnh sửa'), rejected: t('Gửi use case mới'), draft: t('Tiếp tục'), approved: t('Xem trong Use Case Library') })[c.reviewStatus] || t('Xem use case')
+  const ucCta = (c) => ({ changes_requested: t('Xem góp ý & chỉnh sửa'), rejected: t('Gửi use case mới'), draft: t('Tiếp tục chỉnh sửa'), approved: t('Xem trong Use Case Library') })[c.reviewStatus] || t('Xem use case')
   const ucHref = (c) => ({ changes_requested: `/review/${encodeURIComponent(c.id)}`, pending: `/review/${encodeURIComponent(c.id)}`, rejected: '/use-cases?share=1', draft: '/use-cases?share=1', approved: `/use-cases/${encodeURIComponent(c.id)}` })[c.reviewStatus] || '/profile#usecase'
   const ucPosts = myUseCases.map((c) => {
     const st = UC_STATUS[c.reviewStatus] || UC_STATUS.pending
@@ -283,11 +283,11 @@ export default function ProfilePage() {
       title: c.title,
       desc: stripInline(c.problem),
       hasReason: (c.reviewStatus === 'rejected' || c.reviewStatus === 'changes_requested') && !!c.adminNote,
-      reasonPrefix: c.reviewStatus === 'changes_requested' ? t('Admin cần bổ sung') : t('Admin từ chối'),
+      reasonPrefix: c.reviewStatus === 'changes_requested' ? t('Admin cần bổ sung') : t('Lý do từ chối'),
       reasonBg: c.reviewStatus === 'changes_requested' ? '#FFF4E3' : '#FFECEC',
       reasonColor: c.reviewStatus === 'changes_requested' ? '#7A4700' : '#B4232A',
       reason: c.adminNote,
-      metric: c.reviewStatus === 'approved' ? t('Đã publish') : t('Chưa publish'),
+      metric: c.reviewStatus === 'approved' ? t('Đã đăng') : t('Chưa đăng'),
       cta: ucCta(c),
       onOpen: () => navigate(ucHref(c)),
     }
@@ -357,10 +357,10 @@ export default function ProfilePage() {
               <ProfileCard user={user} setUser={setUser} />
               <div className="zp-profile-stats">
                 {[
-                  ['usecase', 'Use case của bạn', myUseCases.length, `${myUseCases.filter((c) => c.reviewStatus === 'approved').length} ${t('đã đăng')}`],
-                  ['event', 'Sự kiện bạn tổ chức', myEvents.hosting.length, `${myEvents.interested.length} ${t('sự kiện bạn quan tâm')}`],
+                  ['usecase', 'Use case của tôi', myUseCases.length, `${myUseCases.filter((c) => c.reviewStatus === 'approved').length} ${t('đã đăng')}`],
+                  ['event', 'Sự kiện tôi tổ chức', myEvents.hosting.length, `${myEvents.interested.length} ${t('sự kiện đang quan tâm')}`],
                   // Đã lưu has its own link in the menu; this card counts the use cases still being written
-                  ['drafts', 'Đang nháp', ucDrafts.length, `${t('use case chưa gửi duyệt')}`],
+                  ['drafts', 'Bản nháp', ucDrafts.length, `${t('use case chưa gửi duyệt')}`],
                 ].map(([key, label, n, sub]) => (
                   <div key={key} style={css('display:flex; flex-direction:column; padding:16px 18px; border-radius:18px; background:#fff; border:1px solid #E6EBF3; box-shadow:0 10px 24px rgba(30,50,90,.08);')}>
                     <div style={css(`font:700 13px ${FONT}; color:#64748b;`)}>{t(label)}</div>
@@ -402,7 +402,7 @@ export default function ProfilePage() {
                 })}
                 {notif.items.length > 6 && (
                   <button onClick={() => setShowAllNotif((v) => !v)} className={hoverClass('background:#F7F9FD;')} style={css(`display:block; width:100%; padding:10px 16px; border:none; background:#fff; cursor:pointer; font:700 12.5px ${FONT}; color:#2c5fff;`)}>
-                    {showAllNotif ? t('Thu gọn') : t('Xem thêm') + ` (${notif.items.length - 6})`}
+                    {showAllNotif ? t('Thu gọn') : t('Xem thêm') + ` ${notif.items.length - 6} ` + t('thông báo')}
                   </button>
                 )}
               </div>
@@ -425,9 +425,9 @@ export default function ProfilePage() {
                     <span style={css(`flex:none; display:inline-flex; align-items:center; height:24px; padding:0 11px; border-radius:999px; background:#EDF0FA; color:#3A4757; font:700 11.5px ${FONT};`)}>{t('Bản nháp')}</span>
                     <div style={css('flex:1; min-width:0;')}>
                       <div className="zp-card-title" style={css(`font:700 14.5px ${FONT}; color:#0F172A; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>{ucDraftTitle(d) || t('(Chưa có tên use case)')}</div>
-                      <div style={css(`margin-top:3px; font:400 12.5px var(--zp-font-text); color:#94a3b8;`)}>{t('Use case đang điền dở, chưa gửi duyệt')}{ucDraftWhen(d) ? ' · ' + t(ucDraftWhen(d)) : ''}</div>
+                      <div style={css(`margin-top:3px; font:400 12.5px var(--zp-font-text); color:#94a3b8;`)}>{t('Use case đang soạn, chưa gửi duyệt')}{ucDraftWhen(d) ? ' · ' + t(ucDraftWhen(d)) : ''}</div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); navigate('/use-cases?share=1&draft=' + encodeURIComponent(d.id)) }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục')} →</button>
+                    <button onClick={(e) => { e.stopPropagation(); navigate('/use-cases?share=1&draft=' + encodeURIComponent(d.id)) }} style={css(`flex:none; height:32px; padding:0 14px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 12.5px ${FONT}; cursor:pointer;`)}>{t('Tiếp tục chỉnh sửa')} →</button>
                   </div>
                 ))}
                 {activeUcTab.items.map((p) => <BoardCard key={p.id} p={p} />)}
@@ -450,8 +450,8 @@ export default function ProfilePage() {
         {(section === 'event' || section === 'overview') && (() => {
           // the same white card as "Use case của tôi": tabs across the top, the events under them
           const tabs = [
-            { key: 'hosting', label: t('Tôi tổ chức'), count: myEvents.hosting.length, color: '#2c5fff' },
-            { key: 'interested', label: t('Tôi quan tâm'), count: myEvents.interested.length, color: '#2c5fff' },
+            { key: 'hosting', label: t('Sự kiện tôi tổ chức'), count: myEvents.hosting.length, color: '#2c5fff' },
+            { key: 'interested', label: t('Sự kiện tôi quan tâm'), count: myEvents.interested.length, color: '#2c5fff' },
           ]
           const items = myEvents[evTab] || []
           return (
@@ -482,7 +482,7 @@ export default function ProfilePage() {
             <div style={css('max-width:760px; margin:0 auto;')}>
               <h3 style={subHeading}>{t('Use case đã lưu')}</h3>
               {savedUseCaseCards.length === 0 ? (
-                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; margin-bottom:24px; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Chưa lưu use case nào.')}</div>
+                <div style={css(`background:#fff; border:1px dashed #DDE3EC; border-radius:16px; padding:32px; text-align:center; margin-bottom:24px; font:600 13.5px ${FONT}; color:#94a3b8;`)}>{t('Bạn chưa lưu use case nào.')}</div>
               ) : (
                 <div style={css('display:flex; flex-direction:column; gap:12px; margin-bottom:24px;')}>
                   {savedUseCaseCards.map((c) => <UseCaseCard key={c.id} c={c} />)}
@@ -509,7 +509,7 @@ export default function ProfilePage() {
               </>)}
               {/* posts saved before posting was taken off the site */}
               {savedQuestionCards.length > 0 && (<>
-                <h3 style={subHeading}>{t('Post đã lưu')}</h3>
+                <h3 style={subHeading}>{t('Bài viết đã lưu')}</h3>
                 <div style={css('display:flex; flex-direction:column; gap:12px;')}>
                   {savedQuestionCards.map((q) => <QuestionCard key={q.id} q={q} />)}
                 </div>

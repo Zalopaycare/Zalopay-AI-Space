@@ -20,7 +20,7 @@ export const openTour = () => window.dispatchEvent(new Event(OPEN_EVENT))
 // `at`: the element to light up (a data-tour mark or a selector); none = the card alone, centred.
 // `path`: the page the step is on (the tour opens it): AI Space first, then the Library, then the sidebar.
 const STEPS = [
-  { path: '/', title: 'Chào mừng đến Zalopay AI Space', text: 'Nơi đồng nghiệp tạo và cùng tham gia các buổi chia sẻ về AI, và học nhau qua những use case đã chạy thật. Đi một vòng chưa tới một phút nhé.' },
+  { path: '/', title: 'Chào mừng đến với Zalopay AI Space', text: 'Nơi đồng nghiệp tạo và cùng tham gia các buổi chia sẻ về AI, và học nhau qua những use case đã chạy thật. Đi một vòng chưa tới một phút nhé.' },
   // 1. the AI Space page: events
   { path: '/', at: '[data-tour="nav-home"]', title: 'Trang AI Space', text: 'Trang chủ: các sự kiện đồng nghiệp tạo ra để cùng chia sẻ về AI.' },
   { path: '/', at: '[data-tour="compose"]', title: 'Tạo sự kiện', text: 'Có topic AI muốn chia sẻ? Bấm Tạo sự kiện: đặt tên, ngày, địa điểm, thêm người đồng tổ chức và ảnh bìa nếu muốn.' },

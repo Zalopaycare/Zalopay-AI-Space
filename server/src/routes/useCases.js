@@ -145,7 +145,7 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   const owners = sub ? [userById(sub.author_id)] : (handles.size ? db.prepare('SELECT * FROM users').all().filter((u) => handles.has(handleOf(u.email))) : [])
   const replyToId = req.body?.replyToId ? String(req.body.replyToId) : parentId
   const targets = [
-    [commentAuthor(replyToId), `${who} đã reply comment của bạn trong ${where}`],
+    [commentAuthor(replyToId), `${who} đã trả lời bình luận của bạn trong ${where}`],
     [commentAuthor(parentId), `${who} đã reply trong một chuỗi bình luận bạn tham gia ở ${where}`],
     ...owners.map((o) => [o, `${who} đã comment vào ${where} của bạn`]),
   ]
@@ -385,7 +385,7 @@ router.post('/submissions', requireAuth, (req, res) => {
 
   // Tell every admin (ADMIN_EMAILS plus anyone flagged admin in the DB) there's something to review.
   for (const to of adminEmailsFor(req)) {
-    notify(to, { kind: 'submission', text: `${domainName(req.user.email, req.user.name)} gửi use case mới chờ duyệt: "${f.title.trim()}"`, href: `/review/${encodeURIComponent(id)}`, actor: req.user.name })
+    notify(to, { kind: 'submission', text: `${domainName(req.user.email, req.user.name)} đã gửi use case mới để duyệt: "${f.title.trim()}"`, href: `/review/${encodeURIComponent(id)}`, actor: req.user.name })
     sendMail({
       to,
       subject: `Use case mới chờ duyệt: ${f.title.trim()}`,

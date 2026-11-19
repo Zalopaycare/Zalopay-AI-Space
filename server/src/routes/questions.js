@@ -286,9 +286,9 @@ router.post('/:id/answers/:answerId/comments', requireAuth, (req, res) => {
   const userById = (uid) => (uid ? db.prepare('SELECT * FROM users WHERE id = ?').get(uid) : null)
   const commentAuthor = (cId) => { const c = cId ? db.prepare('SELECT author_id FROM answer_comments WHERE id = ?').get(cId) : null; return c ? userById(c.author_id) : null }
   const targets = [
-    [commentAuthor(replyToId), `${who} đã reply comment của bạn trong "${label}"`],
+    [commentAuthor(replyToId), `${who} đã trả lời bình luận của bạn trong bài viết "${label}"`],
     [commentAuthor(parentId), `${who} đã reply trong một chuỗi bình luận bạn tham gia ở "${label}"`],
-    [userById(answer.author_id), parentId ? `${who} đã reply trong chuỗi bình luận của bạn ở "${label}"` : `${who} đã reply comment của bạn trong "${label}"`],
+    [userById(answer.author_id), parentId ? `${who} đã trả lời trong chuỗi bình luận của bạn ở bài viết "${label}"` : `${who} đã trả lời bình luận của bạn trong bài viết "${label}"`],
     [userById(q.author_id), `${who} đã bình luận trong post của bạn: "${label}"`],
   ]
   const told = new Set([req.user.email.toLowerCase()])

@@ -530,7 +530,7 @@ export function ApplySection({ id, a, t, num = '5' }) {
     <div key="errors" style={css('padding:14px 16px 16px; border-radius:14px; border:1px solid #F5C2C2; background:#FFF5F5;')}>
       <div style={css(SUB + 'display:flex; align-items:center; gap:8px; color:#C81E1E;')}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-        {t('Lỗi hay gặp')}
+        {t('Lỗi thường gặp')}
       </div>
       {a.pitfallTable
         ? <Blocks blocks={a.pitfallTable} />

@@ -333,7 +333,7 @@ router.post('/maintenance', (req, res) => {
   setMaintenance(on, req.user.id)
   if (!on) {
     db.prepare("UPDATE access_requests SET status = 'approved', decided_at = datetime('now'), decided_by = ? WHERE kind = 'maintenance' AND status = 'pending'").run(req.user.id)
-    db.prepare("UPDATE notifications SET read = 1 WHERE kind = 'access' AND text LIKE '%trong lúc bảo trì%'").run()
+    db.prepare("UPDATE notifications SET read = 1 WHERE kind = 'access' AND (text LIKE '%trong lúc bảo trì%' OR text LIKE '%yêu cầu tham gia AI Space%')").run()
   }
   res.json(accessList())
 })

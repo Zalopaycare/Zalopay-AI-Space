@@ -33,9 +33,9 @@ function partsOf(s) {
   const hl = (ex.highlights || []).map((h) => [h.value, h.label].filter(Boolean).join(' — ')).join('\n')
   const block = (key, label, value, opts = {}) => ({ key, label, value: String(value || ''), ...opts })
   return [
-    { step: 0, title: 'Overview', blocks: [
+    { step: 0, title: 'Tổng quan', blocks: [
       block('audience', 'Ai dùng được', s.audience),
-      block('fitYes', 'Phù hợp với bạn nếu', ex.fitYes),
+      block('fitYes', 'Phù hợp với ai?', ex.fitYes),
       block('members', 'Thành viên cùng làm', (ex.members || []).join(', ')),
       block('team', 'Team', s.team),
     ] },
@@ -45,21 +45,21 @@ function partsOf(s) {
       block('solution', 'Giải pháp', s.solution, { required: true }),
       block('highlights', 'Con số nổi bật', hl),
     ] },
-    { step: 1, title: 'Tự áp dụng', blocks: [
+    { step: 1, title: 'Hướng dẫn áp dụng', blocks: [
       block('link', 'Link tài liệu / repo', s.link),
       block('prep', 'Cần chuẩn bị gì', s.prep, { required: true }),
-      (ex.steps || []).length ? { key: 'steps', label: 'Các bước', steps: ex.steps, value: ex.steps.map((x) => [x.title, x.text, x.prompt, x.note].join('\n')).join('\n') } : block('prompt', 'Prompt / quy trình', s.prompt, { mono: true }),
+      (ex.steps || []).length ? { key: 'steps', label: 'Các bước thực hiện', steps: ex.steps, value: ex.steps.map((x) => [x.title, x.text, x.prompt, x.note].join('\n')).join('\n') } : block('prompt', 'Prompt / quy trình', s.prompt, { mono: true }),
       block('success', 'Kết quả bạn sẽ thấy', ex.success),
-      block('pitfalls', 'Lỗi hay gặp', ex.pitfalls),
+      block('pitfalls', 'Lỗi thường gặp', ex.pitfalls),
       block('tech', 'Chi tiết kỹ thuật', ex.tech, { mono: true }),
       block('contact', 'Người liên hệ', s.contact),
     ] },
-    { step: 2, title: 'Trách nhiệm & giới hạn', blocks: [
-      block('safety', 'Trách nhiệm của con người', ex.safety),
+    { step: 2, title: 'Trách nhiệm & lưu ý', blocks: [
+      block('safety', 'Trách nhiệm của người dùng', ex.safety),
       block('limits', 'Giới hạn của AI', s.limits),
     ] },
     // the author's own extra parts, one text block (comments pin to it as "custom")
-    { step: 3, title: 'Phần khác', blocks: [
+    { step: 3, title: 'Thông tin bổ sung', blocks: [
       block('custom', 'Các phần thêm', (ex.customSections || []).map((x) => `${x.title}\n${x.text}`).join('\n\n')),
     ] },
   ]

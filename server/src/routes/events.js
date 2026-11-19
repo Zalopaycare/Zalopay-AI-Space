@@ -650,9 +650,9 @@ router.delete('/:id', requireAuth, (req, res) => {
     if (e.ol_id) cancelMeeting(e.author_id, e.ol_id, `Sự kiện "${e.title}" đã được huỷ trên Zalopay AI Space.${reason ? ` Lý do: ${reason}` : ''}`).catch(() => {})
     tellInterested(req, e, {
       exceptId: req.user.id, method: 'CANCEL',
-      text: `Sự kiện "${e.title}" (${whenText(e)}) đã huỷ${reason ? `. Lý do: ${reason}` : ''}`,
-      subject: `Sự kiện đã huỷ: ${e.title}`,
-      body: `Sự kiện "${e.title}" (${whenText(e)} tại ${e.location}) mà bạn quan tâm đã huỷ.${reason ? `\n\nLý do: ${reason}` : ''}`,
+      text: `Sự kiện "${e.title}" (${whenText(e)}) đã bị hủy${reason ? `. Lý do: ${reason}` : ''}`,
+      subject: `Sự kiện đã bị hủy: ${e.title}`,
+      body: `Sự kiện "${e.title}" (${whenText(e)} tại ${e.location}) mà bạn quan tâm đã bị hủy.${reason ? `\n\nLý do: ${reason}` : ''}`,
     })
   }
   deleteEventTx(e.id)

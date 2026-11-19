@@ -75,7 +75,7 @@ router.post('/me', requireAuth, (req, res) => {
   const message = insert(req.user.id, req.user.id, false, body, files)
   const name = domainName(req.user.email, req.user.name)
   for (const to of adminEmails(req.user.email)) {
-    notifyChat(to, { ref: 'chat:' + req.user.id, text: `${name} nhắn Admin: "${preview(body, files)}"`, href: '/admin#inbox/' + req.user.id, actor: req.user.name })
+    notifyChat(to, { ref: 'chat:' + req.user.id, text: `${name} đã gửi tin nhắn cho Admin: "${preview(body, files)}"`, href: '/admin#inbox/' + req.user.id, actor: req.user.name })
   }
   res.status(201).json({ message })
 })

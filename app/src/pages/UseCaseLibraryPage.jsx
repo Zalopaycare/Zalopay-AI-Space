@@ -72,10 +72,10 @@ const padHighlights = (list) => EMPTY_HIGHLIGHTS.map((h, i) => ({ ...h, ...((lis
 // One step per part of the published page, in the page's order: header, then sections 1–3.
 const SHARE_STEPS = [
   // Bài toán & Giải pháp are filled here too (their fields keep step 'ps', shown after the chips)
-  { key: 'intro', label: 'Overview', part: 'Phần Overview: tên, Owner, ảnh bìa, Phù hợp với bạn nếu, Độ khó, Chủ đề (chọn Team thì thêm Thành viên cùng làm), Bài toán & giải pháp; Công cụ AI không bắt buộc' },
-  { key: 'apply', label: 'Tự áp dụng', part: 'Phần Tự áp dụng' },
-  { key: 'safety', label: 'Trách nhiệm', part: 'Phần Trách nhiệm (không bắt buộc)' },
-  { key: 'more', label: 'Phần khác', part: 'Phần khác (không bắt buộc): thêm phần riêng của bạn' },
+  { key: 'intro', label: 'Tổng quan', part: 'Phần Tổng quan: tên, Owner, ảnh bìa, Phù hợp với ai, Độ khó, Chủ đề (chọn Team thì thêm Thành viên cùng làm), Bài toán & giải pháp; Công cụ AI không bắt buộc' },
+  { key: 'apply', label: 'Hướng dẫn áp dụng', part: 'Phần Hướng dẫn áp dụng' },
+  { key: 'safety', label: 'Trách nhiệm & lưu ý', part: 'Phần Trách nhiệm & lưu ý (không bắt buộc)' },
+  { key: 'more', label: 'Thông tin bổ sung', part: 'Thông tin bổ sung (không bắt buộc): thêm phần riêng của bạn' },
 ]
 // "Điền bằng Word" (template download / upload a filled one) is put away for now; flip to bring it back.
 const WORD_IMPORT = false
@@ -83,7 +83,7 @@ const WORD_IMPORT = false
 /** On top of the share form: how a use case goes up (in place of "Điền bằng Word" for now). */
 function ApprovalFlow({ t }) {
   const steps = [
-    'Điền và gửi Use Case', 'Admin kiểm duyệt', 'Chỉnh sửa và bổ sung (nếu có)', 'Publish',
+    'Hoàn thiện và gửi duyệt', 'Admin kiểm duyệt', 'Chỉnh sửa, bổ sung (nếu cần)', 'Đăng bài',
   ]
   return (
     <div style={css('margin-bottom:16px; padding:14px 16px; border-radius:18px; background:linear-gradient(180deg,#F3F7FF,#EEF3FF); border:1px solid #D5E2FC;')}>
@@ -675,13 +675,13 @@ export default function UseCaseLibraryPage() {
   // The hint (a short example at its end) sits right under the label, above the box. ('apply2' fields sit in Tự áp dụng after the steps;
   // 'ps' ones, Bài toán & Giải pháp, in Overview after the chips.)
   const fieldDefs = [
-    ['title', 'Tên use case', 'Required', 'Tên là thứ duy nhất người đọc thấy trên thẻ (không có đoạn mô tả riêng), nên đọc tên phải biết use case làm gì, cho ai. Viết theo dạng: Tên công cụ – làm được gì, cho ai (khoảng 8–16 chữ).', 'Ví dụ: GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay', 'input', 0, 'intro'],
-    ['problem', 'Bài toán', 'Required', 'Mô tả ngắn gọn vấn đề mà use case đang giải quyết, tập trung vào 3 ý:\n• Vấn đề là gì: họ đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Ai đang gặp vấn đề: Dev, QC, PO, Biz, Ops, HR…\n• Impact: việc này đang tốn bao nhiêu thời gian/công sức hoặc tạo ra rủi ro, sai sót gì? Nếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ của vấn đề.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps'],
+    ['title', 'Tên use case', 'Required', 'Đặt tên ngắn gọn, giúp người đọc hiểu ngay use case giải quyết công việc gì và dành cho ai. Ưu tiên cấu trúc: Tên công cụ – Công dụng chính – Đối tượng sử dụng.', 'Ví dụ: GRC Assistant – Tra cứu chính sách, quy trình, tiêu chuẩn và tài liệu ISMS của Zalopay', 'input', 0, 'intro'],
+    ['problem', 'Bài toán', 'Required', 'Mô tả vấn đề hoặc khó khăn trong công việc mà use case này hướng đến giải quyết. Tập trung vào 3 nội dung:\n• Vấn đề: đang phải làm thủ công, lặp đi lặp lại, chờ đợi hoặc phụ thuộc vào người khác như thế nào?\n• Đối tượng ảnh hưởng: Dev, QC, PO, Biz, Ops, HR…\n• Tác động: tốn bao nhiêu thời gian, công sức hoặc gây ra rủi ro, sai sót gì?\nNếu có số liệu thực tế, hãy bổ sung để làm rõ mức độ ảnh hưởng.\nIn đậm tên ý (bôi đen rồi bấm Ctrl/⌘+B hoặc nút B), xuống dòng giữa các ý.', '', 'area', 6, 'ps'],
     ['solution', 'Giải pháp', 'Required', 'Mô tả ngắn gọn cách AI được ứng dụng để giải quyết vấn đề trên, tập trung vào 3 ý:\n• Giải pháp là gì: đây là tool, AI agent, skill, chatbot… và đang được sử dụng ở đâu?\n• AI làm được gì: chọn 2–3 điểm nổi bật nhất mà người đọc cần biết, ưu tiên mô tả bằng ngôn ngữ dễ hiểu thay vì liệt kê tính năng hoặc thuật ngữ kỹ thuật.\n• Kết quả: nêu impact / kết quả đạt được, ưu tiên số liệu trước – sau. Nếu chưa có số liệu thực tế, có thể ghi rõ trạng thái hiện tại như MVP / pilot / đang triển khai / đã go-live và phạm vi sử dụng.', '', 'area', 6, 'ps'],
-    ['fitYes', 'Phù hợp với bạn nếu', 'Required', 'Mỗi dòng một trường hợp nên dùng. Ví dụ: Bạn là PO, HR, Marketing hoặc BD, có ý tưởng Mini App không liên quan thanh toán.', '', 'area', 3, 'intro'],
-    ['prep', 'Cần chuẩn bị gì', 'Required', 'Công cụ, quyền truy cập, dữ liệu hoặc tài khoản cần có trước; ghi luôn link tài liệu / repo và cách truy cập (ai dùng được, cần quyền / mạng gì, xin ở đâu). Mỗi dòng một mục. Ví dụ: Tài khoản O365 để đăng nhập MCP Platform.', '', 'area', 4, 'apply'],
-    ['pitfalls', 'Lỗi hay gặp', 'Optional', 'Mỗi dòng một lỗi, viết theo dạng: Lỗi bạn gặp → cách xử lý. Ví dụ: Không thấy tài nguyên mình cần → nhờ owner thêm bạn làm co-owner trên Gear.', '', 'area', 3, 'apply2'],
-    ['safety', 'Trách nhiệm của con người', 'Optional', 'Việc con người phải tự làm, tự quyết hoặc không được làm khi dùng AI ở use case này. Mỗi dòng một ý, ví dụ:\n• Chỗ phải tự xem lại, xác nhận trước khi lưu / gửi\n• Dữ liệu không được đưa vào AI\n• (Nếu có) 1 dòng "Dữ liệu đi qua AI: …", dòng này hiện riêng bên dưới', '', 'area', 4, 'safety'],
+    ['fitYes', 'Phù hợp với ai?', 'Required', 'Mỗi dòng mô tả một nhóm đối tượng hoặc trường hợp có thể áp dụng use case này. Ví dụ: PO, HR, Marketing, Business Development hoặc những người muốn xây dựng Mini App không liên quan đến thanh toán.', '', 'area', 3, 'intro'],
+    ['prep', 'Cần chuẩn bị gì', 'Required', 'Liệt kê các công cụ, tài khoản, dữ liệu và quyền truy cập cần có trước khi bắt đầu. Nếu có tài liệu hướng dẫn hoặc đường dẫn liên quan, hãy đính kèm để người đọc dễ dàng truy cập. Mỗi dòng ghi một mục và nêu rõ cách lấy quyền truy cập nếu cần. Ví dụ: Tài khoản O365 để đăng nhập MCP Platform.', '', 'area', 4, 'apply'],
+    ['pitfalls', 'Lỗi thường gặp', 'Optional', 'Liệt kê các lỗi hoặc khó khăn có thể gặp khi thực hiện và cách xử lý tương ứng. Mỗi dòng ghi theo cấu trúc: Lỗi gặp phải → Cách khắc phục. Ví dụ: Không tìm thấy tài nguyên cần dùng → Nhờ Owner cấp quyền hoặc thêm bạn làm Co-owner trên Gear.', '', 'area', 3, 'apply2'],
+    ['safety', 'Trách nhiệm của người dùng', 'Optional', 'Nêu rõ những việc người dùng cần tự thực hiện, kiểm tra hoặc đưa ra quyết định khi sử dụng AI trong use case này. Mỗi dòng một ý, ví dụ:\n• Kiểm tra nội dung trước khi sử dụng\n• Không đưa dữ liệu nhạy cảm vào công cụ AI\n• Người dùng chịu trách nhiệm về quyết định cuối cùng\n• (Nếu có) 1 dòng "Dữ liệu đi qua AI: …", dòng này hiện riêng bên dưới', '', 'area', 4, 'safety'],
   ]
   const shareFields = fieldDefs.map(([k, label, req, hint, placeholder, kind, rows, step, example]) => ({
     key: k, label, req, hint, placeholder, rows, step, example,
@@ -993,9 +993,9 @@ export default function UseCaseLibraryPage() {
           {/* 54px down: level with the AI Space wordmark, which has its UFO strip above it */}
           <div style={css('position:relative; z-index:4; padding:54px var(--zp-gutter) 0;')}>
             <h1 style={css('margin:0; text-align:center; font-family:"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; font-size:50px; line-height:1.06; font-weight:800; letter-spacing:-1px; background:linear-gradient(180deg,#ffffff 0%,#cfe3ff 46%,#4f93ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 6px 40px rgba(26,95,255,.85)) drop-shadow(0 0 16px rgba(90,150,255,.6));')}>{t('Use Case Library')}</h1>
-            <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Tổng hợp các cách và tips Zalopay Starter áp dụng AI vào công việc.')}</p>
+            <p style={css('margin:10px auto 0; max-width:760px; text-align:center; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>{t('Tổng hợp những cách ứng dụng AI vào công việc thực tế tại Zalopay, cùng chia sẻ để học hỏi và áp dụng.')}</p>
           </div>
-          <PageActionBar ref={searchInputRef} tour="lib-compose" prompt="Bạn có use case AI muốn chia sẻ?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)); offerDrafts() }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, dữ liệu..." filters={libFilters} />
+          <PageActionBar ref={searchInputRef} tour="lib-compose" prompt="Bạn có use case AI hay muốn chia sẻ với đồng nghiệp?" cta="Chia sẻ use case" onCompose={() => { setShareOpen(true); setShareStage((st) => (st === 'submitted' ? 'form' : st)); offerDrafts() }} query={query} onQuery={setQuery} placeholder="Tìm use case: PRD, báo cáo, dữ liệu..." filters={libFilters} />
         </section>
 
         <section style={css('position:relative; z-index:5; background:transparent; padding:26px var(--zp-gutter) 28px;')}>
@@ -1121,7 +1121,7 @@ export default function UseCaseLibraryPage() {
     const boothTitle = shareBooth && !editingCase && shareStage === 'form' ? (pendingCases.find((x) => x.id === shareBooth) || {}).title : ''
     const shareHeading = boothTitle ? `${t('Bạn đang bổ sung thông tin cho')} “${boothTitle}”` : editingCase ? (shareStage === 'preview' ? 'Xem trước bản chỉnh sửa' : 'Chỉnh sửa use case (Admin)') : shareStage === 'submitted' ? (editing ? 'Đã gửi lại use case' : 'Use case đã được gửi') : shareStage === 'preview' ? 'Xem trước use case' : editing ? 'Chỉnh sửa & gửi lại use case' : t('Chia sẻ Use Case')
     const shareSubhead = editingCase ? 'Sửa nội dung của use case đang đăng. Lưu xong trang cập nhật ngay, không cần duyệt; ảnh, bảng và lệnh mẫu trong từng bước được giữ nguyên.' : shareStage === 'submitted' ? 'Admin sẽ xem xét và bạn nhận được thông báo về kết quả.' : liveEdit ? 'Bài đang đăng sẽ tạm ẩn khỏi Use Case Library cho đến khi Admin duyệt lại bản chỉnh sửa.' : 'Mô tả cách bạn dùng AI để người khác làm lại được. Bài sẽ qua bước Admin duyệt.'
-    const shareHint = shareError || (editingCase ? 'Bấm Lưu thay đổi để cập nhật ngay trên trang.' : (liveEdit ? 'Sau khi gửi lại, bài tạm ẩn khỏi Use Case Library cho đến khi được duyệt lại.' : 'Sau khi gửi, bài ở trạng thái Chờ duyệt và chưa hiển thị trong Use Case Library.'))
+    const shareHint = shareError || (editingCase ? 'Bấm Lưu thay đổi để cập nhật ngay trên trang.' : (liveEdit ? 'Sau khi gửi lại, bài tạm ẩn khỏi Use Case Library cho đến khi được duyệt lại.' : 'Sau khi gửi, use case sẽ chuyển sang trạng thái Chờ duyệt và chỉ hiển thị trên Use Case Library sau khi Admin phê duyệt.'))
     const shareHintColor = shareError ? '#D8232A' : '#94a3b8'
 
     return (
@@ -1141,7 +1141,7 @@ export default function UseCaseLibraryPage() {
             <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
               <span style={css('display:inline-flex; align-items:center; gap:8px; height:30px; padding:0 13px; border-radius:999px; background:rgba(22,214,140,.14); border:1px solid rgba(22,214,140,.34); font-size:11.5px; font-weight:700; color:#6fe3aa;')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
-                {editing ? 'Sửa xong bấm "Gửi lại để duyệt"' : hasDraft ? 'Nháp đã lưu lúc ' + draftSavedAt : 'Nháp tự lưu khi bạn gõ'}
+                {editing ? 'Sửa xong bấm "Gửi lại để duyệt"' : hasDraft ? 'Nháp đã lưu lúc ' + draftSavedAt : 'Tự động lưu khi bạn nhập'}
               </span>
               {hasDraft && (
                 <button onClick={clearDraft} style={css('height:30px; padding:0 13px; border-radius:999px; border:1px solid rgba(255,255,255,.2); background:transparent; color:#c3d0f5; font-family:inherit; font-size:11.5px; font-weight:700; cursor:pointer;')}>{t('Xoá nháp')}</button>
@@ -1285,7 +1285,7 @@ export default function UseCaseLibraryPage() {
                       return (
                         <div className="zp-msform-plain" style={css(`margin:-12px 0 18px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:${all ? '#00893F' : '#B45300'};`)}>
                           <span style={css('flex:none; width:120px; height:6px; border-radius:999px; background:#DCE3EE; overflow:hidden;')}><span style={css(`display:block; height:100%; width:${Math.round((done / req.length) * 100)}%; background:${all ? '#00A352' : '#F59E0B'};`)}></span></span>
-                          {all ? `✓ ${t('Đã điền đủ mục bắt buộc ở bước này')}` : `${t('Đã điền')} ${done}/${req.length} ${t('mục bắt buộc')}`}
+                          {all ? `✓ ${t('Đã hoàn thành tất cả mục bắt buộc')}` : `${t('Đã hoàn thành')} ${done}/${req.length} ${t('mục bắt buộc')}`}
                         </div>
                       )
                     })()}
@@ -1321,7 +1321,7 @@ export default function UseCaseLibraryPage() {
                           {!coverError && coverNote && <div style={css('margin-top:8px; font-size:12px; color:#9A5B00;')}>{coverNote}</div>}
                         </div>
                         <div>
-                          <div style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Bài này của cá nhân bạn hay của cả team?')}</div>
+                          <div style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Use case này thuộc về ai?')}</div>
                           <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                             {[['personal', 'Cá nhân'], ['team', 'Team']].map(([v, label]) => {
                               const ch = chip(sharePostAs === v)
@@ -1383,7 +1383,7 @@ export default function UseCaseLibraryPage() {
                         <>
                           {key === 'safety' && (
                             <div className="zp-msform-plain" style={css('margin-bottom:16px; padding:10px 13px; border-radius:10px; background:#EEF3FF; border:1px solid #D6E1FF; font-size:12.5px; line-height:1.55; color:#1D3A8F;')}>
-                              {t('Chỉ điền nếu use case đụng tới dữ liệu thật (dữ liệu khách hàng, hệ thống PROD, mật khẩu…) hoặc có việc AI chưa làm được. Để trống thì phần này không hiện trên trang. Lưu ý gắn với một bước cụ thể thì ghi ở ô "Lưu ý ở bước này" trong phần Tự áp dụng.')}
+                              {t('Chỉ cần điền phần này nếu use case có sử dụng dữ liệu thật (ví dụ: dữ liệu khách hàng, hệ thống PROD, thông tin xác thực...) hoặc có những giới hạn cần lưu ý khi sử dụng AI.')}
                             </div>
                           )}
                           {shareFields.filter((f) => f.step === key).map(field)}
@@ -1429,8 +1429,8 @@ export default function UseCaseLibraryPage() {
                       <div style={css('margin-bottom:8px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Kết quả nổi bật')}</span>
-                          <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Tối đa 3')}</span>
                         </div>
+                        <div style={css('margin-top:5px; font-size:12px; line-height:1.55; color:#94a3b8;')}>{t('Chia sẻ tối đa 3 kết quả nổi bật mà use case mang lại. Ưu tiên số liệu cụ thể để thể hiện hiệu quả thực tế.')}</div>
                         {shareHighlights.map((h, i) => (
                           <div key={i} style={css('display:flex; gap:8px; margin-top:10px;')}>
                             <input aria-label={t('Con số') + ' ' + (i + 1)} value={h.value} onChange={(e) => setShareHighlights((l) => l.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)))} placeholder={['2 ngày → 5 phút', '−80%', '12 team'][i]} style={css('flex:0 0 34%; min-width:0; border:1px solid #E6EBF3; border-radius:12px; padding:11px 13px; font-family:inherit; font-size:13px; font-weight:700; color:#0f172a; outline:none; box-sizing:border-box;')} />
@@ -1448,13 +1448,13 @@ export default function UseCaseLibraryPage() {
                   </div>
 
                   <div style={css('display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;')}>
-                    <button onClick={() => { setHasDraft(true); if (!draftIdRef.current) draftIdRef.current = newDraftId(); saveUcDraft(draftIdRef.current, draftPayload()); closeShare() }} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu nháp & đóng')}</button>
+                    <button onClick={() => { setHasDraft(true); if (!draftIdRef.current) draftIdRef.current = newDraftId(); saveUcDraft(draftIdRef.current, draftPayload()); closeShare() }} style={css('height:40px; padding:0 22px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>{t('Lưu bản nháp & đóng')}</button>
                     <div style={css('margin-left:auto; display:flex; gap:12px; flex:none;')}>
-                      {shareStep > 0 && <button onClick={() => setShareStep(shareStep - 1)} style={css('height:40px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>‹ {t('Bước trước')}</button>}
+                      {shareStep > 0 && <button onClick={() => setShareStep(shareStep - 1)} style={css('height:40px; padding:0 20px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;')}>← {t('Quay lại')}</button>}
                       {/* an admin editing a published case can save from any step */}
                       {editingCase && <button onClick={saveCaseEdit} style={css('height:40px; padding:0 22px; border:none; border-radius:999px; background:linear-gradient(180deg,#22b573 0%,#00893F 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; white-space:nowrap;')}>{t('Lưu thay đổi')}</button>}
                       {shareStep < SHARE_STEPS.length - 1
-                        ? <button onClick={() => setShareStep(shareStep + 1)} style={css('height:40px; padding:0 24px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 12px 26px rgba(44,95,255,.4);')}>{t('Tiếp')}: {t(SHARE_STEPS[shareStep + 1].label)} ›</button>
+                        ? <button onClick={() => setShareStep(shareStep + 1)} style={css('height:40px; padding:0 24px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 12px 26px rgba(44,95,255,.4);')}>{t('Tiếp')}: {t(SHARE_STEPS[shareStep + 1].label)} →</button>
                         : (
                           <button
                             onClick={() => {
@@ -1472,7 +1472,7 @@ export default function UseCaseLibraryPage() {
                             // grey until every required item is in: a click then only shows what's missing
                             style={css(`height:40px; padding:0 26px; border:none; border-radius:999px; ${valid || editingCase ? 'background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; box-shadow:0 12px 26px rgba(44,95,255,.4);' : 'background:#E3E8F2; color:#64748b;'} font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;`)}
                           >
-                            {t('Xem trước & gửi')} ›
+                            {t('Xem trước & gửi duyệt')}
                           </button>
                         )}
                     </div>
@@ -1498,7 +1498,7 @@ export default function UseCaseLibraryPage() {
 /** Tự áp dụng, step by step, the way the published page shows it (a horizontal journey, one step at a
  *  time): each step has a name, what to do, an optional prompt / command and an optional red warning. */
 // The sections that take pictures with a caption (Bài toán, Giải pháp…), up to 3 each, 10 MB each.
-const FIGURE_FIELDS = ['problem', 'solution', 'prep', 'success', 'pitfalls', 'safety', 'limits']
+const FIGURE_FIELDS = ['problem', 'solution', 'prep', 'success', 'pitfalls', 'limits'] // not Trách nhiệm & lưu ý
 const MAX_FIGURES = 3
 const IMAGE_TYPE = /^image\/(png|jpeg|gif|webp)$/
 
@@ -1586,14 +1586,14 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
   return (
     <div style={css('margin-bottom:18px;')}>
       <div style={css('display:flex; align-items:center; gap:8px;')}>
-        <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Các bước')}</span>
+        <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Các bước thực hiện')}</span>
         <ReqTag done={ready} required t={t} />
         <span style={{ flex: 1 }}></span>
-        <button type="button" onClick={() => setExample((v) => !v)} style={css('border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#2c5fff;')}>{example ? t('Ẩn ví dụ') : t('Xem ví dụ một bước')}</button>
+        <button type="button" onClick={() => setExample((v) => !v)} style={css('border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#2c5fff;')}>{example ? t('Ẩn ví dụ') : t('Xem ví dụ')}</button>
       </div>
       {example && (
         <div style={css('margin-top:8px; padding:9px 12px; border-radius:10px; background:#F7F9FD; border:1px dashed #DCE3F0; font-size:12px; line-height:1.6; color:#475569; white-space:pre-wrap;')}>
-          <b>{t('Tên bước')}:</b> Tạo 1 khoá cho nhiều tài nguyên{'\n'}<b>{t('Làm gì')}:</b> Vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên cần dùng, bấm "Create key".{'\n'}<b>{t('Prompt / lệnh mẫu')}:</b> codex mcp add mcp-platform --url "…/mcp" --bearer-token-env-var MCP_PLATFORM_KEY{'\n'}<b>{t('Lưu ý (hiện màu đỏ)')}:</b> Khoá chỉ hiện một lần: chép ngay, không gửi cho người khác.
+          <b>{t('Tên bước')}:</b> Tạo 1 khoá cho nhiều tài nguyên{'\n'}<b>{t('Hướng dẫn thực hiện')}:</b> Vào mục "MCP keys", đặt tên khoá, tích chọn các tài nguyên cần dùng, bấm "Create key".{'\n'}<b>{t('Prompt / lệnh mẫu')}:</b> codex mcp add mcp-platform --url "…/mcp" --bearer-token-env-var MCP_PLATFORM_KEY{'\n'}<b>{t('Lưu ý (hiện màu đỏ)')}:</b> Khoá chỉ hiện một lần: chép ngay, không gửi cho người khác.
         </div>
       )}
       <div style={css('margin-top:14px;')}>
@@ -1618,8 +1618,8 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
                 </div>
                 <input value={x.title} onChange={set(i, 'title')} aria-label={t('Tên bước') + ' ' + (i + 1)} placeholder={t('Tên bước, ví dụ: Cài bộ skill vào Codex')} style={css(FIELD_INPUT + 'margin-top:6px; font-size:14.5px; font-weight:700;' + (missTitle ? MISS_FIELD : ''))} />
                 {missTitle && <MissLine text={t('Chưa điền tên bước')} />}
-                {lbl('Làm gì', true, !!(x.text.trim() || x.prompt.trim()))}
-                <RichArea value={x.text} onChange={set(i, 'text')} rows={3} ariaLabel={t('Làm gì') + ' · ' + t('Bước') + ' ' + (i + 1)} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA + (missText ? MISS_FIELD : ''))} />
+                {lbl('Hướng dẫn thực hiện', true, !!(x.text.trim() || x.prompt.trim()))}
+                <RichArea value={x.text} onChange={set(i, 'text')} rows={3} ariaLabel={t('Hướng dẫn thực hiện') + ' · ' + t('Bước') + ' ' + (i + 1)} placeholder={t('Người đọc làm gì ở bước này, bấm vào đâu, chọn gì…')} style={css(FIELD_AREA + (missText ? MISS_FIELD : ''))} />
                 {missText && <MissLine text={t('Chưa điền bước này làm gì')} />}
                 {(x.prompt || x.withPrompt) && (
                   <>
@@ -1638,8 +1638,8 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
                 {/* the three optional extras of a step, side by side */}
                 {(!(x.prompt || x.withPrompt) || !(x.note || x.withNote) || (allowFiles && (x.files || []).length < MAX_STEP_FILES)) && (
                   <div style={css('display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px;')}>
-                    {!(x.prompt || x.withPrompt) && addBtn('Thêm prompt / lệnh mẫu', () => flag(i, 'withPrompt'))}
-                    {!(x.note || x.withNote) && addBtn('Thêm lưu ý cho bước này', () => flag(i, 'withNote'), true)}
+                    {!(x.prompt || x.withPrompt) && addBtn('Thêm prompt / câu lệnh mẫu', () => flag(i, 'withPrompt'))}
+                    {!(x.note || x.withNote) && addBtn('Thêm lưu ý', () => flag(i, 'withNote'), true)}
                     {allowFiles && (x.files || []).length < MAX_STEP_FILES && (
                       <label className={hoverClass('background:#EEF3FF !important;')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border:1px dashed #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:12px; font-weight:700; cursor:pointer;')}>
                         <input type="file" multiple hidden onChange={(e) => { addFiles(i, [...(e.target.files || [])]); e.target.value = '' }} />
@@ -1654,7 +1654,7 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
           )
         })}
       </div>
-      <button type="button" onClick={() => onChange([...steps, { title: '', text: '', prompt: '', note: '' }])} className={hoverClass('background:#EEF3FF !important;')} style={css('margin:4px 0 0 44px; height:36px; padding:0 16px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm bước')} {steps.length + 1}</button>
+      <button type="button" onClick={() => onChange([...steps, { title: '', text: '', prompt: '', note: '' }])} className={hoverClass('background:#EEF3FF !important;')} style={css('margin:4px 0 0 44px; height:36px; padding:0 16px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm bước')}</button>
     </div>
   )
 }
@@ -1671,7 +1671,8 @@ function CustomSections({ list, onChange, t, adminEdit }) {
   const set = (i, k) => (e) => onChange(list.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
   return (
     <div style={css('margin-bottom:16px;')}>
-      {adminEdit && <div style={css('margin-top:10px; font-size:12px; font-weight:600; color:#B45300;')}>{t('Phần khác chỉ lưu được cho bài đăng qua form, chưa áp dụng khi Admin sửa use case có sẵn.')}</div>}
+      <div style={css('font-size:12px; line-height:1.55; color:#94a3b8;')}>{t('Thêm thông tin khác mà bạn muốn chia sẻ để giúp người đọc hiểu rõ hơn về use case.')}</div>
+      {adminEdit && <div style={css('margin-top:10px; font-size:12px; font-weight:600; color:#B45300;')}>{t('Thông tin bổ sung chỉ lưu được cho bài đăng qua form, chưa áp dụng khi Admin sửa use case có sẵn.')}</div>}
       {list.map((x, i) => (
         <div key={i} style={css('margin-top:14px; padding:12px 14px 14px; border:1px solid #E1E8F5; border-radius:14px; background:#fff;')}>
           <div style={css('display:flex; align-items:center; gap:8px;')}>
@@ -1685,7 +1686,7 @@ function CustomSections({ list, onChange, t, adminEdit }) {
         </div>
       ))}
       {list.length < 8 && (
-        <button type="button" onClick={() => onChange([...list, { title: '', text: '' }])} className={hoverClass('background:#EEF3FF !important;')} style={css('margin-top:14px; height:36px; padding:0 16px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm phần khác')}</button>
+        <button type="button" onClick={() => onChange([...list, { title: '', text: '' }])} className={hoverClass('background:#EEF3FF !important;')} style={css('margin-top:14px; height:36px; padding:0 16px; border:1px dashed #9FB6E8; border-radius:999px; background:#fff; color:#2c5fff; font-family:inherit; font-size:12.5px; font-weight:800; cursor:pointer;')}>+ {t('Thêm nội dung bổ sung')}</button>
       )}
     </div>
   )

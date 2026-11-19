@@ -223,7 +223,7 @@ router.post('/maintenance-request', (req, res) => {
   db.prepare("INSERT INTO access_requests (email, name, org_info, note, kind) VALUES (?, ?, ?, ?, 'maintenance')").run(req.user.email, String(req.user.name || '').slice(0, 120), req.user.org_info || null, note)
   const who = req.user.name || req.user.email
   for (const to of adminEmails()) {
-    notify(to, { kind: 'access', text: `${who} xin vào AI Space trong lúc bảo trì`, href: '/admin#access', actor: req.user.name })
+    notify(to, { kind: 'access', text: `${who} đã gửi yêu cầu tham gia AI Space`, href: '/admin#access', actor: req.user.name })
     sendMail({ to, subject: `Xin vào Zalopay AI Space lúc bảo trì: ${who}`, text: `${who} <${req.user.email}> mở AI Space trong lúc đang bảo trì và xin được vào.${note ? `\n\nLời nhắn: ${note}` : ''}\n\nDuyệt tại: ${appUrl(req)}/admin#access` }).catch(() => {})
   }
   res.json({ status: 'pending' })

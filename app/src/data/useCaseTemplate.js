@@ -35,7 +35,7 @@ function fromTpl(c, m) {
   const pit = arr(a.pitfalls).map((x) => (typeof x === 'string' ? pitfallRow(x) : x))
   const apply = {
     // one name for every use case, whatever its type
-    title: 'Tự áp dụng',
+    title: 'Hướng dẫn áp dụng',
     intro: a.intro || '', fit: { yes: arr(a.fit?.yes), no: arr(a.fit?.no) },
     promptTarget: m.promptTarget || (c.tools || []).join(' / '),
     prep: arr(a.prep), prepPrompt: a.prepPrompt || null,
@@ -141,7 +141,7 @@ function buildParts(c, cd, info) {
   const code = (cd.code || []).filter((cb) => !sampleTitles.includes(cb.title)).map((cb) => ({ ...cb, note: (x.codeNote || {})[cb.title] || '' }))
   const samples = (cd.code || []).filter((cb) => sampleTitles.includes(cb.title))
   const apply = {
-    title: 'Tự áp dụng',
+    title: 'Hướng dẫn áp dụng',
     intro: x.applyIntro || '',
     fit: x.fit || { yes: [], no: [] },
     prep, prepPrompt,

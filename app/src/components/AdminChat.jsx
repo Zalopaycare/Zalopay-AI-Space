@@ -135,7 +135,7 @@ function Composer({ onSend, placeholder, t }) {
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4Z"></path></svg>
         </button>
       </div>
-      <div style={css('margin:5px 0 0 14px; font-size:10.5px; color:#a3afc2;')}>{t('Enter để gửi · Shift + Enter để xuống dòng · dán ảnh trực tiếp được')}</div>
+      <div style={css('margin:5px 0 0 14px; font-size:10.5px; color:#a3afc2;')}>{t('Nhấn Enter để gửi · Shift + Enter để xuống dòng · Bạn cũng có thể dán ảnh trực tiếp vào khung chat.')}</div>
     </div>
   )
 }
@@ -175,7 +175,7 @@ export function MyChat({ t }) {
     <div style={css('display:flex; align-items:flex-end; gap:8px; margin-top:4px;')}>
       <span style={css('flex:none; width:30px;')}><TeamMark size={30} /></span>
       <div style={css('max-width:min(72%, 560px); padding:8px 13px; border-radius:18px; border-bottom-left-radius:6px; background:#F0F3F9; color:#0F172A; font-size:13.5px; line-height:1.5;')}>
-        {t('Chào bạn! Bạn cần hỗ trợ gì về AI Space? Gửi câu hỏi, góp ý hoặc báo lỗi tại đây, đội Admin sẽ trả lời sớm nhất có thể.')}
+        {t('Chào bạn! Bạn cần hỗ trợ gì về AI Space? Hãy gửi câu hỏi, góp ý hoặc báo lỗi tại đây. Admin sẽ phản hồi bạn sớm nhất có thể.')}
       </div>
     </div>
   )
@@ -185,13 +185,13 @@ export function MyChat({ t }) {
         <TeamMark />
         <div style={css('min-width:0;')}>
           <div style={css('display:flex; align-items:center; gap:8px; font-size:14.5px; font-weight:800; color:#0F172A;')}>{t('Admin AI Space')} {ADMIN_BADGE}</div>
-          <div style={css('font-size:12px; color:#64748b;')}>{t('Thường trả lời trong giờ làm việc')}</div>
+          <div style={css('font-size:12px; color:#64748b;')}>{t('Admin thường phản hồi trong giờ làm việc')}</div>
         </div>
       </div>
       <ScrollArea deps={[messages.length, loaded]}>
         {loaded ? <Bubbles messages={messages} mineIf={(m) => !m.fromAdmin} intro={intro} t={t} /> : <div style={css('padding:30px; text-align:center; color:#94a3b8; font-size:13px;')}>{t('Đang tải…')}</div>}
       </ScrollArea>
-      <Composer t={t} placeholder={t('Nhắn cho Admin…')} onSend={(body, files) => api.chatSend(body, files).then((d) => add(d.message))} />
+      <Composer t={t} placeholder={t('Nhập tin nhắn…')} onSend={(body, files) => api.chatSend(body, files).then((d) => add(d.message))} />
     </div>
   )
 }
