@@ -111,7 +111,7 @@ export default function TopicsPanel({ query = '' }) {
         </div>
       ) : (
         <div style={css('display:flex; flex-direction:column; gap:12px;')}>
-          {/* laid out like the Use Case Library cards: title, who and when, then a row of actions with the way in on the right */}
+          {/* laid out like the Use Case Library cards: title, who and when, then the row of buttons on the right */}
           {shown.map((t) => (
             <div key={t.id} role="button" tabIndex={0} onClick={() => setOpenId(t.id)} onKeyDown={(e) => { if (e.key === 'Enter') setOpenId(t.id) }}
               className={'zp-card ' + hoverClass(CARD_HOVER)}
@@ -123,17 +123,14 @@ export default function TopicsPanel({ query = '' }) {
               <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}><span style={css('font-weight:700; color:#0F172A;')}>Đăng bởi:</span> {t.author?.name}</div>
               <div style={css('margin-top:2px; font-size:12px; line-height:1.45; color:#94a3b8;')}>{relativeTime(t.createdAt)}</div>
               <TopicEvents t={t} />
-              <div style={css('display:flex; align-items:center; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid #EEF1F7;')}>
-                <VoteButton t={t} onVote={vote} height={30} />
-                <CreateEventButton t={t} />
+              {/* the buttons on the right, "Quan tâm" last (as on the booth tiles); the card itself opens the topic */}
+              <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid #EEF1F7;')}>
                 <span style={css('display:inline-flex; align-items:center; gap:5px; font:600 12.5px var(--zp-font-text); color:#475569;')}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
                   {t.commentCount || ''}
                 </span>
-                <span className={hoverClass('gap:9px;')} style={css('flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
-                  Xem chi tiết
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-                </span>
+                <CreateEventButton t={t} />
+                <VoteButton t={t} onVote={vote} height={30} />
               </div>
             </div>
           ))}
