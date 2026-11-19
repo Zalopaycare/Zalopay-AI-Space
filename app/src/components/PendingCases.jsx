@@ -189,7 +189,7 @@ export default function PendingCases({ items, written = [], t, requireLogin }) {
                 )}
                 {/* "Quan tâm" pinned to the bottom-right corner */}
                 <div style={css('display:flex; align-items:flex-end; justify-content:flex-end; gap:8px; margin-top:auto; padding-top:8px;')}>
-                  <CommentsButton p={p} t={t} />
+                  {/* only "Quan tâm" on the tile; comments are in the popup and on the booth's page */}
                   {p.owner ? <OwnerButton p={p} t={t} /> : <InterestButton p={p} busy={busy === p.id} onToggle={toggle} t={t} />}
                 </div>
               </div>
