@@ -138,6 +138,63 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false, rich
   )
 }
 
+// ---- the month calendar ("Lịch"), like Outlook's month view ----
+const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+const monthKey = (d) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}`
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+/** Every event of a month in day cells (Monday first): time and name, past ones greyed; a click opens it. */
+function EventsCalendar({ onOpen, reloadKey }) {
+  const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
+  const [events, setEvents] = useState(null)
+  useEffect(() => {
+    let stop = false
+    setEvents(null)
+    api.listEventsMonth(monthKey(month)).then((d) => { if (!stop) setEvents(d.events || []) }).catch(() => { if (!stop) setEvents([]) })
+    return () => { stop = true }
+  }, [month, reloadKey])
+  const today = new Date()
+  const first = new Date(month.getFullYear(), month.getMonth(), 1)
+  const start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7)) // back to Monday
+  const days = Array.from({ length: 42 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d })
+  const weeks = days[35].getMonth() === month.getMonth() ? 6 : days[28].getMonth() === month.getMonth() ? 5 : 5
+  const byDay = (d) => (events || []).filter((ev) => sameDay(new Date(ev.startsAt), d))
+  const go = (n) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1))
+  const navBtn = 'height:32px; min-width:32px; padding:0 10px; border:1px solid #E6EBF3; border-radius:9px; background:#fff; color:#0F172A; cursor:pointer; font:700 13px var(--zp-font-text);'
+  return (
+    <div style={css('background:#fff; border-radius:18px; box-shadow:0 14px 34px rgba(3,12,40,.3); overflow:hidden;')}>
+      <div style={css('display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid #EEF1F7;')}>
+        <div style={css(`flex:1; font:800 17px ${FONT}; color:#0F172A;`)}>Tháng {month.getMonth() + 1}, {month.getFullYear()}</div>
+        <button onClick={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)) }} className={hoverClass('background:#F4F7FE !important;')} style={css(navBtn)}>Hôm nay</button>
+        <button onClick={() => go(-1)} aria-label="Tháng trước" className={hoverClass('background:#F4F7FE !important;')} style={css(navBtn)}>‹</button>
+        <button onClick={() => go(1)} aria-label="Tháng sau" className={hoverClass('background:#F4F7FE !important;')} style={css(navBtn)}>›</button>
+      </div>
+      <div style={css('display:grid; grid-template-columns:repeat(7, minmax(0, 1fr));')}>
+        {WEEKDAYS.map((w) => <div key={w} style={css('padding:8px 8px 6px; font:700 11.5px var(--zp-font-text); color:#64748b; text-transform:uppercase; border-bottom:1px solid #EEF1F7;')}>{w}</div>)}
+        {days.slice(0, weeks * 7).map((d, i) => {
+          const inMonth = d.getMonth() === month.getMonth()
+          const list = byDay(d)
+          const isToday = sameDay(d, today)
+          return (
+            <div key={i} style={css(`min-height:96px; padding:6px 5px; box-sizing:border-box; border-right:${(i % 7) === 6 ? 'none' : '1px solid #F1F4F9'}; border-bottom:1px solid #F1F4F9; background:${inMonth ? '#fff' : '#FAFBFD'}; min-width:0;`)}>
+              <div style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 4px; border-radius:999px; font:700 12px var(--zp-font-text); ${isToday ? 'background:#2c5fff; color:#fff;' : `color:${inMonth ? '#0F172A' : '#B3BDCC'};`}`)}>{d.getDate()}</div>
+              <div style={css('margin-top:3px; display:flex; flex-direction:column; gap:3px;')}>
+                {list.slice(0, 3).map((ev) => (
+                  <button key={ev.id} onClick={() => onOpen(ev.id)} title={`${ev.title} · ${whenLabel(ev)} · ${ev.location}`} className={hoverClass('filter:brightness(.96);')}
+                    style={css(`display:block; width:100%; text-align:left; border:none; border-left:3px solid ${ev.past ? '#94a3b8' : '#2c5fff'}; border-radius:5px; padding:3px 5px; background:${ev.past ? '#F1F4F9' : ev.interested ? '#DCE6FF' : '#EEF3FF'}; color:${ev.past ? '#64748b' : '#1E3A8A'}; cursor:pointer; font:600 11.5px/1.3 var(--zp-font-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>
+                    {!ev.allDay && <b style={{ fontWeight: 800 }}>{hm(new Date(ev.startsAt))} </b>}{ev.title}
+                  </button>
+                ))}
+                {list.length > 3 && <span style={css('font:600 11px var(--zp-font-text); color:#64748b; padding-left:4px;')}>+{list.length - 3} sự kiện</span>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {events && !events.length && <div style={css('padding:10px 14px 14px; font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>Tháng này chưa có sự kiện nào.</div>}
+    </div>
+  )
+}
+
 // ---- the list: the grid of the events page (AI Space home), the rail or the strip ----
 // `query` (grid): only the events whose title, place or host match. /?new=event opens the "Tạo sự kiện"
 // form (the sidebar's link).
@@ -146,6 +203,9 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
   const [events, setEvents] = useState(null)
   const [openId, setOpenId] = useState(() => new URLSearchParams(window.location.search).get('event'))
   const [form, setForm] = useState(null) // null | {} (new) | event (edit)
+  // the grid: cards or the month calendar (remembered in this browser)
+  const [view, setViewState] = useState(() => { try { return localStorage.getItem('zp-events-view') === 'calendar' ? 'calendar' : 'list' } catch { return 'list' } })
+  const setView = (v) => { setViewState(v); try { localStorage.setItem('zp-events-view', v) } catch { /* ignore */ } }
   const reload = () => api.listEvents().then((d) => setEvents(d.events || [])).catch(() => setEvents((x) => x || []))
   useEffect(() => { reload() }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -165,9 +225,13 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
   const location = useLocation()
   const navigate = useNavigate()
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('new') !== 'event') return
+    const sp = new URLSearchParams(location.search)
+    if (sp.get('new') !== 'event') return
+    const topicId = sp.get('fromTopic')
     navigate({ pathname: location.pathname, hash: location.hash }, { replace: true })
-    requireLogin(() => setForm({}))
+    // "Tạo sự kiện" on a topic: the form starts from it, and everyone interested in it gets the invitation
+    if (topicId) requireLogin(() => api.getTopic(topicId).then((d) => setForm({ topicId, topicTitle: d.topic.title, topicVotes: d.topic.votes, title: d.topic.title })).catch(() => setForm({})))
+    else requireLogin(() => setForm({}))
   }, [location.search]) // eslint-disable-line react-hooks/exhaustive-deps
   const q = fold(query.trim())
   const shown = q ? list.filter((ev) => [ev.title, ev.location, ev.host?.name, ev.host?.fullName, ...(ev.cohosts || []).flatMap((h) => [h.name, h.fullName]), ev.description].some((x) => fold(x).includes(q))) : list
@@ -176,7 +240,14 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
     <>
       {layout === 'grid' ? (
         <div data-tour="events">
-          {!events ? null : !shown.length ? (
+          {/* the cards, or a month calendar like Outlook's */}
+          <div role="tablist" aria-label="Cách xem" style={css('display:flex; justify-content:flex-end; gap:4px; margin:-4px 0 10px;')}>
+            {[['list', 'Danh sách'], ['calendar', 'Lịch']].map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={view === k} onClick={() => setView(k)} className={view === k ? undefined : hoverClass('color:#fff !important;')}
+                style={css(`height:30px; padding:0 14px; border-radius:999px; cursor:pointer; font:700 12.5px var(--zp-font-text); ${view === k ? 'background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.3);' : 'background:transparent; color:#A9B8DC; border:1px solid transparent;'}`)}>{label}</button>
+            ))}
+          </div>
+          {view === 'calendar' ? <EventsCalendar onOpen={setOpenId} reloadKey={events} /> : !events ? null : !shown.length ? (
             <div style={css('background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:48px 24px; text-align:center;')}>
               <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>{q ? 'Không tìm thấy sự kiện nào' : 'Chưa có sự kiện nào sắp tới'}</div>
               <div style={css('margin-top:8px; font:400 14px/1.6 var(--zp-font-text); color:#64748b;')}>{q ? 'Thử từ khoá khác nhé.' : 'Có topic AI nào muốn chia sẻ? Tạo sự kiện đầu tiên để mọi người cùng tham gia.'}</div>
@@ -247,7 +318,9 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   }
   const toggle = () => requireLogin(() => api.toggleEventInterest(id).then((d) => { setEv((x) => ({ ...d.event, past: x?.past, comments: x?.comments })); onChanged(d.event); playSound() }).catch(() => {}))
   const [askCancel, setAskCancel] = useState(false)
-  const cancelEvent = () => { setAskCancel(false); api.deleteEvent(ev.id).then(onDeleted).catch(() => window.alert('Chưa huỷ được, thử lại nhé.')) }
+  const [cancelReason, setCancelReason] = useState('')
+  // everyone interested gets the cancellation with this reason (email, Outlook, in the app)
+  const cancelEvent = () => { if (!cancelReason.trim()) return; setAskCancel(false); api.deleteEvent(ev.id, cancelReason.trim()).then(onDeleted).catch(() => window.alert('Chưa huỷ được, thử lại nhé.')) }
   const remove = () => {
     if (ev.isMine) {
       setAskCancel(true)
@@ -283,6 +356,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               const joined = names.flatMap((n, i) => (i === 0 ? [n] : [i === names.length - 1 ? ' và ' : ', ', n]))
               return row(<Avatar user={ev.host} size={20} fontSize={8} />, <>Tổ chức bởi {joined}</>)
             })()}
+            {ev.topic && row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"></path></svg>, <>Cho chủ đề <a href={`/?tab=wish&topic=${encodeURIComponent(ev.topic.id)}`} style={css('font-weight:700; color:#2c5fff; text-decoration:none;')}>"{ev.topic.title}"</a></>)}
             {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>, statsLabel(ev))}
           </div>
           <div style={css('display:flex; flex-wrap:wrap; gap:8px; padding:16px 22px 0;')}>
@@ -344,10 +418,12 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M10 14l4 4M14 14l-4 4"></path></svg>
             </div>
             <div style={css(`margin-top:14px; font:800 17px/1.35 ${FONT}; color:#0F172A;`)}>Bạn có chắc muốn huỷ sự kiện?</div>
-            <div style={css('margin-top:8px; font:400 13.5px/1.55 var(--zp-font-text); color:#475569;')}>Những người quan tâm sẽ nhận được thông báo sự kiện bị huỷ.</div>
-            <div style={css('display:flex; gap:10px; margin-top:20px;')}>
-              <button autoFocus onClick={() => setAskCancel(false)} style={css(`flex:1; height:42px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px ${FONT}; cursor:pointer;`)}>Quay lại</button>
-              <button onClick={cancelEvent} style={css(`flex:1; height:42px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px ${FONT}; cursor:pointer;`)}>Huỷ sự kiện</button>
+            <div style={css('margin-top:8px; font:400 13.5px/1.55 var(--zp-font-text); color:#475569;')}>Những người quan tâm sẽ nhận được email sự kiện bị huỷ kèm lý do.</div>
+            <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} maxLength={500} placeholder="Lý do huỷ (bắt buộc), ví dụ: diễn giả bận đột xuất, sẽ dời sang tuần sau"
+              style={css('margin-top:12px; width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:10px 12px; font:400 13.5px/1.5 var(--zp-font-text); color:#0F172A; background:#fff; outline:none; resize:vertical; text-align:left;')} />
+            <div style={css('display:flex; gap:10px; margin-top:14px;')}>
+              <button onClick={() => setAskCancel(false)} style={css(`flex:1; height:42px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 14px ${FONT}; cursor:pointer;`)}>Quay lại</button>
+              <button onClick={cancelEvent} disabled={!cancelReason.trim()} style={css(`flex:1; height:42px; border:none; border-radius:999px; background:#D8232A; color:#fff; font:700 14px ${FONT}; cursor:pointer; opacity:${cancelReason.trim() ? 1 : 0.5};`)}>Huỷ sự kiện</button>
             </div>
           </div>
         </div>
@@ -557,7 +633,7 @@ function EventForm({ initial, onClose, onSaved }) {
     const endsAt = end ? new Date(`${date}T${end}`) : null
     if (endsAt && endsAt <= startsAt) { setError('Giờ kết thúc phải sau giờ bắt đầu.'); return }
     setBusy(true); setError('')
-    const payload = { title, description, location, allDay, startsAt: startsAt.toISOString(), endsAt: endsAt ? endsAt.toISOString() : null, ...(cover !== undefined ? { cover } : {}), ...(canCohost ? { cohosts: cohosts.map((c) => ({ email: c.email, name: c.fullName || c.name })) } : {}) }
+    const payload = { title, description, location, allDay, startsAt: startsAt.toISOString(), endsAt: endsAt ? endsAt.toISOString() : null, ...(cover !== undefined ? { cover } : {}), ...(canCohost ? { cohosts: cohosts.map((c) => ({ email: c.email, name: c.fullName || c.name })) } : {}), ...(!editing && initial.topicId ? { topicId: initial.topicId } : {}) }
     ;(editing ? api.updateEvent(initial.id, payload) : api.createEvent(payload))
       .then((d) => { playSound(); onSaved(d.event) })
       .catch((e) => setError(e?.data?.message || 'Chưa lưu được, thử lại nhé.'))
@@ -602,7 +678,8 @@ function EventForm({ initial, onClose, onSaved }) {
           </div>
           <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Phòng họp tầng 8, Pantry tầng 6 hay link Teams" style={css(field)} /></div>
           {canCohost && <div style={css('margin-top:14px;')}>{label('Người đồng tổ chức')}<CohostPicker value={cohosts} onChange={setCohosts} field={field} /></div>}
-          {!editing && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Khi có từ 3 người quan tâm, bạn nhận thông báo để gửi lời mời Outlook: sự kiện thành cuộc họp trong lịch của bạn, mọi người quan tâm nhận lời mời từ bạn, ai quan tâm sau được mời tiếp, và bạn xem được ai đồng ý ngay trên trang sự kiện.</div>}
+          {!editing && initial.topicId && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#E7F9F0; border:1px solid #BEE9D3; font:400 12.5px/1.55 var(--zp-font-text); color:#14532D;')}>Sự kiện cho chủ đề <b>"{initial.topicTitle}"</b>. {initial.topicVotes ? `${initial.topicVotes} người đã quan tâm chủ đề này` : 'Những người đã quan tâm chủ đề này'} sẽ nhận lời mời ngay khi bạn đăng.</div>}
+          {!editing && !initial.topicId && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Khi có từ 3 người quan tâm, bạn nhận thông báo để gửi lời mời Outlook: sự kiện thành cuộc họp trong lịch của bạn, mọi người quan tâm nhận lời mời từ bạn, ai quan tâm sau được mời tiếp, và bạn xem được ai đồng ý ngay trên trang sự kiện.</div>}
           <div style={css('margin-top:14px;')}>{label('Chi tiết')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Ví dụ: Topic AI sẽ chia sẻ, dành cho ai, cần chuẩn bị gì trước khi đến…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
           {error && <div style={css(`margin-top:10px; font:600 13px ${FONT}; color:#D8232A;`)}>{error}</div>}
         </div>

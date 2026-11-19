@@ -40,6 +40,7 @@ export const api = {
   adminAccess: () => request('/admin/access'),
   listEvents: () => request('/events'),
   myEvents: () => request('/events/mine'),
+  listEventsMonth: (month) => request(`/events?month=${encodeURIComponent(month)}`),
   // "Muốn nghe": topics people would like someone to share about
   listTopics: () => request('/topics'),
   getTopic: (id) => request(`/topics/${encodeURIComponent(id)}`),

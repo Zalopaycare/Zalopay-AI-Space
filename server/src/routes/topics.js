@@ -69,7 +69,12 @@ function shape(t, me) {
     saved: !!me && !!db.prepare('SELECT 1 FROM topic_saves WHERE topic_id = ? AND user_id = ?').get(t.id, me.id),
     votes: ids.length, voted: !!me && ids.includes(me.id), voters: ids.slice(0, 8).map((uid) => person(userById(uid))).filter(Boolean),
     commentCount: commentCount(t.id),
+    // the events made for it (newest first)
+    events: eventsFor(t.id),
   }
+}
+function eventsFor(id) {
+  try { return db.prepare('SELECT id, title, starts_at FROM events WHERE topic_id = ? ORDER BY starts_at DESC').all(id).map((e) => ({ id: e.id, title: e.title, startsAt: e.starts_at })) } catch { return [] }
 }
 // as under an event: replies hang under a top-level comment (one level), likes { total, mine }
 function commentsOf(id, me) {

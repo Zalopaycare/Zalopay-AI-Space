@@ -10,7 +10,7 @@ import TopicsPanel, { openTopicForm } from '../components/Topics.jsx'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 // The AI Space home, two tabs: "Sự kiện", the events colleagues hold to share an AI topic
-// (components/Events.jsx), and "Muốn nghe", the topics people would like someone to share about
+// (components/Events.jsx), and "Chủ đề quan tâm", the questions / topics people would like someone to share about
 // (components/Topics.jsx; /?tab=wish). The bar at the top creates one of whichever tab is open; the search
 // box filters it. Posts are no longer written here; old post links (/questions/<id>) still open the post.
 export default function EventsPage() {
@@ -34,14 +34,14 @@ export default function EventsPage() {
           </section>
           {/* the two tabs, centred over the bar */}
           <div role="tablist" style={css('display:flex; justify-content:center; gap:6px; padding:14px var(--zp-gutter) 0;')}>
-            {[['events', 'Sự kiện'], ['wish', 'Muốn nghe']].map(([k, label]) => (
+            {[['events', 'Sự kiện'], ['wish', 'Chủ đề quan tâm']].map(([k, label]) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={() => pick(k)} data-tour={k === 'wish' ? 'wish-tab' : undefined}
                 className={tab === k ? undefined : hoverClass('background:rgba(255,255,255,.1) !important; color:#fff !important;')}
                 style={css(`height:36px; padding:0 18px; border-radius:999px; cursor:pointer; font:700 14px var(--zp-font-text); ${tab === k ? 'background:#fff; color:#0F172A; border:1px solid #fff;' : 'background:rgba(255,255,255,.04); color:#C9D6F5; border:1px solid rgba(160,190,255,.25);'}`)}>{label}</button>
             ))}
           </div>
           {wish
-            ? <PageActionBar prompt="Bạn muốn nghe chia sẻ về chủ đề AI nào?" cta="Đăng ký nội dung" onCompose={openTopicForm} query={query} onQuery={setQuery} placeholder="Tìm nội dung muốn nghe..." />
+            ? <PageActionBar prompt="Bạn có câu hỏi, chủ đề AI nào muốn được chia sẻ?" cta="Đăng chủ đề" onCompose={openTopicForm} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, chủ đề..." />
             : <PageActionBar tour="compose" prompt="Bạn có topic AI nào muốn chia sẻ?" cta="Tạo sự kiện" onCompose={openEventForm} query={query} onQuery={setQuery} placeholder="Tìm sự kiện, địa điểm, người tổ chức..." />}
           <div style={css('padding:16px var(--zp-gutter) 28px;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>

@@ -110,10 +110,14 @@ CREATE TABLE IF NOT EXISTS event_rsvp (
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'invites_open')) db.exec('ALTER TABLE events ADD COLUMN invites_open INTEGER NOT NULL DEFAULT 1')
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'ready_notified_at')) db.exec('ALTER TABLE events ADD COLUMN ready_notified_at TEXT')
 const OPEN_AT = 3
+// An event made for a "Chủ đề quan tâm" topic (routes/topics.js): topic_id. Everyone interested in the topic
+// is interested in the event from the start and gets the invitation right away (no waiting for OPEN_AT).
+if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'topic_id')) db.exec('ALTER TABLE events ADD COLUMN topic_id TEXT')
+const topicOf = (id) => { try { return id ? db.prepare('SELECT id, title FROM topic_requests WHERE id = ?').get(id) : null } catch { return null } }
 
 const router = express.Router()
 // every column but the cover picture itself (served on its own)
-const COLS = 'id, title, description, starts_at, ends_at, all_day, location, cover_mime, author_id, reminded_at, created_at, edited_at, ol_id, ol_attendees, invites_open'
+const COLS = 'id, title, description, starts_at, ends_at, all_day, location, cover_mime, author_id, reminded_at, created_at, edited_at, ol_id, ol_attendees, invites_open, topic_id'
 const byId = (id) => db.prepare(`SELECT ${COLS} FROM events WHERE id = ?`).get(id)
 const DEFAULT_LENGTH_MS = 60 * 60_000
 // an event stays on the rail until it is over: its end time, the end of its day (no time given),
@@ -162,6 +166,8 @@ function shape(e, me) {
     people: ids.slice(0, host || me?.is_admin ? 500 : 8).map((uid) => { const u = userById(uid); return u ? { ...person(u), ...(host || me?.is_admin ? { rsvp: rsvpOf(e.id)[u.email.toLowerCase()] || null } : {}) } : null }).filter(Boolean),
     // a meeting in the creator's Outlook (invitations from them); for the hosts, how the attendees answered
     outlook: !!e.ol_id,
+    // the topic it answers ("Chủ đề quan tâm"), if made from one
+    topic: topicOf(e.topic_id),
     // invitations: sent yet (invitesOpen); how many are interested besides the creator, against the OPEN_AT needed
     invitesOpen: !!e.invites_open, openAt: OPEN_AT, othersInterested: ids.filter((uid) => uid !== e.author_id).length,
     ...(e.ol_id && (host || me?.is_admin) ? { rsvpCounts: rsvpCounts(e.id), outlookInvited: sentAttendees(e).length } : {}),
@@ -503,6 +509,14 @@ function tellInterested(req, e, { text, subject, body, exceptId, method, calenda
 // upcoming and ongoing, soonest first
 router.get('/', (req, res) => {
   const now = new Date().toISOString()
+  // ?month=2026-11: every event of that month (Vietnam time), past ones included, for the calendar
+  const m = /^(\d{4})-(\d{2})$/.exec(String(req.query.month || ''))
+  if (m) {
+    const from = new Date(Date.UTC(+m[1], +m[2] - 1, 1) - 7 * 3600_000).toISOString()
+    const to = new Date(Date.UTC(+m[1], +m[2], 1) - 7 * 3600_000).toISOString()
+    const rows = db.prepare(`SELECT ${COLS} FROM events WHERE starts_at >= ? AND starts_at < ? ORDER BY starts_at`).all(from, to)
+    return res.json({ events: rows.map((e) => ({ ...shape(e, req.user), past: endOf(e) <= now })) })
+  }
   const rows = db.prepare(`SELECT ${COLS} FROM events WHERE starts_at >= ? ORDER BY starts_at LIMIT 200`).all(new Date(Date.now() - 24 * 3600_000).toISOString())
   res.json({ events: rows.filter((e) => endOf(e) > now).map((e) => shape(e, req.user)) })
 })
@@ -539,10 +553,12 @@ router.post('/', requireAuth, (req, res) => {
   if (cover === false) return res.status(400).json({ error: 'bad_cover', message: 'Ảnh bìa không hợp lệ hoặc lớn hơn 2 MB.' })
   const id = nextId('e')
   // no invitations yet: they go out once OPEN_AT people are interested and the creator sends them
-  db.prepare('INSERT INTO events (id, title, description, starts_at, ends_at, all_day, location, author_id, invites_open) VALUES (?,?,?,?,?,?,?,?,0)')
-    .run(id, f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, req.user.id)
+  const topic = topicOf(String(req.body?.topicId || ''))
+  db.prepare('INSERT INTO events (id, title, description, starts_at, ends_at, all_day, location, author_id, invites_open, topic_id) VALUES (?,?,?,?,?,?,?,?,?,?)')
+    .run(id, f.title, f.description, f.starts_at, f.ends_at, f.all_day, f.location, req.user.id, topic ? 1 : 0, topic ? topic.id : null)
   saveCover(id, cover)
   saveCohosts(req, byId(id), readCohosts(req.body, req.user.email))
+  if (topic) fromTopic(req, byId(id), topic)
   res.status(201).json({ event: shape(byId(id), req.user) })
 })
 
@@ -589,18 +605,21 @@ router.delete('/:id', requireAuth, (req, res) => {
   if (!e) return res.status(404).json({ error: 'not_found' })
   const block = removalCheck(req, e.author_id)
   if (block) return res.status(block.status).json({ error: block.error })
-  // only an upcoming session is "cancelled"; a past one just goes
+  // only an upcoming session is "cancelled"; a past one just goes. Everyone interested (and on the Outlook
+  // meeting) is told, with the reason given.
+  const reason = clean(req.body?.reason, 500)
   if (endOf(e) > new Date().toISOString()) {
-    if (e.ol_id) cancelMeeting(e.author_id, e.ol_id, `Sự kiện "${e.title}" đã được huỷ trên Zalopay AI Space.`).catch(() => {})
+    if (e.ol_id) cancelMeeting(e.author_id, e.ol_id, `Sự kiện "${e.title}" đã được huỷ trên Zalopay AI Space.${reason ? ` Lý do: ${reason}` : ''}`).catch(() => {})
     tellInterested(req, e, {
       exceptId: req.user.id, method: 'CANCEL',
-      text: `Sự kiện "${e.title}" (${whenText(e)}) đã huỷ`,
+      text: `Sự kiện "${e.title}" (${whenText(e)}) đã huỷ${reason ? `. Lý do: ${reason}` : ''}`,
       subject: `Sự kiện đã huỷ: ${e.title}`,
-      body: `Sự kiện "${e.title}" (${whenText(e)} tại ${e.location}) mà bạn quan tâm đã huỷ.`,
+      body: `Sự kiện "${e.title}" (${whenText(e)} tại ${e.location}) mà bạn quan tâm đã huỷ.${reason ? `\n\nLý do: ${reason}` : ''}`,
     })
   }
   db.transaction(() => {
     db.prepare('DELETE FROM event_interests WHERE event_id = ?').run(e.id)
+    for (const { id: cid } of db.prepare('SELECT id FROM event_comments WHERE event_id = ?').all(e.id)) db.prepare('DELETE FROM event_comment_likes WHERE comment_id = ?').run(cid)
     db.prepare('DELETE FROM event_comments WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM event_invites WHERE event_id = ?').run(e.id)
     db.prepare('DELETE FROM event_cohosts WHERE event_id = ?').run(e.id)
@@ -674,6 +693,25 @@ router.post('/:id/comments/:cid/like', requireAuth, (req, res) => {
   }
   res.json({ comments: commentsOf(e.id, req.user) })
 })
+
+// An event made for a topic: everyone interested in the topic becomes interested in the event and gets the
+// invitation straight away (an Outlook meeting from the creator, or the site's own), plus a note in the app.
+function fromTopic(req, e, topic) {
+  let voters = []
+  try { voters = db.prepare('SELECT user_id FROM topic_votes WHERE topic_id = ?').all(topic.id).map((r) => r.user_id).filter((uid) => uid !== e.author_id) } catch { /* no topics table */ }
+  const ins = db.prepare('INSERT OR IGNORE INTO event_interests (event_id, user_id) VALUES (?, ?)')
+  for (const uid of voters) ins.run(e.id, uid)
+  const who = domainName(req.user.email, req.user.name)
+  for (const uid of voters) {
+    const u = userById(uid)
+    if (u) notify(u.email, { kind: 'event', text: `${who} đã tạo sự kiện "${e.title}" (${whenText(e)}) cho chủ đề bạn quan tâm "${topic.title}"`, href: `/?event=${encodeURIComponent(e.id)}`, actor: req.user.name })
+  }
+  const base = appUrl(req)
+  ;(async () => {
+    try { await outlookCreate(e.id, base) } catch (err) { console.error('[outlook] create failed:', err.message) }
+    if (!byId(e.id)?.ol_id) for (const uid of voters) queueInvite(e.id, uid, base)
+  })()
+}
 
 // "Gửi lời mời Outlook": the creator (or an admin) sends the invitations once OPEN_AT people are interested —
 // a meeting in the creator's Outlook with everyone on it, or (no calendar access) the site's own invitations.

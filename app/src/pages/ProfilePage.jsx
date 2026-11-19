@@ -489,13 +489,13 @@ export default function ProfilePage() {
               )}
 
               {savedTopics.length > 0 && (<>
-                <h3 style={subHeading}>{t('Muốn nghe đã lưu')}</h3>
+                <h3 style={subHeading}>{t('Chủ đề đã lưu')}</h3>
                 <div style={css('display:flex; flex-direction:column; gap:12px; margin-bottom:24px;')}>
                   {savedTopics.map((tp) => (
                     <div key={tp.id} role="button" tabIndex={0} onClick={() => navigate('/?tab=wish&topic=' + encodeURIComponent(tp.id))} onKeyDown={(e) => { if (e.key === 'Enter') navigate('/?tab=wish&topic=' + encodeURIComponent(tp.id)) }}
                       className={'zp-card ' + hoverClass(CARD_HOVER)} style={css('cursor:pointer; background:#fff; border:1px solid transparent; border-radius:18px; padding:12px 14px; box-shadow:0 10px 26px rgba(0,0,0,.2);')}>
                       <div className="zp-card-title" style={css(`font:800 15px/1.38 ${FONT}; color:#0F172A;`)}>{tp.title}</div>
-                      <div style={css('margin-top:3px; font-size:12.5px; color:#5B6B82;')}>{tp.votes} {t('người muốn nghe')}{tp.commentCount ? ` · ${tp.commentCount} ${t('bình luận')}` : ''}</div>
+                      <div style={css('margin-top:3px; font-size:12.5px; color:#5B6B82;')}>{tp.votes} {t('người quan tâm')}{tp.commentCount ? ` · ${tp.commentCount} ${t('bình luận')}` : ''}</div>
                     </div>
                   ))}
                 </div>
