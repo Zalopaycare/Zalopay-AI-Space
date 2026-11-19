@@ -14,9 +14,10 @@ const MONO = 'ui-monospace,SFMono-Regular,Menlo,monospace'
 const TONES = {
   info: { bg: '#EEF3FF', border: '#CFDDFB', title: '#1E44A8', text: '#2A3A57', icon: 'i' },
   // a warning while installing or using the AI: red, like danger, so it is noticed at that step
-  warn: { bg: '#FFF0F0', border: '#F5C9CB', title: '#C0262D', text: '#5C1D20', icon: '!' },
-  danger: { bg: '#FFF0F0', border: '#F5C9CB', title: '#C0262D', text: '#5C1D20', icon: '!' },
-  ok: { bg: '#F2FBF6', border: '#CFEEDE', title: '#00893F', text: '#1F4B33', icon: '✓' },
+  // (the tints are strong enough that the page's softening — lib/theme.js — keeps them coloured, not grey)
+  warn: { bg: '#FFE9E9', border: '#F5C9CB', title: '#C0262D', text: '#5C1D20', icon: '!' },
+  danger: { bg: '#FFE9E9', border: '#F5C9CB', title: '#C0262D', text: '#5C1D20', icon: '!' },
+  ok: { bg: '#E6F7EE', border: '#CFEEDE', title: '#00893F', text: '#1F4B33', icon: '✓' },
 }
 
 
