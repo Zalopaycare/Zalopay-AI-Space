@@ -29,12 +29,12 @@ const STEPS = [
   // 2. the Use Case Library
   { path: '/use-cases', at: '[data-tour="nav-usecases"]', title: 'Use Case Library', text: 'Các cách dùng AI đã chạy thật ở Zalopay: bài toán, giải pháp và từng bước để bạn tự làm lại.' },
   { path: '/use-cases', at: '[data-tour="lib-compose"]', title: 'Tìm và chia sẻ use case', text: 'Tìm theo từ khoá, lọc theo chủ đề và công cụ AI. Có use case muốn chia sẻ thì bấm Chia sẻ use case: điền form 4 bước, Admin duyệt rồi publish.' },
-  { path: '/use-cases', at: '[data-tour="exhibition"]', title: 'Use case từ AI Exhibition', text: 'Use case các team mang về từ AI Exhibition. Chưa có bài chi tiết thì bấm Quan tâm hoặc bình luận để nhắc team đăng lên.' },
+  { path: '/use-cases', at: '[data-tour="exhibition"]', title: 'Use case từ AI Exhibition', text: 'Use case các team mang về từ AI Exhibition. Chưa có bài chi tiết thì bấm Quan tâm để nhắc team đăng lên.' },
   // 3. the sidebar
   { at: '[data-tour="post"]', title: 'Thanh bên trái', text: 'Tạo sự kiện và Chia sẻ use case luôn nằm ở đây, mở từ trang nào cũng được.' },
   { at: '[data-tour="chat"]', title: 'Chat với Admin', text: 'Có câu hỏi, góp ý hay thấy lỗi thì nhắn ở đây.' },
-  { at: '[data-tour="mine"]', title: 'Của tôi', text: 'Hồ sơ với use case của bạn; Thông báo khi có người trả lời, bình luận hay tag bạn; Sự kiện bạn tổ chức và quan tâm; Đã lưu là những gì bạn đánh dấu.' },
-  { at: '[data-tour="account"]', title: 'Xem lại hướng dẫn', text: 'Menu tài khoản > Hướng dẫn sử dụng để đi lại vòng này bất cứ lúc nào. Chúc bạn khám phá vui!' },
+  { at: '[data-tour="mine"]', title: 'Của tôi', text: 'Hồ sơ với use case của bạn; Sự kiện bạn tổ chức và quan tâm; Đã lưu là những gì bạn đánh dấu.' },
+  { at: '[data-tour="account"]', title: 'Thông báo và tài khoản', text: 'Chuông báo khi có người bình luận, tag hay mời bạn; bấm ảnh đại diện để xem hồ sơ hoặc đăng xuất. Chúc bạn khám phá vui!' },
 ]
 const PAD = 8 // room around the lit-up element
 const CARD_W = 340

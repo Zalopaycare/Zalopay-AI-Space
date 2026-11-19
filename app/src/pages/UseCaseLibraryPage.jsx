@@ -32,7 +32,7 @@ import { submissionTpl } from '../data/submissionTpl.js'
 import AnonTag from '../components/AnonTag.jsx'
 import { alertIfAliasTaken } from '../components/AnonToggle.jsx'
 import { cropCover } from '../lib/cover.js'
-import { useCommentAttachments, AttachButton, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
+import { useCommentAttachments, PendingAttachments, CommentFiles } from '../components/CommentAttachments.jsx'
 import { askRemovalReason } from '../components/RemovalReason.jsx'
 import MentionInput from '../components/MentionInput.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
@@ -494,7 +494,7 @@ export default function UseCaseLibraryPage() {
   const confirmChanges = () => editStart.current == null || editStart.current === editSnap() || window.confirm('Bạn có chắc muốn cập nhật các thay đổi này?')
 
   const submitShare = () => {
-    if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục Bắt buộc trước khi gửi duyệt.'); return }
+    if (!valid) { setShareError('Còn thiếu thông tin bắt buộc — điền đủ các mục có dấu * trước khi gửi duyệt.'); return }
     if (editing && !confirmChanges()) return
     requireLogin(async () => {
       // the same title as another of your own posts (waiting, being fixed or published): ask before sending a second one
@@ -883,7 +883,6 @@ export default function UseCaseLibraryPage() {
                   <PendingAttachments files={att.files('cmt:' + dsel.id)} onRemove={(x) => att.remove('cmt:' + dsel.id, x)} error={att.errorFor('cmt:' + dsel.id)} />
                   <div style={css('display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:8px;')}>
                     <div style={css('margin-right:auto;')} />
-                    <AttachButton onFiles={(fl) => att.add('cmt:' + dsel.id, fl)} size={32} />
                     <button
                       onClick={postDComment}
                       style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; opacity:${dDraft.trim() ? 1 : 0.5};`)}
@@ -963,7 +962,6 @@ export default function UseCaseLibraryPage() {
                             <div style={css('display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;')}>
                               {/* same switch as the comment box above: replies follow it too */}
                               <div style={css('margin-right:auto;')} />
-                              <AttachButton onFiles={(fl) => att.add('rep:' + replyTarget.parentId, fl)} size={32} />
                               <button onClick={cancelReply} style={css('height:32px; padding:0 14px; border:1px solid #DDE3EC; border-radius:999px; background:#fff; color:#3A4757; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer;')}>{t('Hủy')}</button>
                               <button onClick={() => submitReply(dsel.id)} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; cursor:pointer; opacity:${replyDraft.trim() ? 1 : 0.5};`)}>{t('Gửi')}</button>
                             </div>
@@ -1369,12 +1367,14 @@ export default function UseCaseLibraryPage() {
                           <input id={'sf-' + f.key} value={f.value} onChange={f.onChange} placeholder={f.placeholder} style={css(FIELD_INPUT + (miss ? MISS_FIELD : ''))} />
                         )}
                         {f.isArea && (
-                          <RichArea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} ariaLabel={f.label} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))} />
+                          <RichArea id={'sf-' + f.key} value={f.value} onChange={f.onChange} rows={f.rows} placeholder={f.placeholder} ariaLabel={f.label} style={css(FIELD_AREA + (miss ? MISS_FIELD : ''))}
+                            tools={FIGURE_FIELDS.includes(f.key) && !editingCase ? <FigureButton files={shareFigures[f.key] || []} onChange={(l) => setShareFigures((m) => ({ ...m, [f.key]: l }))} t={t} /> : null} />
                         )}
                         {miss && <MissLine text={t('Chưa điền: mục này bắt buộc')} />}
-                        {/* pictures with a caption under this section (shown under it on the page); not on an admin edit of a built-in case */}
-                        {f.isArea && FIGURE_FIELDS.includes(f.key) && !editingCase && (
-                          <FigurePicker files={shareFigures[f.key] || []} onChange={(l) => setShareFigures((m) => ({ ...m, [f.key]: l }))} t={t} />
+                        {/* pictures with a caption under this section (shown under it on the page); not on an admin edit of a built-in case.
+                            They're added with the 📎 next to B / I above the box. */}
+                        {f.isArea && FIGURE_FIELDS.includes(f.key) && !editingCase && (shareFigures[f.key] || []).length > 0 && (
+                          <AttachRows files={shareFigures[f.key]} onChange={(l) => setShareFigures((m) => ({ ...m, [f.key]: l }))} t={t} />
                         )}
                       </div>
                       )
@@ -1389,11 +1389,11 @@ export default function UseCaseLibraryPage() {
                           {shareFields.filter((f) => f.step === key).map(field)}
                           {key === 'intro' && (
                       <>
-                        <ChipGroup title="Độ khó" required="Bắt buộc · chọn một" done={!!shareLevel} t={t} options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
+                        <ChipGroup title="Độ khó" required done={!!shareLevel} t={t} options={shareLevels} last miss={showMissing && !shareLevel && t('Chưa chọn độ khó')} />
                         <div>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Chủ đề')}</label>
-                          <ReqTag done={!!shareCategory.length && (!catOtherOn || !!shareCatOther.trim())} required label="Bắt buộc · chọn được nhiều" t={t} />
+                          <ReqTag done={!!shareCategory.length && (!catOtherOn || !!shareCatOther.trim())} required t={t} />
                         </div>
                         <div style={css('display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;')}>
                           {shareCategories.map((c) => (
@@ -1429,7 +1429,7 @@ export default function UseCaseLibraryPage() {
                       <div style={css('margin-bottom:8px;')}>
                         <div style={css('display:flex; align-items:center; gap:8px;')}>
                           <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Kết quả nổi bật')}</span>
-                          <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Không bắt buộc · tối đa 3')}</span>
+                          <span style={css('font-size:11px; font-weight:700; color:#94a3b8;')}>{t('Tối đa 3')}</span>
                         </div>
                         {shareHighlights.map((h, i) => (
                           <div key={i} style={css('display:flex; gap:8px; margin-top:10px;')}>
@@ -1528,8 +1528,8 @@ function AttachRows({ files, onChange, t }) {
   )
 }
 
-/** "+ Thêm hình minh họa" under a section of the form, and the pictures already added with their captions. */
-function FigurePicker({ files, onChange, t }) {
+/** The 📎 next to B / I above a section's box: adds pictures (captioned under the box, and under the section on the page). */
+function FigureButton({ files, onChange, t }) {
   const [err, setErr] = useState('')
   const add = async (list) => {
     const imgs = list.filter((f) => IMAGE_TYPE.test(f.type))
@@ -1539,20 +1539,16 @@ function FigurePicker({ files, onChange, t }) {
     onChange([...files, ...added])
     setErr(imgs.length < list.length ? t('Chỉ nhận hình (PNG, JPG, GIF, WebP)') : tooBig.length ? t('Hình lớn hơn 10 MB nên chưa thêm') + ': ' + tooBig.map((f) => f.name).join(', ') : imgs.length > ok.length ? t('Mỗi mục tối đa') + ' ' + MAX_FIGURES + ' ' + t('hình') : '')
   }
+  const full = files.length >= MAX_FIGURES
+  const label = full ? t('Mỗi mục tối đa') + ' ' + MAX_FIGURES + ' ' + t('hình') : t('Thêm hình minh họa')
   return (
-    <div>
-      {files.length > 0 && <AttachRows files={files} onChange={onChange} t={t} />}
-      {files.length < MAX_FIGURES && (
-        <div style={css('display:flex; align-items:center; gap:8px; margin-top:8px;')}>
-          <label className={hoverClass('background:#EEF3FF !important;')} style={css('display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 11px; border:1px dashed #B9CCF8; border-radius:999px; background:#fff; color:#2c5fff; font-size:12px; font-weight:700; cursor:pointer;')}>
-            <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden onChange={(e) => { add([...(e.target.files || [])]); e.target.value = '' }} />
-            + {t('Thêm hình minh họa')}
-          </label>
-          <span style={css('font-size:11.5px; font-weight:600; color:#94a3b8;')}>{t('Không bắt buộc · có chú thích dưới mỗi hình')}</span>
-        </div>
-      )}
-      {err && <div style={css('margin-top:6px; font-size:12px; font-weight:600; color:#D8232A;')}>{err}</div>}
-    </div>
+    <>
+      <label title={label} aria-label={label} className={full ? undefined : hoverClass('background:#F1F4FA !important; color:#2c5fff !important;')} style={css(`width:26px; height:24px; margin-left:2px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center; color:#64748b; cursor:${full ? 'default' : 'pointer'}; opacity:${full ? 0.4 : 1};`)}>
+        <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden disabled={full} onChange={(e) => { add([...(e.target.files || [])]); e.target.value = '' }} />
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+      </label>
+      {err && <span style={css('margin-left:6px; font-size:11.5px; font-weight:600; color:#D8232A;')}>{err}</span>}
+    </>
   )
 }
 
@@ -1591,7 +1587,7 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
     <div style={css('margin-bottom:18px;')}>
       <div style={css('display:flex; align-items:center; gap:8px;')}>
         <span style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{t('Các bước')}</span>
-        <ReqTag done={ready} required label="Bắt buộc · ít nhất 1 bước" t={t} />
+        <ReqTag done={ready} required t={t} />
         <span style={{ flex: 1 }}></span>
         <button type="button" onClick={() => setExample((v) => !v)} style={css('border:none; background:none; padding:0; cursor:pointer; font-family:inherit; font-size:12px; font-weight:700; color:#2c5fff;')}>{example ? t('Ẩn ví dụ') : t('Xem ví dụ một bước')}</button>
       </div>
@@ -1650,7 +1646,6 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
                         + {t('Thêm hình minh họa hoặc file đính kèm')}
                       </label>
                     )}
-                    <span style={css('font-size:11.5px; font-weight:600; color:#94a3b8;')}>{t('Không bắt buộc')}</span>
                   </div>
                 )}
                 {fileErr[i] && <div style={css('margin-top:6px; font-size:12px; font-weight:600; color:#D8232A;')}>{fileErr[i]}</div>}
@@ -1664,10 +1659,10 @@ function StepsEditor({ steps, onChange, t, showMissing, ready, allowFiles = true
   )
 }
 
-// Next to a field's name: "✓ Đã điền" in green once it has something; until then "Bắt buộc" (red) or "Không bắt buộc".
-function ReqTag({ done, required, label, t, style }) {
-  if (done) return <span style={toneObj({ ...css('font-size:11px; font-weight:800; color:#00893F; white-space:nowrap;'), ...style })}>✓ {t('Đã điền')}</span>
-  return <span style={toneObj({ ...css(`font-size:11px; font-weight:700; color:${required ? '#E0353F' : '#94a3b8'};`), ...style })}>{t(label || (required ? 'Bắt buộc' : 'Không bắt buộc'))}</span>
+// Next to a field's name: a red * when it must be filled (as in Microsoft Forms); nothing when it's optional.
+function ReqTag({ required, style }) {
+  if (!required) return null
+  return <span aria-label="bắt buộc" style={toneObj({ ...css('margin-left:-4px; font-size:14px; line-height:1; font-weight:800; color:#E0353F;'), ...style })}>*</span>
 }
 
 // "Phần khác": parts of the author's own after the template's (e.g. Chi phí, Kế hoạch tiếp theo), each a
@@ -1701,7 +1696,7 @@ function ChipGroup({ title, required, options, last, miss, done, t = (x) => x })
     <div>
       <div style={css('display:flex; align-items:center; gap:8px; margin-bottom:10px;')}>
         <label style={css('font-size:13px; font-weight:800; color:#2c5fff;')}>{title}</label>
-        <ReqTag done={done} required label={required} t={t} />
+        <ReqTag required={required} />
       </div>
       <div style={css(`display:flex; flex-wrap:wrap; gap:8px; margin-bottom:${miss ? 6 : 24}px;`)}>
         {options.map((o) => (

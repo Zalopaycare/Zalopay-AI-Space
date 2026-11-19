@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext.jsx'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 import logo from '../assets/zalopay-ai-space-logo.png'
 import { GRAY, setGrayTheme } from '../lib/theme.js'
+import TopBarAccount from './TopBarAccount.jsx'
 
 const NAV_ITEMS = [
   { label: 'AI Space', to: '/', match: (p) => p === '/' || p.startsWith('/questions') },
@@ -15,7 +16,7 @@ const NAV_ITEMS = [
 const navItemBase = 'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:999px;transition:color .15s, background .15s, box-shadow .15s;border:1px solid transparent;text-decoration:none;white-space:nowrap;'
 
 /** Full-width top bar above the (collapsible) sidebar: menu toggle + logo pinned left, page nav centred,
- *  login button right when signed out. The profile chip lives at the bottom of the Sidebar. */
+ *  on the right the white/grey card switch, then the bell + avatar (signed in) or the login button. */
 export default function TopNav() {
   const location = useLocation()
   const { t } = useI18n()
@@ -59,8 +60,10 @@ export default function TopNav() {
           )
         })}
       </nav>
-      <div style={css('flex:1; display:flex; align-items:center; justify-content:flex-end; gap:12px;')}>
+      <div style={css('flex:1; display:flex; align-items:center; justify-content:flex-end; gap:12px; min-width:0;')}>
         <CardSwitch t={t} />
+        {/* signed in: the bell and the avatar, as on Facebook */}
+        <TopBarAccount t={t} />
         {!user && (
           <button
             onClick={() => openLogin()}

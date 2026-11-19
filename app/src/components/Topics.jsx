@@ -32,7 +32,7 @@ function VoteButton({ t, onVote, height = 34, fill = false }) {
       style={css(`${fill ? 'flex:1 1 0; min-width:0; justify-content:center; padding:0 8px; gap:5px; font-size:12.5px;' : 'flex:none; padding:0 14px; gap:7px;'} display:inline-flex; align-items:center; height:${height}px; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font-weight:700; font-family:${FONT}; ${fill ? '' : 'font-size:13px;'} ${on ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; border:1.5px solid transparent;' : 'background:#fff; color:#2c5fff; border:1.5px solid #9FB6F5;'}`)}>
       {/* a raised hand: "me too" */}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"></path><path d="M14 10V4a2 2 0 0 0-4 0v2"></path><path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
-      {/* the same words pressed or not (the one who posted it counts too): only the fill says it's yours */}
+      {/* the same words pressed or not: only the fill (blue once you pressed it) says it is yours */}
       Quan tâm{t.votes > 0 ? ` · ${t.votes}` : ''}
     </button>
   )

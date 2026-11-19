@@ -80,7 +80,7 @@ export const PAIRS = [
   ['Không bắt buộc', 'Optional'],
   ['Bắt buộc · được chọn nhiều', 'Required · multiple allowed'],
   ['Bắt buộc · chọn đúng 1', 'Required · pick exactly 1'],
-  ['Không bắt buộc · tối đa 3', 'Optional · up to 3'],
+  ['Tối đa 3', 'Up to 3'],
   ['Không bắt buộc · ảnh chụp màn hình, file mẫu', 'Optional · screenshots, sample files'],
   ['Chủ đề', 'Topics'],
   ['Công cụ AI', 'AI Tools'],

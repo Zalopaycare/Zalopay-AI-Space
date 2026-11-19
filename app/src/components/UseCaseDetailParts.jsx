@@ -606,7 +606,7 @@ export function Toc({ items, t, alignTo }) {
 
 /** Long pages: "Quay lại" stays reachable once you scroll past the hero. It sits in the empty strip
  *  left of the content column (a pill when there is room, a round button when the strip is narrow),
- *  vertically centred, so it never covers the cards; on phones it floats bottom-left. */
+ *  vertically centred, so it never covers the cards; with no room there it isn't shown. */
 export function FloatingBack({ onBack, t }) {
   const { offset } = useSidebarLayout()
   const [show, setShow] = useState(false)
@@ -623,9 +623,9 @@ export function FloatingBack({ onBack, t }) {
     return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', on) }
   }, [offset])
   const pill = gutter >= 124, round = !pill && gutter >= 40
-  const pos = pill ? `left:${offset + (gutter - 116) / 2}px; top:50%;`
-    : round ? `left:${offset + (gutter - 38) / 2}px; top:50%;`
-      : `left:${offset + 16}px; bottom:18px;`
+  // no room beside the column: no floating button (it would sit on the "Về đầu trang" row); the hero's "Quay lại" is enough
+  if (!pill && !round) return null
+  const pos = pill ? `left:${offset + (gutter - 116) / 2}px; top:50%;` : `left:${offset + (gutter - 38) / 2}px; top:50%;`
   return createPortal(
     <button
       onClick={onBack}
@@ -633,7 +633,7 @@ export function FloatingBack({ onBack, t }) {
       title={t('Quay lại')}
       tabIndex={show ? 0 : -1}
       className={hoverClass('background:rgba(44,95,255,.92) !important; border-color:rgba(160,195,255,.8) !important;')}
-      style={css(`position:fixed; ${pos} z-index:1500; display:inline-flex; align-items:center; justify-content:center; gap:8px; height:38px; ${pill ? 'width:116px;' : 'width:38px;'} padding:0; border:1px solid rgba(130,170,255,.45); border-radius:999px; background:rgba(9,18,58,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#fff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; box-shadow:0 10px 28px rgba(0,0,0,.45); transition:opacity .18s, background .15s; opacity:${show ? 1 : 0}; pointer-events:${show ? 'auto' : 'none'}; ${pill || round ? 'transform:translateY(-50%);' : ''}`)}
+      style={css(`position:fixed; ${pos} z-index:1500; display:inline-flex; align-items:center; justify-content:center; gap:8px; height:38px; ${pill ? 'width:116px;' : 'width:38px;'} padding:0; border:1px solid rgba(130,170,255,.45); border-radius:999px; background:rgba(9,18,58,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#fff; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; box-shadow:0 10px 28px rgba(0,0,0,.45); transition:opacity .18s, background .15s; opacity:${show ? 1 : 0}; pointer-events:${show ? 'auto' : 'none'}; transform:translateY(-50%);`)}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
       {pill && t('Quay lại')}

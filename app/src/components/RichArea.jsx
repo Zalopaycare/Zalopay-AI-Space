@@ -7,7 +7,7 @@ import { inlineToHtml, nodeToInline } from '../lib/inlineFormat.js'
  * above it, and the words show formatted as you type (no ** to write). The value stays a plain string
  * with the marks in it (lib/inlineFormat.js); onChange gets { target: { value } } like a <textarea>.
  */
-export default function RichArea({ id, value, onChange, rows = 3, placeholder, style, ariaLabel }) {
+export default function RichArea({ id, value, onChange, rows = 3, placeholder, style, ariaLabel, tools = null }) {
   const ref = useRef(null)
   const last = useRef(null) // the value this box last sent up, so its own edits aren't written back
   const [marks, setMarks] = useState({ b: false, i: false })
@@ -55,6 +55,8 @@ export default function RichArea({ id, value, onChange, rows = 3, placeholder, s
       <div style={css('display:flex; align-items:center; gap:2px; margin-top:8px; margin-bottom:-4px;')}>
         <button type="button" tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); apply('bold') }} title={`In đậm (${isMac ? '⌘' : 'Ctrl'}+B)`} aria-label="In đậm" aria-pressed={marks.b} className={hoverClass('background:#F1F4FA !important;')} style={css(btn(marks.b) + 'font-weight:800;')}>B</button>
         <button type="button" tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); apply('italic') }} title={`In nghiêng (${isMac ? '⌘' : 'Ctrl'}+I)`} aria-label="In nghiêng" aria-pressed={marks.i} className={hoverClass('background:#F1F4FA !important;')} style={css(btn(marks.i) + 'font-style:italic;')}>I</button>
+        {/* `tools`: more buttons on the same row (the share form's "add a picture") */}
+        {tools}
       </div>
       <div
         ref={ref}

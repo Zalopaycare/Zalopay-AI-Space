@@ -323,6 +323,9 @@ function MonthView({ month, onOpen, reloadKey }) {
 }
 
 // ---- the list: the grid of the events page (AI Space home), the rail or the strip ----
+// today as YYYY-MM-DD in the viewer's own time zone (the date picker's earliest day)
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+
 // `query` (grid): only the events whose title, place or host match. /?new=event opens the "Tạo sự kiện"
 // form (the sidebar's link).
 // `calendar` (grid layout): the week / month calendar in place of the cards (the AI Space page's "Lịch" tab)
@@ -507,7 +510,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           })()}
           {ev.description && (
             <div style={css('margin:18px 22px 0;')}>
-              <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>Chi tiết</div>
+              <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>Thông tin về sự kiện</div>
               <div style={css('margin-top:6px; font:400 14px/1.65 var(--zp-font-text); color:#334155; white-space:pre-wrap; word-break:break-word;')}>{ev.description}</div>
             </div>
           )}
@@ -755,6 +758,9 @@ function EventForm({ initial, onClose, onSaved }) {
     const startsAt = new Date(`${date}T${start || '00:00'}`)
     const endsAt = end ? new Date(`${date}T${end}`) : null
     if (endsAt && endsAt <= startsAt) { setError('Giờ kết thúc phải sau giờ bắt đầu.'); return }
+    // a day that has passed can't be picked (an event being edited keeps its own date)
+    if ((!editing || date !== (initial.startsAt ? localDate(initial.startsAt) : '')) && date < todayStr()) { setError('Ngày này đã qua, chọn từ hôm nay trở đi nhé.'); return }
+    if (!editing && !allDay && startsAt < new Date()) { setError('Giờ bắt đầu đã qua, chọn giờ muộn hơn nhé.'); return }
     setBusy(true); setError('')
     const payload = { title, description, location, allDay, startsAt: startsAt.toISOString(), endsAt: endsAt ? endsAt.toISOString() : null, ...(cover !== undefined ? { cover } : {}), ...(canCohost ? { cohosts: cohosts.map((c) => ({ email: c.email, name: c.fullName || c.name })) } : {}), ...(!editing && initial.topicId ? { topicId: initial.topicId } : {}) }
     ;(editing ? api.updateEvent(initial.id, payload) : api.createEvent(payload))
@@ -775,6 +781,9 @@ function EventForm({ initial, onClose, onSaved }) {
           <span />
         </div>
         <div style={css('padding:18px 22px 4px;')}>
+          {/* how invitations work, before anything else */}
+          {!editing && initial.topicId && <div style={css('margin-bottom:14px; padding:10px 12px; border-radius:10px; background:#E7F9F0; border:1px solid #BEE9D3; font:400 12.5px/1.55 var(--zp-font-text); color:#14532D;')}>Sự kiện cho chủ đề <b>"{initial.topicTitle}"</b>. {initial.topicVotes ? `${initial.topicVotes} người đã quan tâm chủ đề này` : 'Những người đã quan tâm chủ đề này'} sẽ nhận lời mời ngay khi bạn đăng.</div>}
+          {!editing && !initial.topicId && <div style={css('margin-bottom:14px; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Khi có từ 3 người quan tâm (không tính bạn), bạn nhận thông báo để gửi lời mời Outlook: sự kiện thành cuộc họp trong lịch của bạn và mọi người quan tâm nhận lời mời từ bạn. Ai quan tâm sau được mời thêm, và bạn xem được số người đồng ý ngay trong sự kiện.</div>}
           <div>
             {label('Ảnh bìa')}
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) pick(f) }} />
@@ -788,22 +797,20 @@ function EventForm({ initial, onClose, onSaved }) {
               </div>
             ) : (
               <button onClick={() => fileRef.current?.click()} className={hoverClass('background:#EEF3FF !important; border-color:#9DB5F5 !important;')} style={css(`margin-top:6px; width:100%; aspect-ratio:16/6; border:1.5px dashed #C9D6F2; border-radius:12px; background:#F7F9FE; color:#2c5fff; cursor:pointer; font:700 13.5px ${FONT};`)}>
-                + Thêm ảnh bìa <span style={css('display:block; margin-top:4px; font:400 12px var(--zp-font-text); color:#64748b;')}>Không bắt buộc · 1920 × 1080</span>
+                + Thêm ảnh bìa <span style={css('display:block; margin-top:4px; font:400 12px var(--zp-font-text); color:#64748b;')}>Kích thước đẹp nhất 1920 × 1080</span>
               </button>
             )}
             {coverNote && <div style={css('margin-top:6px; font:400 12px/1.5 var(--zp-font-text); color:#64748b;')}>{coverNote}</div>}
           </div>
           <div style={css('margin-top:14px;')}>{label('Tên sự kiện', true)}<input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} placeholder="Ví dụ: Demo Claude Code cho dev, Chia sẻ prompt viết PRD" style={css(field)} /></div>
           <div style={css('margin-top:14px; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); gap:10px;')}>
-            <div>{label('Ngày', true)}<input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={css(field + (date ? '' : 'color:#B3BDCC;'))} /></div>
+            <div>{label('Ngày', true)}<input type="date" min={editing && date < todayStr() ? undefined : todayStr()} value={date} onChange={(e) => setDate(e.target.value)} style={css(field + (date ? '' : 'color:#B3BDCC;'))} /></div>
             <div>{label('Bắt đầu')}<input type="time" value={start} onChange={(e) => setStart(e.target.value)} style={css(field + (start ? '' : 'color:#B3BDCC;'))} /></div>
             <div>{label('Kết thúc')}<input type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={css(field + (end ? '' : 'color:#B3BDCC;'))} /></div>
           </div>
           <div style={css('margin-top:14px;')}>{label('Địa điểm', true)}<input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={200} placeholder="Ví dụ: Phòng họp tầng 8, Pantry tầng 6 hay link Teams" style={css(field)} /></div>
           {canCohost && <div style={css('margin-top:14px;')}>{label('Người đồng tổ chức')}<CohostPicker value={cohosts} onChange={setCohosts} field={field} /></div>}
-          {!editing && initial.topicId && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#E7F9F0; border:1px solid #BEE9D3; font:400 12.5px/1.55 var(--zp-font-text); color:#14532D;')}>Sự kiện cho chủ đề <b>"{initial.topicTitle}"</b>. {initial.topicVotes ? `${initial.topicVotes} người đã quan tâm chủ đề này` : 'Những người đã quan tâm chủ đề này'} sẽ nhận lời mời ngay khi bạn đăng.</div>}
-          {!editing && !initial.topicId && <div style={css('margin-top:10px; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Khi có từ 3 người quan tâm, bạn nhận thông báo để gửi lời mời Outlook: sự kiện thành cuộc họp trong lịch của bạn, mọi người quan tâm nhận lời mời từ bạn, ai quan tâm sau được mời tiếp, và bạn xem được ai đồng ý ngay trên trang sự kiện.</div>}
-          <div style={css('margin-top:14px;')}>{label('Chi tiết')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Ví dụ: Topic AI sẽ chia sẻ, dành cho ai, cần chuẩn bị gì trước khi đến…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
+          <div style={css('margin-top:14px;')}>{label('Thông tin về sự kiện')}<textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={4000} placeholder="Ví dụ: Topic AI sẽ chia sẻ, dành cho ai, cần chuẩn bị gì trước khi đến…" style={css(field + 'height:auto; padding:11px 13px; line-height:1.6; resize:vertical;')} /></div>
           {error && <div style={css(`margin-top:10px; font:600 13px ${FONT}; color:#D8232A;`)}>{error}</div>}
         </div>
         <div style={css('position:sticky; bottom:0; z-index:2; display:flex; justify-content:flex-end; gap:10px; padding:14px 22px 18px; background:#fff; border-top:1px solid #EEF1F7;')}>

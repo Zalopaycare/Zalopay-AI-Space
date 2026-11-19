@@ -55,6 +55,11 @@ const router = express.Router()
 const byId = (id) => db.prepare('SELECT * FROM topic_requests WHERE id = ?').get(id)
 const userById = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id)
 const person = (u) => (u ? { id: u.id, name: domainName(u.email, u.name), fullName: u.name, initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u) } : null)
+// Topics used to count their poster as interested the moment they were posted; that vote (made in the same
+// second as the topic) is taken back so "Quan tâm" is only ever filled by a press. A poster's own later press stays.
+db.prepare(`DELETE FROM topic_votes WHERE EXISTS (SELECT 1 FROM topic_requests t WHERE t.id = topic_votes.topic_id
+  AND t.author_id = topic_votes.user_id AND t.created_at = topic_votes.created_at)`).run()
+
 const voterIds = (id) => db.prepare('SELECT user_id FROM topic_votes WHERE topic_id = ? ORDER BY created_at').all(id).map((r) => r.user_id)
 const commentCount = (id) => db.prepare('SELECT COUNT(*) n FROM topic_comments WHERE topic_id = ?').get(id).n
 const clean = (v, max) => String(v ?? '').replace(/\r\n/g, '\n').trim().slice(0, max)
@@ -110,8 +115,7 @@ router.post('/', requireAuth, (req, res) => {
   if (!title) return res.status(400).json({ error: 'invalid', message: 'Cần ghi nội dung bạn muốn nghe.' })
   const id = nextId('tp')
   db.prepare('INSERT INTO topic_requests (id, title, detail, author_id) VALUES (?, ?, ?, ?)').run(id, title, detail, req.user.id)
-  // the one who posts it wants to hear it too
-  db.prepare('INSERT INTO topic_votes (topic_id, user_id) VALUES (?, ?)').run(id, req.user.id)
+  // no vote of its own: "Quan tâm" is filled only once the person presses it, the poster included
   res.status(201).json({ topic: shape(byId(id), req.user) })
 })
 
@@ -162,7 +166,7 @@ router.post('/:id/vote', requireAuth, (req, res) => {
   const author = userById(t.author_id)
   const others = voterIds(t.id).filter((uid) => uid !== t.author_id).length
   if (!had && author && author.id !== req.user.id) {
-    notifyOnce(author.email, 'upvote', { ref: 'topicvote:' + t.id, text: others === 1 ? `${domainName(req.user.email, req.user.name)} cũng muốn nghe "${t.title}"` : `${others} người cũng muốn nghe "${t.title}"`, href: href(t.id), actor: req.user.name })
+    notifyOnce(author.email, 'upvote', { ref: 'topicvote:' + t.id, text: others === 1 ? `${domainName(req.user.email, req.user.name)} quan tâm chủ đề "${t.title}"` : `${others} người quan tâm chủ đề "${t.title}"`, href: href(t.id), actor: req.user.name })
   }
   res.json({ topic: shape(byId(t.id), req.user) })
 })

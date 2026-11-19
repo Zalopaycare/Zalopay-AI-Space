@@ -71,7 +71,7 @@ export default {
     prep: [
       'Máy macOS hoặc Linux, Windows: bộ skill chạy trên các hệ điều hành này.',
       'Một công cụ AI: chọn một trong ba Claude Code, Codex hoặc Cursor.',
-      'Node.js (bản LTS), python3 và git đã cài trên máy.',
+      'Node.js (bản LTS) để chạy MCP Server Agentbase; python3 và git cho các script của Agentbase.',
       'File cấu hình <tên_bạn>_zlpagentbase.env: do SRE cấp riêng cho bạn, liên hệ SRE nếu chưa có.',
       'File zip ZLP_AgentBase_Skills_V2.zip: đính kèm trong trang Zalopay Agent Base User Guide (bấm vào link tải trong trang).',
     ],
@@ -80,14 +80,7 @@ export default {
       {
         title: 'Xin file cấu hình, chuẩn bị máy',
         blocks: [
-          { type: 'text', text: 'Liên hệ SRE để được cấp file cấu hình <tên_bạn>_zlpagentbase.env. Giai đoạn test đã có sẵn một bộ cấu hình và key dùng chung, thời hạn 30 ngày.' },
-          { type: 'table', title: 'Chuẩn bị trước khi cài', note: 'Kiểm tra đủ các mục dưới đây trước khi bắt đầu.', cols: ['Cần có', 'Ghi chú'], rows: [
-            ['Máy macOS hoặc Linux, Windows', 'Bộ skill chạy trên các hệ điều hành này'],
-            ['Một công cụ AI', 'Chọn một trong ba: Claude Code, Codex, hoặc Cursor'],
-            ['Node.js (bản LTS)', 'Dùng để chạy MCP Server Agentbase'],
-            ['python3 và git', 'Dùng cho các script của Agentbase'],
-            ['File cấu hình <tên_bạn>_zlpagentbase.env', 'Do SRE cấp riêng cho bạn. Liên hệ SRE nếu chưa có.'],
-          ] },
+          { type: 'text', text: 'Kiểm tra đủ các mục ở phần Cần chuẩn bị phía trên. Liên hệ SRE để được cấp file cấu hình <tên_bạn>_zlpagentbase.env. Giai đoạn test đã có sẵn một bộ cấu hình và key dùng chung, thời hạn 30 ngày.' },
           { type: 'note', tone: 'warn', title: 'Giới hạn tài nguyên', text: 'Do tài nguyên có hạn nên hiện tại mỗi ứng dụng được set cố định 2 CPU / 4 GB RAM, mọi người không chạy model local như ollama, vllm nhé. Nếu có nhu cầu chạy model local, liên hệ SRE (HienLQ) để được hỗ trợ.' },
           { type: 'prompt', label: 'Không biết máy đã có đủ chưa? Mở công cụ AI và gõ nguyên câu này', text: 'Kiểm tra giúp tôi máy đã cài Node.js, python3, git chưa?\nCái nào chưa có thì chỉ tôi cách cài nhé.' },
         ],

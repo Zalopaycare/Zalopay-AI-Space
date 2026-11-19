@@ -10,7 +10,7 @@ import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
  * bottom of the screen on short pages, and the content area clips its decorative backdrops so the
  * page can never scroll past the end.
  */
-export default function Layout({ active, children }) {
+export default function Layout({ active, children, noTop = false }) {
   const { offset, rightPad } = useSidebarLayout()
   const { pathname } = useLocation()
   return (
@@ -29,12 +29,12 @@ export default function Layout({ active, children }) {
         {/* a way back to the top of a long page, just under the last post, at the very bottom (no band of its
             own: it sits on the same near-black as the pages, #07070c); centred over the page content
             like the tabs in the top bar */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', padding: '4px var(--zp-gutter) 32px', marginLeft: offset, transition: 'margin-left .16s ease, padding-right .16s ease' }}>
+        {noTop ? <div style={{ height: 32 }}></div> : <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', padding: '4px var(--zp-gutter) 32px', marginLeft: offset, transition: 'margin-left .16s ease, padding-right .16s ease' }}>
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="zp-to-top" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 2px', border: 'none', background: 'none', color: '#9DB8FF', font: '600 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif', textDecoration: 'underline', textUnderlineOffset: 4, cursor: 'pointer', transition: 'color .15s' }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg>
             Về đầu trang
           </button>
-        </div>
+        </div>}
       </div>
     </>
   )

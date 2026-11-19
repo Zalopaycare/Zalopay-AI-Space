@@ -1,15 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useState } from 'react'
 import SoftLink from './SoftLink.jsx'
 import { useLocation } from 'react-router-dom'
 import { css, hoverClass } from '../lib/style.js'
 import { useI18n } from '../i18n/I18nContext.jsx'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
-import { useNotifications } from '../lib/notifications.js'
 import { useChatUnread } from '../lib/chat.js'
 import { useAuth } from '../auth/AuthContext.jsx'
-import Avatar from './Avatar.jsx'
-import { openTour } from './WelcomeTour.jsx'
 
 const itemBase = 'display:flex; align-items:center; gap:12px; height:40px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:14px; cursor:pointer; text-align:left; font-family:inherit; width:100%; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
 const subItemBase = 'display:flex; align-items:center; gap:12px; height:38px; padding:0 12px; border-radius:12px; text-decoration:none; font-size:13.5px; box-sizing:border-box; transition:background .15s, border-color .15s, box-shadow .15s, color .15s;'
@@ -68,22 +64,11 @@ export default function Sidebar({ active }) {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [drawerOpen]) // eslint-disable-line react-hooks/exhaustive-deps
-  const { user, logout } = useAuth()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef(null)
-  const popRef = useRef(null)
-  const [menuPos, setMenuPos] = useState(null) // { left, bottom } of the popup, from the chip's position
-  useEffect(() => {
-    if (!menuOpen) return
-    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target) && !(popRef.current && popRef.current.contains(e.target))) setMenuOpen(false) }
-    document.addEventListener('click', close)
-    return () => document.removeEventListener('click', close)
-  }, [menuOpen])
+  const { user } = useAuth()
   useEffect(() => { setHash(location.hash) }, [location.hash])
 
   // #usecase is part of the profile page, so it lights up "Hồ sơ"; #event (and the old #question) "Sự kiện của tôi".
   const sub = active === 'profile' ? ({ usecase: 'overview', question: 'event' }[/#(overview|activity|usecase|question|event|saved)\b/.exec(hash)?.[1]] || /#(activity|event|saved)\b/.exec(hash)?.[1] || 'overview') : null
-  const { unread: unreadCount } = useNotifications(!!user)
   // unread admin replies in my "Chat với Admin" (admins answer others from the Admin Console)
   const chatCount = useChatUnread(!!user).mine
 
@@ -130,12 +115,6 @@ export default function Sidebar({ active }) {
       {collapsed && (
         <div style={css('display:flex; flex-direction:column; gap:2px; margin-top:22px;')}>
           <NavLink to="/profile" active={sub === 'overview'} collapsed title={t('Hồ sơ')} icon={<svg style={{ flex: "none" }} width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>}>{t('Hồ sơ')}</NavLink>
-          <NavLink to="/profile#activity" active={sub === 'activity'} collapsed title={t('Thông báo & hoạt động')} icon={
-            <span style={css('position:relative; display:inline-flex;')}>
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
-              <span style={css(`position:absolute; top:-6px; right:-8px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:${unreadCount ? '#FF3B30' : '#475569'}; color:#fff; font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center;`)}>{unreadCount}</span>
-            </span>
-          }>{t('Thông báo & hoạt động')}</NavLink>
         </div>
       )}
 
@@ -146,9 +125,6 @@ export default function Sidebar({ active }) {
             <SubLink to="/profile" active={sub === 'overview'} icon={
               <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
             }>{t('Hồ sơ')}</SubLink>
-            <SubLink to="/profile#activity" active={sub === 'activity'} icon={
-              <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
-            }><span style={css('white-space:nowrap;')}>{t('Thông báo')}</span><span style={css(`margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:${unreadCount ? '#FF3B30' : 'rgba(255,255,255,.14)'}; color:#fff; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;`)}>{unreadCount}</span></SubLink>
             <SubLink to="/profile#event" active={sub === 'event'} icon={
               <svg style={{ flex: "none" }} width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
             }>{t('Sự kiện của tôi')}</SubLink>
@@ -160,42 +136,6 @@ export default function Sidebar({ active }) {
       )}
 
       <div style={{ flex: 1 }}></div>
-      {user && (
-        <div ref={menuRef} data-tour="account" style={css('position:relative; margin-top:16px;')}>
-          {menuOpen && menuPos && createPortal(
-            // Portalled to <body>: the sidebar clips its overflow, so a popup inside it would be cut off when collapsed.
-            <div ref={popRef} style={css(`position:fixed; left:${menuPos.left}px; bottom:${menuPos.bottom}px; width:${menuPos.width}px; background:#fff; border:1px solid #E6EBF3; border-radius:14px; box-shadow:0 20px 46px rgba(0,0,0,.4); padding:6px; z-index:2100;`)}>
-              <button onClick={() => { setMenuOpen(false); openTour() }} className={hoverClass('background:#EEF3FF !important;')} style={css('display:flex; align-items:center; gap:9px; width:100%; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; text-align:left; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#0F172A; white-space:nowrap;')}>
-                <svg style={{ flex: 'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.9.5-1.6 1.2-1.6 2.4"></path><path d="M12 17h.01"></path></svg>
-                {t('Hướng dẫn sử dụng')}
-              </button>
-              {user.isAdmin && (
-                <SoftLink
-                  to="/admin"
-                  onClick={() => setMenuOpen(false)}
-                  className={hoverClass('background:#EEF3FF !important;')}
-                  style={css('display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; text-decoration:none; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#2c5fff; white-space:nowrap;')}
-                >
-                  <svg style={{ flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
-                  {t('Trang quản trị')}
-                </SoftLink>
-              )}
-              <button onClick={() => { setMenuOpen(false); logout() }} style={css('display:block; width:100%; text-align:left; padding:10px 12px; border:none; border-radius:10px; background:transparent; cursor:pointer; font:700 13.5px "Aeonik Pro","Geist","Be Vietnam Pro",sans-serif; color:#D8232A;')}>{t('Đăng xuất')}</button>
-            </div>
-            ,document.body,
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setMenuPos({ left: r.left, bottom: window.innerHeight - r.top + 8, width: collapsed ? 220 : r.width }); setMenuOpen((o) => !o) }}
-            title={collapsed ? user.name : undefined}
-            className={hoverClass('background:rgba(150,180,255,.08) !important;')}
-            style={css(`display:flex; align-items:center; gap:10px; width:100%; padding:5px ${collapsed ? '5px' : '10px 5px 5px'}; border-radius:14px; background:transparent; border:1px solid transparent; cursor:pointer; font-family:inherit; ${collapsed ? 'justify-content:center;' : ''}`)}
-          >
-            <Avatar user={user} size={30} fontSize={11.5} />
-            {!collapsed && <span style={css('flex:1; min-width:0; text-align:left; font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{user.domain || user.name}</span>}
-            {!collapsed && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c3d0f5" strokeWidth="2.2" style={{ flex: 'none' }}><path d="m18 15-6-6-6 6"></path></svg>}
-          </button>
-        </div>
-      )}
     </aside>
     </>
   )

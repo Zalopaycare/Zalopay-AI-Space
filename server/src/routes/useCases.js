@@ -118,9 +118,10 @@ router.post('/:id/comments', requireAuth, (req, res) => {
   const { id } = req.params
   const body = String(req.body?.body || '').trim()
   const parentId = req.body?.parentId ? String(req.body.parentId) : null
-  const files = decodeCommentFiles(req.body?.files)
-  if (!files) return res.status(400).json({ error: 'bad_file', message: 'File không hợp lệ hoặc lớn hơn 10MB.' })
-  if (!body && !files.length) return res.status(400).json({ error: 'empty_body' })
+  // comments take no attachments any more (a file could carry malware); old comments keep theirs
+  if (Array.isArray(req.body?.files) && req.body.files.length) return res.status(400).json({ error: 'no_files', message: 'Bình luận không đính kèm file được.' })
+  const files = []
+  if (!body) return res.status(400).json({ error: 'empty_body' })
   const cid = nextId('ucc')
   const anon = anonFields(req.body)
   db.prepare('INSERT INTO use_case_comments (id, use_case_id, author_id, body, parent_id, anonymous, alias) VALUES (?,?,?,?,?,?,?)').run(cid, id, req.user.id, body, parentId, anon.anonymous, anon.alias)

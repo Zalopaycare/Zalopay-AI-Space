@@ -164,7 +164,7 @@ export default function ProfilePage() {
   const notif = useNotifications(!!user)
   // (#question, the posts part, is now "Sự kiện của tôi": posts are no longer written)
   const section = { question: 'event' }[/#(overview|activity|usecase|question|event|saved)\b/.exec(hash || '')?.[1]] || /#(overview|activity|usecase|event|saved)\b/.exec(hash || '')?.[1] || 'overview'
-  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo & hoạt động', usecase: 'Use case của tôi', event: 'Sự kiện của tôi', saved: 'Đã lưu' }[section])
+  useTitle({ overview: 'Hồ sơ của tôi', activity: 'Thông báo', usecase: 'Use case của tôi', event: 'Sự kiện của tôi', saved: 'Đã lưu' }[section])
 
   const [myQuestions, setMyQuestions] = useState([])
   const [savedQuestions, setSavedQuestions] = useState([])
@@ -333,10 +333,10 @@ export default function ProfilePage() {
   // The share form's autosaved drafts (kept in this browser, several at once): shown on top of "Use case của tôi".
   const ucDrafts = listUcDrafts().filter((d) => d.shareForm && Object.values(d.shareForm).some((v) => String(v || '').trim()))
 
-  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo & hoạt động') : section === 'usecase' ? t('Use case của tôi') : section === 'event' ? t('Sự kiện của tôi') : section === 'saved' ? t('Đã lưu') : ''
+  const sectionTitle = section === 'overview' ? t('Hồ sơ của tôi') : section === 'activity' ? t('Thông báo') : section === 'usecase' ? t('Use case của tôi') : section === 'event' ? t('Sự kiện của tôi') : section === 'saved' ? t('Đã lưu') : ''
 
   return (
-    <Layout active="profile">
+    <Layout active="profile" noTop={section === 'activity'}>
       <div style={css('position:relative; background:#07070c; color:#e8eefc;' + BLEED)}>
         <SpaceBackdrop arcTop={section ? 200 : 230} />
 
@@ -380,7 +380,6 @@ export default function ProfilePage() {
         {section === 'activity' && (
           <section style={css('position:relative; padding:14px var(--zp-gutter) 0;')}>
             <div style={css('max-width:760px; margin:0 auto;')}>
-              <h3 style={css(`margin:0 0 10px; font:800 17px ${FONT}; color:#ffffff;`)}>{t('Thông báo')}</h3>
               <div style={css('background:#fff; border:1px solid #E6EBF3; border-radius:16px; overflow:hidden;')}>
                 <div style={css('display:flex; justify-content:flex-end; padding:10px 16px; border-bottom:1px solid #EEF1F7;')}>
                   {notif.unread > 0 ? (<button onClick={() => markNotificationsRead()} disabled={!notif.unread} style={css(`border:none; background:transparent; cursor:${notif.unread ? 'pointer' : 'default'}; font:700 12.5px ${FONT}; color:${notif.unread ? '#3366F0' : '#94a3b8'}; padding:0;`)}>{t('Đánh dấu đã đọc tất cả')}</button>) : <span style={css(`font:600 12.5px ${FONT}; color:#94a3b8;`)}>{t('Đã đọc hết')}</span>}

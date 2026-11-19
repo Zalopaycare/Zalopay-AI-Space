@@ -604,6 +604,8 @@ router.patch('/:id', requireAuth, (req, res) => {
   if (e.author_id !== req.user.id && !req.user.is_admin && !isHost(e, req.user)) return res.status(403).json({ error: 'not_owner' })
   const { f, error } = readFields(req.body)
   if (error) return res.status(400).json({ error: 'invalid', message: error })
+  // moved to another time: not one that has already passed
+  if (f.starts_at !== e.starts_at && (f.all_day ? endOf(f) : f.starts_at) < new Date(Date.now() - 5 * 60_000).toISOString()) return res.status(400).json({ error: 'invalid', message: 'Thời gian bắt đầu đã qua rồi.' })
   const cover = decodeCover(req.body?.cover)
   if (cover === false) return res.status(400).json({ error: 'bad_cover', message: 'Ảnh bìa không hợp lệ hoặc lớn hơn 2 MB.' })
   const moved = f.starts_at !== e.starts_at || f.ends_at !== e.ends_at || f.all_day !== e.all_day || f.location !== e.location
