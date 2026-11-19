@@ -29,7 +29,8 @@ function VoteButton({ t, onVote, height = 34 }) {
       style={css(`flex:none; display:inline-flex; align-items:center; gap:7px; height:${height}px; padding:0 14px; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font:700 13px ${FONT}; ${on ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; border:1.5px solid transparent;' : 'background:#fff; color:#2c5fff; border:1.5px solid #9FB6F5;'}`)}>
       {/* a raised hand: "me too" */}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"></path><path d="M14 10V4a2 2 0 0 0-4 0v2"></path><path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
-      {on ? 'Bạn cũng muốn nghe' : 'Mình cũng muốn nghe'}{t.votes > 0 ? ` · ${t.votes}` : ''}
+      {/* the same words pressed or not (the one who posted it counts too): only the fill says it's yours */}
+      Mình cũng muốn nghe{t.votes > 0 ? ` · ${t.votes}` : ''}
     </button>
   )
 }
@@ -76,19 +77,25 @@ export default function TopicsPanel({ query = '' }) {
         </div>
       ) : (
         <div style={css('display:flex; flex-direction:column; gap:12px;')}>
+          {/* laid out like the Use Case Library cards: title, who and when, then a row of actions with the way in on the right */}
           {shown.map((t) => (
             <div key={t.id} role="button" tabIndex={0} onClick={() => setOpenId(t.id)} onKeyDown={(e) => { if (e.key === 'Enter') setOpenId(t.id) }}
-              className={hoverClass(CARD_HOVER)} style={css('cursor:pointer; background:#fff; border-radius:18px; padding:16px 18px; box-shadow:0 14px 34px rgba(3,12,40,.3); transition:transform .18s ease, box-shadow .18s ease;')}>
-              <div style={css(`font:800 16px/1.35 ${FONT}; color:#0F172A; word-break:break-word;`)}>{t.title}</div>
-              {t.detail && <div style={css('margin-top:4px; font:400 13.5px/1.55 var(--zp-font-text); color:#475569; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{t.detail}</div>}
-              <div style={css('margin-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;')}>
-                <VoteButton t={t} onVote={vote} />
-                <span style={css('display:inline-flex; align-items:center; gap:5px; font:600 12.5px var(--zp-font-text); color:#64748b;')}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
-                  {t.commentCount ? `${t.commentCount} bình luận` : 'Bình luận'}
+              className={'zp-card ' + hoverClass(CARD_HOVER)}
+              style={css('display:flex; flex-direction:column; border:1px solid transparent; border-radius:18px; background:#ffffff; cursor:pointer; padding:12px 14px; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}>
+              <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{t.title}</h3>
+              {t.detail && <div style={css('margin-top:3px; font-size:13px; line-height:1.5; color:#475569; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{t.detail}</div>}
+              <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}><span style={css('font-weight:700; color:#0F172A;')}>Đăng ký bởi:</span> {t.author?.name}</div>
+              <div style={css('margin-top:2px; font-size:12px; line-height:1.45; color:#94a3b8;')}>{relativeTime(t.createdAt)}</div>
+              <div style={css('display:flex; align-items:center; gap:10px; margin-top:8px; padding-top:8px; border-top:1px solid #EEF1F7;')}>
+                <VoteButton t={t} onVote={vote} height={30} />
+                <span style={css('display:inline-flex; align-items:center; gap:5px; font:600 12.5px var(--zp-font-text); color:#475569;')}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1.1-4.4A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"></path></svg>
+                  {t.commentCount || ''}
                 </span>
-                <span style={{ flex: 1 }} />
-                <span style={css('display:inline-flex; align-items:center; gap:6px; font:400 12px var(--zp-font-text); color:#94a3b8;')}><Avatar user={t.author} size={20} fontSize={8} />{t.author?.name} · {relativeTime(t.createdAt)}</span>
+                <span className={hoverClass('gap:9px;')} style={css('flex:none; margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:#2c5fff; white-space:nowrap; transition:gap .16s;')}>
+                  Xem chi tiết
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </span>
               </div>
             </div>
           ))}
