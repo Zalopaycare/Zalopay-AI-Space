@@ -37,7 +37,7 @@ NOTIF_ICONS.eventHost = ic(<><circle cx="9" cy="8" r="3.5"></circle><path d="M2.
 NOTIF_ICONS.eventInterest = NOTIF_ICONS.interest
 // a like on your comment: a heart
 NOTIF_ICONS.like = ic(<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"></path>)
-// Quan tâm on your topic: a raised hand (the button's own icon)
-NOTIF_ICONS.hand = ic(<><path d="M18 11V6a2 2 0 0 0-4 0"></path><path d="M14 10V4a2 2 0 0 0-4 0v2"></path><path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></>)
+// Quan tâm on your topic: the same star as everywhere else
+NOTIF_ICONS.hand = NOTIF_ICONS.interest
 // something of yours taken down: a bin
 NOTIF_ICONS.removed = ic(<><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"></path></>)

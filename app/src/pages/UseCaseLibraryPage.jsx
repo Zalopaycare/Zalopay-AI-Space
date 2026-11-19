@@ -8,7 +8,7 @@ import { useTitle } from '../hooks/useTitle.js'
 import RichText from '../components/RichText.jsx'
 import CoverImage from '../components/CoverImage.jsx'
 import { listUcDrafts, saveUcDraft, removeUcDraft, newDraftId, ucDraftTitle, ucDraftWhen } from '../lib/ucDrafts.js'
-import { AI_TOOLS, OTHER, categoryOf, toolGroup, CATEGORIES } from '../lib/taxonomy.js'
+import { AI_TOOLS, OTHER, categoryOf, toolGroup, CATEGORIES, renameCategories } from '../lib/taxonomy.js'
 import { renderMentions } from '../components/MentionField.jsx'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
@@ -46,8 +46,8 @@ import PendingCases, { BoothInterest, BoothOwnerBar } from '../components/Pendin
 import { toneObj } from '../lib/theme.js'
 
 // AI Exhibition categories → the share form's (a booth's write-up starts in the closest one)
-const BOOTH_CATS = { 'Software Development': 'Coding & Technical', 'Test Automation': 'Coding & Technical', 'Chatbot & Knowledge Search': 'Research & Knowledge',
-  'Config & Operations Automation': 'Automation & Workflow', 'Data Analytics & Monitoring': 'Data & Analysis', 'Docs, Content & Design': 'Content & Communication' }
+const BOOTH_CATS = { 'Software Development': 'Coding & Development', 'Test Automation': 'Coding & Development', 'Chatbot & Knowledge Search': 'Research & Knowledge',
+  'Config & Operations Automation': 'Automation & Workflow', 'Data Analytics & Monitoring': 'Data & Analysis', 'Docs, Content & Design': 'Content & Creative' }
 // the share form's Chủ đề list is the filter's (lib/taxonomy.js), so the two always match
 const CATS = CATEGORIES
 const TOPICS = ['Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Khác']
@@ -248,7 +248,7 @@ export default function UseCaseLibraryPage() {
         if (r.kind) setShareKind(r.kind)
         if (r.status) setShareStatus(r.status)
         if (r.level) setShareLevel(r.level)
-        if (r.category.length) setShareCategory(r.category)
+        if (r.category.length) setShareCategory(renameCategories(r.category))
         const pick = (list, all) => { const known = list.filter((x) => all.some((a) => a.toLowerCase() === x.toLowerCase())).map((x) => all.find((a) => a.toLowerCase() === x.toLowerCase())); const extra = list.filter((x) => !all.some((a) => a.toLowerCase() === x.toLowerCase())); return [known, extra] }
         if (r.topics.length) { const [k, e] = pick(r.topics, TOPICS.filter((x) => x !== 'Khác')); setShareTopicSel([...k, ...(e.length ? ['Khác'] : [])].slice(0, 3)); setShareTopicOtherText(e.join(', ')) }
         if (r.tools.length) { const [k, e] = pick(r.tools, TOOLS.filter((x) => x !== OTHER)); setShareToolSel([...k, ...(e.length ? [OTHER] : [])]); setShareToolOtherText(e.join(', ')) }
@@ -276,7 +276,7 @@ export default function UseCaseLibraryPage() {
       setShareAnon(!!s.anonymous); setShareAlias(s.anonymous && s.alias && !/^Anonymous( \d+)?$/.test(s.alias) ? s.alias : '')
       setSharePostAs(ex.postAs === 'team' ? 'team' : 'personal'); setShareMembers((ex.members || []).join(', ')); setShareBooth(ex.booth || '')
       setShareKind(s.kind || ''); setShareStatus(s.status || ''); setShareLevel(s.level || '')
-      { const cats = [].concat(s.category || []), own = cats.filter((x) => !CATS.includes(x)); setShareCategory([...cats.filter((x) => CATS.includes(x)), ...(own.length ? ['Other'] : [])]); setShareCatOther(own.join(', ')) }
+      { const cats = renameCategories([].concat(s.category || [])), own = cats.filter((x) => !CATS.includes(x)); setShareCategory([...cats.filter((x) => CATS.includes(x)), ...(own.length ? ['Other'] : [])]); setShareCatOther(own.join(', ')) }
       setShareCustom((ex.customSections || []).map((x) => ({ title: x.title || '', text: x.text || '' })))
       setShareFigures(ex.figures || {})
       setShareMetrics(metricsOf(ex.metrics))
@@ -405,7 +405,7 @@ export default function UseCaseLibraryPage() {
       setShareKind(d.shareKind || '')
       setShareStatus(d.shareStatus || '')
       setShareLevel(d.shareLevel || '')
-      setShareCategory(Array.isArray(d.shareCategory) ? d.shareCategory : d.shareCategory ? [d.shareCategory] : [])
+      setShareCategory(renameCategories(Array.isArray(d.shareCategory) ? d.shareCategory : d.shareCategory ? [d.shareCategory] : []))
       setShareCatOther(d.shareCatOther || '')
       setShareCustom(Array.isArray(d.shareCustom) ? d.shareCustom : [])
       setShareFigures(d.shareFigures && typeof d.shareFigures === 'object' ? d.shareFigures : {})

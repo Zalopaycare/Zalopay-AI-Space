@@ -26,13 +26,23 @@ export function toolGroup(name) {
 
 // The share form's categories. Built-in cases and AI Exhibition booths carry their own labels
 // (Engineering, Operations, Test Automation…); each is filed under one of these for the Library filter.
-export const CATEGORIES = ['Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis', 'Coding & Technical', 'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other']
+export const CATEGORIES = ['Productivity & Collaboration', 'Content & Creative', 'Research & Knowledge', 'Data & Analysis', 'Coding & Development', 'Automation & Workflow', 'Other']
+// The names used before (still on use cases, drafts and submissions sent earlier) → today's.
+const RENAMED = {
+  'productivity & personal work': 'Productivity & Collaboration', 'meeting & collaboration': 'Productivity & Collaboration',
+  'content & communication': 'Content & Creative', 'design & creative': 'Content & Creative',
+  'coding & technical': 'Coding & Development',
+}
+/** A category saved under an old name, by today's name (others unchanged). */
+export const renameCategory = (c) => RENAMED[String(c || '').trim().toLowerCase()] || c
+export const renameCategories = (list) => Array.from(new Set((list || []).map(renameCategory)))
 const CATEGORY_OF = {
-  engineering: 'Coding & Technical', 'software development': 'Coding & Technical', 'test automation': 'Coding & Technical', security: 'Coding & Technical',
+  ...RENAMED,
+  engineering: 'Coding & Development', 'software development': 'Coding & Development', 'test automation': 'Coding & Development', security: 'Coding & Development',
   operations: 'Automation & Workflow', 'config & operations automation': 'Automation & Workflow',
   data: 'Data & Analysis', 'data analytics & monitoring': 'Data & Analysis',
-  marketing: 'Content & Communication', 'docs, content & design': 'Content & Communication',
-  'chatbot & knowledge search': 'Research & Knowledge', product: 'Productivity & Personal Work', khác: 'Other',
+  marketing: 'Content & Creative', 'docs, content & design': 'Content & Creative',
+  'chatbot & knowledge search': 'Research & Knowledge', product: 'Productivity & Collaboration', khác: 'Other',
 }
 /** One of CATEGORIES for whatever a use case or booth is labelled with ("Other" when nothing fits). */
 export function categoryOf(raw) {
@@ -45,7 +55,8 @@ export function categoryOf(raw) {
 const KNOWN_LABELS = [
   'Prompting', 'Tài liệu dài', 'Tóm tắt', 'Bảo mật dữ liệu', 'Tiếng Việt', 'Ticket & CSKH', 'Code review', 'Báo cáo', 'Tự động hoá',
   'Coding & Technical', 'Productivity & Personal Work', 'Content & Communication', 'Research & Knowledge', 'Data & Analysis',
-  'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other', OTHER, ...KNOWN_TOOLS,
+  'Automation & Workflow', 'Meeting & Collaboration', 'Design & Creative', 'Other',
+  'Productivity & Collaboration', 'Content & Creative', 'Coding & Development', OTHER, ...KNOWN_TOOLS,
 ]
 const escapeRe = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
