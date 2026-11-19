@@ -23,12 +23,13 @@ const OPEN_FORM = 'zp-open-topic-form'
 export const openTopicForm = () => window.dispatchEvent(new CustomEvent(OPEN_FORM))
 
 /** "Quan tâm · N" with a raised hand: an outline until pressed, filled blue once pressed. */
-function VoteButton({ t, onVote, height = 34 }) {
+// `fill`: share the row with the button beside it (the narrow cards of the right-hand column)
+function VoteButton({ t, onVote, height = 34, fill = false }) {
   const on = t.voted
   return (
     <button onClick={(e) => { e.stopPropagation(); onVote(t) }} aria-pressed={on}
       className={hoverClass(on ? 'filter:brightness(1.06);' : 'background:#EEF3FF !important;')}
-      style={css(`flex:none; display:inline-flex; align-items:center; gap:7px; height:${height}px; padding:0 14px; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font:700 13px ${FONT}; ${on ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; border:1.5px solid transparent;' : 'background:#fff; color:#2c5fff; border:1.5px solid #9FB6F5;'}`)}>
+      style={css(`${fill ? 'flex:1 1 0; min-width:0; justify-content:center; padding:0 8px; gap:5px; font-size:12.5px;' : 'flex:none; padding:0 14px; gap:7px;'} display:inline-flex; align-items:center; height:${height}px; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font-weight:700; font-family:${FONT}; ${fill ? '' : 'font-size:13px;'} ${on ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; border:1.5px solid transparent;' : 'background:#fff; color:#2c5fff; border:1.5px solid #9FB6F5;'}`)}>
       {/* a raised hand: "me too" */}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"></path><path d="M14 10V4a2 2 0 0 0-4 0v2"></path><path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
       {/* the same words pressed or not (the one who posted it counts too): only the fill says it's yours */}
@@ -39,13 +40,13 @@ function VoteButton({ t, onVote, height = 34 }) {
 
 /** "Tạo sự kiện" for a topic: the AI Space's events tab with the form open, linked to the topic. */
 const createFor = (navigate, t) => navigate(`/?new=event&fromTopic=${encodeURIComponent(t.id)}`)
-function CreateEventButton({ t, height = 30 }) {
+function CreateEventButton({ t, height = 30, fill = false }) {
   const navigate = useNavigate()
   const { requireLogin } = useAuth()
   return (
     <button onClick={(e) => { e.stopPropagation(); requireLogin(() => createFor(navigate, t)) }} title="Tạo sự kiện chia sẻ chủ đề này"
       className={hoverClass('background:#E4E9F2 !important;')}
-      style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:${height}px; padding:0 12px; border:none; border-radius:10px; background:#EEF1F6; color:#0F172A; cursor:pointer; white-space:nowrap; font:700 12.5px ${FONT};`)}>
+      style={css(`${fill ? 'flex:1 1 0; min-width:0; justify-content:center; padding:0 8px; gap:5px;' : 'flex:none; padding:0 12px; gap:6px;'} display:inline-flex; align-items:center; height:${height}px; border:none; border-radius:10px; background:#EEF1F6; color:#0F172A; cursor:pointer; white-space:nowrap; font:700 12.5px ${FONT};`)}>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"></path></svg>
       Tạo sự kiện
     </button>
@@ -119,9 +120,10 @@ export default function TopicsPanel({ query = '', layout = 'list' }) {
             <div style={css(`font:800 13.5px/1.35 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;`)}>{t.title}</div>
             <div style={css('margin-top:3px; font:400 11.5px var(--zp-font-text); color:#94a3b8;')}>{t.author?.name} · {relativeTime(t.createdAt)}{t.commentCount ? ` · ${t.commentCount} bình luận` : ''}</div>
             {t.events?.length > 0 && <div style={css('margin-top:4px; font:700 11.5px var(--zp-font-text); color:#00723C;')}>✓ Đã có {t.events.length} sự kiện</div>}
-            <div style={css('margin-top:8px; display:flex; align-items:center; justify-content:flex-end; gap:6px;')}>
-              <CreateEventButton t={t} height={28} />
-              <VoteButton t={t} onVote={vote} height={28} />
+            {/* the two buttons share the card's width (it is narrow), so they never stick out */}
+            <div style={css('margin-top:8px; display:flex; align-items:center; gap:6px;')}>
+              <CreateEventButton t={t} height={30} fill />
+              <VoteButton t={t} onVote={vote} height={30} fill />
             </div>
           </div>
         ))}
