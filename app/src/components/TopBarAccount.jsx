@@ -82,7 +82,7 @@ export default function TopBarAccount({ t }) {
                 className={hoverClass('background:#F3F6FC !important;')}
                 style={css(`display:flex; gap:11px; align-items:center; width:100%; padding:9px 10px; border:none; border-radius:10px; background:${n.unread ? '#F5F8FF' : 'transparent'}; cursor:pointer; text-align:left; font-family:inherit;`)}
               >
-                <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
+                <span style={css(`flex:none; width:34px; height:34px; border-radius:50%; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{(NOTIF_ICONS[n.icon] || NOTIF_ICONS[n.kind]) || NOTIF_ICONS.answer}</span>
                 <span style={css('flex:1; min-width:0;')}>
                   <span style={css(`display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font:${n.unread ? '700' : '400'} 13px/1.45 var(--zp-font-text); color:${n.unread ? '#0F172A' : '#475569'};`)}>{n.text}</span>
                   <span style={css(`display:block; margin-top:2px; font:${n.unread ? '700' : '400'} 11.5px var(--zp-font-text); color:${n.unread ? '#2c5fff' : '#94a3b8'};`)}>{n.timeLabel}</span>

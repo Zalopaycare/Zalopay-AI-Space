@@ -44,7 +44,23 @@ export function useNotifications(enabled = true) {
     window.addEventListener('focus', onFocus)
     return () => { listeners.delete(setS); clearInterval(t); window.removeEventListener('focus', onFocus) }
   }, [enabled])
-  return { ...s, items: s.items.map((n) => ({ ...n, timeLabel: relativeTime(n.time), ...(NOTIF_STYLE[n.kind] || NOTIF_STYLE.answer) })) }
+  return { ...s, items: s.items.map((n) => { const icon = variantOf(n); return { ...n, icon, timeLabel: relativeTime(n.time), ...(NOTIF_STYLE[icon] || NOTIF_STYLE[n.kind] || NOTIF_STYLE.answer) } }) }
+}
+
+/** Which icon (and colour) a notification gets: its kind, with event news and "upvotes" told apart by what they say. */
+export function variantOf(n) {
+  const text = String(n.text || '')
+  if (n.kind === 'event') {
+    if (/^Nhắc bạn/.test(text)) return 'eventReminder'
+    if (/(đã bị hủy|đã huỷ)/.test(text)) return 'eventCancel'
+    if (/đổi sang/.test(text)) return 'eventChange'
+    if (/đồng tổ chức/.test(text)) return 'eventHost'
+    if (/đã tạo sự kiện/.test(text)) return 'eventNew'
+    if (/quan tâm/.test(text)) return 'eventInterest'
+    return 'event'
+  }
+  if (n.kind === 'upvote') return /thích/.test(text) ? 'like' : /(chủ đề|muốn nghe)/.test(text) ? 'hand' : 'upvote'
+  return n.kind
 }
 
 export const NOTIF_STYLE = {
@@ -61,4 +77,15 @@ export const NOTIF_STYLE = {
   chat: { iconBg: '#E4ECFF', iconFg: '#2c5fff' },
   invite: { iconBg: '#FFF4E3', iconFg: '#B45300' },
   access: { iconBg: '#FFECEC', iconFg: '#D8232A' },
+  removed: { iconBg: '#FFECEC', iconFg: '#D8232A' },
+  // events: calendar blue-green; reminders amber; cancelled red; co-host violet; Quan tâm orange
+  event: { iconBg: '#E0F4F8', iconFg: '#0E7490' },
+  eventNew: { iconBg: '#E0F4F8', iconFg: '#0E7490' },
+  eventChange: { iconBg: '#E0F4F8', iconFg: '#0E7490' },
+  eventReminder: { iconBg: '#FFF4E3', iconFg: '#B45300' },
+  eventCancel: { iconBg: '#FFECEC', iconFg: '#D8232A' },
+  eventHost: { iconBg: '#F1E7FF', iconFg: '#6F0CE2' },
+  eventInterest: { iconBg: '#FFF4E3', iconFg: '#B45300' },
+  like: { iconBg: '#FFE8EF', iconFg: '#E11D48' },
+  hand: { iconBg: '#FFF4E3', iconFg: '#B45300' },
 }

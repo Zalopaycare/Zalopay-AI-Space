@@ -18,3 +18,26 @@ NOTIF_ICONS.chat = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 NOTIF_ICONS.invite = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg>
 // Someone turned away at sign-in asks for access: a padlock.
 NOTIF_ICONS.access = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+
+// Event notifications, each told apart at a glance (lib/notifications.js picks the variant from the text):
+const ic = (children, w = 2.1) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+// any other news about an event: a calendar
+NOTIF_ICONS.event = ic(<><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></>)
+// a new event (for a topic you follow): a calendar with a plus
+NOTIF_ICONS.eventNew = ic(<><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M12 14v5M9.5 16.5h5"></path></>)
+// "Nhắc bạn: …": an alarm clock
+NOTIF_ICONS.eventReminder = ic(<><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2M5 3 2 6M22 6l-3-3"></path></>)
+// cancelled: a calendar with a cross
+NOTIF_ICONS.eventCancel = ic(<><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M10 14l4 4M14 14l-4 4"></path></>)
+// moved to another time: a clock
+NOTIF_ICONS.eventChange = ic(<><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></>)
+// made a co-host: two people
+NOTIF_ICONS.eventHost = ic(<><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5"></path></>)
+// someone pressed Quan tâm on an event / enough people did: a star
+NOTIF_ICONS.eventInterest = NOTIF_ICONS.interest
+// a like on your comment: a heart
+NOTIF_ICONS.like = ic(<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"></path>)
+// Quan tâm on your topic: a raised hand (the button's own icon)
+NOTIF_ICONS.hand = ic(<><path d="M18 11V6a2 2 0 0 0-4 0"></path><path d="M14 10V4a2 2 0 0 0-4 0v2"></path><path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></>)
+// something of yours taken down: a bin
+NOTIF_ICONS.removed = ic(<><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"></path></>)

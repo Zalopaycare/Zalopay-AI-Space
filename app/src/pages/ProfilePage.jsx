@@ -391,7 +391,7 @@ export default function ProfilePage() {
                   const unread = n.unread
                   return (
                     <div key={n.id} onClick={() => { if (unread) markNotificationsRead([n.id]); if (n.href) navigate(n.href) }} className={hoverClass('background:#F7F9FD;')} style={css(`display:flex; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid #F3F5FA; background:${unread ? '#F3F7FF' : '#fff'}; cursor:pointer;`)}>
-                      <span style={css(`flex:none; width:30px; height:30px; border-radius:10px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{NOTIF_ICONS[n.kind] || NOTIF_ICONS.answer}</span>
+                      <span style={css(`flex:none; width:30px; height:30px; border-radius:10px; background:${n.iconBg}; color:${n.iconFg}; display:flex; align-items:center; justify-content:center;`)}>{(NOTIF_ICONS[n.icon] || NOTIF_ICONS[n.kind]) || NOTIF_ICONS.answer}</span>
                       <div style={css('flex:1; min-width:0;')}>
                         <div style={css(unread ? `font:800 13.5px/1.5 ${FONT}; color:#1a5fff;` : `font:400 13.5px/1.5 var(--zp-font-text); color:#475569;`)}>{n.text}</div>
                         <div style={css(`margin-top:1px; font:400 12px var(--zp-font-text); color:#94a3b8;`)}>{n.timeLabel}</div>
