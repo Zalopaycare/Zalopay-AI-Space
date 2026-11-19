@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { HandIcon } from './notifIcons.jsx'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass, CARD_HOVER } from '../lib/style.js'
@@ -72,7 +73,7 @@ function InterestButton({ ev, onToggle, grow = false, height = 36, onDark = fals
     <button onClick={(e) => { e.stopPropagation(); onToggle(ev) }} aria-pressed={on}
       className={hoverClass(hover)}
       style={css(`${grow ? 'flex:1 1 auto;' : 'flex:none;'} min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:${height}px; padding:0 14px; border:none; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font:700 ${height < 34 ? 12.5 : 13.5}px ${FONT}; ${look}`)}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+      <HandIcon size={16} />
       {on ? 'Đã quan tâm' : 'Quan tâm'}
     </button>
   )
@@ -489,7 +490,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               return row(<Avatar user={ev.host} size={20} fontSize={8} />, <>Tổ chức bởi {joined}</>)
             })()}
             {ev.topic && row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"></path></svg>, <>Cho chủ đề <a href={`/?tab=wish&topic=${encodeURIComponent(ev.topic.id)}`} style={css('font-weight:700; color:#2c5fff; text-decoration:none;')}>"{ev.topic.title}"</a></>)}
-            {row(<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>, statsLabel(ev))}
+            {row(<HandIcon size={17} />, statsLabel(ev))}
           </div>
           <div style={css('display:flex; flex-wrap:wrap; gap:8px; padding:16px 22px 0;')}>
             {!ev.past && <InterestButton ev={ev} onToggle={toggle} grow height={32} />}

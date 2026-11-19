@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { HandIcon } from './notifIcons.jsx'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api.js'
@@ -18,7 +19,7 @@ import { playSound } from '../lib/sound.js'
 
 
 function Star({ on }) {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"></path></svg>
+  return <HandIcon size={14} />
 }
 
 // Where "Bổ sung thông tin" takes a booth's owner: the share form pre-filled from the exhibition, the

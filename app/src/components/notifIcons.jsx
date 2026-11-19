@@ -1,4 +1,9 @@
 // One consistent line-icon set for every notification kind.
+
+/** "Quan tâm" everywhere (events, topics, AI Exhibition booths, their notifications): a raised hand. */
+export function HandIcon({ size = 16 }) {
+  return <svg style={{ flex: 'none' }} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0"></path><path d="M14 10V4a2 2 0 0 0-4 0v2"></path><path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
+}
 export const NOTIF_ICONS = {
   answer: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>,
   mention: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.6 7.2"></path></svg>,
@@ -10,8 +15,8 @@ NOTIF_ICONS.comment = NOTIF_ICONS.answer
 NOTIF_ICONS.report = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4"></path><path d="M4 4h13l-2 4 2 4H4"></path></svg>
 NOTIF_ICONS.changes = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
 NOTIF_ICONS.upvote = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7 22V11l5-9a2.6 2.6 0 0 1 2.5 3.2L13.6 9H19a2.4 2.4 0 0 1 2.3 3l-1.8 7.3A2.4 2.4 0 0 1 17.2 22z"></path><path d="M7 11H3v11h4"></path></svg>
-// "Quan tâm" on a booth with no write-up yet: a star.
-NOTIF_ICONS.interest = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"></path></svg>
+// "Quan tâm" (a booth, an event, a topic): the raised hand.
+NOTIF_ICONS.interest = <HandIcon />
 // "Chat với Admin": a speech bubble.
 NOTIF_ICONS.chat = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></svg>
 // Admin invites a booth's owners to write their use case up: an envelope.
@@ -37,7 +42,7 @@ NOTIF_ICONS.eventHost = ic(<><circle cx="9" cy="8" r="3.5"></circle><path d="M2.
 NOTIF_ICONS.eventInterest = NOTIF_ICONS.interest
 // a like on your comment: a heart
 NOTIF_ICONS.like = ic(<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"></path>)
-// Quan tâm on your topic: the same star as everywhere else
+// Quan tâm on your topic: the same raised hand
 NOTIF_ICONS.hand = NOTIF_ICONS.interest
 // something of yours taken down: a bin
 NOTIF_ICONS.removed = ic(<><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"></path></>)

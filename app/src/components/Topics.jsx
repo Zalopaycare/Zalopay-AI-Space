@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { HandIcon } from './notifIcons.jsx'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { css, hoverClass, CARD_HOVER } from '../lib/style.js'
@@ -30,8 +31,8 @@ function VoteButton({ t, onVote, height = 34, fill = false }) {
     <button onClick={(e) => { e.stopPropagation(); onVote(t) }} aria-pressed={on}
       className={hoverClass(on ? 'filter:brightness(1.06);' : 'background:#EEF3FF !important;')}
       style={css(`${fill ? 'flex:1 1 0; min-width:0; justify-content:center; padding:0 8px; gap:5px; font-size:12.5px;' : 'flex:none; padding:0 14px; gap:7px;'} display:inline-flex; align-items:center; height:${height}px; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font-weight:700; font-family:${FONT}; ${fill ? '' : 'font-size:13px;'} ${on ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; border:1.5px solid transparent;' : 'background:#fff; color:#2c5fff; border:1.5px solid #9FB6F5;'}`)}>
-      {/* a star, the same as Quan tâm on events and AI Exhibition booths (filled once pressed) */}
-      <svg style={{ flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+      {/* a raised hand, the same as Quan tâm on events and AI Exhibition booths */}
+      <HandIcon size={16} />
       {/* the same words pressed or not: only the fill (blue once you pressed it) says it is yours */}
       Quan tâm{t.votes > 0 ? ` · ${t.votes}` : ''}
     </button>
