@@ -8,11 +8,15 @@ import PageActionBar from '../components/PageActionBar.jsx'
 import EventsPanel, { openEventForm } from '../components/Events.jsx'
 import TopicsPanel, { openTopicForm } from '../components/Topics.jsx'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 
 // The AI Space home, two tabs: "Sự kiện", the events colleagues hold to share an AI topic
 // (components/Events.jsx), and "Chủ đề quan tâm", the questions / topics people would like someone to share about
 // (components/Topics.jsx; /?tab=wish). The bar at the top creates one of whichever tab is open; the search
-// box filters it. Posts are no longer written here; old post links (/questions/<id>) still open the post.
+// box filters it. On a wide screen the topics sit in a column fixed to the right edge instead (like the events
+// rail of the old posts page) and the events take the page; narrower, they are the second tab.
+// Posts are no longer written here; old post links (/questions/<id>) still open the post.
+const RAIL_W = 272
 export default function EventsPage() {
   useTitle('AI Space')
   const [query, setQuery] = useState('')
@@ -21,25 +25,27 @@ export default function EventsPage() {
   const params = new URLSearchParams(location.search)
   const tab = params.get('tab') === 'wish' || params.has('topic') || params.get('new') === 'topic' ? 'wish' : 'events'
   const pick = (k) => { setQuery(''); navigate({ pathname: '/', search: k === 'wish' ? '?tab=wish' : '' }, { replace: true }) }
-  const wish = tab === 'wish'
+  const { width, offset } = useSidebarLayout()
+  const rail = width - offset - RAIL_W >= 860
+  const wish = !rail && tab === 'wish'
   return (
     <Layout active="question">
       <div style={css('position:relative; color:#e8eefc; overflow:clip;' + BLEED)}>
         <SpaceBackdrop arcTop={190} />
-        <div style={css('position:relative; z-index:1;')}>
+        <div style={{ ...css('position:relative; z-index:1;'), ...(rail ? { paddingRight: RAIL_W } : {}) }}>
           {/* the same wordmark box as before (and as the Use Case Library title), so switching tabs doesn't jump */}
           <section style={css('position:relative; z-index:2; padding:22px var(--zp-gutter) 10px; text-align:center; overflow:visible;')}>
             <HeroWordmark width={361} />
             <p className="zp-tagline" style={css('position:relative; margin:0 auto; max-width:760px; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>Nơi đồng nghiệp tạo và cùng tham gia các buổi chia sẻ về AI.</p>
           </section>
-          {/* the two tabs, centred over the bar */}
-          <div role="tablist" style={css('display:flex; justify-content:center; gap:6px; padding:14px var(--zp-gutter) 0;')}>
+          {/* the two tabs, centred over the bar (narrower screens; wide ones have the topics column) */}
+          {!rail && <div role="tablist" style={css('display:flex; justify-content:center; gap:6px; padding:14px var(--zp-gutter) 0;')}>
             {[['events', 'Sự kiện'], ['wish', 'Chủ đề quan tâm']].map(([k, label]) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={() => pick(k)} data-tour={k === 'wish' ? 'wish-tab' : undefined}
                 className={tab === k ? undefined : hoverClass('background:rgba(255,255,255,.1) !important; color:#fff !important;')}
                 style={css(`height:36px; padding:0 18px; border-radius:999px; cursor:pointer; font:700 14px var(--zp-font-text); ${tab === k ? 'background:#fff; color:#0F172A; border:1px solid #fff;' : 'background:rgba(255,255,255,.04); color:#C9D6F5; border:1px solid rgba(160,190,255,.25);'}`)}>{label}</button>
             ))}
-          </div>
+          </div>}
           {wish
             ? <PageActionBar prompt="Bạn có câu hỏi, chủ đề AI nào muốn được chia sẻ?" cta="Đăng chủ đề" onCompose={openTopicForm} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, chủ đề..." />
             : <PageActionBar tour="compose" prompt="Bạn có topic AI nào muốn chia sẻ?" cta="Tạo sự kiện" onCompose={openEventForm} query={query} onQuery={setQuery} placeholder="Tìm sự kiện, địa điểm, người tổ chức..." />}
@@ -49,6 +55,12 @@ export default function EventsPage() {
             </div>
           </div>
         </div>
+        {rail && (
+          // fixed to the right edge under the top bar, the length of the screen; a long list scrolls inside it
+          <div className="zp-thinscroll" data-tour="wish-tab" style={{ ...css('position:fixed; top:58px; right:0; bottom:0; z-index:40; overflow-y:auto; box-sizing:border-box; padding:22px 18px 24px 4px;'), width: RAIL_W }}>
+            <TopicsPanel layout="rail" />
+          </div>
+        )}
       </div>
     </Layout>
   )

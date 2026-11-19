@@ -511,7 +511,6 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 4.5V9C7 9.5 4 14 3 20c2.5-3.5 6-5.1 11-5.1v4.6l7-7.5-7-7.5z"></path></svg>
               Chia sẻ
             </button>
-            <span style={{ flex: 1 }} />
             {user && <MoreMenu items={menu} />}
           </div>
           {/* the creator: invitations wait for enough interest, then one click sends them */}

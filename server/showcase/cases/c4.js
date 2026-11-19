@@ -9,8 +9,9 @@ export default {
   // no one-line summary: the title alone says which tool and what it does
   desc: '',
   type: 'guide',
-  status: 'prototype',
-  statusNote: 'Mới triển khai ở môi trường dev, bộ skill mới test trên macOS',
+  // Theo bản User Guide mới nhất (19/11/2026): không còn giới hạn "chỉ môi trường dev / chỉ macOS".
+  status: 'inuse',
+  statusNote: 'Hơn 30 ứng dụng đang chạy trên Agent Base',
   kind: 'tech',
   level: 'ready',
   category: 'Software Development',
@@ -24,7 +25,7 @@ export default {
   members: ['luanpd'],
   ownerName: 'LuânPD',
   ownerTeam: 'SRE',
-  updated: '',
+  updated: '19/11/2026',
   cover: '',
   stats: [],
 
@@ -65,15 +66,14 @@ export default {
       ],
       no: [
         'Bạn cần chạy model local như ollama, vllm: mỗi ứng dụng chỉ có 2 CPU / 4 GB RAM (liên hệ SRE HienLQ).',
-        'Bạn cần chạy thật ở môi trường production: hiện Agent Base mới triển khai ở môi trường dev.',
       ],
     },
     prep: [
-      'Máy macOS hoặc Linux, Windows (bộ skill mới được test trên macOS).',
+      'Máy macOS hoặc Linux, Windows: bộ skill chạy trên các hệ điều hành này.',
       'Một công cụ AI: chọn một trong ba Claude Code, Codex hoặc Cursor.',
       'Node.js (bản LTS), python3 và git đã cài trên máy.',
       'File cấu hình <tên_bạn>_zlpagentbase.env: do SRE cấp riêng cho bạn, liên hệ SRE nếu chưa có.',
-      'File zip ZLP_AgentBase_Skills_V2.zip: đính kèm trong tài liệu gốc; link tải: [cần bổ sung]',
+      'File zip ZLP_AgentBase_Skills_V2.zip: đính kèm trong trang Zalopay Agent Base User Guide (bấm vào link tải trong trang).',
     ],
     // Each step once, with its details and screenshots right under it.
     stepSections: [
@@ -81,7 +81,6 @@ export default {
         title: 'Xin file cấu hình, chuẩn bị máy',
         blocks: [
           { type: 'text', text: 'Liên hệ SRE để được cấp file cấu hình <tên_bạn>_zlpagentbase.env. Giai đoạn test đã có sẵn một bộ cấu hình và key dùng chung, thời hạn 30 ngày.' },
-          { type: 'note', tone: 'warn', title: 'Lưu ý quan trọng', text: 'Hiện Agent Base chỉ mới triển khai ở môi trường dev và bộ skill chỉ mới test trên máy macOS.' },
           { type: 'table', title: 'Chuẩn bị trước khi cài', note: 'Kiểm tra đủ các mục dưới đây trước khi bắt đầu.', cols: ['Cần có', 'Ghi chú'], rows: [
             ['Máy macOS hoặc Linux, Windows', 'Bộ skill chạy trên các hệ điều hành này'],
             ['Một công cụ AI', 'Chọn một trong ba: Claude Code, Codex, hoặc Cursor'],
@@ -89,14 +88,14 @@ export default {
             ['python3 và git', 'Dùng cho các script của Agentbase'],
             ['File cấu hình <tên_bạn>_zlpagentbase.env', 'Do SRE cấp riêng cho bạn. Liên hệ SRE nếu chưa có.'],
           ] },
-          { type: 'note', tone: 'warn', title: 'Giới hạn tài nguyên', text: 'Do là môi trường dev, mỗi ứng dụng đang bị giới hạn cố định 2 CPU / 4 GB RAM, nên đừng chạy model local như ollama, vllm. Nếu cần chạy model local, liên hệ SRE (HienLQ) để được hỗ trợ.' },
-          { type: 'prompt', label: 'Không biết máy đã có đủ chưa? Mở công cụ AI và gõ nguyên câu này', text: 'Kiểm tra giúp tôi máy đã cài Node.js, python3, git và Docker chưa.\nCái nào chưa có thì chỉ tôi cách cài nhé.' },
+          { type: 'note', tone: 'warn', title: 'Giới hạn tài nguyên', text: 'Do tài nguyên có hạn nên hiện tại mỗi ứng dụng được set cố định 2 CPU / 4 GB RAM, mọi người không chạy model local như ollama, vllm nhé. Nếu có nhu cầu chạy model local, liên hệ SRE (HienLQ) để được hỗ trợ.' },
+          { type: 'prompt', label: 'Không biết máy đã có đủ chưa? Mở công cụ AI và gõ nguyên câu này', text: 'Kiểm tra giúp tôi máy đã cài Node.js, python3, git chưa?\nCái nào chưa có thì chỉ tôi cách cài nhé.' },
         ],
       },
       {
         title: 'Tải và cài bộ skill',
         blocks: [
-          { type: 'text', text: 'Tải file zip bộ skill, giải nén.' },
+          { type: 'text', text: 'Tải file zip bộ skill đính kèm trong trang Zalopay Agent Base User Guide (bấm vào link tải trong trang), rồi giải nén.' },
           { type: 'steps', title: 'Cài đặt — Bước 0: Tải và giải nén', items: [
             'Tải file zip đính kèm về máy.',
             'Giải nén. Bạn sẽ được một thư mục tên ZLP_AgentBase_Skills_V2 chứa 5 thư mục con bắt đầu bằng zlp-agentbase-.',
@@ -232,8 +231,7 @@ export default {
     limits: [
       'AI sẽ không in giá trị biến môi trường dù bạn yêu cầu. Đây là thiết kế cố ý để nâng cao tính bảo mật.',
       'Trước khi xoá, AI luôn hiện đủ thông tin ứng dụng và hỏi lại hai câu riêng biệt; tên không rõ thì AI hỏi lại, không tự đoán.',
-      'Agent Base hiện chỉ mới triển khai ở môi trường dev; bộ skill chỉ mới test trên macOS.',
-      'Mỗi ứng dụng giới hạn cố định 2 CPU / 4 GB RAM, không chạy được model local như ollama, vllm.',
+      'Do tài nguyên có hạn, mỗi ứng dụng giới hạn cố định 2 CPU / 4 GB RAM, không chạy model local như ollama, vllm (cần thì liên hệ SRE HienLQ).',
       'Không tự đặt được tên miền kết thúc bằng ai.zalopay.xyz; tên miền riêng phải được trỏ sẵn về server Agent Base.',
       'Mức dùng tài nguyên không xem được qua AI — phải xem trên giao diện Agent Base, tab Metrics.',
       'Giai đoạn test dùng một bộ cấu hình và key dùng chung, thời hạn 30 ngày.',
@@ -260,9 +258,9 @@ export default {
 
   next: {
     steps: [
-      'Hỗ trợ dùng model local của Zalopay, và gọi API các tool nội bộ nhưng có kiểm soát.',
-      'Triển khai lên production, chạy nhiều server (multi server) thay vì standalone để mở rộng khi được dùng nhiều; hỗ trợ rollback.',
-      'Phân quyền chặt chẽ hơn qua tính năng Team của Agent Base; kiểm tra và hỗ trợ skill chính thức trên Windows.',
+      'Hỗ trợ expose domain chỉ public trong VNG thay vì public internet.',
+      'Quản lý phân quyền chặt chẽ hơn thông qua tính năng Team của Agent Base.',
+      'Hỗ trợ rollback.',
     ],
     contact: [
       'SRE: cấp file cấu hình <tên_bạn>_zlpagentbase.env, kiểm tra lại key, xem lại mật khẩu bảo vệ.',

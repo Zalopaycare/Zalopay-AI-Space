@@ -25,7 +25,7 @@ const STEPS = [
   { path: '/', at: '[data-tour="nav-home"]', title: 'Trang AI Space', text: 'Trang chủ: các sự kiện đồng nghiệp tạo ra để cùng chia sẻ về AI.' },
   { path: '/', at: '[data-tour="compose"]', title: 'Tạo sự kiện', text: 'Có topic AI muốn chia sẻ? Bấm Tạo sự kiện: đặt tên, ngày, địa điểm, thêm người đồng tổ chức và ảnh bìa nếu muốn.' },
   { path: '/', at: '[data-tour="events"]', title: 'Quan tâm sự kiện', text: 'Bấm Quan tâm để nhận email nhắc trước 1 ngày. Khi đủ 3 người quan tâm, người tổ chức gửi lời mời Outlook để sự kiện vào lịch của bạn. Bấm vào sự kiện để xem chi tiết, bình luận và tag đồng nghiệp.' },
-  { path: '/', at: '[data-tour="wish-tab"]', title: 'Chủ đề quan tâm', text: 'Có câu hỏi, chủ đề AI muốn được chia sẻ? Đăng ở tab này; ai cũng quan tâm thì bấm Quan tâm. AI Champion, AI Expert hay bất kỳ ai bấm Tạo sự kiện để giải đáp, và mọi người đã quan tâm nhận lời mời ngay.' },
+  { path: '/', at: '[data-tour="wish-tab"]', title: 'Chủ đề quan tâm', text: 'Có câu hỏi, chủ đề AI muốn được chia sẻ? Đăng ở mục Chủ đề quan tâm; ai cũng quan tâm thì bấm Quan tâm. AI Champion, AI Expert hay bất kỳ ai bấm Tạo sự kiện để giải đáp, và mọi người đã quan tâm nhận lời mời ngay.' },
   // 2. the Use Case Library
   { path: '/use-cases', at: '[data-tour="nav-usecases"]', title: 'Use Case Library', text: 'Các cách dùng AI đã chạy thật ở Zalopay: bài toán, giải pháp và từng bước để bạn tự làm lại.' },
   { path: '/use-cases', at: '[data-tour="lib-compose"]', title: 'Tìm và chia sẻ use case', text: 'Tìm theo từ khoá, lọc theo chủ đề và công cụ AI. Có use case muốn chia sẻ thì bấm Chia sẻ use case: điền form 4 bước, Admin duyệt rồi publish.' },

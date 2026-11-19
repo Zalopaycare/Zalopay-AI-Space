@@ -68,7 +68,8 @@ function TopicEvents({ t }) {
   )
 }
 
-export default function TopicsPanel({ query = '' }) {
+// `layout`: 'list' (the tab: full cards) or 'rail' (the column on the right of a wide screen: compact cards)
+export default function TopicsPanel({ query = '', layout = 'list' }) {
   const { user, requireLogin } = useAuth()
   const [topics, setTopics] = useState(null)
   const [openId, setOpenId] = useState(() => new URLSearchParams(window.location.search).get('topic'))
@@ -99,6 +100,35 @@ export default function TopicsPanel({ query = '' }) {
   const list = topics || []
   const shown = q ? list.filter((t) => [t.title, t.detail, t.author?.name, t.author?.fullName].some((x) => fold(x).includes(q))) : list
 
+  const dialogs = (<>
+    {openId && <TopicDialog id={openId} known={list.find((x) => x.id === openId)} onClose={close} onChanged={put} onEdit={(t) => { close(); setForm(t) }} onDeleted={() => { close(); reload() }} />}
+    {form && <TopicForm initial={form} onClose={() => setForm(null)} onSaved={(t) => { setForm(null); reload(); setOpenId(t.id); playSound() }} />}
+  </>)
+  if (layout === 'rail') return (
+    <aside aria-label="Chủ đề quan tâm">
+      {tm.modals}
+      <div style={css(`display:flex; align-items:baseline; gap:8px; font:800 15px ${FONT}; color:#FFFFFF;`)}>Chủ đề quan tâm{list.length > 0 && <span style={css('font:600 12px var(--zp-font-text); color:#8EA0C8;')}>{list.length}</span>}</div>
+      <div style={css('margin-top:3px; font:400 12px/1.45 var(--zp-font-text); color:#8EA0C8;')}>Câu hỏi, chủ đề AI mọi người muốn được chia sẻ. Bạn chia sẻ được thì bấm Tạo sự kiện.</div>
+      <button onClick={() => requireLogin(() => setForm({}))} className={hoverClass('filter:brightness(1.06);')} style={css(`margin-top:10px; width:100%; height:34px; border:none; border-radius:10px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer;`)}>+ Đăng chủ đề</button>
+      <div style={css('margin-top:12px; display:flex; flex-direction:column; gap:10px;')}>
+        {topics !== null && !list.length && <div style={css('font:400 12.5px/1.5 var(--zp-font-text); color:#8EA0C8;')}>Chưa có câu hỏi, chủ đề nào.</div>}
+        {list.map((t) => (
+          <div key={t.id} role="button" tabIndex={0} onClick={() => setOpenId(t.id)} onKeyDown={(e) => { if (e.key === 'Enter') setOpenId(t.id) }}
+            className={hoverClass('transform:translateY(-1px); box-shadow:0 12px 28px rgba(3,12,40,.4);')}
+            style={css('cursor:pointer; background:#fff; border-radius:14px; padding:10px 12px; box-shadow:0 8px 20px rgba(3,12,40,.3); transition:transform .15s ease, box-shadow .15s ease;')}>
+            <div style={css(`font:800 13.5px/1.35 ${FONT}; color:#0F172A; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;`)}>{t.title}</div>
+            <div style={css('margin-top:3px; font:400 11.5px var(--zp-font-text); color:#94a3b8;')}>{t.author?.name} · {relativeTime(t.createdAt)}{t.commentCount ? ` · ${t.commentCount} bình luận` : ''}</div>
+            {t.events?.length > 0 && <div style={css('margin-top:4px; font:700 11.5px var(--zp-font-text); color:#00723C;')}>✓ Đã có {t.events.length} sự kiện</div>}
+            <div style={css('margin-top:8px; display:flex; align-items:center; justify-content:flex-end; gap:6px;')}>
+              <CreateEventButton t={t} height={28} />
+              <VoteButton t={t} onVote={vote} height={28} />
+            </div>
+          </div>
+        ))}
+      </div>
+      {dialogs}
+    </aside>
+  )
   return (
     <>
       {tm.modals}
@@ -137,8 +167,7 @@ export default function TopicsPanel({ query = '' }) {
           ))}
         </div>
       )}
-      {openId && <TopicDialog id={openId} known={list.find((x) => x.id === openId)} onClose={close} onChanged={put} onEdit={(t) => { close(); setForm(t) }} onDeleted={() => { close(); reload() }} />}
-      {form && <TopicForm initial={form} onClose={() => setForm(null)} onSaved={(t) => { setForm(null); reload(); setOpenId(t.id); playSound() }} />}
+      {dialogs}
     </>
   )
 }
