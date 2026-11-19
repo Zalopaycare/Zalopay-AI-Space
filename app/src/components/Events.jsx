@@ -9,10 +9,10 @@ import { copyWithToast } from '../lib/clipboard.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useDialog } from '../hooks/useDialog.js'
 import Avatar from './Avatar.jsx'
-import { askRemovalReason } from './RemovalReason.jsx'
 import MentionInput from './MentionInput.jsx'
 import { renderMentions } from './MentionField.jsx'
 import CommentMenu, { LikeButton, ReplyButton, RepliesToggle, useCommentModals } from './CommentMenu.jsx'
+import MoreMenu, { MENU_ICON } from './MoreMenu.jsx'
 import { playSound } from '../lib/sound.js'
 
 // "Sự kiện": anything happening offline that anyone can post (server: routes/events.js), shown like a
@@ -305,7 +305,7 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
 
 // ---- one event, in full ----
 function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
-  const { requireLogin } = useAuth()
+  const { user, requireLogin } = useAuth()
   const [ev, setEv] = useState(known || null)
   const [missing, setMissing] = useState(false)
   const dialog = useDialog(true, onClose, 'Sự kiện')
@@ -321,13 +321,18 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   const [cancelReason, setCancelReason] = useState('')
   // everyone interested gets the cancellation with this reason (email, Outlook, in the app)
   const cancelEvent = () => { if (!cancelReason.trim()) return; setAskCancel(false); api.deleteEvent(ev.id, cancelReason.trim()).then(onDeleted).catch(() => window.alert('Chưa huỷ được, thử lại nhé.')) }
-  const remove = () => {
-    if (ev.isMine) {
-      setAskCancel(true)
-    } else {
-      askRemovalReason({ what: 'sự kiện', title: ev.title }).then((r) => r && api.deleteEvent(ev.id, r).then(onDeleted).catch(() => window.alert('Chưa xoá được, thử lại nhé.')))
-    }
-  }
+  // the ⋯ menu: the hosts edit (the creator also cancels, with a reason); everyone else reports or saves
+  const cm = useCommentModals(api)
+  const save = () => requireLogin(() => api.saveEvent(ev.id).then((d) => { setEv((x) => ({ ...x, saved: d.event.saved })); playSound() }).catch(() => {}))
+  const menu = !ev ? [] : ev.isMine || ev.isHost
+    ? [
+      { label: 'Sửa sự kiện', icon: MENU_ICON.edit, onClick: () => onEdit(ev) },
+      ...(ev.isMine ? [{ label: ev.past ? 'Xoá sự kiện' : 'Huỷ sự kiện', icon: MENU_ICON.cancel, danger: true, onClick: () => setAskCancel(true) }] : []),
+    ]
+    : [
+      { label: 'Báo cáo', icon: MENU_ICON.report, onClick: () => requireLogin(() => cm.askReport('event', ev.id)) },
+      { label: ev.saved ? 'Bỏ lưu' : 'Lưu', icon: MENU_ICON.save, onClick: save },
+    ]
   const row = (icon, text) => (
     <div style={css('display:flex; align-items:flex-start; gap:10px; margin-top:9px; font:500 14px/1.5 var(--zp-font-text); color:#334155;')}>
       <span style={css('flex:none; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; color:#64748b; margin-top:1px;')}>{icon}</span><span style={{ minWidth: 0 }}>{text}</span>
@@ -341,6 +346,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
         <div style={css('position:sticky; top:0; z-index:3; height:0;')}>
           <button onClick={onClose} aria-label="Đóng" style={css('position:absolute; top:12px; right:12px; width:34px; height:34px; border:none; border-radius:50%; background:rgba(15,23,42,.6); color:#fff; cursor:pointer; font-size:16px;')}>✕</button>
         </div>
+        {cm.modals}
         {!ev ? (
           <div style={css('padding:56px 20px; text-align:center; font:600 14px var(--zp-font-text); color:#64748b;')}>{missing ? 'Không tìm thấy sự kiện này. Có thể đã bị huỷ.' : 'Đang tải…'}</div>
         ) : (<>
@@ -365,10 +371,11 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 4.5V9C7 9.5 4 14 3 20c2.5-3.5 6-5.1 11-5.1v4.6l7-7.5-7-7.5z"></path></svg>
               Chia sẻ
             </button>
-            {(ev.isHost || ev.canEdit) && <button onClick={() => onEdit(ev)} className={hoverClass('background:#E4E9F2 !important;')} style={css('flex:none;' + grayBtn)}>Sửa</button>}
+            <span style={{ flex: 1 }} />
+            {user && <MoreMenu items={menu} />}
           </div>
           {/* the creator: invitations wait for enough interest, then one click sends them */}
-          {(ev.isMine || ev.canEdit) && !ev.past && !ev.invitesOpen && (() => {
+          {ev.isMine && !ev.past && !ev.invitesOpen && (() => {
             const ready = ev.othersInterested >= ev.openAt
             return (
               <div style={css(`margin:14px 22px 0; padding:12px 14px; border-radius:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; ${ready ? 'background:#EEF3FF; border:1px solid #CFDDFB;' : 'background:#F3F6FA; border:1px solid #E6EBF3;'}`)}>
@@ -407,7 +414,6 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
           <EventComments ev={ev} onChange={(d) => { setEv((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ ...ev, commentCount: d.commentCount }) }} />
           <div style={css('display:flex; align-items:center; gap:12px; padding:18px 22px 20px; margin-top:18px; border-top:1px solid #EEF1F7;')}>
             <div style={css('flex:1; font:400 12px/1.5 var(--zp-font-text); color:#94a3b8;')}>{ev.past ? '' : ev.isMine && ev.outlook ? 'Sự kiện đã ở trong lịch Outlook của bạn; người bấm Quan tâm nhận lời mời từ bạn và vào chung cuộc họp.' : ev.invitesOpen ? 'Bấm Quan tâm để nhận lời mời vào lịch Outlook và email nhắc trước 1 ngày; khi sự kiện đổi giờ, đổi chỗ hay huỷ, lịch của bạn tự cập nhật.' : `Bấm Quan tâm để nhận email nhắc trước 1 ngày. Khi đủ ${ev.openAt} người quan tâm và người tổ chức mở sự kiện, bạn nhận lời mời vào lịch Outlook.`}</div>
-            {ev.canEdit && <button onClick={remove} style={css(`flex:none; height:32px; padding:0 14px; border:1px solid #F5C9CB; border-radius:999px; background:#fff; color:#D8232A; font:700 12.5px ${FONT}; cursor:pointer;`)}>{ev.isMine ? 'Huỷ sự kiện' : 'Xoá'}</button>}
           </div>
         </>)}
       </div>

@@ -110,6 +110,23 @@ CREATE TABLE IF NOT EXISTS event_rsvp (
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'invites_open')) db.exec('ALTER TABLE events ADD COLUMN invites_open INTEGER NOT NULL DEFAULT 1')
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'ready_notified_at')) db.exec('ALTER TABLE events ADD COLUMN ready_notified_at TEXT')
 const OPEN_AT = 3
+// "Lưu" on an event: kept in the person's "Đã lưu"
+db.exec(`
+CREATE TABLE IF NOT EXISTS event_saves (
+  event_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (event_id, user_id)
+);
+`)
+/** Remove an event and everything hanging off it (no one is told: the callers do that). */
+export function deleteEventTx(id) {
+  db.transaction(() => {
+    for (const { id: cid } of db.prepare('SELECT id FROM event_comments WHERE event_id = ?').all(id)) db.prepare('DELETE FROM event_comment_likes WHERE comment_id = ?').run(cid)
+    for (const t of ['event_interests', 'event_comments', 'event_invites', 'event_cohosts', 'event_rsvp', 'event_saves']) db.prepare(`DELETE FROM ${t} WHERE event_id = ?`).run(id)
+    db.prepare('DELETE FROM events WHERE id = ?').run(id)
+  })()
+}
 // An event made for a "Chủ đề quan tâm" topic (routes/topics.js): topic_id. Everyone interested in the topic
 // is interested in the event from the start and gets the invitation right away (no waiting for OPEN_AT).
 if (!db.prepare('PRAGMA table_info(events)').all().some((c) => c.name === 'topic_id')) db.exec('ALTER TABLE events ADD COLUMN topic_id TEXT')
@@ -166,6 +183,7 @@ function shape(e, me) {
     people: ids.slice(0, host || me?.is_admin ? 500 : 8).map((uid) => { const u = userById(uid); return u ? { ...person(u), ...(host || me?.is_admin ? { rsvp: rsvpOf(e.id)[u.email.toLowerCase()] || null } : {}) } : null }).filter(Boolean),
     // a meeting in the creator's Outlook (invitations from them); for the hosts, how the attendees answered
     outlook: !!e.ol_id,
+    saved: !!me && !!db.prepare('SELECT 1 FROM event_saves WHERE event_id = ? AND user_id = ?').get(e.id, me.id),
     // the topic it answers ("Chủ đề quan tâm"), if made from one
     topic: topicOf(e.topic_id),
     // invitations: sent yet (invitesOpen); how many are interested besides the creator, against the OPEN_AT needed
@@ -521,6 +539,22 @@ router.get('/', (req, res) => {
   res.json({ events: rows.filter((e) => endOf(e) > now).map((e) => shape(e, req.user)) })
 })
 
+// "Đã lưu" (profile): the events I saved, newest first
+router.get('/saved', requireAuth, (req, res) => {
+  const now = new Date().toISOString()
+  const rows = db.prepare(`SELECT ${COLS.split(', ').map((c) => 'e.' + c).join(', ')} FROM events e JOIN event_saves s ON s.event_id = e.id WHERE s.user_id = ? ORDER BY s.created_at DESC`).all(req.user.id)
+  res.json({ events: rows.map((e) => ({ ...shape(e, req.user), past: endOf(e) <= now })) })
+})
+// "Lưu": a click saves, again takes it back
+router.post('/:id/save', requireAuth, (req, res) => {
+  const e = byId(req.params.id)
+  if (!e) return res.status(404).json({ error: 'not_found' })
+  const had = db.prepare('SELECT 1 FROM event_saves WHERE event_id = ? AND user_id = ?').get(e.id, req.user.id)
+  if (had) db.prepare('DELETE FROM event_saves WHERE event_id = ? AND user_id = ?').run(e.id, req.user.id)
+  else db.prepare('INSERT INTO event_saves (event_id, user_id) VALUES (?, ?)').run(e.id, req.user.id)
+  res.json({ event: shape(byId(e.id), req.user) })
+})
+
 // "Sự kiện của tôi" (profile): the events I run (created or co-host) and the ones I'm interested in, past ones
 // included (the last 180 days), soonest upcoming first, then the past ones newest first.
 router.get('/mine', requireAuth, (req, res) => {
@@ -617,15 +651,7 @@ router.delete('/:id', requireAuth, (req, res) => {
       body: `Sự kiện "${e.title}" (${whenText(e)} tại ${e.location}) mà bạn quan tâm đã huỷ.${reason ? `\n\nLý do: ${reason}` : ''}`,
     })
   }
-  db.transaction(() => {
-    db.prepare('DELETE FROM event_interests WHERE event_id = ?').run(e.id)
-    for (const { id: cid } of db.prepare('SELECT id FROM event_comments WHERE event_id = ?').all(e.id)) db.prepare('DELETE FROM event_comment_likes WHERE comment_id = ?').run(cid)
-    db.prepare('DELETE FROM event_comments WHERE event_id = ?').run(e.id)
-    db.prepare('DELETE FROM event_invites WHERE event_id = ?').run(e.id)
-    db.prepare('DELETE FROM event_cohosts WHERE event_id = ?').run(e.id)
-    db.prepare('DELETE FROM event_rsvp WHERE event_id = ?').run(e.id)
-    db.prepare('DELETE FROM events WHERE id = ?').run(e.id)
-  })()
+  deleteEventTx(e.id)
   afterRemoval(req, { authorId: e.author_id, what: 'sự kiện', title: e.title, content: e.description || e.title })
   res.json({ ok: true })
 })

@@ -175,6 +175,7 @@ export default function ProfilePage() {
   const [evTab, setEvTab] = useState('hosting')
   // "Muốn nghe" topics I saved
   const [savedTopics, setSavedTopics] = useState([])
+  const [savedEvents, setSavedEvents] = useState([])
   const [savedUseCaseIds, setSavedUseCaseIds] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [ucMeta, setUcMeta] = useState({})
@@ -201,6 +202,7 @@ export default function ProfilePage() {
       part('usecases', api.listSubmissions('?mine=1'), (sd) => setMyUseCases(sd.submissions || [])),
       part('events', api.myEvents(), (d) => setMyEvents({ hosting: d.hosting || [], interested: d.interested || [] })),
       part('topics', api.listTopics(), (d) => setSavedTopics((d.topics || []).filter((x) => x.saved))),
+      part('savedEvents', api.savedEvents(), (d) => setSavedEvents(d.events || [])),
       part('saved', api.mySavedUseCaseIds(), (d) => setSavedUseCaseIds(d.ids || [])),
     ]).finally(() => setLoaded(true))
   }, [user, reloadKey])
@@ -488,6 +490,12 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              {savedEvents.length > 0 && (<>
+                <h3 style={subHeading}>{t('Sự kiện đã lưu')}</h3>
+                <div style={css('background:#fff; border-radius:18px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:6px 16px 10px; margin-bottom:24px;')}>
+                  {savedEvents.map((ev) => <EventRow key={ev.id} ev={ev} onOpen={() => navigate('/?event=' + encodeURIComponent(ev.id))} />)}
+                </div>
+              </>)}
               {savedTopics.length > 0 && (<>
                 <h3 style={subHeading}>{t('Chủ đề đã lưu')}</h3>
                 <div style={css('display:flex; flex-direction:column; gap:12px; margin-bottom:24px;')}>

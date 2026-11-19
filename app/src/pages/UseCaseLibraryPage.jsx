@@ -848,8 +848,8 @@ export default function UseCaseLibraryPage() {
             {dsel.pending && !dsel.pending.owner && <BoothInterest p={dsel.pending} t={t} requireLogin={requireLogin} />}
             <DetailSections id={dsel.id} tp={tp} t={t} layout={layout} />
 
-            {/* a booth with no write-up yet: no like or save, but comments (to nudge the team into posting it) */}
-            {(
+            {/* a booth with no write-up yet isn't a post: nothing to like or comment on until it's published */}
+            {!dsel.pending && (
             <div id="comments" data-toc style={css('scroll-margin-top:90px; border:1px solid #E6EBF3; border-radius:16px; padding:16px 20px; margin:20px 0 28px; background:#ffffff; box-shadow:0 14px 34px rgba(8,16,40,.30);')}>
               {ucModals.modals}
               {/* The same like · comment · save row as the use case cards, top-left of the comment box; comment jumps to the box. */}
@@ -877,7 +877,7 @@ export default function UseCaseLibraryPage() {
                     value={dDraft}
                     onChange={setDDraft}
                     onEnter={postDComment}
-                    placeholder={dsel.pending ? t('Nhắc team đăng bài chi tiết, hỏi thêm về use case này... Gõ @ để mention đồng nghiệp.') : t('Viết bình luận về use case này... Gõ @ để mention đồng nghiệp.')}
+                    placeholder={t('Viết bình luận về use case này... Gõ @ để mention đồng nghiệp.')}
                     style={css('width:100%; border:1px solid #E6EBF3; border-radius:10px; padding:9px 12px; font-family:inherit; font-size:13px; line-height:1.5; color:#0f172a; background:#fff; outline:none; resize:vertical; display:block; box-sizing:border-box;')}
                   />
                   <PendingAttachments files={att.files('cmt:' + dsel.id)} onRemove={(x) => att.remove('cmt:' + dsel.id, x)} error={att.errorFor('cmt:' + dsel.id)} />

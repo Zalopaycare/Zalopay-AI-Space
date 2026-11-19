@@ -40,6 +40,8 @@ export const api = {
   adminAccess: () => request('/admin/access'),
   listEvents: () => request('/events'),
   myEvents: () => request('/events/mine'),
+  savedEvents: () => request('/events/saved'),
+  saveEvent: (id) => request(`/events/${encodeURIComponent(id)}/save`, { method: 'POST' }),
   listEventsMonth: (month) => request(`/events?month=${encodeURIComponent(month)}`),
   // "Muốn nghe": topics people would like someone to share about
   listTopics: () => request('/topics'),

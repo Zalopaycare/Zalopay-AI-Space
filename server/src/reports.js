@@ -6,6 +6,7 @@ import { sendMail } from './mailer.js'
 import { appUrl, domainName } from './mentions.js'
 import { deleteQuestionTx, deleteAnswerTx, deleteCommentTx } from './routes/questions.js'
 import { deleteUseCaseCommentTx } from './routes/useCases.js'
+import { deleteEventTx } from './routes/events.js'
 
 // "Báo cáo đến admin": anyone can flag a thread, an answer, an answer comment, a use case comment, or a
 // comment under an event or a "Muốn nghe" topic; admins get a notification + email and resolve it from the
@@ -32,6 +33,12 @@ const TYPES = {
     row: (id) => db.prepare('SELECT * FROM use_case_comments WHERE id = ?').get(id),
     path: (r) => `/use-cases/${encodeURIComponent(r.use_case_id)}#comments`,
     remove: (id) => deleteUseCaseCommentTx(id),
+  },
+  // an event itself
+  event: {
+    row: (id) => { const e = db.prepare('SELECT * FROM events WHERE id = ?').get(id); return e && { ...e, body: [e.title, e.description].filter(Boolean).join('\n') } },
+    path: (r) => `/?event=${encodeURIComponent(r.id)}`,
+    remove: (id) => deleteEventTx(id),
   },
   // comments under an event and under a "Muốn nghe" topic (removed with their replies and likes)
   ev_comment: {

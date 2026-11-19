@@ -478,7 +478,7 @@ export default function AdminConsolePage() {
   const LB_COLS = '28px minmax(0,1fr) 64px 70px 70px 58px 66px 60px'
   const tableBox = (minWidth, children, extra = '') => <div style={css('overflow-x:auto;' + card + extra)}><div style={{ minWidth }}>{children}</div></div>
   const REP_STATUS = { open: ['Chờ xử lý', '#FFF1E0', '#B45300'], removed: ['Đã xoá nội dung', '#FFECEC', '#D8232A'], dismissed: ['Đã bỏ qua', '#EDF0FA', '#64748b'] }
-  const REP_KIND = { thread: 'post', uc_comment: 'comment ở use case', answer: 'comment ở post', comment: 'reply ở post', ev_comment: 'bình luận ở sự kiện', topic_comment: 'bình luận ở chủ đề quan tâm', topic: 'chủ đề quan tâm' }
+  const REP_KIND = { thread: 'post', uc_comment: 'comment ở use case', answer: 'comment ở post', comment: 'reply ở post', ev_comment: 'bình luận ở sự kiện', topic_comment: 'bình luận ở chủ đề quan tâm', topic: 'chủ đề quan tâm', event: 'sự kiện' }
   const repRows = reports.filter((r) => repStatus === 'all' || (repStatus === 'open' ? r.status === 'open' : r.status !== 'open'))
   const resolveReport = (r, action) => api.resolveReport(r.id, action).then(() => { reloadReports(); if (action === 'delete') reloadQuestions() }).catch(() => {})
 
