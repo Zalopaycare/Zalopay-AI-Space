@@ -361,6 +361,12 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
 // Comments under an event, as on posts: ♡ and 💬 under each one; replies hang under the comment they belong
 // to (one level), shown with "Hiện N trả lời", and the reply box starts with "@who" you're answering.
 function EventComments({ ev, onChange }) {
+  return <CommentBox comments={ev.comments} onChange={onChange} post={(body, replyTo) => api.postEventComment(ev.id, body, replyTo)} like={(cid) => api.likeEventComment(ev.id, cid)} remove={(cid, reason) => api.deleteEventComment(ev.id, cid, reason)} />
+}
+
+/** The comment box itself, shared by events and "Muốn nghe": `post(body, replyToId)`, `like(cid)` and
+ *  `remove(cid, reason)` call the server and resolve to { comments, commentCount }. */
+export function CommentBox({ comments, onChange, post: postFn, like: likeFn, remove: removeFn }) {
   const { user, requireLogin } = useAuth()
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
@@ -369,7 +375,7 @@ function EventComments({ ev, onChange }) {
   const [replyTo, setReplyTo] = useState(null) // { id, parentId, handle }
   const [replyDraft, setReplyDraft] = useState('')
   const [open, setOpen] = useState(() => new Set())
-  const list = ev.comments || []
+  const list = comments || []
   const top = list.filter((c) => !c.parentId)
   const repliesOf = (id) => list.filter((c) => c.parentId === id)
   const post = (text, ref, replyId, done) => {
@@ -378,7 +384,7 @@ function EventComments({ ev, onChange }) {
     requireLogin(() => {
       setBusy(true)
       // "@handle" picked from the suggestions goes out as the full address, so they get the email
-      api.postEventComment(ev.id, ref.current ? ref.current.expand(body) : body, replyId).then((d) => { done(); onChange(d); playSound() }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
+      postFn(ref.current ? ref.current.expand(body) : body, replyId).then((d) => { done(); onChange(d); playSound() }).catch(() => window.alert('Chưa gửi được, thử lại nhé.')).finally(() => setBusy(false))
     })
   }
   const send = () => post(draft, boxRef, null, () => setDraft(''))
@@ -391,12 +397,12 @@ function EventComments({ ev, onChange }) {
     setReplyDraft(c.parentId && c.author && c.author.id !== user?.id ? `@${(c.author.name || '').toLowerCase()} ` : '')
     setTimeout(() => replyRef.current?.focus?.(), 50)
   })
-  const like = (c) => requireLogin(() => api.likeEventComment(ev.id, c.id).then((d) => { onChange({ comments: d.comments, commentCount: d.comments.length }); playSound() }).catch(() => {}))
+  const like = (c) => requireLogin(() => likeFn(c.id).then((d) => { onChange({ comments: d.comments, commentCount: d.commentCount ?? d.comments.length }); playSound() }).catch(() => {}))
   const remove = (c) => {
     if (c.isMine) {
-      if (window.confirm('Xoá bình luận này?')) api.deleteEventComment(ev.id, c.id).then(onChange).catch(() => {})
+      if (window.confirm('Xoá bình luận này?')) removeFn(c.id).then(onChange).catch(() => {})
     } else {
-      askRemovalReason({ what: 'bình luận', title: c.body.slice(0, 80) }).then((r) => r && api.deleteEventComment(ev.id, c.id, r).then(onChange).catch(() => {}))
+      askRemovalReason({ what: 'bình luận', title: c.body.slice(0, 80) }).then((r) => r && removeFn(c.id, r).then(onChange).catch(() => {}))
     }
   }
   const field = 'width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font:400 14px/1.5 var(--zp-font-text); color:#0F172A; background:#F7F9FD; outline:none; resize:vertical; display:block;'

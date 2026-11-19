@@ -16,6 +16,7 @@ import { reportRoutes } from './reports.js'
 import showcaseRoutes from './routes/showcase.js'
 import chatRoutes from './routes/chat.js'
 import eventRoutes, { sendEventReminders, syncEventInvites, syncOutlookMeetings } from './routes/events.js'
+import topicRoutes from './routes/topics.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const STATIC_DIR = process.env.STATIC_DIR || path.join(__dirname, '..', 'public')
@@ -56,6 +57,7 @@ app.use('/api/reports', reportRoutes)
 app.use('/api/showcase', showcaseRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/events', eventRoutes)
+app.use('/api/topics', topicRoutes)
 
 app.use(express.static(STATIC_DIR))
 app.get('*', (req, res, next) => {
