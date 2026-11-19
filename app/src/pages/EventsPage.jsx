@@ -15,7 +15,7 @@ import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 // the questions / topics people would like someone to share about (components/Topics.jsx), sits in a column
 // fixed to the right edge (like the events rail of the old posts page); on a small screen it comes under the
 // events instead. Posts are no longer written here; old post links (/questions/<id>) still open the post.
-const RAIL_W = 248
+const RAIL_W = 272
 export default function EventsPage() {
   useTitle('AI Space')
   const [query, setQuery] = useState('')
@@ -24,23 +24,20 @@ export default function EventsPage() {
   const tab = new URLSearchParams(location.search).get('tab') === 'calendar' ? 'calendar' : 'events'
   const pick = (k) => navigate({ pathname: '/', search: k === 'calendar' ? '?tab=calendar' : '' }, { replace: true })
   const { width, offset } = useSidebarLayout()
+  // the topics column when the events still get a fair width beside it
+  const rail = width - offset - RAIL_W >= 640
   const cal = tab === 'calendar'
-  // The page keeps the Use Case Library's axis (centred under the top bar's tabs), so switching between the two
-  // doesn't shift sideways: the topics column on the right only when the same room can be left on the left with
-  // the events still a fair width between; otherwise the topics come under the events.
-  const rail = width - offset - 2 * RAIL_W >= 600 + 48
   return (
     <Layout active="question">
       <div style={css('position:relative; color:#e8eefc; overflow:clip;' + BLEED)}>
         <SpaceBackdrop arcTop={190} />
-        <div style={{ ...css('position:relative; z-index:1;'), ...(rail ? { paddingRight: RAIL_W, paddingLeft: RAIL_W } : {}) }}>
+        <div style={{ ...css('position:relative; z-index:1;'), ...(rail ? { paddingRight: RAIL_W } : {}) }}>
           {/* the same wordmark box as before (and as the Use Case Library title), so switching tabs doesn't jump */}
           <section style={css('position:relative; z-index:2; padding:22px var(--zp-gutter) 10px; text-align:center; overflow:visible;')}>
             <HeroWordmark width={361} />
             <p className="zp-tagline" style={css('position:relative; margin:0 auto; max-width:760px; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>Nơi đồng nghiệp tạo và cùng tham gia các buổi chia sẻ về AI.</p>
           </section>
-          <PageActionBar tour="compose" prompt="Bạn có topic AI nào muốn chia sẻ?" cta="Tạo sự kiện" onCompose={openEventForm} query={query} onQuery={setQuery} placeholder="Tìm sự kiện, địa điểm, người tổ chức..." searchHidden={cal} />
-          {/* the two tabs, under the bar (so the bar sits where the Library's does) */}
+          {/* the two tabs, centred over the bar */}
           <div role="tablist" style={css('display:flex; justify-content:center; gap:6px; padding:14px var(--zp-gutter) 0;')}>
             {[['events', 'Sự kiện'], ['calendar', 'Lịch']].map(([k, label]) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={() => pick(k)} data-tour={k === 'calendar' ? 'calendar-tab' : undefined}
@@ -51,6 +48,7 @@ export default function EventsPage() {
               </button>
             ))}
           </div>
+          <PageActionBar tour="compose" prompt="Bạn có topic AI nào muốn chia sẻ?" cta="Tạo sự kiện" onCompose={openEventForm} query={query} onQuery={setQuery} placeholder="Tìm sự kiện, địa điểm, người tổ chức..." searchHidden={cal} />
           <div style={css('padding:16px var(--zp-gutter) 28px;')}>
             {/* the calendar gets the whole width; the cards a readable column */}
             <div style={css(`max-width:${cal ? 1200 : 760}px; margin:0 auto;`)}>
