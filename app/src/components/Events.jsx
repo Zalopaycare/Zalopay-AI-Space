@@ -138,59 +138,198 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false, rich
   )
 }
 
-// ---- the month calendar ("Lịch"), like Outlook's month view ----
+// ---- the calendar ("Xem lịch"): a big window, by week like Outlook (default) or by month ----
 const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
-const monthKey = (d) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}`
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-/** Every event of a month in day cells (Monday first): time and name, past ones greyed; a click opens it. */
-function EventsCalendar({ onOpen, reloadKey }) {
-  const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
+const mondayOf = (d) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x }
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
+const endOfEv = (ev) => (ev.endsAt ? new Date(ev.endsAt) : new Date(new Date(ev.startsAt).getTime() + 3600000))
+const evLook = (ev) => (ev.past ? 'background:#EEF1F5; border-left:3px solid #94a3b8; color:#64748b;' : ev.interested ? 'background:#C9DAFB; border-left:3px solid #2c5fff; color:#10275E;' : 'background:#DCE7FB; border-left:3px solid #2c5fff; color:#10275E;')
+
+function CalendarModal({ onOpen, onClose, reloadKey }) {
+  const [mode, setMode] = useState('week') // week | month
+  const [anchor, setAnchor] = useState(() => new Date())
+  useEffect(() => {
+    // Esc closes the calendar, unless an event opened from it is on top (Esc closes that first)
+    const on = (e) => { if (e.key === 'Escape' && !document.querySelector('[data-event-dialog]')) onClose() }
+    window.addEventListener('keydown', on)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', on); document.body.style.overflow = prev }
+  }, [onClose])
+  const mon = mondayOf(anchor)
+  const sun = addDays(mon, 6)
+  const title = mode === 'month'
+    ? `Tháng ${anchor.getMonth() + 1}, ${anchor.getFullYear()}`
+    : mon.getMonth() === sun.getMonth()
+      ? `${mon.getDate()} – ${sun.getDate()} tháng ${sun.getMonth() + 1}, ${sun.getFullYear()}`
+      : `${mon.getDate()} tháng ${mon.getMonth() + 1} – ${sun.getDate()} tháng ${sun.getMonth() + 1}, ${sun.getFullYear()}`
+  const go = (n) => setAnchor((d) => (mode === 'month' ? new Date(d.getFullYear(), d.getMonth() + n, 1) : addDays(d, 7 * n)))
+  const btn = 'height:32px; min-width:32px; padding:0 11px; border:1px solid #DDE3EC; border-radius:8px; background:#fff; color:#0F172A; cursor:pointer; font:700 13px var(--zp-font-text);'
+  return createPortal(
+    <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:3800; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:20px 16px;')}>
+      <div role="dialog" aria-modal="true" aria-label="Lịch sự kiện" className="zp-dialog-in" onClick={(e) => e.stopPropagation()}
+        style={css('width:1200px; max-width:100%; height:calc(100vh - 40px); display:flex; flex-direction:column; background:#fff; border-radius:20px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden;')}>
+        <div style={css('flex:none; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid #E6EBF3;')}>
+          <button onClick={() => setAnchor(new Date())} className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>Hôm nay</button>
+          <button onClick={() => go(-1)} aria-label="Trước" className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>‹</button>
+          <button onClick={() => go(1)} aria-label="Sau" className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>›</button>
+          <div style={css(`flex:1; min-width:180px; margin-left:6px; font:800 18px ${FONT}; color:#0F172A;`)}>{title}</div>
+          <div role="tablist" style={css('display:flex; padding:3px; border-radius:10px; background:#F1F4F9;')}>
+            {[['week', 'Tuần'], ['month', 'Tháng']].map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
+                style={css(`height:28px; padding:0 14px; border:none; border-radius:8px; cursor:pointer; font:700 12.5px var(--zp-font-text); ${mode === k ? 'background:#fff; color:#0F172A; box-shadow:0 1px 3px rgba(15,23,42,.12);' : 'background:transparent; color:#64748b;'}`)}>{label}</button>
+            ))}
+          </div>
+          <button onClick={onClose} aria-label="Đóng" style={css('width:34px; height:34px; margin-left:4px; border:none; border-radius:50%; background:#F1F4FA; color:#334155; cursor:pointer; font-size:16px;')}>✕</button>
+        </div>
+        <div style={css('flex:1; min-height:0; display:flex; flex-direction:column;')}>
+          {mode === 'week' ? <WeekView monday={mon} onOpen={onOpen} reloadKey={reloadKey} /> : <MonthView month={new Date(anchor.getFullYear(), anchor.getMonth(), 1)} onOpen={onOpen} reloadKey={reloadKey} />}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+/** Side-by-side columns for events that overlap in one day (as Outlook does): [{ ev, col, cols }]. */
+function layoutDay(list) {
+  const items = list.map((ev) => ({ ev, s: new Date(ev.startsAt).getTime(), e: Math.max(endOfEv(ev).getTime(), new Date(ev.startsAt).getTime() + 30 * 60000) })).sort((a, b) => a.s - b.s || b.e - a.e)
+  const out = []
+  let cluster = [], colsEnd = [], clusterEnd = -Infinity
+  const flush = () => { const n = colsEnd.length; cluster.forEach((x) => out.push({ ...x, cols: n })); cluster = []; colsEnd = [] }
+  for (const it of items) {
+    if (it.s >= clusterEnd) { flush(); clusterEnd = -Infinity }
+    let col = colsEnd.findIndex((end) => end <= it.s)
+    if (col < 0) { col = colsEnd.length; colsEnd.push(it.e) } else colsEnd[col] = it.e
+    cluster.push({ ...it, col })
+    clusterEnd = Math.max(clusterEnd, it.e)
+  }
+  flush()
+  return out
+}
+
+const HOUR = 52
+/** The week, Monday to Sunday, hours down the side; events as blocks at their time (all-day ones on top). */
+function WeekView({ monday, onOpen, reloadKey }) {
   const [events, setEvents] = useState(null)
+  const scroller = useRef(null)
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t) }, [])
   useEffect(() => {
     let stop = false
     setEvents(null)
-    api.listEventsMonth(monthKey(month)).then((d) => { if (!stop) setEvents(d.events || []) }).catch(() => { if (!stop) setEvents([]) })
+    api.listEventsRange(monday.toISOString(), addDays(monday, 7).toISOString()).then((d) => { if (!stop) setEvents(d.events || []) }).catch(() => { if (!stop) setEvents([]) })
     return () => { stop = true }
-  }, [month, reloadKey])
-  const today = new Date()
-  const first = new Date(month.getFullYear(), month.getMonth(), 1)
-  const start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7)) // back to Monday
-  const days = Array.from({ length: 42 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d })
-  const weeks = days[35].getMonth() === month.getMonth() ? 6 : days[28].getMonth() === month.getMonth() ? 5 : 5
-  const byDay = (d) => (events || []).filter((ev) => sameDay(new Date(ev.startsAt), d))
-  const go = (n) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1))
-  const navBtn = 'height:32px; min-width:32px; padding:0 10px; border:1px solid #E6EBF3; border-radius:9px; background:#fff; color:#0F172A; cursor:pointer; font:700 13px var(--zp-font-text);'
+  }, [monday.getTime(), reloadKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
+  const list = events || []
+  const timed = list.filter((ev) => !ev.allDay)
+  const allDay = list.filter((ev) => ev.allDay)
+  // 7:00 to 21:00, stretched to fit any event outside it
+  let startH = 7, endH = 21
+  for (const ev of timed) { const s = new Date(ev.startsAt), e = endOfEv(ev); startH = Math.min(startH, s.getHours()); endH = Math.max(endH, sameDay(s, e) ? Math.ceil(e.getHours() + e.getMinutes() / 60) : 24) }
+  const hours = Array.from({ length: endH - startH }, (_, i) => startH + i)
+  // open at 8:00 (or the first event of the week if earlier)
+  useEffect(() => {
+    if (!scroller.current || !events) return
+    const first = timed.length ? Math.min(...timed.map((ev) => new Date(ev.startsAt).getHours())) : 8
+    scroller.current.scrollTop = Math.max(0, (Math.min(first, 8) - startH) * HOUR - 8)
+  }, [events]) // eslint-disable-line react-hooks/exhaustive-deps
+  const cols = 'grid-template-columns:56px repeat(7, minmax(0, 1fr));'
+  const top = (d) => ((d.getHours() + d.getMinutes() / 60) - startH) * HOUR
   return (
-    <div style={css('background:#fff; border-radius:18px; box-shadow:0 14px 34px rgba(3,12,40,.3); overflow:hidden;')}>
-      <div style={css('display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid #EEF1F7;')}>
-        <div style={css(`flex:1; font:800 17px ${FONT}; color:#0F172A;`)}>Tháng {month.getMonth() + 1}, {month.getFullYear()}</div>
-        <button onClick={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)) }} className={hoverClass('background:#F4F7FE !important;')} style={css(navBtn)}>Hôm nay</button>
-        <button onClick={() => go(-1)} aria-label="Tháng trước" className={hoverClass('background:#F4F7FE !important;')} style={css(navBtn)}>‹</button>
-        <button onClick={() => go(1)} aria-label="Tháng sau" className={hoverClass('background:#F4F7FE !important;')} style={css(navBtn)}>›</button>
-      </div>
-      <div style={css('display:grid; grid-template-columns:repeat(7, minmax(0, 1fr));')}>
-        {WEEKDAYS.map((w) => <div key={w} style={css('padding:8px 8px 6px; font:700 11.5px var(--zp-font-text); color:#64748b; text-transform:uppercase; border-bottom:1px solid #EEF1F7;')}>{w}</div>)}
-        {days.slice(0, weeks * 7).map((d, i) => {
-          const inMonth = d.getMonth() === month.getMonth()
-          const list = byDay(d)
-          const isToday = sameDay(d, today)
+    <>
+      {/* day names, and the all-day events under them */}
+      <div style={css(`flex:none; display:grid; ${cols} border-bottom:1px solid #E6EBF3;`)}>
+        <div />
+        {days.map((d, i) => {
+          const today = sameDay(d, now)
           return (
-            <div key={i} style={css(`min-height:96px; padding:6px 5px; box-sizing:border-box; border-right:${(i % 7) === 6 ? 'none' : '1px solid #F1F4F9'}; border-bottom:1px solid #F1F4F9; background:${inMonth ? '#fff' : '#FAFBFD'}; min-width:0;`)}>
-              <div style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 4px; border-radius:999px; font:700 12px var(--zp-font-text); ${isToday ? 'background:#2c5fff; color:#fff;' : `color:${inMonth ? '#0F172A' : '#B3BDCC'};`}`)}>{d.getDate()}</div>
-              <div style={css('margin-top:3px; display:flex; flex-direction:column; gap:3px;')}>
-                {list.slice(0, 3).map((ev) => (
-                  <button key={ev.id} onClick={() => onOpen(ev.id)} title={`${ev.title} · ${whenLabel(ev)} · ${ev.location}`} className={hoverClass('filter:brightness(.96);')}
-                    style={css(`display:block; width:100%; text-align:left; border:none; border-left:3px solid ${ev.past ? '#94a3b8' : '#2c5fff'}; border-radius:5px; padding:3px 5px; background:${ev.past ? '#F1F4F9' : ev.interested ? '#DCE6FF' : '#EEF3FF'}; color:${ev.past ? '#64748b' : '#1E3A8A'}; cursor:pointer; font:600 11.5px/1.3 var(--zp-font-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`)}>
-                    {!ev.allDay && <b style={{ fontWeight: 800 }}>{hm(new Date(ev.startsAt))} </b>}{ev.title}
-                  </button>
+            <div key={i} style={css('padding:8px 8px 6px; border-left:1px solid #EEF1F7; min-width:0;')}>
+              <div style={css(`font:600 12px var(--zp-font-text); color:${today ? '#2c5fff' : '#64748b'};`)}>{['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'][i]}</div>
+              <div style={css(`margin-top:2px; display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 6px; border-radius:999px; font:700 18px ${FONT}; ${today ? 'background:#2c5fff; color:#fff;' : 'color:#0F172A;'}`)}>{d.getDate()}</div>
+              <div style={css('margin-top:4px; display:flex; flex-direction:column; gap:3px;')}>
+                {allDay.filter((ev) => sameDay(new Date(ev.startsAt), d)).map((ev) => (
+                  <button key={ev.id} onClick={() => onOpen(ev.id)} title={`${ev.title} · ${ev.location}`} style={css(`display:block; width:100%; text-align:left; border:none; border-radius:5px; padding:3px 6px; cursor:pointer; font:700 11.5px/1.3 var(--zp-font-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${evLook(ev)}`)}>{ev.title}</button>
                 ))}
-                {list.length > 3 && <span style={css('font:600 11px var(--zp-font-text); color:#64748b; padding-left:4px;')}>+{list.length - 3} sự kiện</span>}
               </div>
             </div>
           )
         })}
       </div>
-      {events && !events.length && <div style={css('padding:10px 14px 14px; font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>Tháng này chưa có sự kiện nào.</div>}
+      {/* the hours */}
+      <div ref={scroller} className="zp-thinscroll" style={css('flex:1; min-height:0; overflow-y:auto; position:relative;')}>
+        <div style={css(`display:grid; ${cols} position:relative; height:${hours.length * HOUR}px;`)}>
+          <div style={css('position:relative;')}>
+            {hours.map((h, i) => <div key={h} style={css(`position:absolute; top:${i * HOUR - 7}px; right:8px; font:600 11px var(--zp-font-text); color:#94a3b8;`)}>{i ? `${p2(h)}:00` : ''}</div>)}
+          </div>
+          {days.map((d, di) => {
+            const mine = layoutDay(timed.filter((ev) => sameDay(new Date(ev.startsAt), d)))
+            const today = sameDay(d, now)
+            return (
+              <div key={di} style={css(`position:relative; border-left:1px solid #EEF1F7; background:${today ? '#FBFCFF' : 'transparent'}; background-image:repeating-linear-gradient(to bottom, transparent 0, transparent ${HOUR - 1}px, #EEF1F7 ${HOUR - 1}px, #EEF1F7 ${HOUR}px);`)}>
+                {mine.map(({ ev, col, cols: n }) => {
+                  const s = new Date(ev.startsAt)
+                  const h = Math.max(24, ((endOfEv(ev) - s) / 3600000) * HOUR - 2)
+                  return (
+                    <button key={ev.id} onClick={() => onOpen(ev.id)} title={`${ev.title} · ${whenLabel(ev)} · ${ev.location}`} className={hoverClass('filter:brightness(.97); z-index:3;')}
+                      style={css(`position:absolute; top:${top(s) + 1}px; height:${h}px; left:calc(${(100 / n) * col}% + 2px); width:calc(${100 / n}% - 4px); box-sizing:border-box; padding:3px 6px; border:none; border-radius:4px; text-align:left; cursor:pointer; overflow:hidden; z-index:1; ${evLook(ev)}`)}>
+                      <div style={css('font:700 12px/1.3 var(--zp-font-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{ev.title}</div>
+                      {h > 34 && <div style={css('font:400 11px/1.35 var(--zp-font-text); opacity:.85; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{hm(s)}{ev.endsAt ? '–' + hm(new Date(ev.endsAt)) : ''} · {ev.location}</div>}
+                      {h > 52 && ev.host && <div style={css('font:400 11px/1.35 var(--zp-font-text); opacity:.75; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;')}>{ev.host.name}</div>}
+                    </button>
+                  )
+                })}
+                {today && now.getHours() >= startH && now.getHours() < endH && (
+                  <div aria-hidden="true" style={css(`position:absolute; left:0; right:0; top:${top(now)}px; height:2px; background:#E0353F; z-index:2;`)}><span style={css('position:absolute; left:-5px; top:-4px; width:10px; height:10px; border-radius:50%; background:#E0353F;')} /></div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      {events && !events.length && <div style={css('flex:none; padding:8px 16px; border-top:1px solid #EEF1F7; font:400 12.5px var(--zp-font-text); color:#94a3b8;')}>Tuần này chưa có sự kiện nào.</div>}
+    </>
+  )
+}
+
+/** The month: day cells Monday to Sunday, each with its events (time and name); a click opens one. */
+function MonthView({ month, onOpen, reloadKey }) {
+  const [events, setEvents] = useState(null)
+  useEffect(() => {
+    let stop = false
+    setEvents(null)
+    api.listEventsMonth(`${month.getFullYear()}-${p2(month.getMonth() + 1)}`).then((d) => { if (!stop) setEvents(d.events || []) }).catch(() => { if (!stop) setEvents([]) })
+    return () => { stop = true }
+  }, [month.getTime(), reloadKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const today = new Date()
+  const start = mondayOf(month)
+  const days = Array.from({ length: 42 }, (_, i) => addDays(start, i))
+  const weeks = days[35].getMonth() === month.getMonth() ? 6 : 5
+  const byDay = (d) => (events || []).filter((ev) => sameDay(new Date(ev.startsAt), d))
+  return (
+    <div className="zp-thinscroll" style={css('flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); grid-auto-rows:min-content;')}>
+      {WEEKDAYS.map((w) => <div key={w} style={css('padding:8px 8px 6px; font:700 11.5px var(--zp-font-text); color:#64748b; text-transform:uppercase; border-bottom:1px solid #EEF1F7;')}>{w}</div>)}
+      {days.slice(0, weeks * 7).map((d, i) => {
+        const inMonth = d.getMonth() === month.getMonth()
+        const list = byDay(d)
+        const isToday = sameDay(d, today)
+        return (
+          <div key={i} style={css(`min-height:110px; padding:6px 5px; box-sizing:border-box; border-right:${(i % 7) === 6 ? 'none' : '1px solid #F1F4F9'}; border-bottom:1px solid #F1F4F9; background:${inMonth ? '#fff' : '#FAFBFD'}; min-width:0;`)}>
+            <div style={css(`display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 4px; border-radius:999px; font:700 12px var(--zp-font-text); ${isToday ? 'background:#2c5fff; color:#fff;' : `color:${inMonth ? '#0F172A' : '#B3BDCC'};`}`)}>{d.getDate()}</div>
+            <div style={css('margin-top:3px; display:flex; flex-direction:column; gap:3px;')}>
+              {list.slice(0, 4).map((ev) => (
+                <button key={ev.id} onClick={() => onOpen(ev.id)} title={`${ev.title} · ${whenLabel(ev)} · ${ev.location}`} className={hoverClass('filter:brightness(.96);')}
+                  style={css(`display:block; width:100%; text-align:left; border:none; border-radius:4px; padding:3px 5px; cursor:pointer; font:600 11.5px/1.3 var(--zp-font-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${evLook(ev)}`)}>
+                  {!ev.allDay && <b style={{ fontWeight: 800 }}>{hm(new Date(ev.startsAt))} </b>}{ev.title}
+                </button>
+              ))}
+              {list.length > 4 && <span style={css('font:600 11px var(--zp-font-text); color:#64748b; padding-left:4px;')}>+{list.length - 4} sự kiện</span>}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -203,9 +342,8 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
   const [events, setEvents] = useState(null)
   const [openId, setOpenId] = useState(() => new URLSearchParams(window.location.search).get('event'))
   const [form, setForm] = useState(null) // null | {} (new) | event (edit)
-  // the grid: cards or the month calendar (remembered in this browser)
-  const [view, setViewState] = useState(() => { try { return localStorage.getItem('zp-events-view') === 'calendar' ? 'calendar' : 'list' } catch { return 'list' } })
-  const setView = (v) => { setViewState(v); try { localStorage.setItem('zp-events-view', v) } catch { /* ignore */ } }
+  // the big calendar ("Xem lịch")
+  const [calOpen, setCalOpen] = useState(false)
   const reload = () => api.listEvents().then((d) => setEvents(d.events || [])).catch(() => setEvents((x) => x || []))
   useEffect(() => { reload() }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -240,14 +378,16 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
     <>
       {layout === 'grid' ? (
         <div data-tour="events">
-          {/* the cards, or a month calendar like Outlook's */}
-          <div role="tablist" aria-label="Cách xem" style={css('display:flex; justify-content:flex-end; gap:4px; margin:-4px 0 10px;')}>
-            {[['list', 'Danh sách'], ['calendar', 'Lịch']].map(([k, label]) => (
-              <button key={k} role="tab" aria-selected={view === k} onClick={() => setView(k)} className={view === k ? undefined : hoverClass('color:#fff !important;')}
-                style={css(`height:30px; padding:0 14px; border-radius:999px; cursor:pointer; font:700 12.5px var(--zp-font-text); ${view === k ? 'background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.3);' : 'background:transparent; color:#A9B8DC; border:1px solid transparent;'}`)}>{label}</button>
-            ))}
+          {/* "Xem lịch": the events in a big calendar, by week like Outlook (or by month) */}
+          <div style={css('display:flex; justify-content:flex-end; margin:-4px 0 10px;')}>
+            <button onClick={() => setCalOpen(true)} className={hoverClass('background:rgba(255,255,255,.14) !important; color:#fff !important;')}
+              style={css('display:inline-flex; align-items:center; gap:7px; height:32px; padding:0 14px; border-radius:999px; cursor:pointer; font:700 12.5px var(--zp-font-text); background:rgba(255,255,255,.07); color:#D6E2FF; border:1px solid rgba(160,190,255,.3);')}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+              Xem lịch
+            </button>
           </div>
-          {view === 'calendar' ? <EventsCalendar onOpen={setOpenId} reloadKey={events} /> : !events ? null : !shown.length ? (
+          {calOpen && <CalendarModal onOpen={setOpenId} onClose={() => setCalOpen(false)} reloadKey={events} />}
+          {!events ? null : !shown.length ? (
             <div style={css('background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:48px 24px; text-align:center;')}>
               <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>{q ? 'Không tìm thấy sự kiện nào' : 'Chưa có sự kiện nào sắp tới'}</div>
               <div style={css('margin-top:8px; font:400 14px/1.6 var(--zp-font-text); color:#64748b;')}>{q ? 'Thử từ khoá khác nhé.' : 'Có topic AI nào muốn chia sẻ? Tạo sự kiện đầu tiên để mọi người cùng tham gia.'}</div>
@@ -342,7 +482,7 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   return createPortal(
     <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:24px 16px;')}>
       {/* fits the screen: a long event (details, people, comments) scrolls inside, the ✕ stays in its corner */}
-      <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in zp-thinscroll" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:520px; max-width:100%; max-height:calc(100vh - 48px); overflow-y:auto; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45);')}>
+      <div ref={dialog.ref} {...dialog.dialogProps} data-event-dialog className="zp-dialog-in zp-thinscroll" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:520px; max-width:100%; max-height:calc(100vh - 48px); overflow-y:auto; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45);')}>
         <div style={css('position:sticky; top:0; z-index:3; height:0;')}>
           <button onClick={onClose} aria-label="Đóng" style={css('position:absolute; top:12px; right:12px; width:34px; height:34px; border:none; border-radius:50%; background:rgba(15,23,42,.6); color:#fff; cursor:pointer; font-size:16px;')}>✕</button>
         </div>

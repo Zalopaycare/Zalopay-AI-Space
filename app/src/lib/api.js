@@ -43,6 +43,7 @@ export const api = {
   savedEvents: () => request('/events/saved'),
   saveEvent: (id) => request(`/events/${encodeURIComponent(id)}/save`, { method: 'POST' }),
   listEventsMonth: (month) => request(`/events?month=${encodeURIComponent(month)}`),
+  listEventsRange: (from, to) => request(`/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
   // "Muốn nghe": topics people would like someone to share about
   listTopics: () => request('/topics'),
   getTopic: (id) => request(`/topics/${encodeURIComponent(id)}`),

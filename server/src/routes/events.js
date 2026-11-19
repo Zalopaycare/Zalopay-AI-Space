@@ -527,11 +527,13 @@ function tellInterested(req, e, { text, subject, body, exceptId, method, calenda
 // upcoming and ongoing, soonest first
 router.get('/', (req, res) => {
   const now = new Date().toISOString()
-  // ?month=2026-11: every event of that month (Vietnam time), past ones included, for the calendar
+  // ?month=2026-11 (Vietnam time) or ?from=<ISO>&to=<ISO>: every event starting in it, past ones included,
+  // for the calendar (month and week views)
   const m = /^(\d{4})-(\d{2})$/.exec(String(req.query.month || ''))
-  if (m) {
-    const from = new Date(Date.UTC(+m[1], +m[2] - 1, 1) - 7 * 3600_000).toISOString()
-    const to = new Date(Date.UTC(+m[1], +m[2], 1) - 7 * 3600_000).toISOString()
+  const range = !m && req.query.from && req.query.to ? [isoOrNull(req.query.from), isoOrNull(req.query.to)] : null
+  if (m || (range && range[0] && range[1])) {
+    const from = m ? new Date(Date.UTC(+m[1], +m[2] - 1, 1) - 7 * 3600_000).toISOString() : range[0]
+    const to = m ? new Date(Date.UTC(+m[1], +m[2], 1) - 7 * 3600_000).toISOString() : range[1]
     const rows = db.prepare(`SELECT ${COLS} FROM events WHERE starts_at >= ? AND starts_at < ? ORDER BY starts_at`).all(from, to)
     return res.json({ events: rows.map((e) => ({ ...shape(e, req.user), past: endOf(e) <= now })) })
   }
