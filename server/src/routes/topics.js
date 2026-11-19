@@ -108,7 +108,8 @@ router.patch('/:id', requireAuth, (req, res) => {
   if (t.author_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'not_owner' })
   const title = clean(req.body?.title, 160)
   if (!title) return res.status(400).json({ error: 'invalid', message: 'Cần ghi nội dung bạn muốn nghe.' })
-  db.prepare("UPDATE topic_requests SET title = ?, detail = ?, edited_at = datetime('now') WHERE id = ?").run(title, clean(req.body?.detail, 2000), t.id)
+  // (the form asks only for the topic now; a detail written before stays unless one is sent)
+  db.prepare("UPDATE topic_requests SET title = ?, detail = ?, edited_at = datetime('now') WHERE id = ?").run(title, req.body?.detail !== undefined ? clean(req.body.detail, 2000) : t.detail, t.id)
   res.json({ topic: shape(byId(t.id), req.user) })
 })
 

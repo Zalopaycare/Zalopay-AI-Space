@@ -20,14 +20,15 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
 const OPEN_FORM = 'zp-open-topic-form'
 export const openTopicForm = () => window.dispatchEvent(new CustomEvent(OPEN_FORM))
 
-/** "Mình cũng muốn nghe · N": an outline until pressed, filled blue once pressed (like "Quan tâm"). */
+/** "Mình cũng muốn nghe · N" with a raised hand: an outline until pressed, filled blue once pressed (like "Quan tâm"). */
 function VoteButton({ t, onVote, height = 34 }) {
   const on = t.voted
   return (
     <button onClick={(e) => { e.stopPropagation(); onVote(t) }} aria-pressed={on}
       className={hoverClass(on ? 'filter:brightness(1.06);' : 'background:#EEF3FF !important;')}
       style={css(`flex:none; display:inline-flex; align-items:center; gap:7px; height:${height}px; padding:0 14px; border-radius:10px; box-sizing:border-box; cursor:pointer; white-space:nowrap; font:700 13px ${FONT}; ${on ? 'background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; border:1.5px solid transparent;' : 'background:#fff; color:#2c5fff; border:1.5px solid #9FB6F5;'}`)}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>
+      {/* a raised hand: "me too" */}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0"></path><path d="M14 10V4a2 2 0 0 0-4 0v2"></path><path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
       {on ? 'Bạn cũng muốn nghe' : 'Mình cũng muốn nghe'}{t.votes > 0 ? ` · ${t.votes}` : ''}
     </button>
   )
@@ -154,14 +155,13 @@ function TopicDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
 function TopicForm({ initial, onClose, onSaved }) {
   const editing = !!initial.id
   const [title, setTitle] = useState(initial.title || '')
-  const [detail, setDetail] = useState(initial.detail || '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const dialog = useDialog(true, onClose, editing ? 'Sửa nội dung' : 'Đăng ký nội dung muốn nghe')
   const save = () => {
-    if (!title.trim()) { setError('Ghi nội dung bạn muốn nghe nhé.'); return }
+    if (!title.trim()) { setError('Ghi topic bạn muốn nghe nhé.'); return }
     setBusy(true); setError('')
-    ;(editing ? api.updateTopic(initial.id, { title, detail }) : api.createTopic({ title, detail }))
+    ;(editing ? api.updateTopic(initial.id, { title }) : api.createTopic({ title }))
       .then((d) => onSaved(d.topic))
       .catch((e) => setError(e?.data?.message || 'Chưa lưu được, thử lại nhé.'))
       .finally(() => setBusy(false))
@@ -176,10 +176,9 @@ function TopicForm({ initial, onClose, onSaved }) {
           <span />
         </div>
         <div style={css('padding:18px 22px 6px;')}>
-          <div style={css(`font:700 13px ${FONT}; color:#0F172A;`)}>Bạn muốn nghe về <span style={css('color:#D8232A;')}>*</span></div>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} autoFocus placeholder="Ví dụ: Dùng Claude Code để review code, AI viết test case" style={css(field + 'height:44px;')} />
-          <div style={css(`margin-top:14px; font:700 13px ${FONT}; color:#0F172A;`)}>Chi tiết</div>
-          <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={4} maxLength={2000} placeholder="Không bắt buộc · bạn muốn nghe cụ thể gì, cho ai, đang vướng ở đâu…" style={css(field + 'resize:vertical;')} />
+          {/* one field: the topic */}
+          <div style={css(`font:700 13px ${FONT}; color:#0F172A;`)}>Topic về AI bạn muốn nghe từ người khác <span style={css('color:#D8232A;')}>*</span></div>
+          <textarea value={title} onChange={(e) => setTitle(e.target.value.replace(/\n/g, ' '))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save() } }} rows={3} maxLength={160} autoFocus placeholder="Ví dụ: Dùng Claude Code để review code, AI viết test case tự động" style={css(field + 'resize:none;')} />
           {error && <div style={css(`margin-top:10px; font:600 13px ${FONT}; color:#D8232A;`)}>{error}</div>}
         </div>
         <div style={css('display:flex; justify-content:flex-end; padding:12px 22px 18px;')}>
