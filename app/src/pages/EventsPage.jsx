@@ -27,11 +27,14 @@ export default function EventsPage() {
   // the topics column when the events still get a fair width beside it
   const rail = width - offset - RAIL_W >= 640
   const cal = tab === 'calendar'
+  // with room for it, the same space on the left as the rail takes on the right: the page stays centred under
+  // the AI Space / Use Case Library tabs of the top bar; otherwise it just keeps clear of the rail
+  const centred = rail && width - offset - 2 * RAIL_W >= (cal ? 1200 : 760) + 48
   return (
     <Layout active="question">
       <div style={css('position:relative; color:#e8eefc; overflow:clip;' + BLEED)}>
         <SpaceBackdrop arcTop={190} />
-        <div style={{ ...css('position:relative; z-index:1;'), ...(rail ? { paddingRight: RAIL_W } : {}) }}>
+        <div style={{ ...css('position:relative; z-index:1;'), ...(rail ? { paddingRight: RAIL_W, paddingLeft: centred ? RAIL_W : 0 } : {}) }}>
           {/* the same wordmark box as before (and as the Use Case Library title), so switching tabs doesn't jump */}
           <section style={css('position:relative; z-index:2; padding:22px var(--zp-gutter) 10px; text-align:center; overflow:visible;')}>
             <HeroWordmark width={361} />

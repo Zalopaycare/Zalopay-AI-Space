@@ -31,7 +31,7 @@ export function setGrayTheme(on) {
 
 // cards: dark grey glass; anything floating (menus, dropdowns, tooltips: position absolute / fixed / sticky)
 // stays solid so what's under it doesn't show through
-const GLASS = [38, 40, 46, 0.62]
+const GLASS = [46, 50, 60, 0.74] // lifted enough off the near-black page that a card reads as a card
 const SOLID = '#0D1222'
 const GLASS_BLUR = 'blur(16px) saturate(130%)'
 const COLOR = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b|rgba?\([^)]*\)|\bwhite\b/g
@@ -71,7 +71,7 @@ function fillTone(floating) {
     const { h, l, chroma } = hsl(c)
     if (l < 0.74) return null
     if (l >= 0.985) return floating ? withAlpha(SOLID, c.a) : glass(c.a)
-    if (chroma < 0.05) return floating ? withAlpha(l >= 0.965 ? '#161C2D' : '#1F2638', c.a) : `rgba(255,255,255,${l >= 0.965 ? 0.06 : 0.1})`
+    if (chroma < 0.05) return floating ? withAlpha(l >= 0.965 ? '#161C2D' : '#1F2638', c.a) : `rgba(255,255,255,${l >= 0.965 ? 0.08 : 0.1})`
     if (l >= 0.86) return out(h, 0.32, 0.21, c.a)
     return chroma < 0.12 ? 'rgba(255,255,255,.14)' : out(h, 0.34, 0.3, c.a)
   }
@@ -154,7 +154,7 @@ export function tone(decls) {
     if (!fn || (keepText && fn === toneText) || (clipText && fn === toneFill)) return [p, v]
     if (fn === toneFill) {
       const nv = swap(v, fill)
-      if (!floating && nv !== v && nv.includes(`rgba(${GLASS[0]},${GLASS[1]},${GLASS[2]},`)) glassed = true
+      if (!floating && nv !== v && (nv.includes(`rgba(${GLASS[0]},${GLASS[1]},${GLASS[2]},`) || nv.includes('rgba(255,255,255,0.08)'))) glassed = true
       return [p, nv]
     }
     return [p, swap(v, fn)]
@@ -162,7 +162,9 @@ export function tone(decls) {
   // glass blurs what's behind it, so text on it stays readable
   if (glassed && !decls.some(([p]) => p === 'backdrop-filter')) res.push(['backdrop-filter', GLASS_BLUR], ['-webkit-backdrop-filter', GLASS_BLUR])
   // and a faint edge, so a card still shows where the page behind is just as dark
-  if (glassed && !decls.some(([p]) => /^(border|outline)$/.test(p))) res.push(['outline', '1px solid rgba(160,190,255,.14)'], ['outline-offset', '-1px'])
+  // (also when its border is there but transparent / none, as on the Exhibition tiles)
+  const seenEdge = decls.some(([p, v]) => p === 'outline' || (p === 'border' && !/transparent|none|\b0(px)?\b/.test(v)))
+  if (glassed && !seenEdge) res.push(['outline', '1px solid rgba(160,190,255,.16)'], ['outline-offset', '-1px'])
   return res
 }
 
