@@ -612,17 +612,18 @@ export function CommentBox({ comments, onChange, post: postFn, like: likeFn, rem
   const row = (c, small) => {
     const replies = small ? [] : repliesOf(c.id)
     return (
-      <div className="zp-cmt" style={css(`display:flex; gap:10px; ${small ? 'padding:8px 0 0;' : 'padding:10px 0 2px; border-top:1px solid #EEF1F7; margin-top:8px;'}`)}>
+      <div className="zp-cmt" style={css(`display:flex; gap:10px; ${small ? 'padding:6px 0 0;' : 'padding:8px 0 0; border-top:1px solid #EEF1F7; margin-top:6px;'}`)}>
         <Avatar user={c.author} size={small ? 26 : 32} fontSize={small ? 9 : 11} />
         <div style={css('flex:1; min-width:0;')}>
           <div style={css('display:flex; align-items:center; gap:6px;')}>
             <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{c.author?.name || 'Ẩn danh'}</span>
             <span style={css('font:400 12px var(--zp-font-text); color:#94a3b8;')}>· {relativeTime(c.time)}</span>
             <span style={{ flex: 1 }} />
-            {user && <CommentMenu isOwner={c.isMine} onDelete={() => remove(c)} onReport={() => report(c)} />}
+            {/* the ⋯ doesn't make the name line taller */}
+            {user && <span style={css('margin:-6px -4px -6px 0;')}><CommentMenu isOwner={c.isMine} onDelete={() => remove(c)} onReport={() => report(c)} /></span>}
           </div>
-          <div style={css('margin-top:2px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{renderMentions(c.body)}</div>
-          <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -7px;')}>
+          <div style={css('margin-top:1px; font:400 14px/1.45 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{renderMentions(c.body)}</div>
+          <div style={css('display:flex; align-items:center; gap:2px; margin:-1px 0 -2px -7px;')}>
             <LikeButton r={c.likes} onLike={() => like(c)} />
             <ReplyButton count={replies.length} active={replyTo?.id === c.id} onClick={() => startReply(c)} />
           </div>
@@ -649,7 +650,7 @@ export function CommentBox({ comments, onChange, post: postFn, like: likeFn, rem
             {row(c, false)}
             {(replies.length > 0 || replyTo?.parentId === c.id) && (
               <div style={css('margin-left:42px;')}>
-                {replies.length > 0 && <RepliesToggle people={replies.map((r) => r.author).filter(Boolean)} count={replies.length} open={shown} onClick={() => setOpen((o) => { const n = new Set(o); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n })} style={{ marginTop: 2 }} />}
+                {replies.length > 0 && <RepliesToggle people={replies.map((r) => r.author).filter(Boolean)} count={replies.length} open={shown} onClick={() => setOpen((o) => { const n = new Set(o); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n })} style={{ marginTop: 0, padding: 0 }} />}
                 {shown && replies.map((r) => <div key={r.id}>{row(r, true)}</div>)}
                 {replyTo?.parentId === c.id && (
                   <div style={css('display:flex; gap:8px; margin-top:8px;')}>
