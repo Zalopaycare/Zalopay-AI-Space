@@ -541,6 +541,14 @@ router.get('/', (req, res) => {
   res.json({ events: rows.filter((e) => endOf(e) > now).map((e) => shape(e, req.user)) })
 })
 
+// Admin Console › Sự kiện: every event, past ones too, newest start first
+router.get('/all', requireAuth, (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'admin_only' })
+  const now = new Date().toISOString()
+  const rows = db.prepare(`SELECT ${COLS} FROM events ORDER BY starts_at DESC LIMIT 1000`).all()
+  res.json({ events: rows.map((e) => ({ ...shape(e, req.user), past: endOf(e) <= now })) })
+})
+
 // "Đã lưu" (profile): the events I saved, newest first
 router.get('/saved', requireAuth, (req, res) => {
   const now = new Date().toISOString()

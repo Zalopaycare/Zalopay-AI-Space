@@ -59,6 +59,7 @@ export const api = {
   getEvent: (id) => request(`/events/${encodeURIComponent(id)}`),
   createEvent: (payload) => request('/events', { method: 'POST', body: JSON.stringify(payload) }),
   updateEvent: (id, payload) => request(`/events/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  adminEvents: () => request('/events/all'),
   deleteEvent: (id, reason) => request(`/events/${encodeURIComponent(id)}`, delBody(reason)),
   toggleEventInterest: (id) => request(`/events/${encodeURIComponent(id)}/interest`, { method: 'POST' }),
   postEventComment: (id, body, replyToId) => request(`/events/${encodeURIComponent(id)}/comments`, { method: 'POST', body: JSON.stringify({ body, ...(replyToId ? { replyToId } : {}) }) }),

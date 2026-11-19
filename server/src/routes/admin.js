@@ -85,6 +85,8 @@ router.get('/users', (req, res) => {
   const answers = count('SELECT author_id id, COUNT(*) n FROM question_answers GROUP BY author_id')
   const useCases = count('SELECT author_id id, COUNT(*) n FROM use_case_submissions GROUP BY author_id')
   const comments = count('SELECT author_id id, COUNT(*) n FROM use_case_comments GROUP BY author_id')
+  const events = count('SELECT author_id id, COUNT(*) n FROM events GROUP BY author_id')
+  const topics = count('SELECT author_id id, COUNT(*) n FROM topic_requests GROUP BY author_id')
   // Last day (Vietnam time) the person used the site — from user_days, already recorded on every visit.
   const lastDay = Object.fromEntries(db.prepare('SELECT user_id id, MAX(day) d FROM user_days GROUP BY user_id').all().map((r) => [r.id, r.d]))
   const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all().map((u) => ({
@@ -93,6 +95,7 @@ router.get('/users', (req, res) => {
     // what Microsoft said about their organisation at the last SSO sign-in (staffCheck.js), and whether that counts as Zalopay
     org: orgInfo(u.org_info), staff: !!u.staff_ok,
     questions: questions[u.id] || 0, answers: answers[u.id] || 0, useCases: useCases[u.id] || 0, comments: comments[u.id] || 0,
+    events: events[u.id] || 0, topics: topics[u.id] || 0,
     lastActive: lastDay[u.id] || null, links: links[u.id] || {},
   }))
   res.json({ users })
@@ -127,7 +130,8 @@ router.delete('/users/:id', (req, res) => {
 // writes: answers to questions + replies under answers + comments on use cases.
 const DAY = 86_400_000
 const tsOf = (t) => new Date(String(t).replace(' ', 'T') + 'Z').getTime() // SQLite datetime() is UTC
-const COMMENT_SOURCES = ['question_answers', 'answer_comments', 'use_case_comments']
+// (posts are gone from the site; their old answers still count, with today's comments on events and topics)
+const COMMENT_SOURCES = ['question_answers', 'answer_comments', 'use_case_comments', 'event_comments', 'topic_comments']
 const rowsSince = (table, since, extra = '') => db.prepare(`SELECT author_id, created_at FROM ${table} WHERE created_at >= ? ${extra}`).all(since || '0000')
 const byAuthor = (rows) => { const m = {}; for (const r of rows) m[r.author_id] = (m[r.author_id] || 0) + 1; return m }
 const sqlSince = (ms) => new Date(ms).toISOString().replace('T', ' ').slice(0, 19)
@@ -137,7 +141,9 @@ function contributions(since) {
   return {
     questions: byAuthor(rowsSince('questions', since)),
     answers: byAuthor(rowsSince('question_answers', since)),
-    replies: byAuthor([...rowsSince('answer_comments', since), ...rowsSince('use_case_comments', since)]),
+    replies: byAuthor([...rowsSince('answer_comments', since), ...rowsSince('use_case_comments', since), ...rowsSince('event_comments', since), ...rowsSince('topic_comments', since)]),
+    events: byAuthor(rowsSince('events', since)),
+    topics: byAuthor(rowsSince('topic_requests', since)),
     useCases: byAuthor(rowsSince('use_case_submissions', since)),
     approvedUseCases: byAuthor(rowsSince('use_case_submissions', since, "AND review_status = 'approved'")),
   }
@@ -168,6 +174,8 @@ router.get('/stats', (req, res) => {
   const times = (table) => db.prepare(`SELECT created_at FROM ${table}`).all().map((r) => r.created_at)
   const kpis = {
     questions: kpi(times('questions')),
+    events: kpi(times('events')),
+    topics: kpi(times('topic_requests')),
     submissions: kpi(times('use_case_submissions')),
     users: kpi(times('users')),
     comments: kpi(COMMENT_SOURCES.flatMap(times)),
@@ -186,21 +194,24 @@ router.get('/stats', (req, res) => {
     addLikes('SELECT s.author_id id, COUNT(*) n FROM use_case_reactions x JOIN use_case_submissions s ON s.id = x.use_case_id WHERE s.created_at >= ? GROUP BY s.author_id')
     leaderboard[key] = users.map((u) => {
       const row = { id: u.id, name: u.name, domain: domainName(u.email, u.name), initials: initialsOf(u), avatarColor: colorOf(u), avatarUrl: avatarUrlOf(u), team: u.team || '',
-        questions: c.questions[u.id] || 0, answers: c.answers[u.id] || 0, comments: c.replies[u.id] || 0, likes: likes[u.id] || 0, useCases: c.approvedUseCases[u.id] || 0 }
-      // Ranked by the plain total of contributions (no weighted score shown any more).
-      row.score = row.answers + row.comments + row.likes + row.questions + row.useCases
+        questions: c.questions[u.id] || 0, answers: c.answers[u.id] || 0, comments: c.replies[u.id] || 0, likes: likes[u.id] || 0, useCases: c.approvedUseCases[u.id] || 0,
+        events: c.events[u.id] || 0, topics: c.topics[u.id] || 0 }
+      // Ranked by the plain total of contributions (no weighted score shown any more): events hosted,
+      // topics posted, comments (old post answers included), likes received, approved use cases.
+      row.comments += row.answers
+      row.score = row.events + row.topics + row.comments + row.likes + row.useCases + row.questions
       return row
     }).filter((r) => r.score > 0).sort((x, y) => y.score - x.score).slice(0, 10)
 
     const depts = {}
     for (const u of users) {
       const k = u.team || ''
-      const d = (depts[k] = depts[k] || { team: k, members: 0, active7: 0, questions: 0, comments: 0, useCases: 0 })
+      const d = (depts[k] = depts[k] || { team: k, members: 0, active7: 0, questions: 0, events: 0, comments: 0, useCases: 0 })
       d.members++; if (activeWeek.has(u.id)) d.active7++
       // comments = answers + replies/comments: the same total as the "Comment & reply" card
-      d.questions += c.questions[u.id] || 0; d.comments += (c.answers[u.id] || 0) + (c.replies[u.id] || 0); d.useCases += c.useCases[u.id] || 0
+      d.questions += c.questions[u.id] || 0; d.events += c.events[u.id] || 0; d.comments += (c.answers[u.id] || 0) + (c.replies[u.id] || 0); d.useCases += c.useCases[u.id] || 0
     }
-    departments[key] = Object.values(depts).sort((x, y) => (y.questions + y.comments + y.useCases) - (x.questions + x.comments + x.useCases) || y.members - x.members)
+    departments[key] = Object.values(depts).sort((x, y) => (y.events + y.comments + y.useCases) - (x.events + x.comments + x.useCases) || y.members - x.members)
   }
 
   // Weekly trend, 8 weeks ending with the current one (weeks start Monday, Vietnam time).
@@ -217,6 +228,7 @@ router.get('/stats', (req, res) => {
     starts: starts.map((ms) => new Date(ms).toISOString().slice(0, 10)),
     members: bucket(times('users')),
     questions: bucket(times('questions')),
+    events: bucket(times('events')),
     useCases: bucket(times('use_case_submissions')),
     comments: bucket(COMMENT_SOURCES.flatMap(times)),
   }
