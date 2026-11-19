@@ -9,7 +9,7 @@ const FONT = '"Aeonik Pro","Geist","Be Vietnam Pro",sans-serif'
  * Composer prompt + search box pinned to the very top of Home, Use Case Library and Questions,
  * with identical geometry on every page so switching pages doesn't make the top of the page jump.
  */
-const PageActionBar = forwardRef(function PageActionBar({ tour, prompt, cta, onCompose, query, onQuery, onSubmit, placeholder, searchOnly = false, maxWidth = 760, filters = null, onKeyDown, onFocus, inputProps = {} }, inputRef) {
+const PageActionBar = forwardRef(function PageActionBar({ tour, prompt, cta, onCompose, query, onQuery, onSubmit, placeholder, searchOnly = false, searchHidden = false, maxWidth = 760, filters = null, onKeyDown, onFocus, inputProps = {} }, inputRef) {
   const { t } = useI18n()
   return (
     <div style={css('position:relative; z-index:6; padding:16px var(--zp-gutter) 0;')}>
@@ -26,7 +26,8 @@ const PageActionBar = forwardRef(function PageActionBar({ tour, prompt, cta, onC
           <span style={css(`flex:none; display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; border-radius:999px; background:linear-gradient(180deg,#4480ff 0%,#2c5fff 100%); color:#fff; font:700 12.5px ${FONT}; box-shadow:0 10px 22px rgba(44,95,255,.4);`)}>{t(cta)}</span>
         </div>
         )}
-        <div className="zp-search-row" style={css(`display:flex; align-items:center; gap:10px; ${searchOnly ? '' : 'margin-top:10px;'}`)}>
+        {/* searchHidden: no search box (the AI Space calendar tab) */}
+        {!searchHidden && <div className="zp-search-row" style={css(`display:flex; align-items:center; gap:10px; ${searchOnly ? '' : 'margin-top:10px;'}`)}>
           <form
             onSubmit={(e) => { e.preventDefault(); if (onSubmit) onSubmit(query) }}
             style={searchOnly ? css('flex:1; min-width:0; display:flex; align-items:center; gap:9px; height:38px; box-sizing:border-box; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:0 14px; box-shadow:0 10px 26px rgba(0,0,0,.25);') : css('flex:1; min-width:0; display:flex; align-items:center; gap:9px; height:38px; box-sizing:border-box; background:#ffffff; border:1px solid #E6EBF3; border-radius:999px; padding:0 14px; box-shadow:0 10px 26px rgba(0,0,0,.25);')}
@@ -59,7 +60,7 @@ const PageActionBar = forwardRef(function PageActionBar({ tour, prompt, cta, onC
             )}
           </form>
           {filters}
-        </div>
+        </div>}
       </div>
     </div>
   )

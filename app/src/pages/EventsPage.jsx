@@ -6,28 +6,27 @@ import SpaceBackdrop, { BLEED } from '../components/SpaceBackdrop.jsx'
 import HeroWordmark from '../components/HeroWordmark.jsx'
 import PageActionBar from '../components/PageActionBar.jsx'
 import EventsPanel, { openEventForm } from '../components/Events.jsx'
-import TopicsPanel, { openTopicForm } from '../components/Topics.jsx'
+import TopicsPanel from '../components/Topics.jsx'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useSidebarLayout } from '../hooks/useSidebarCollapsed.js'
 
-// The AI Space home, two tabs: "Sự kiện", the events colleagues hold to share an AI topic
-// (components/Events.jsx), and "Chủ đề quan tâm", the questions / topics people would like someone to share about
-// (components/Topics.jsx; /?tab=wish). The bar at the top creates one of whichever tab is open; the search
-// box filters it. On a wide screen the topics sit in a column fixed to the right edge instead (like the events
-// rail of the old posts page) and the events take the page; narrower, they are the second tab.
-// Posts are no longer written here; old post links (/questions/<id>) still open the post.
+// The AI Space home. Two tabs: "Sự kiện", the events colleagues hold to share an AI topic (components/Events.jsx),
+// and "Lịch", the same events in a week / month calendar like Outlook's (/?tab=calendar). "Chủ đề quan tâm",
+// the questions / topics people would like someone to share about (components/Topics.jsx), sits in a column
+// fixed to the right edge (like the events rail of the old posts page); on a small screen it comes under the
+// events instead. Posts are no longer written here; old post links (/questions/<id>) still open the post.
 const RAIL_W = 272
 export default function EventsPage() {
   useTitle('AI Space')
   const [query, setQuery] = useState('')
   const location = useLocation()
   const navigate = useNavigate()
-  const params = new URLSearchParams(location.search)
-  const tab = params.get('tab') === 'wish' || params.has('topic') || params.get('new') === 'topic' ? 'wish' : 'events'
-  const pick = (k) => { setQuery(''); navigate({ pathname: '/', search: k === 'wish' ? '?tab=wish' : '' }, { replace: true }) }
+  const tab = new URLSearchParams(location.search).get('tab') === 'calendar' ? 'calendar' : 'events'
+  const pick = (k) => navigate({ pathname: '/', search: k === 'calendar' ? '?tab=calendar' : '' }, { replace: true })
   const { width, offset } = useSidebarLayout()
-  const rail = width - offset - RAIL_W >= 860
-  const wish = !rail && tab === 'wish'
+  // the topics column when the events still get a fair width beside it
+  const rail = width - offset - RAIL_W >= 640
+  const cal = tab === 'calendar'
   return (
     <Layout active="question">
       <div style={css('position:relative; color:#e8eefc; overflow:clip;' + BLEED)}>
@@ -38,20 +37,25 @@ export default function EventsPage() {
             <HeroWordmark width={361} />
             <p className="zp-tagline" style={css('position:relative; margin:0 auto; max-width:760px; font:400 15px/1.5 var(--zp-font-text); color:rgba(206,219,245,.72); text-wrap:pretty;')}>Nơi đồng nghiệp tạo và cùng tham gia các buổi chia sẻ về AI.</p>
           </section>
-          {/* the two tabs, centred over the bar (narrower screens; wide ones have the topics column) */}
-          {!rail && <div role="tablist" style={css('display:flex; justify-content:center; gap:6px; padding:14px var(--zp-gutter) 0;')}>
-            {[['events', 'Sự kiện'], ['wish', 'Chủ đề quan tâm']].map(([k, label]) => (
-              <button key={k} role="tab" aria-selected={tab === k} onClick={() => pick(k)} data-tour={k === 'wish' ? 'wish-tab' : undefined}
+          {/* the two tabs, centred over the bar */}
+          <div role="tablist" style={css('display:flex; justify-content:center; gap:6px; padding:14px var(--zp-gutter) 0;')}>
+            {[['events', 'Sự kiện'], ['calendar', 'Lịch']].map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={tab === k} onClick={() => pick(k)} data-tour={k === 'calendar' ? 'calendar-tab' : undefined}
                 className={tab === k ? undefined : hoverClass('background:rgba(255,255,255,.1) !important; color:#fff !important;')}
-                style={css(`height:36px; padding:0 18px; border-radius:999px; cursor:pointer; font:700 14px var(--zp-font-text); ${tab === k ? 'background:#fff; color:#0F172A; border:1px solid #fff;' : 'background:rgba(255,255,255,.04); color:#C9D6F5; border:1px solid rgba(160,190,255,.25);'}`)}>{label}</button>
+                style={css(`display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 18px; border-radius:999px; cursor:pointer; font:700 14px var(--zp-font-text); ${tab === k ? 'background:#fff; color:#0F172A; border:1px solid #fff;' : 'background:rgba(255,255,255,.04); color:#C9D6F5; border:1px solid rgba(160,190,255,.25);'}`)}>
+                {k === 'calendar' && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>}
+                {label}
+              </button>
             ))}
-          </div>}
-          {wish
-            ? <PageActionBar prompt="Bạn có câu hỏi, chủ đề AI nào muốn được chia sẻ?" cta="Đăng chủ đề" onCompose={openTopicForm} query={query} onQuery={setQuery} placeholder="Tìm câu hỏi, chủ đề..." />
-            : <PageActionBar tour="compose" prompt="Bạn có topic AI nào muốn chia sẻ?" cta="Tạo sự kiện" onCompose={openEventForm} query={query} onQuery={setQuery} placeholder="Tìm sự kiện, địa điểm, người tổ chức..." />}
+          </div>
+          <PageActionBar tour="compose" prompt="Bạn có topic AI nào muốn chia sẻ?" cta="Tạo sự kiện" onCompose={openEventForm} query={query} onQuery={setQuery} placeholder="Tìm sự kiện, địa điểm, người tổ chức..." searchHidden={cal} />
           <div style={css('padding:16px var(--zp-gutter) 28px;')}>
-            <div style={css('max-width:760px; margin:0 auto;')}>
-              {wish ? <TopicsPanel query={query} /> : <EventsPanel layout="grid" query={query} />}
+            {/* the calendar gets the whole width; the cards a readable column */}
+            <div style={css(`max-width:${cal ? 1200 : 760}px; margin:0 auto;`)}>
+              <EventsPanel layout="grid" query={cal ? '' : query} calendar={cal} />
+              {!rail && (
+                <div style={css('margin-top:28px;')}><TopicsPanel layout="rail" /></div>
+              )}
             </div>
           </div>
         </div>

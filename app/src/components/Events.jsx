@@ -138,7 +138,7 @@ function EventCard({ ev, onOpen, onToggle, compact = false, onDark = false, rich
   )
 }
 
-// ---- the calendar ("Xem lịch"): a big window, by week like Outlook (default) or by month ----
+// ---- the calendar (the "Lịch" tab): by week like Outlook (default) or by month ----
 const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 const mondayOf = (d) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x }
@@ -146,17 +146,10 @@ const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); r
 const endOfEv = (ev) => (ev.endsAt ? new Date(ev.endsAt) : new Date(new Date(ev.startsAt).getTime() + 3600000))
 const evLook = (ev) => (ev.past ? 'background:#EEF1F5; border-left:3px solid #94a3b8; color:#64748b;' : ev.interested ? 'background:#C9DAFB; border-left:3px solid #2c5fff; color:#10275E;' : 'background:#DCE7FB; border-left:3px solid #2c5fff; color:#10275E;')
 
-function CalendarModal({ onOpen, onClose, reloadKey }) {
+/** The calendar on the page ("Lịch" tab): by week like Outlook (default) or by month, with Hôm nay / ‹ ›. */
+function CalendarView({ onOpen, reloadKey }) {
   const [mode, setMode] = useState('week') // week | month
   const [anchor, setAnchor] = useState(() => new Date())
-  useEffect(() => {
-    // Esc closes the calendar, unless an event opened from it is on top (Esc closes that first)
-    const on = (e) => { if (e.key === 'Escape' && !document.querySelector('[data-event-dialog]')) onClose() }
-    window.addEventListener('keydown', on)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', on); document.body.style.overflow = prev }
-  }, [onClose])
   const mon = mondayOf(anchor)
   const sun = addDays(mon, 6)
   const title = mode === 'month'
@@ -166,29 +159,24 @@ function CalendarModal({ onOpen, onClose, reloadKey }) {
       : `${mon.getDate()} tháng ${mon.getMonth() + 1} – ${sun.getDate()} tháng ${sun.getMonth() + 1}, ${sun.getFullYear()}`
   const go = (n) => setAnchor((d) => (mode === 'month' ? new Date(d.getFullYear(), d.getMonth() + n, 1) : addDays(d, 7 * n)))
   const btn = 'height:32px; min-width:32px; padding:0 11px; border:1px solid #DDE3EC; border-radius:8px; background:#fff; color:#0F172A; cursor:pointer; font:700 13px var(--zp-font-text);'
-  return createPortal(
-    <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:3800; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:20px 16px;')}>
-      <div role="dialog" aria-modal="true" aria-label="Lịch sự kiện" className="zp-dialog-in" onClick={(e) => e.stopPropagation()}
-        style={css('width:1200px; max-width:100%; height:calc(100vh - 40px); display:flex; flex-direction:column; background:#fff; border-radius:20px; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden;')}>
-        <div style={css('flex:none; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid #E6EBF3;')}>
-          <button onClick={() => setAnchor(new Date())} className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>Hôm nay</button>
-          <button onClick={() => go(-1)} aria-label="Trước" className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>‹</button>
-          <button onClick={() => go(1)} aria-label="Sau" className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>›</button>
-          <div style={css(`flex:1; min-width:180px; margin-left:6px; font:800 18px ${FONT}; color:#0F172A;`)}>{title}</div>
-          <div role="tablist" style={css('display:flex; padding:3px; border-radius:10px; background:#F1F4F9;')}>
-            {[['week', 'Tuần'], ['month', 'Tháng']].map(([k, label]) => (
-              <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
-                style={css(`height:28px; padding:0 14px; border:none; border-radius:8px; cursor:pointer; font:700 12.5px var(--zp-font-text); ${mode === k ? 'background:#fff; color:#0F172A; box-shadow:0 1px 3px rgba(15,23,42,.12);' : 'background:transparent; color:#64748b;'}`)}>{label}</button>
-            ))}
-          </div>
-          <button onClick={onClose} aria-label="Đóng" style={css('width:34px; height:34px; margin-left:4px; border:none; border-radius:50%; background:#F1F4FA; color:#334155; cursor:pointer; font-size:16px;')}>✕</button>
-        </div>
-        <div style={css('flex:1; min-height:0; display:flex; flex-direction:column;')}>
-          {mode === 'week' ? <WeekView monday={mon} onOpen={onOpen} reloadKey={reloadKey} /> : <MonthView month={new Date(anchor.getFullYear(), anchor.getMonth(), 1)} onOpen={onOpen} reloadKey={reloadKey} />}
+  return (
+    <div style={css('height:calc(100vh - 150px); min-height:560px; display:flex; flex-direction:column; background:#fff; border-radius:18px; box-shadow:0 14px 34px rgba(3,12,40,.3); overflow:hidden;')}>
+      <div style={css('flex:none; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid #E6EBF3;')}>
+        <button onClick={() => setAnchor(new Date())} className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>Hôm nay</button>
+        <button onClick={() => go(-1)} aria-label="Trước" className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>‹</button>
+        <button onClick={() => go(1)} aria-label="Sau" className={hoverClass('background:#F4F7FE !important;')} style={css(btn)}>›</button>
+        <div style={css(`flex:1; min-width:180px; margin-left:6px; font:800 18px ${FONT}; color:#0F172A;`)}>{title}</div>
+        <div role="tablist" style={css('display:flex; padding:3px; border-radius:10px; background:#F1F4F9;')}>
+          {[['week', 'Tuần'], ['month', 'Tháng']].map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
+              style={css(`height:28px; padding:0 14px; border:none; border-radius:8px; cursor:pointer; font:700 12.5px var(--zp-font-text); ${mode === k ? 'background:#fff; color:#0F172A; box-shadow:0 1px 3px rgba(15,23,42,.12);' : 'background:transparent; color:#64748b;'}`)}>{label}</button>
+          ))}
         </div>
       </div>
-    </div>,
-    document.body,
+      <div style={css('flex:1; min-height:0; display:flex; flex-direction:column;')}>
+        {mode === 'week' ? <WeekView monday={mon} onOpen={onOpen} reloadKey={reloadKey} /> : <MonthView month={new Date(anchor.getFullYear(), anchor.getMonth(), 1)} onOpen={onOpen} reloadKey={reloadKey} />}
+      </div>
+    </div>
   )
 }
 
@@ -337,13 +325,12 @@ function MonthView({ month, onOpen, reloadKey }) {
 // ---- the list: the grid of the events page (AI Space home), the rail or the strip ----
 // `query` (grid): only the events whose title, place or host match. /?new=event opens the "Tạo sự kiện"
 // form (the sidebar's link).
-export default function EventsPanel({ layout = 'rail', query = '' }) {
+// `calendar` (grid layout): the week / month calendar in place of the cards (the AI Space page's "Lịch" tab)
+export default function EventsPanel({ layout = 'rail', query = '', calendar = false }) {
   const { user, requireLogin } = useAuth()
   const [events, setEvents] = useState(null)
   const [openId, setOpenId] = useState(() => new URLSearchParams(window.location.search).get('event'))
   const [form, setForm] = useState(null) // null | {} (new) | event (edit)
-  // the big calendar ("Xem lịch")
-  const [calOpen, setCalOpen] = useState(false)
   const reload = () => api.listEvents().then((d) => setEvents(d.events || [])).catch(() => setEvents((x) => x || []))
   useEffect(() => { reload() }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -378,16 +365,7 @@ export default function EventsPanel({ layout = 'rail', query = '' }) {
     <>
       {layout === 'grid' ? (
         <div data-tour="events">
-          {/* "Xem lịch": the events in a big calendar, by week like Outlook (or by month) */}
-          <div style={css('display:flex; justify-content:flex-end; margin:-4px 0 10px;')}>
-            <button onClick={() => setCalOpen(true)} className={hoverClass('background:rgba(255,255,255,.14) !important; color:#fff !important;')}
-              style={css('display:inline-flex; align-items:center; gap:7px; height:32px; padding:0 14px; border-radius:999px; cursor:pointer; font:700 12.5px var(--zp-font-text); background:rgba(255,255,255,.07); color:#D6E2FF; border:1px solid rgba(160,190,255,.3);')}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
-              Xem lịch
-            </button>
-          </div>
-          {calOpen && <CalendarModal onOpen={setOpenId} onClose={() => setCalOpen(false)} reloadKey={events} />}
-          {!events ? null : !shown.length ? (
+          {calendar ? <CalendarView onOpen={setOpenId} reloadKey={events} /> : !events ? null : !shown.length ? (
             <div style={css('background:#fff; border-radius:20px; box-shadow:0 14px 34px rgba(3,12,40,.3); padding:48px 24px; text-align:center;')}>
               <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>{q ? 'Không tìm thấy sự kiện nào' : 'Chưa có sự kiện nào sắp tới'}</div>
               <div style={css('margin-top:8px; font:400 14px/1.6 var(--zp-font-text); color:#64748b;')}>{q ? 'Thử từ khoá khác nhé.' : 'Có topic AI nào muốn chia sẻ? Tạo sự kiện đầu tiên để mọi người cùng tham gia.'}</div>
