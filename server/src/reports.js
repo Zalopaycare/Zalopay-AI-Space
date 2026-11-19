@@ -7,8 +7,9 @@ import { appUrl, domainName } from './mentions.js'
 import { deleteQuestionTx, deleteAnswerTx, deleteCommentTx } from './routes/questions.js'
 import { deleteUseCaseCommentTx } from './routes/useCases.js'
 
-// "Báo cáo đến admin": anyone can flag a thread, an answer, an answer comment or a use case
-// comment; admins get a notification + email and resolve it from the admin console.
+// "Báo cáo đến admin": anyone can flag a thread, an answer, an answer comment, a use case comment, or a
+// comment under an event or a "Muốn nghe" topic; admins get a notification + email and resolve it from the
+// admin console.
 
 const TYPES = {
   thread: {
@@ -32,6 +33,34 @@ const TYPES = {
     path: (r) => `/use-cases/${encodeURIComponent(r.use_case_id)}#comments`,
     remove: (id) => deleteUseCaseCommentTx(id),
   },
+  // comments under an event and under a "Muốn nghe" topic (removed with their replies and likes)
+  ev_comment: {
+    row: (id) => db.prepare('SELECT * FROM event_comments WHERE id = ?').get(id),
+    path: (r) => `/?event=${encodeURIComponent(r.event_id)}`,
+    remove: (id) => removeThreaded('event_comments', 'event_comment_likes', id),
+  },
+  // a "Muốn nghe" topic itself (removed with its votes, saves and comments)
+  topic: {
+    row: (id) => { const t = db.prepare('SELECT * FROM topic_requests WHERE id = ?').get(id); return t && { ...t, body: [t.title, t.detail].filter(Boolean).join('\n') } },
+    path: (r) => `/?tab=wish&topic=${encodeURIComponent(r.id)}`,
+    remove: (id) => db.transaction(() => {
+      for (const { id: cid } of db.prepare('SELECT id FROM topic_comments WHERE topic_id = ?').all(id)) db.prepare('DELETE FROM topic_comment_likes WHERE comment_id = ?').run(cid)
+      for (const tbl of ['topic_comments', 'topic_votes', 'topic_saves']) db.prepare(`DELETE FROM ${tbl} WHERE topic_id = ?`).run(id)
+      db.prepare('DELETE FROM topic_requests WHERE id = ?').run(id)
+    })(),
+  },
+  topic_comment: {
+    row: (id) => db.prepare('SELECT * FROM topic_comments WHERE id = ?').get(id),
+    path: (r) => `/?tab=wish&topic=${encodeURIComponent(r.topic_id)}`,
+    remove: (id) => removeThreaded('topic_comments', 'topic_comment_likes', id),
+  },
+}
+function removeThreaded(table, likes, id) {
+  db.transaction(() => {
+    const ids = [id, ...db.prepare(`SELECT id FROM ${table} WHERE parent_id = ?`).all(id).map((r) => r.id)]
+    for (const x of ids) db.prepare(`DELETE FROM ${likes} WHERE comment_id = ?`).run(x)
+    db.prepare(`DELETE FROM ${table} WHERE id = ? OR parent_id = ?`).run(id, id)
+  })()
 }
 
 const adminEmails = () => {

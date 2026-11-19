@@ -47,6 +47,7 @@ export const api = {
   updateTopic: (id, payload) => request(`/topics/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteTopic: (id, reason) => request(`/topics/${encodeURIComponent(id)}`, delBody(reason)),
   voteTopic: (id) => request(`/topics/${encodeURIComponent(id)}/vote`, { method: 'POST' }),
+  saveTopic: (id) => request(`/topics/${encodeURIComponent(id)}/save`, { method: 'POST' }),
   postTopicComment: (id, body, replyToId) => request(`/topics/${encodeURIComponent(id)}/comments`, { method: 'POST', body: JSON.stringify({ body, ...(replyToId ? { replyToId } : {}) }) }),
   likeTopicComment: (id, cid) => request(`/topics/${encodeURIComponent(id)}/comments/${encodeURIComponent(cid)}/like`, { method: 'POST' }),
   deleteTopicComment: (id, cid, reason) => request(`/topics/${encodeURIComponent(id)}/comments/${encodeURIComponent(cid)}`, delBody(reason)),

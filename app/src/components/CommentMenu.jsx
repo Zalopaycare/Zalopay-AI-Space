@@ -8,7 +8,8 @@ const item = (color) => `display:flex; align-items:center; gap:10px; width:100%;
 
 /**
  * The ⋯ button that appears when hovering a comment (the bubble carries class "zp-cmt").
- * Author: Sửa / Xoá. Everyone else: Báo cáo đến admin (admins also get Xoá).
+ * Author: Sửa (where comments can be edited) / Xoá. Everyone else: Báo cáo đến admin (admins also get Xoá
+ * where `isAdmin` is passed).
  */
 export default function CommentMenu({ isOwner, isAdmin, onEdit, onDelete, onReport }) {
   const [open, setOpen] = useState(false)
@@ -27,7 +28,7 @@ export default function CommentMenu({ isOwner, isAdmin, onEdit, onDelete, onRepo
       </button>
       {open && (
         <div style={css('position:absolute; right:0; top:32px; min-width:210px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:5px; z-index:90;')}>
-          {isOwner && (
+          {isOwner && onEdit && (
             <button onClick={pick(onEdit)} className={hoverClass('background:#F4F7FE;')} style={css(item('#0F172A'))}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
               Sửa comment
@@ -110,8 +111,8 @@ export function useCommentModals(api) {
       {rep && (
         <div onClick={() => setRep(null)} style={css(overlay)}>
           <div onClick={(e) => e.stopPropagation()} style={css(box)}>
-            <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>Báo cáo {rep.type === 'thread' ? 'bài' : 'comment'} đến admin</div>
-            <div style={css(`margin-top:8px; font:400 13.5px/1.6 var(--zp-font-text); color:#64748b;`)}>Admin sẽ xem và xử lý. Người viết {rep.type === 'thread' ? 'bài' : 'comment'} không biết ai đã báo cáo.</div>
+            <div style={css(`font:800 17px ${FONT}; color:#0F172A;`)}>Báo cáo {['thread', 'topic'].includes(rep.type) ? 'bài' : 'comment'} đến admin</div>
+            <div style={css(`margin-top:8px; font:400 13.5px/1.6 var(--zp-font-text); color:#64748b;`)}>Admin sẽ xem và xử lý. Người viết {['thread', 'topic'].includes(rep.type) ? 'bài' : 'comment'} không biết ai đã báo cáo.</div>
             <textarea autoFocus value={reason} onChange={(e) => setReason(e.target.value)} rows={3} placeholder="Lý do (không bắt buộc): nội dung không phù hợp, spam, thông tin nhạy cảm..." style={css(`width:100%; margin-top:14px; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:10px 13px; font:400 13.5px/1.6 var(--zp-font-text); color:#0F172A; background:#fff; color-scheme:light; outline:none; resize:vertical;`)}></textarea>
             <div style={css('display:flex; justify-content:flex-end; gap:10px; margin-top:16px;')}>
               <button onClick={() => setRep(null)} style={css(b(false))}>Huỷ</button>

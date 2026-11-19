@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS topic_votes (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (topic_id, user_id)
 );
+CREATE TABLE IF NOT EXISTS topic_saves (
+  topic_id TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (topic_id, user_id)
+);
 CREATE TABLE IF NOT EXISTS topic_comments (
   id TEXT PRIMARY KEY,
   topic_id TEXT NOT NULL,
@@ -58,7 +64,9 @@ function shape(t, me) {
   const ids = voterIds(t.id)
   return {
     id: t.id, title: t.title, detail: t.detail, createdAt: t.created_at, author: person(userById(t.author_id)),
-    isMine: !!me && t.author_id === me.id, canEdit: !!me && (t.author_id === me.id || !!me.is_admin),
+    // only the one who posted it edits or deletes it (others report it; admins remove it from the Admin Console)
+    isMine: !!me && t.author_id === me.id,
+    saved: !!me && !!db.prepare('SELECT 1 FROM topic_saves WHERE topic_id = ? AND user_id = ?').get(t.id, me.id),
     votes: ids.length, voted: !!me && ids.includes(me.id), voters: ids.slice(0, 8).map((uid) => person(userById(uid))).filter(Boolean),
     commentCount: commentCount(t.id),
   }
@@ -122,10 +130,21 @@ router.delete('/:id', requireAuth, (req, res) => {
     for (const { id } of db.prepare('SELECT id FROM topic_comments WHERE topic_id = ?').all(t.id)) db.prepare('DELETE FROM topic_comment_likes WHERE comment_id = ?').run(id)
     db.prepare('DELETE FROM topic_comments WHERE topic_id = ?').run(t.id)
     db.prepare('DELETE FROM topic_votes WHERE topic_id = ?').run(t.id)
+    db.prepare('DELETE FROM topic_saves WHERE topic_id = ?').run(t.id)
     db.prepare('DELETE FROM topic_requests WHERE id = ?').run(t.id)
   })()
   afterRemoval(req, { authorId: t.author_id, what: 'nội dung muốn nghe', title: t.title, content: t.detail || t.title })
   res.json({ ok: true })
+})
+
+// "Lưu": keep it in "Đã lưu" (a click saves, again takes it back)
+router.post('/:id/save', requireAuth, (req, res) => {
+  const t = byId(req.params.id)
+  if (!t) return res.status(404).json({ error: 'not_found' })
+  const had = db.prepare('SELECT 1 FROM topic_saves WHERE topic_id = ? AND user_id = ?').get(t.id, req.user.id)
+  if (had) db.prepare('DELETE FROM topic_saves WHERE topic_id = ? AND user_id = ?').run(t.id, req.user.id)
+  else db.prepare('INSERT INTO topic_saves (topic_id, user_id) VALUES (?, ?)').run(t.id, req.user.id)
+  res.json({ topic: shape(byId(t.id), req.user) })
 })
 
 // "Mình cũng muốn nghe": a click adds you, again takes it back; the one who posted it sees the count grow

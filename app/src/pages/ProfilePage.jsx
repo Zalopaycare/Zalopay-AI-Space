@@ -173,6 +173,8 @@ export default function ProfilePage() {
   // events I run (created / co-host) and the ones I'm interested in, past ones included
   const [myEvents, setMyEvents] = useState({ hosting: [], interested: [] })
   const [evTab, setEvTab] = useState('hosting')
+  // "Muốn nghe" topics I saved
+  const [savedTopics, setSavedTopics] = useState([])
   const [savedUseCaseIds, setSavedUseCaseIds] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [ucMeta, setUcMeta] = useState({})
@@ -198,6 +200,7 @@ export default function ProfilePage() {
       }),
       part('usecases', api.listSubmissions('?mine=1'), (sd) => setMyUseCases(sd.submissions || [])),
       part('events', api.myEvents(), (d) => setMyEvents({ hosting: d.hosting || [], interested: d.interested || [] })),
+      part('topics', api.listTopics(), (d) => setSavedTopics((d.topics || []).filter((x) => x.saved))),
       part('saved', api.mySavedUseCaseIds(), (d) => setSavedUseCaseIds(d.ids || [])),
     ]).finally(() => setLoaded(true))
   }, [user, reloadKey])
@@ -485,6 +488,18 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              {savedTopics.length > 0 && (<>
+                <h3 style={subHeading}>{t('Muốn nghe đã lưu')}</h3>
+                <div style={css('display:flex; flex-direction:column; gap:12px; margin-bottom:24px;')}>
+                  {savedTopics.map((tp) => (
+                    <div key={tp.id} role="button" tabIndex={0} onClick={() => navigate('/?tab=wish&topic=' + encodeURIComponent(tp.id))} onKeyDown={(e) => { if (e.key === 'Enter') navigate('/?tab=wish&topic=' + encodeURIComponent(tp.id)) }}
+                      className={'zp-card ' + hoverClass(CARD_HOVER)} style={css('cursor:pointer; background:#fff; border:1px solid transparent; border-radius:18px; padding:12px 14px; box-shadow:0 10px 26px rgba(0,0,0,.2);')}>
+                      <div className="zp-card-title" style={css(`font:800 15px/1.38 ${FONT}; color:#0F172A;`)}>{tp.title}</div>
+                      <div style={css('margin-top:3px; font-size:12.5px; color:#5B6B82;')}>{tp.votes} {t('người muốn nghe')}{tp.commentCount ? ` · ${tp.commentCount} ${t('bình luận')}` : ''}</div>
+                    </div>
+                  ))}
+                </div>
+              </>)}
               {/* posts saved before posting was taken off the site */}
               {savedQuestionCards.length > 0 && (<>
                 <h3 style={subHeading}>{t('Post đã lưu')}</h3>

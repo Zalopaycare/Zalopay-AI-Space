@@ -7,8 +7,8 @@ import { api, relativeTime } from '../lib/api.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { useDialog } from '../hooks/useDialog.js'
 import Avatar from './Avatar.jsx'
-import { askRemovalReason } from './RemovalReason.jsx'
 import { CommentBox } from './Events.jsx'
+import { useCommentModals } from './CommentMenu.jsx'
 import { playSound } from '../lib/sound.js'
 
 // "Muốn nghe" (second tab of the AI Space page; server: routes/topics.js): topics people would like a
@@ -61,12 +61,14 @@ export default function TopicsPanel({ query = '' }) {
     const u = new URL(window.location.href)
     if (u.searchParams.has('topic')) { u.searchParams.delete('topic'); window.history.replaceState(window.history.state, '', u.pathname + u.search + u.hash) }
   }
+  const tm = useTopicMenu({ onSaved: put, onDeleted: () => reload(), onEdit: (t) => setForm(t) })
   const q = fold(query.trim())
   const list = topics || []
   const shown = q ? list.filter((t) => [t.title, t.detail, t.author?.name, t.author?.fullName].some((x) => fold(x).includes(q))) : list
 
   return (
     <>
+      {tm.modals}
       {topics === null ? (
         <div style={css('padding:40px 0; text-align:center; font:500 13.5px var(--zp-font-text); color:#8EA0C8;')}>Đang tải…</div>
       ) : shown.length === 0 ? (
@@ -81,8 +83,10 @@ export default function TopicsPanel({ query = '' }) {
           {shown.map((t) => (
             <div key={t.id} role="button" tabIndex={0} onClick={() => setOpenId(t.id)} onKeyDown={(e) => { if (e.key === 'Enter') setOpenId(t.id) }}
               className={'zp-card ' + hoverClass(CARD_HOVER)}
-              style={css('display:flex; flex-direction:column; border:1px solid transparent; border-radius:18px; background:#ffffff; cursor:pointer; padding:12px 14px; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}>
-              <h3 className="zp-card-title" style={css('margin:0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{t.title}</h3>
+              style={css('position:relative; display:flex; flex-direction:column; border:1px solid transparent; border-radius:18px; background:#ffffff; cursor:pointer; padding:12px 14px; box-shadow:0 10px 26px rgba(0,0,0,.2); transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;')}>
+              {/* the ⋯ menu in the corner, as on the Use Case Library cards */}
+              {user && <div style={css('position:absolute; top:10px; right:10px; z-index:2;')}><MoreMenu items={tm.menuFor(t)} /></div>}
+              <h3 className="zp-card-title" style={css('margin:0 40px 0 0; font-size:15px; font-weight:800; line-height:1.38; color:#0F172A; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{t.title}</h3>
               {t.detail && <div style={css('margin-top:3px; font-size:13px; line-height:1.5; color:#475569; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;')}>{t.detail}</div>}
               <div style={css('margin-top:4px; font-size:12.5px; line-height:1.45; color:#5B6B82;')}><span style={css('font-weight:700; color:#0F172A;')}>Đăng ký bởi:</span> {t.author?.name}</div>
               <div style={css('margin-top:2px; font-size:12px; line-height:1.45; color:#94a3b8;')}>{relativeTime(t.createdAt)}</div>
@@ -107,6 +111,55 @@ export default function TopicsPanel({ query = '' }) {
   )
 }
 
+/** The ⋯ menu: `items` [{ label, icon, danger, onClick }]. */
+function MoreMenu({ items }) {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!open) return undefined
+    const close = () => setOpen(false)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [open])
+  return (
+    <div style={css('position:relative; flex:none;')}>
+      <button onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }} aria-label="Tuỳ chọn" title="Tuỳ chọn" aria-haspopup="menu" className={hoverClass('background:#E4E9F2 !important;')}
+        style={css('width:34px; height:32px; border:none; border-radius:9px; background:#EEF1F6; color:#334155; cursor:pointer; display:flex; align-items:center; justify-content:center;')}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>
+      </button>
+      {open && (
+        <div role="menu" style={css('position:absolute; right:0; top:38px; min-width:170px; background:#fff; border:1px solid #E6EBF3; border-radius:12px; box-shadow:0 18px 40px rgba(15,23,42,.18); padding:5px; z-index:10;')}>
+          {items.map((it) => (
+            <button key={it.label} role="menuitem" onClick={(e) => { e.stopPropagation(); setOpen(false); it.onClick() }} className={hoverClass(it.danger ? 'background:#FFF4F4 !important;' : 'background:#F4F7FE !important;')}
+              style={css(`display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border:none; background:transparent; border-radius:9px; cursor:pointer; text-align:left; font:600 13px ${FONT}; color:${it.danger ? '#D8232A' : '#0F172A'};`)}>
+              {it.icon}{it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+const ic = (d) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+const ICON = {
+  edit: ic(<><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></>),
+  del: ic(<><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></>),
+  report: ic(<><path d="M4 22V4"></path><path d="M4 4h13l-2 4 2 4H4"></path></>),
+  save: ic(<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>),
+}
+
+/** The ⋯ menu of a topic (its card and its window): the one who posted it gets Sửa / Xoá, everyone else
+ *  Báo cáo / Lưu. Render `modals` once (the report dialog). */
+function useTopicMenu({ onSaved, onDeleted, onEdit }) {
+  const { requireLogin } = useAuth()
+  const cm = useCommentModals(api)
+  const remove = (t) => { if (window.confirm('Xoá nội dung này? Bình luận bên dưới cũng bị xoá.')) api.deleteTopic(t.id).then(() => onDeleted(t)).catch(() => window.alert('Chưa xoá được, thử lại nhé.')) }
+  const save = (t) => requireLogin(() => api.saveTopic(t.id).then((d) => { onSaved(d.topic); playSound() }).catch(() => {}))
+  const menuFor = (t) => (t.isMine
+    ? [{ label: 'Sửa', icon: ICON.edit, onClick: () => onEdit(t) }, { label: 'Xoá', icon: ICON.del, danger: true, onClick: () => remove(t) }]
+    : [{ label: 'Báo cáo', icon: ICON.report, onClick: () => requireLogin(() => cm.askReport('topic', t.id)) }, { label: t.saved ? 'Bỏ lưu' : 'Lưu', icon: ICON.save, onClick: () => save(t) }])
+  return { menuFor, modals: cm.modals }
+}
+
 function TopicDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   const { requireLogin } = useAuth()
   const [t, setT] = useState(known || null)
@@ -114,20 +167,15 @@ function TopicDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
   const dialog = useDialog(true, onClose, 'Nội dung muốn nghe')
   useEffect(() => { api.getTopic(id).then((d) => setT(d.topic)).catch(() => setMissing(true)) }, [id])
   const vote = () => requireLogin(() => api.voteTopic(t.id).then((d) => { setT((x) => ({ ...x, ...d.topic })); onChanged(d.topic); playSound() }).catch(() => {}))
-  const remove = () => {
-    if (t.isMine) {
-      if (window.confirm('Xoá nội dung này?')) api.deleteTopic(t.id).then(onDeleted).catch(() => window.alert('Chưa xoá được, thử lại nhé.'))
-    } else {
-      askRemovalReason({ what: 'nội dung muốn nghe', title: t.title }).then((r) => r && api.deleteTopic(t.id, r).then(onDeleted).catch(() => window.alert('Chưa xoá được, thử lại nhé.')))
-    }
-  }
-  const btn = `height:32px; padding:0 14px; border:none; border-radius:9px; background:#EEF1F6; color:#0F172A; cursor:pointer; font:700 12.5px ${FONT};`
+  // only the one who posted it edits or deletes it; everyone else reports or saves it
+  const tm = useTopicMenu({ onSaved: (x) => { setT((y) => ({ ...y, ...x })); onChanged(x) }, onDeleted, onEdit })
   return createPortal(
     <div className="zp-overlay-in" onClick={onClose} style={css('position:fixed; inset:0; z-index:4000; background:rgba(4,10,26,.66); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); display:flex; align-items:center; justify-content:center; padding:24px 16px;')}>
       <div ref={dialog.ref} {...dialog.dialogProps} className="zp-dialog-in zp-thinscroll" onClick={(e) => e.stopPropagation()} style={css('position:relative; width:560px; max-width:100%; max-height:calc(100vh - 48px); overflow-y:auto; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.45); padding-bottom:20px;')}>
         <div style={css('position:sticky; top:0; z-index:3; height:0;')}>
           <button onClick={onClose} aria-label="Đóng" style={css('position:absolute; top:12px; right:12px; width:34px; height:34px; border:none; border-radius:50%; background:#F1F4FA; color:#334155; cursor:pointer; font-size:16px;')}>✕</button>
         </div>
+        {tm.modals}
         {!t ? (
           <div style={css('padding:56px 20px; text-align:center; font:600 14px var(--zp-font-text); color:#64748b;')}>{missing ? 'Không tìm thấy nội dung này. Có thể đã bị xoá.' : 'Đang tải…'}</div>
         ) : (<>
@@ -146,11 +194,10 @@ function TopicDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
               </span>
             )}
             <span style={{ flex: 1 }} />
-            {t.isMine && <button onClick={() => onEdit(t)} className={hoverClass('background:#E4E9F2 !important;')} style={css(btn)}>Sửa</button>}
-            {t.canEdit && <button onClick={remove} className={hoverClass('background:#FFF1F1 !important; color:#D8232A !important;')} style={css(btn)}>Xoá</button>}
+            <MoreMenu items={tm.menuFor(t)} />
           </div>
           <div style={css('margin:16px 22px 0; padding:10px 12px; border-radius:10px; background:#F3F6FD; font:400 12.5px/1.55 var(--zp-font-text); color:#475569;')}>Biết ai chia sẻ được chủ đề này? Gõ @ trong bình luận để nhắc họ. Ai muốn chia sẻ thì bấm Tạo sự kiện ở trang AI Space.</div>
-          <CommentBox comments={t.comments} onChange={(d) => { setT((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ id: t.id, commentCount: d.commentCount }) }}
+          <CommentBox reportType="topic_comment" comments={t.comments} onChange={(d) => { setT((x) => ({ ...x, comments: d.comments, commentCount: d.commentCount })); onChanged({ id: t.id, commentCount: d.commentCount }) }}
             post={(body, replyTo) => api.postTopicComment(t.id, body, replyTo)} like={(cid) => api.likeTopicComment(t.id, cid)} remove={(cid, reason) => api.deleteTopicComment(t.id, cid, reason)} />
         </>)}
       </div>

@@ -12,7 +12,7 @@ import Avatar from './Avatar.jsx'
 import { askRemovalReason } from './RemovalReason.jsx'
 import MentionInput from './MentionInput.jsx'
 import { renderMentions } from './MentionField.jsx'
-import { LikeButton, ReplyButton, RepliesToggle } from './CommentMenu.jsx'
+import CommentMenu, { LikeButton, ReplyButton, RepliesToggle, useCommentModals } from './CommentMenu.jsx'
 import { playSound } from '../lib/sound.js'
 
 // "Sự kiện": anything happening offline that anyone can post (server: routes/events.js), shown like a
@@ -361,13 +361,16 @@ function EventDialog({ id, known, onClose, onChanged, onEdit, onDeleted }) {
 // Comments under an event, as on posts: ♡ and 💬 under each one; replies hang under the comment they belong
 // to (one level), shown with "Hiện N trả lời", and the reply box starts with "@who" you're answering.
 function EventComments({ ev, onChange }) {
-  return <CommentBox comments={ev.comments} onChange={onChange} post={(body, replyTo) => api.postEventComment(ev.id, body, replyTo)} like={(cid) => api.likeEventComment(ev.id, cid)} remove={(cid, reason) => api.deleteEventComment(ev.id, cid, reason)} />
+  return <CommentBox reportType="ev_comment" comments={ev.comments} onChange={onChange} post={(body, replyTo) => api.postEventComment(ev.id, body, replyTo)} like={(cid) => api.likeEventComment(ev.id, cid)} remove={(cid, reason) => api.deleteEventComment(ev.id, cid, reason)} />
 }
 
 /** The comment box itself, shared by events and "Muốn nghe": `post(body, replyToId)`, `like(cid)` and
- *  `remove(cid, reason)` call the server and resolve to { comments, commentCount }. */
-export function CommentBox({ comments, onChange, post: postFn, like: likeFn, remove: removeFn }) {
+ *  `remove(cid)` call the server and resolve to { comments, commentCount }; `reportType` is what a report
+ *  on one of its comments is filed under. Each comment has a ⋯ menu: its author deletes it, everyone else
+ *  reports it to the admins (who remove it from the Admin Console). */
+export function CommentBox({ comments, onChange, post: postFn, like: likeFn, remove: removeFn, reportType }) {
   const { user, requireLogin } = useAuth()
+  const cm = useCommentModals(api)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const boxRef = useRef(null)
@@ -398,13 +401,8 @@ export function CommentBox({ comments, onChange, post: postFn, like: likeFn, rem
     setTimeout(() => replyRef.current?.focus?.(), 50)
   })
   const like = (c) => requireLogin(() => likeFn(c.id).then((d) => { onChange({ comments: d.comments, commentCount: d.commentCount ?? d.comments.length }); playSound() }).catch(() => {}))
-  const remove = (c) => {
-    if (c.isMine) {
-      if (window.confirm('Xoá bình luận này?')) removeFn(c.id).then(onChange).catch(() => {})
-    } else {
-      askRemovalReason({ what: 'bình luận', title: c.body.slice(0, 80) }).then((r) => r && removeFn(c.id, r).then(onChange).catch(() => {}))
-    }
-  }
+  const remove = (c) => cm.askDelete(() => removeFn(c.id).then(onChange).catch(() => window.alert('Chưa xoá được, thử lại nhé.')))
+  const report = (c) => requireLogin(() => cm.askReport(reportType, c.id))
   const field = 'width:100%; box-sizing:border-box; border:1px solid #E6EBF3; border-radius:12px; padding:9px 12px; font:400 14px/1.5 var(--zp-font-text); color:#0F172A; background:#F7F9FD; outline:none; resize:vertical; display:block;'
   const sendBtn = (enabled, onClick, label = 'Gửi') => (
     <button onClick={onClick} disabled={!enabled || busy} style={css(`height:32px; padding:0 16px; border:none; border-radius:999px; background:linear-gradient(180deg,#4480ff,#2c5fff); color:#fff; font:700 13px ${FONT}; cursor:pointer; opacity:${enabled && !busy ? 1 : 0.5};`)}>{label}</button>
@@ -412,14 +410,14 @@ export function CommentBox({ comments, onChange, post: postFn, like: likeFn, rem
   const row = (c, small) => {
     const replies = small ? [] : repliesOf(c.id)
     return (
-      <div style={css(`display:flex; gap:10px; ${small ? 'padding:8px 0 0;' : 'padding:10px 0 2px; border-top:1px solid #EEF1F7; margin-top:8px;'}`)}>
+      <div className="zp-cmt" style={css(`display:flex; gap:10px; ${small ? 'padding:8px 0 0;' : 'padding:10px 0 2px; border-top:1px solid #EEF1F7; margin-top:8px;'}`)}>
         <Avatar user={c.author} size={small ? 26 : 32} fontSize={small ? 9 : 11} />
         <div style={css('flex:1; min-width:0;')}>
           <div style={css('display:flex; align-items:center; gap:6px;')}>
             <span style={css(`font:600 13px ${FONT}; color:#0F172A;`)}>{c.author?.name || 'Ẩn danh'}</span>
             <span style={css('font:400 12px var(--zp-font-text); color:#94a3b8;')}>· {relativeTime(c.time)}</span>
             <span style={{ flex: 1 }} />
-            {c.canDelete && <button onClick={() => remove(c)} className={hoverClass('color:#D8232A !important;')} style={css(`border:none; background:none; padding:0; cursor:pointer; font:600 12px ${FONT}; color:#94a3b8;`)}>Xoá</button>}
+            {user && <CommentMenu isOwner={c.isMine} onDelete={() => remove(c)} onReport={() => report(c)} />}
           </div>
           <div style={css('margin-top:2px; font:400 14px/1.5 var(--zp-font-text); color:#1E293B; white-space:pre-wrap; word-break:break-word;')}>{renderMentions(c.body)}</div>
           <div style={css('display:flex; align-items:center; gap:2px; margin:2px 0 0 -7px;')}>
@@ -432,6 +430,7 @@ export function CommentBox({ comments, onChange, post: postFn, like: likeFn, rem
   }
   return (
     <div style={css('margin:18px 22px 0;')}>
+      {cm.modals}
       <div style={css(`font:800 15px ${FONT}; color:#0F172A;`)}>Bình luận{list.length ? ` (${list.length})` : ''}</div>
       <div style={css('display:flex; gap:10px; margin-top:10px;')}>
         <Avatar user={user} size={32} fontSize={11} />
